@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - MSREC | MetaScholar Research Ethics Committee</title>
+<meta name="description" content="Log in to your MSREC secure portal account.">
+
+<link rel="icon" href="assets/img/favicon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+<link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+<link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+
+<link href="assets/css/main.css" rel="stylesheet">
+<link href="assets/css/login.css" rel="stylesheet">
+</head>
+<body class="login-page">
+
+  <header id="header" class="header fixed-top">
+
+    <div class="branding d-flex align-items-cente">
+
+      <div class="container-fluid position-relative d-flex align-items-center justify-content-between">
+        <a href="index.html" class="logo d-flex align-items-center">
+          <img src="assets/img/MSREC_LOGO.png" alt="MSREC logo">
+          <h1 class="sitename">MSREC</h1>
+        </a>
+
+        <nav id="navmenu" class="navmenu">
+          <ul>
+            <li><a href="index.html#hero">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="applicants.html">Applicants</a></li>
+            <li><a href="#">Ethics Review</a></li>
+            <li><a href="resources.html">Resources</a></li>
+            <li><a href="#">Governance</a></li>
+            <li><a href="about.html#governance">Board &amp; Committee</a></li>
+            <li><a href="verify.html">Verify Approval</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="apply.html">Apply Now</a></li>
+            <li><a href="login.html" class="active">Login</a></li>
+          </ul>
+          <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+        </nav>
+
+      </div>
+
+    </div>
+
+  </header>
+
+  <main class="main login-main">
+
+    <div class="login-wrap">
+      <div class="login-card">
+
+        <div class="login-panel">
+          <div class="login-form-wrap">
+            <h1>Welcome Back!</h1>
+            <p class="login-sub">Access your research ethics account.</p>
+
+            <form id="loginForm" novalidate>
+              <div class="field">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" placeholder="you@institution.edu" required autocomplete="email">
+              </div>
+
+              <div class="field">
+                <label for="password">Password</label>
+                <div class="password-field">
+                  <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                  <button type="button" class="toggle-password" id="togglePassword" aria-label="Show password">
+                    <i class="bi bi-eye" id="toggleIcon"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <label class="remember">
+                  <input type="checkbox" name="remember">
+                  <span>Remember me</span>
+                </label>
+                <a href="#" class="forgot-link">Forgot password?</a>
+              </div>
+
+              <button type="submit" class="btn-signin">Sign In</button>
+
+              <p class="create-account">New researcher? <a href="signup.html">Create an account</a></p>
+            </form>
+
+            <a href="index.html" class="back-link"><i class="bi bi-arrow-left"></i> Back to MSREC Website</a>
+          </div>
+        </div>
+
+        <div class="login-media" aria-hidden="true">
+          <div class="login-media-inner">
+            <img src="assets/img/about.jpg" alt="">
+            <div class="login-media-overlay"></div>
+            <div class="login-media-caption">
+              <span class="eyebrow">Institutional Research Ethics Governance</span>
+              <h2>Structured review. Verifiable decisions.</h2>
+            </div>
+            <button type="button" class="login-media-arrow" aria-label="Learn more"><i class="bi bi-arrow-up-right"></i></button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer id="footer" class="footer accent-background">
+
+    <div class="container footer-top">
+      <div class="row gy-4">
+        <div class="col-lg-5 col-md-12 footer-about">
+          <a href="index.html" class="logo d-flex align-items-center">
+            <span class="sitename">MSREC</span>
+          </a>
+          <p>Cras fermentum odio eu feugiat lide par naso tierra. Justo eget nada terra videa magna derita valies darta donna mare fermentum iaculis eu non diam phasellus.</p>
+          <div class="social-links d-flex mt-4">
+            <a href=""><i class="bi bi-twitter-x"></i></a>
+            <a href=""><i class="bi bi-facebook"></i></a>
+            <a href=""><i class="bi bi-instagram"></i></a>
+            <a href=""><i class="bi bi-linkedin"></i></a>
+          </div>
+        </div>
+
+        <div class="col-lg-2 col-6 footer-links">
+          <h4>Useful Links</h4>
+          <ul>
+            <li><a href="index.html#hero">Home</a></li>
+            <li><a href="about.html">About us</a></li>
+            <li><a href="#">Services</a></li>
+            <li><a href="#">Terms of service</a></li>
+            <li><a href="#">Privacy policy</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-2 col-6 footer-links">
+          <h4>Our Services</h4>
+          <ul>
+            <li><a href="#">Web Design</a></li>
+            <li><a href="#">Web Development</a></li>
+            <li><a href="#">Product Management</a></li>
+            <li><a href="#">Marketing</a></li>
+            <li><a href="#">Graphic Design</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-3 col-md-12 footer-contact text-center text-md-start">
+          <h4>Contact Us</h4>
+          <p>A108 Adam Street</p>
+          <p>New York, NY 535022</p>
+          <p>United States</p>
+          <p class="mt-4"><strong>Phone:</strong> <span>+1 5589 55488 55</span></p>
+          <p><strong>Email:</strong> <span>info@example.com</span></p>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="container copyright text-center mt-4">
+      <p>© <span>Copyright</span> <strong class="px-1 sitename">MSREC</strong> <span>All Rights Reserved</span></p>
+      <div class="credits">
+        Powered by <a href="https://metascholar.academicdigital.space/">Metascholar Consult Limited</a>
+      </div>
+    </div>
+
+  </footer>
+
+  <!-- Scroll Top -->
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <!-- Preloader -->
+  <div id="preloader"></div>
+
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/login.js"></script>
+</body>
+</html>

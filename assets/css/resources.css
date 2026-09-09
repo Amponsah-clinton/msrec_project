@@ -1,0 +1,450 @@
+/* ==========================================================
+   MSREC — Resources page
+   Editorial, flat layout consistent with about.css / verify.css / apply.css.
+   Uses the color/font tokens defined in main.css. This page loads no other
+   page-specific stylesheet, so every selector below is self-contained —
+   no cross-page specificity conflicts to worry about.
+========================================================== */
+
+body.resources-page { margin: 0; font-family: var(--default-font); }
+
+.resources-main { background: #faf6ee; padding: 150px 0 20px; }
+
+.res-wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+
+.section-label {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  margin-bottom: 14px;
+}
+
+/* ---------------- Hero ---------------- */
+.res-hero {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 48px;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 26px;
+  box-shadow: 0 30px 70px rgba(23, 42, 40, 0.1);
+  padding: 48px;
+  margin-bottom: 22px;
+}
+
+.res-hero-copy h1 {
+  font-family: var(--heading-font);
+  font-size: clamp(26px, 3vw, 34px);
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--heading-color);
+  margin: 0 0 14px;
+}
+.res-hero-copy > p {
+  color: #5c6b69;
+  font-size: 14.5px;
+  line-height: 1.75;
+  max-width: 56ch;
+  margin: 0 0 26px;
+}
+
+.res-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 28px;
+  margin: 0;
+}
+.res-stat dt {
+  font-family: var(--heading-font);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--accent-color);
+  margin: 0;
+}
+.res-stat dd {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: #8a9492;
+}
+
+/* ---------------- Hero visual: image card ---------------- */
+.res-hero-visual { display: flex; align-items: center; justify-content: center; height: 220px; }
+
+.res-hero-image-card {
+  width: 100%;
+  height: 100%;
+  max-width: 260px;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  box-shadow: 0 20px 45px rgba(23, 42, 40, 0.1);
+  padding: 20px;
+}
+.res-hero-image-card img {
+  width: 100%;
+  height: 100%;
+  /* This is a transparent cutout, not a photo — "contain" shows the whole
+     subject on the card's own white background instead of cropping into it. */
+  object-fit: contain;
+  display: block;
+}
+
+/* ---------------- Toolbar: search + category nav ---------------- */
+.res-toolbar {
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  border-radius: 18px;
+  padding: 16px 20px;
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: sticky;
+  top: 96px;
+  z-index: 20;
+}
+
+.res-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f7faf9;
+  border: 1px solid #eef3f1;
+  border-radius: 12px;
+  padding: 11px 14px;
+}
+.res-search i { color: #8a9492; font-size: 15px; flex-shrink: 0; }
+.res-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--heading-color);
+}
+.res-search input:focus { outline: none; }
+.res-search input::placeholder { color: #9aa5a3; }
+.res-search-clear {
+  border: none;
+  background: #eef3f1;
+  color: #5c6b69;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.res-search-clear:hover { background: #dfe8e5; }
+
+.res-cat-nav {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.res-cat-nav::-webkit-scrollbar { display: none; }
+.res-cat-nav a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 50px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #5c6b69;
+  background: #f7faf9;
+  white-space: nowrap;
+  transition: .15s;
+}
+.res-cat-nav a i { font-size: 13px; }
+.res-cat-nav a:hover { background: #eef3f1; color: var(--heading-color); }
+.res-cat-nav a.is-active {
+  background: var(--accent-color);
+  color: #fff;
+}
+
+.res-no-results {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px dashed #dbe6e3;
+  border-radius: 14px;
+  padding: 16px 20px;
+  font-size: 13.5px;
+  color: #5c6b69;
+  margin: -6px 0 26px;
+}
+.res-no-results i { color: var(--accent-color); }
+.res-no-results a { color: var(--accent-color); font-weight: 600; }
+
+/* ---------------- Section shell ---------------- */
+.res-section {
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  border-radius: 20px;
+  padding: 32px 34px;
+  margin-bottom: 22px;
+  scroll-margin-top: 190px;
+}
+
+.res-section-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eef3f1;
+}
+.res-section-icon {
+  flex-shrink: 0;
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--accent-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px;
+}
+.res-section-head h2 {
+  margin: 0 0 4px;
+  font-family: var(--heading-font);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--heading-color);
+}
+.res-section-head p { margin: 0; font-size: 13.5px; color: #5c6b69; }
+
+/* ---------------- Document cards (icon + caption) ---------------- */
+/* Flexbox + wrap + justify-content:center, not CSS Grid — a grid's column
+   tracks are shared across every row, so a trailing row with fewer cards than
+   the row above (e.g. Guidelines' 6 cards = a full row of 4-5 plus a lone
+   straggler) leaves a glaring empty gap on the right where the missing
+   columns would have been. With flexbox, each row wraps and centers its own
+   items independently, so a short trailing row centers itself instead of
+   sitting flush-left with dead space beside it. */
+.res-doc-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+
+.res-doc-card {
+  position: relative;
+  flex: 0 1 190px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  background: #fbfcfc;
+  border: 1px solid #eef3f1;
+  border-radius: 16px;
+  padding: 24px 14px 18px;
+  color: inherit;
+  transition: transform .18s, box-shadow .18s, border-color .18s, background .18s;
+}
+.res-doc-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 36px rgba(23, 42, 40, 0.1);
+  border-color: color-mix(in srgb, var(--accent-color), transparent 65%);
+  background: #ffffff;
+  color: inherit;
+}
+
+.res-doc-icon {
+  width: 56px; height: 56px;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px;
+  color: #e5252a;
+}
+.res-doc-card:hover .res-doc-icon { border-color: #fbdad8; background: #fdeceb; }
+
+.res-doc-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--heading-color);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.res-doc-meta { font-size: 11px; color: #9aa5a3; }
+
+.res-doc-download {
+  position: absolute;
+  top: 10px; right: 10px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: #f7faf9;
+  color: var(--accent-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: .18s;
+}
+.res-doc-card:hover .res-doc-download { opacity: 1; transform: translateY(0); }
+
+.res-doc-card.is-filtered-out { display: none; }
+
+/* ---------------- FAQ accordion ---------------- */
+.res-faq-list { display: flex; flex-direction: column; }
+.res-faq-item {
+  border-bottom: 1px solid #eef3f1;
+  transition: max-height .2s;
+}
+.res-faq-item:last-child { border-bottom: none; }
+.res-faq-item.is-filtered-out { display: none; }
+
+.res-faq-question {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 18px 4px;
+  font-family: var(--default-font);
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--heading-color);
+}
+.res-faq-question i { color: var(--accent-color); transition: transform .25s; flex-shrink: 0; }
+.res-faq-item.is-active .res-faq-question i { transform: rotate(180deg); }
+
+.res-faq-answer { max-height: 0; overflow: hidden; transition: max-height .3s ease; }
+.res-faq-item.is-active .res-faq-answer { max-height: 240px; }
+.res-faq-answer p {
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: #5c6b69;
+  margin: 0 0 18px;
+  padding: 0 4px;
+}
+.res-faq-answer a { color: var(--accent-color); font-weight: 600; }
+
+/* ---------------- Training cards ---------------- */
+.res-training-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 18px;
+}
+
+.res-training-card {
+  flex: 1 1 260px;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  background: #fbfcfc;
+  border: 1px solid #eef3f1;
+  border-radius: 16px;
+  padding: 22px;
+  color: inherit;
+  transition: transform .18s, box-shadow .18s, border-color .18s, background .18s;
+}
+.res-training-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 18px 36px rgba(23, 42, 40, 0.1);
+  border-color: color-mix(in srgb, var(--accent-color), transparent 65%);
+  background: #ffffff;
+  color: inherit;
+}
+.res-training-card.is-filtered-out { display: none; }
+
+.res-training-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--accent-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+
+.res-training-body { flex: 1; }
+.res-training-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  margin-bottom: 8px;
+}
+.res-training-body h4 { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: var(--heading-color); }
+.res-training-body p { margin: 0; font-size: 13px; line-height: 1.6; color: #5c6b69; }
+
+.res-training-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-color);
+}
+.res-training-cta i { transition: transform .18s; }
+.res-training-card:hover .res-training-cta i { transform: translateX(3px); }
+
+/* ---------------- Help CTA ---------------- */
+.res-help {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: color-mix(in srgb, var(--default-color), transparent 96%);
+  border-radius: 20px;
+  padding: 26px 30px;
+  margin: 8px 0 40px;
+}
+.res-help i { font-size: 26px; color: var(--accent-color); flex-shrink: 0; }
+.res-help h4 { margin: 0 0 4px; font-size: 15.5px; font-weight: 700; color: var(--heading-color); }
+.res-help p { margin: 0; font-size: 13.5px; line-height: 1.6; color: #5c6b69; }
+.res-help-link {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--accent-color);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.res-help-link:hover { color: var(--accent-color); text-decoration: underline; }
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 991px) {
+  .res-hero { grid-template-columns: 1fr; gap: 30px; padding: 34px; }
+  .res-hero-visual { order: -1; height: 190px; }
+  .res-toolbar { top: 76px; }
+}
+
+@media (max-width: 700px) {
+  .resources-main { padding-top: 130px; }
+  .res-hero { padding: 26px; border-radius: 20px; }
+  .res-section { padding: 24px 20px; }
+  .res-help { flex-direction: column; text-align: center; }
+  .res-help-link { margin-left: 0; }
+  .res-stats-row { gap: 20px; }
+}
+
+@media (max-width: 480px) {
+  .resources-main { padding-top: 150px; }
+  .res-wrap { padding: 0 14px; }
+}

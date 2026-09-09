@@ -1,0 +1,40 @@
+/* ==========================================================
+   MSREC — Contact page
+   Reuses the landing page's .contact section design exactly
+   (.info-container / .info-item / .php-email-form from main.css).
+   This file only adds the page's top padding and styles the
+   one element the landing page's contact form doesn't use: a
+   native <select> for "Reason for contact".
+========================================================== */
+
+body.contact-page {
+  margin: 0;
+  font-family: var(--default-font);
+  background: #ffffff;
+}
+
+.main { padding-top: 140px; }
+
+.contact.section { padding-top: 0; }
+
+.contact .php-email-form select.form-control {
+  font-size: 14px;
+  padding: 10px 15px;
+  box-shadow: none;
+  border-radius: 0;
+  color: var(--default-color);
+  background-color: var(--surface-color);
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 80%);
+  width: 100%;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23555'%3E%3Cpath d='M4 6l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 15px center;
+}
+
+.contact .php-email-form select.form-control:invalid { color: color-mix(in srgb, var(--default-color), transparent 70%); }
+.contact .php-email-form select.form-control:focus { border-color: var(--accent-color); outline: none; }
+
+@media (max-width: 480px) {
+  .main { padding-top: 160px; }
+}

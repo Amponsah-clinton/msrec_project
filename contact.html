@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact - MSREC | MetaScholar Research Ethics Committee</title>
+<meta name="description" content="Contact the MSREC Secretariat for application support, complaints, ethics concerns and technical support.">
+
+<link rel="icon" href="assets/img/favicon.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+<link href="assets/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+<link href="assets/vendor/bootstrap-icons/bootstrap-icons.css" rel="stylesheet">
+
+<link href="assets/css/main.css" rel="stylesheet">
+<link href="assets/css/contact.css" rel="stylesheet">
+</head>
+<body class="contact-page">
+
+  <header id="header" class="header fixed-top">
+    <div class="branding d-flex align-items-cente">
+      <div class="container-fluid position-relative d-flex align-items-center justify-content-between">
+        <a href="index.html" class="logo d-flex align-items-center">
+          <img src="assets/img/MSREC_LOGO.png" alt="MSREC logo">
+          <h1 class="sitename">MSREC</h1>
+        </a>
+        <nav id="navmenu" class="navmenu">
+          <ul>
+            <li><a href="index.html#hero">Home</a></li>
+            <li><a href="about.html">About</a></li>
+            <li><a href="applicants.html">Applicants</a></li>
+            <li><a href="#">Ethics Review</a></li>
+            <li><a href="resources.html">Resources</a></li>
+            <li><a href="#">Governance</a></li>
+            <li><a href="about.html#governance">Board &amp; Committee</a></li>
+            <li><a href="verify.html">Verify Approval</a></li>
+            <li><a href="contact.html" class="active">Contact</a></li>
+            <li><a href="apply.html">Apply Now</a></li>
+            <li><a href="login.html">Login</a></li>
+          </ul>
+          <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- ============ CONTACT ============ -->
+    <section id="contact" class="contact section">
+
+      <!-- Section Title -->
+      <div class="container section-title">
+        <h2>Contact</h2>
+        <p>Five dedicated contact points, so your message reaches the people who can act on it &mdash; the Secretariat, Application Support, Complaints, Ethics Concerns or Technical Support.</p>
+      </div><!-- End Section Title -->
+
+      <div class="container">
+        <div class="row gx-lg-0 gy-4">
+
+          <div class="col-lg-4">
+            <div class="info-container d-flex flex-column align-items-center justify-content-center">
+              <div class="info-item d-flex">
+                <i class="bi bi-envelope-paper flex-shrink-0"></i>
+                <div>
+                  <h3>Secretariat</h3>
+                  <p>secretariat@msrec.org<br>+1 5589 55488 55</p>
+                </div>
+              </div><!-- End Info Item -->
+
+              <div class="info-item d-flex">
+                <i class="bi bi-life-preserver flex-shrink-0"></i>
+                <div>
+                  <h3>Application Support</h3>
+                  <p>applications@msrec.org</p>
+                </div>
+              </div><!-- End Info Item -->
+
+              <div class="info-item d-flex">
+                <i class="bi bi-exclamation-triangle flex-shrink-0"></i>
+                <div>
+                  <h3>Complaints</h3>
+                  <p>complaints@msrec.org</p>
+                </div>
+              </div><!-- End Info Item -->
+
+              <div class="info-item d-flex">
+                <i class="bi bi-shield-exclamation flex-shrink-0"></i>
+                <div>
+                  <h3>Ethics Concerns</h3>
+                  <p>ethics@msrec.org</p>
+                </div>
+              </div><!-- End Info Item -->
+
+              <div class="info-item d-flex">
+                <i class="bi bi-headset flex-shrink-0"></i>
+                <div>
+                  <h3>Technical Support</h3>
+                  <p>techsupport@msrec.org</p>
+                </div>
+              </div><!-- End Info Item -->
+
+            </div>
+          </div>
+
+          <div class="col-lg-8">
+            <form action="#" method="post" class="php-email-form" id="contactPageForm" novalidate>
+              <div class="row gy-4">
+
+                <div class="col-md-6">
+                  <input type="text" name="name" class="form-control" placeholder="Your Name" required>
+                </div>
+
+                <div class="col-md-6">
+                  <input type="email" class="form-control" name="email" placeholder="Your Email" required>
+                </div>
+
+                <div class="col-md-12">
+                  <select class="form-control" name="reason" required>
+                    <option value="" disabled selected>Reason for contact</option>
+                    <option value="secretariat">Secretariat / General Enquiry</option>
+                    <option value="application-support">Application Support</option>
+                    <option value="complaints">Complaints</option>
+                    <option value="ethics-concerns">Ethics Concerns</option>
+                    <option value="technical-support">Technical Support</option>
+                  </select>
+                </div>
+
+                <div class="col-md-12">
+                  <textarea class="form-control" name="message" rows="8" placeholder="Message" required></textarea>
+                </div>
+
+                <div class="col-md-12 text-center">
+                  <div class="loading" hidden>Loading</div>
+                  <div class="error-message"></div>
+                  <div class="sent-message" hidden>Your message has been sent. Thank you!</div>
+
+                  <button type="submit">Send Message</button>
+                </div>
+
+              </div>
+            </form>
+          </div><!-- End Contact Form -->
+
+        </div>
+      </div>
+
+    </section><!-- /Contact Section -->
+
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer id="footer" class="footer accent-background">
+    <div class="container footer-top">
+      <div class="row gy-4">
+        <div class="col-lg-5 col-md-12 footer-about">
+          <a href="index.html" class="logo d-flex align-items-center">
+            <span class="sitename">MSREC</span>
+          </a>
+          <p>Cras fermentum odio eu feugiat lide par naso tierra. Justo eget nada terra videa magna derita valies darta donna mare fermentum iaculis eu non diam phasellus.</p>
+          <div class="social-links d-flex mt-4">
+            <a href=""><i class="bi bi-twitter-x"></i></a>
+            <a href=""><i class="bi bi-facebook"></i></a>
+            <a href=""><i class="bi bi-instagram"></i></a>
+            <a href=""><i class="bi bi-linkedin"></i></a>
+          </div>
+        </div>
+
+        <div class="col-lg-2 col-6 footer-links">
+          <h4>Useful Links</h4>
+          <ul>
+            <li><a href="index.html#hero">Home</a></li>
+            <li><a href="about.html">About us</a></li>
+            <li><a href="applicants.html">Applicants</a></li>
+            <li><a href="contact.html">Contact</a></li>
+            <li><a href="#">Privacy policy</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-2 col-6 footer-links">
+          <h4>Our Services</h4>
+          <ul>
+            <li><a href="#">Web Design</a></li>
+            <li><a href="#">Web Development</a></li>
+            <li><a href="#">Product Management</a></li>
+            <li><a href="#">Marketing</a></li>
+            <li><a href="#">Graphic Design</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-3 col-md-12 footer-contact text-center text-md-start">
+          <h4>Contact Us</h4>
+          <p>A108 Adam Street</p>
+          <p>New York, NY 535022</p>
+          <p>United States</p>
+          <p class="mt-4"><strong>Phone:</strong> <span>+1 5589 55488 55</span></p>
+          <p><strong>Email:</strong> <span>info@example.com</span></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="container copyright text-center mt-4">
+      <p>© <span>Copyright</span> <strong class="px-1 sitename">MSREC</strong> <span>All Rights Reserved</span></p>
+      <div class="credits">
+        Powered by <a href="https://metascholar.academicdigital.space/">Metascholar Consult Limited</a>
+      </div>
+    </div>
+  </footer>
+
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+  <div id="preloader"></div>
+
+  <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+  <script src="assets/js/main.js"></script>
+  <script src="assets/js/contact.js"></script>
+</body>
+</html>
