@@ -1,0 +1,593 @@
+/* ==========================================================
+   MSREC — Universal Research Ethics Application Form
+   Builds on the primitives in signup.css (.field, .field-grid,
+   .chip-checkbox-grid, .agree-row, .signup-section, etc.) and the
+   color/font tokens in main.css. Adds: page shell, sticky TOC
+   sidebar + progress meter, numbered section cards, yes/no
+   toggles, conditional reveals, file uploader, locked official-use
+   panel.
+========================================================== */
+
+body.apply-page { margin: 0; font-family: var(--default-font); }
+
+.apply-main { background: #faf6ee; padding: 150px 0 80px; }
+
+.apply-wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+
+/* ---------------- Checklist grid — overrides signup.css's pill layout ----------------
+   signup.css lays chip-checkbox out as ragged flex-wrap pills, which stop lining up
+   the moment label widths vary — exactly the "misaligned checkbox" problem on this
+   page's large option lists. Redefine it here (apply.css loads after signup.css, so
+   these rules win at equal specificity) as a true CSS Grid checklist: every option
+   sits in an equal-width column, so checkboxes fall into clean vertical lines no
+   matter how long neighboring labels run. Scoped to this page only. */
+.chip-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 2px 14px;
+  margin-top: 2px;
+}
+
+/* Many of these grids sit inside a `.field`/`.field-wide` wrapper (for its label
+   spacing), and signup.css's generic `.field input { width:100%; padding:11px 14px }`
+   rule matches equally-specific `.chip-checkbox input` below — on properties this
+   block leaves unset (padding, in particular) that outside rule wins by source
+   order and inflates the box into an oval. Every selector here is deliberately
+   `.chip-checkbox-grid .chip-checkbox …` (two classes) so it outranks `.field input`
+   (one class) outright, and every box property is set explicitly — nothing is left
+   for an ancestor rule to fill in. */
+.chip-checkbox-grid .chip-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 9px 8px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #43514f;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+}
+/* Grid rows stretch every cell to the tallest label in that row (a neighboring
+   2-line option) — align-items: flex-start above anchors the checkbox to its own
+   text's first line instead of centering against that taller cell, so it no
+   longer drifts up/down relative to single-line rows. */
+.chip-checkbox-grid .chip-checkbox span { padding-top: 1px; }
+.chip-checkbox-grid .chip-checkbox:hover { background: #f7faf9; }
+.chip-checkbox-grid .chip-checkbox:has(input:checked) {
+  background: color-mix(in srgb, var(--accent-color), transparent 92%);
+  color: var(--heading-color);
+  font-weight: 600;
+}
+
+/* Custom indicator — replaces the native checkbox/radio for a consistent,
+   non-"classic browser control" look, still fully keyboard/screen-reader operable. */
+.chip-checkbox-grid .chip-checkbox input {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  padding: 0;
+  border: 1.5px solid #cbd6d3;
+  border-radius: 5px;
+  background: #fff;
+  position: relative;
+  cursor: pointer;
+  transition: .15s;
+}
+.chip-checkbox-grid .chip-checkbox input[type="radio"] { border-radius: 50%; }
+.chip-checkbox-grid .chip-checkbox input:hover { border-color: color-mix(in srgb, var(--accent-color), transparent 30%); }
+.chip-checkbox-grid .chip-checkbox input:checked { background: var(--accent-color); border-color: var(--accent-color); }
+.chip-checkbox-grid .chip-checkbox input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.chip-checkbox-grid .chip-checkbox input[type="radio"]:checked::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  background: #fff;
+}
+.chip-checkbox-grid .chip-checkbox input:focus-visible { outline: 2px solid var(--accent-color); outline-offset: 2px; }
+.chip-checkbox-grid .chip-checkbox input:disabled { cursor: not-allowed; opacity: .6; }
+
+/* ---------------- Intro card ---------------- */
+.apply-intro {
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 30px 70px rgba(23, 42, 40, 0.1);
+  padding: 40px 44px;
+  margin-bottom: 28px;
+}
+
+.apply-intro h1 {
+  font-family: var(--heading-font);
+  font-size: clamp(24px, 3vw, 30px);
+  font-weight: 800;
+  color: var(--heading-color);
+  margin: 0 0 8px;
+}
+.apply-intro > p {
+  color: #5c6b69;
+  font-size: 14.5px;
+  line-height: 1.7;
+  max-width: 72ch;
+  margin: 0 0 22px;
+}
+
+.apply-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.apply-meta-item {
+  flex: 1;
+  min-width: 220px;
+  background: #f7faf9;
+  border: 1px solid #eef3f1;
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+.apply-meta-item span {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8a9492;
+  margin-bottom: 3px;
+}
+.apply-meta-item strong { font-size: 13.5px; color: var(--heading-color); font-weight: 700; }
+
+.apply-review-request { margin-top: 20px; }
+.apply-review-request > label {
+  display: block;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--heading-color);
+  margin-bottom: 10px;
+}
+
+/* ---------------- Shell: sidebar + form column ---------------- */
+.apply-shell {
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  gap: 32px;
+  align-items: start;
+}
+
+.apply-sidebar {
+  position: sticky;
+  top: 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.apply-progress-card {
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+.apply-progress-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+  color: #5c6b69;
+  margin-bottom: 8px;
+}
+.apply-progress-label strong { color: var(--accent-color); font-size: 15px; font-family: var(--heading-font); }
+.apply-progress-track {
+  height: 6px;
+  border-radius: 50px;
+  background: #eef3f1;
+  overflow: hidden;
+}
+.apply-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent-color);
+  border-radius: 50px;
+  transition: width .3s ease;
+}
+
+.apply-toc {
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  border-radius: 14px;
+  padding: 10px;
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.apply-toc a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #5c6b69;
+  transition: .15s;
+}
+.apply-toc a:hover { background: #f7faf9; color: var(--heading-color); }
+.apply-toc a.is-active {
+  background: color-mix(in srgb, var(--accent-color), transparent 90%);
+  color: var(--heading-color);
+}
+.apply-toc-num {
+  flex-shrink: 0;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: #eef3f1;
+  color: #5c6b69;
+  font-size: 10.5px;
+  font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+}
+.apply-toc a.is-active .apply-toc-num { background: var(--accent-color); color: #fff; }
+.apply-toc-divider { height: 1px; background: #eef3f1; margin: 6px 4px; }
+.apply-toc-locked { color: #8a9492 !important; }
+.apply-toc-locked .apply-toc-num { background: #eef3f1; color: #8a9492; font-size: 10px; }
+
+/* ---------------- Numbered section cards ---------------- */
+.apply-section {
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  border-radius: 18px;
+  padding: 30px 32px;
+  margin-bottom: 22px;
+  box-shadow: 0 10px 30px rgba(23, 42, 40, 0.04);
+  scroll-margin-top: 130px;
+}
+
+.apply-section-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid #eef3f1;
+}
+.apply-section-num {
+  flex-shrink: 0;
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--accent-color);
+  font-family: var(--heading-font);
+  font-weight: 800;
+  font-size: 15px;
+  display: flex; align-items: center; justify-content: center;
+}
+.apply-section-head h2 {
+  margin: 0;
+  font-family: var(--heading-font);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--heading-color);
+}
+.apply-section-head .section-note { margin: 4px 0 0; }
+
+/* ---------------- Yes/No toggle ---------------- */
+.apply-yn-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 0;
+  border-top: 1px dashed #eef3f1;
+}
+.apply-yn-row:first-of-type { border-top: none; padding-top: 0; }
+.apply-yn-row label {
+  flex: 1;
+  min-width: 220px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--heading-color);
+  margin: 0;
+}
+
+.yn-toggle { display: inline-flex; gap: 8px; flex-shrink: 0; }
+.yn-btn {
+  padding: 9px 20px;
+  border-radius: 50px;
+  border: 1.5px solid #e1e8e6;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  color: #5c6b69;
+  cursor: pointer;
+  transition: .15s;
+}
+.yn-btn:hover { border-color: color-mix(in srgb, var(--accent-color), transparent 40%); }
+.yn-btn.active[data-value="yes"] {
+  border-color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--heading-color);
+}
+.yn-btn.active[data-value="no"] {
+  border-color: #c0392b;
+  background: color-mix(in srgb, #c0392b, transparent 90%);
+  color: #8a2a1f;
+}
+
+/* ---------------- Conditional reveal wrapper ---------------- */
+.apply-conditional {
+  background: #f7faf9;
+  border: 1px dashed #dbe6e3;
+  border-radius: 14px;
+  padding: 20px 22px;
+  margin: 4px 0 14px;
+}
+.apply-conditional > label:first-child,
+.apply-conditional label:first-of-type { margin-top: 0; }
+
+.apply-other-wrap { margin-top: 10px; max-width: 420px; }
+.apply-other-wrap input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e1e8e6;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  background: #fbfcfc;
+}
+.apply-other-wrap input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  background: #fff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color), transparent 85%);
+}
+
+/* ---------------- Research team repeatable table ---------------- */
+.apply-team-table { display: flex; flex-direction: column; gap: 8px; }
+.apply-team-row {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1.2fr 34px;
+  gap: 10px;
+  align-items: center;
+}
+.apply-team-head {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: #8a9492;
+  padding: 0 2px;
+}
+.apply-team-row input {
+  padding: 10px 12px;
+  border: 1px solid #e1e8e6;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 13.5px;
+  background: #fbfcfc;
+  width: 100%;
+}
+.apply-team-row input:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  background: #fff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color), transparent 85%);
+}
+.apply-team-remove {
+  width: 32px; height: 32px;
+  border: 1px solid #eef3f1;
+  background: #fff;
+  border-radius: 8px;
+  color: #8a9492;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: .15s;
+}
+.apply-team-remove:hover { border-color: #c0392b; color: #c0392b; }
+
+.apply-add-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  border: 1.5px dashed color-mix(in srgb, var(--accent-color), transparent 60%);
+  background: color-mix(in srgb, var(--accent-color), transparent 95%);
+  color: var(--accent-color);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 16px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: .15s;
+}
+.apply-add-row:hover { background: color-mix(in srgb, var(--accent-color), transparent 88%); }
+
+/* ---------------- File uploader ---------------- */
+.apply-file-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  padding: 34px 20px;
+  border: 1.5px dashed color-mix(in srgb, var(--accent-color), transparent 62%);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--accent-color), transparent 96%);
+  color: #5c6b69;
+  font-size: 13px;
+  cursor: pointer;
+  transition: .2s;
+}
+.apply-file-drop:hover, .apply-file-drop.is-dragover {
+  background: color-mix(in srgb, var(--accent-color), transparent 90%);
+  border-color: var(--accent-color);
+}
+.apply-file-drop-icon {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--accent-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 21px;
+  margin-bottom: 4px;
+  transition: transform .2s;
+}
+.apply-file-drop:hover .apply-file-drop-icon { transform: translateY(-3px); }
+.apply-file-drop strong { color: var(--heading-color); font-size: 14px; }
+
+.apply-file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.apply-file-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f7faf9;
+  border: 1px solid #eef3f1;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--heading-color);
+}
+.apply-file-item i.bi-file-earmark-text { color: var(--accent-color); font-size: 16px; }
+.apply-file-item .apply-file-size { color: #8a9492; font-size: 12px; margin-left: auto; padding-right: 4px; }
+.apply-file-remove {
+  border: none;
+  background: none;
+  color: #8a9492;
+  cursor: pointer;
+  display: flex;
+  font-size: 14px;
+}
+.apply-file-remove:hover { color: #c0392b; }
+
+/* ---------------- Declaration ---------------- */
+.apply-declaration-quote {
+  margin: 0 0 22px;
+  padding: 18px 20px;
+  border-left: 3px solid var(--accent-color);
+  background: #f7faf9;
+  border-radius: 0 12px 12px 0;
+  font-size: 13.5px;
+  line-height: 1.8;
+  color: #43514f;
+  font-style: italic;
+}
+.apply-signature-input { font-family: "Caveat", cursive; font-size: 22px !important; color: var(--heading-color); }
+
+/* ---------------- Locked official-use panel ---------------- */
+.apply-official {
+  background: #f2f6f5;
+  border: 1.5px dashed #c7d3d0;
+  border-radius: 18px;
+  padding: 30px 32px;
+  margin-top: 8px;
+  margin-bottom: 22px;
+  scroll-margin-top: 130px;
+}
+.apply-official-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #e2e9e7;
+  color: #5c6b69;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 5px 12px;
+  border-radius: 50px;
+  margin-bottom: 14px;
+}
+.apply-official h2 {
+  margin: 0 0 6px;
+  font-family: var(--heading-font);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--heading-color);
+}
+.apply-official .section-note { margin: 0 0 20px; }
+.apply-official label { color: #5c6b69; }
+.apply-official input:disabled,
+.apply-official textarea:disabled,
+.apply-official select:disabled {
+  background: #e9edec;
+  color: #8a9492;
+  cursor: not-allowed;
+  border-color: #dbe3e1;
+}
+.apply-official .chip-checkbox {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+.apply-official .chip-checkbox:has(input:checked) {
+  border-color: #c7d3d0;
+  background: #e9edec;
+  color: #5c6b69;
+}
+
+/* ---------------- Submit ---------------- */
+.apply-main-col .btn-create-account {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 1100px) {
+  .apply-shell { grid-template-columns: 230px 1fr; gap: 24px; }
+}
+
+@media (max-width: 900px) {
+  .apply-shell { grid-template-columns: 1fr; }
+  .apply-sidebar {
+    position: static;
+    flex-direction: row;
+    gap: 12px;
+  }
+  .apply-progress-card { flex-shrink: 0; min-width: 200px; }
+  .apply-toc {
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-height: none;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .apply-toc a { flex-shrink: 0; }
+  .apply-toc-divider { width: 1px; height: auto; margin: 4px 6px; }
+}
+
+@media (max-width: 700px) {
+  .apply-main { padding: 130px 0 60px; }
+  .apply-intro { padding: 30px 24px; border-radius: 20px; }
+  .apply-section { padding: 24px 20px; }
+  .apply-official { padding: 24px 20px; }
+  .apply-team-row { grid-template-columns: 1fr; }
+  .apply-team-head { display: none; }
+  .apply-team-remove { justify-self: end; }
+  .apply-yn-row { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 480px) {
+  .apply-wrap { padding: 0 14px; }
+  .apply-main { padding-top: 150px; }
+}

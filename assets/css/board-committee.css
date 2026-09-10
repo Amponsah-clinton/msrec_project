@@ -1,0 +1,508 @@
+/* ==========================================================
+   MSREC — Board & Committee page
+   Editorial, flat layout consistent with resources.css / apply.css / verify.css,
+   but with its own typography: Fraunces (a warm, editorial serif) for headings
+   and Inter for body text, rather than the Montserrat/Roboto pairing used
+   elsewhere on the site — this page reads closer to an institutional report
+   than a template landing page. Self-contained — no other page-specific
+   stylesheet is loaded here, so no cross-page specificity risk. No gradients
+   anywhere; card grids use flexbox+wrap+justify-center so an incomplete
+   trailing row centers itself instead of leaving a gap.
+========================================================== */
+
+body.bc-page {
+  margin: 0;
+  --bc-heading-font: "Fraunces", "Georgia", serif;
+  --bc-body-font: "Inter", "Roboto", sans-serif;
+  font-family: var(--bc-body-font);
+}
+
+.bc-main { background: #faf6ee; padding: 150px 0 20px; }
+
+.bc-wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+
+.section-label {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  margin-bottom: 14px;
+}
+
+/* ---------------- Hero ---------------- */
+.bc-hero {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 44px;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 26px;
+  box-shadow: 0 30px 70px rgba(23, 42, 40, 0.1);
+  padding: 48px;
+  margin-bottom: 22px;
+}
+
+.bc-hero-copy h1 {
+  font-family: var(--bc-heading-font);
+  font-size: clamp(26px, 3vw, 32px);
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--heading-color);
+  margin: 0 0 14px;
+}
+.bc-hero-copy > p {
+  color: #5c6b69;
+  font-size: 14.5px;
+  line-height: 1.75;
+  max-width: 60ch;
+  margin: 0 0 26px;
+}
+
+.bc-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 26px;
+  margin: 0;
+}
+.bc-stat dt {
+  font-family: var(--bc-heading-font);
+  font-size: 25px;
+  font-weight: 800;
+  color: var(--accent-color);
+  margin: 0;
+}
+.bc-stat dd {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: #8a9492;
+}
+
+/* ---------------- Hero visual: flat tier stack ---------------- */
+.bc-hero-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+.bc-hero-tier {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+.bc-hero-tier i { font-size: 16px; }
+.bc-hero-tier-board { background: var(--heading-color); }
+.bc-hero-tier-committee { background: var(--accent-color); margin-left: 18px; }
+.bc-hero-tier-secretariat { background: #5c6b69; margin-left: 36px; }
+.bc-hero-connector {
+  width: 2px;
+  height: 18px;
+  background: #dbe6e3;
+  margin: 0 0 0 30px;
+}
+
+/* ---------------- Sticky category toolbar ---------------- */
+.bc-toolbar {
+  position: sticky;
+  top: 96px;
+  z-index: 20;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  border-radius: 16px;
+  padding: 10px;
+  margin-bottom: 30px;
+}
+.bc-toolbar::-webkit-scrollbar { display: none; }
+.bc-toolbar a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 9px 16px;
+  border-radius: 50px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #5c6b69;
+  background: #f7faf9;
+  white-space: nowrap;
+  transition: .15s;
+}
+.bc-toolbar a i { font-size: 13px; }
+.bc-toolbar a:hover { background: #eef3f1; color: var(--heading-color); }
+.bc-toolbar a.is-active { background: var(--accent-color); color: #fff; }
+
+/* ---------------- Section shell ---------------- */
+.bc-section {
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  border-radius: 20px;
+  padding: 32px 34px;
+  margin-bottom: 22px;
+  scroll-margin-top: 165px;
+}
+.bc-section-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 26px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eef3f1;
+}
+.bc-section-icon {
+  flex-shrink: 0;
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--accent-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px;
+}
+.bc-section-head h2 {
+  margin: 0 0 4px;
+  font-family: var(--bc-heading-font);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--heading-color);
+}
+.bc-section-head p { margin: 0; font-size: 13.5px; color: #5c6b69; }
+
+/* ---------------- Board Structure ---------------- */
+.bc-structure-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+.bc-structure-copy > p {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: #43514f;
+  margin: 0 0 20px;
+}
+
+.bc-fact-list { display: flex; flex-direction: column; gap: 12px; margin: 0; }
+.bc-fact-list > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; border-top: 1px dashed #eef3f1; }
+.bc-fact-list > div:first-child { border-top: none; padding-top: 0; }
+.bc-fact-list dt { font-size: 11.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: #8a9492; }
+.bc-fact-list dd { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--heading-color); }
+
+/* A quiet, minimal ladder — no boxed cards, no repeated caption pills (the
+   nuance about who directs what is already in the prose beside it). Just a
+   thin connecting line, an outline marker, and two lines of type per step. */
+.bc-flow {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 4px;
+}
+.bc-flow-step {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  position: relative;
+  padding: 22px 0;
+}
+.bc-flow-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 21px;
+  top: 56px;
+  bottom: -6px;
+  width: 1px;
+  background: #e1e8e6;
+}
+.bc-flow-marker {
+  flex-shrink: 0;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 1.5px solid #dbe6e3;
+  background: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 17px;
+  color: var(--accent-color);
+  position: relative;
+  z-index: 1;
+}
+.bc-flow-text { display: flex; flex-direction: column; gap: 2px; }
+.bc-flow-text strong { font-family: var(--bc-heading-font); font-size: 16px; font-weight: 600; color: var(--heading-color); }
+.bc-flow-text span { font-size: 12.5px; color: #8a9492; }
+
+/* ---------------- Responsibility cards ---------------- */
+.bc-resp-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+.bc-resp-card {
+  flex: 1 1 250px;
+  max-width: 340px;
+  background: #fbfcfc;
+  border: 1px solid #eef3f1;
+  border-radius: 16px;
+  padding: 22px;
+  transition: transform .18s, box-shadow .18s, border-color .18s, background .18s;
+}
+.bc-resp-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgba(23, 42, 40, 0.08);
+  border-color: color-mix(in srgb, var(--accent-color), transparent 65%);
+  background: #ffffff;
+}
+.bc-resp-icon {
+  width: 40px; height: 40px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--accent-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+.bc-resp-card h4 { margin: 0 0 6px; font-size: 14.5px; font-weight: 700; color: var(--heading-color); }
+.bc-resp-card p { margin: 0; font-size: 13px; line-height: 1.6; color: #5c6b69; }
+.bc-resp-card p a { color: var(--accent-color); font-weight: 600; }
+
+.bc-resp-card-boundary { background: #fdf6f0; border-color: #f2e3d3; }
+.bc-resp-card-boundary:hover { background: #fdf6f0; border-color: #ecd4bb; }
+.bc-resp-card-boundary .bc-resp-icon { background: color-mix(in srgb, #d97b29, transparent 85%); color: #d97b29; }
+
+/* ---------------- Committee composition ---------------- */
+.bc-composition-lead {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: #43514f;
+  max-width: 78ch;
+  margin: 0 0 22px;
+}
+
+.bc-expertise-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 28px;
+}
+.bc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 15px;
+  border-radius: 50px;
+  background: color-mix(in srgb, var(--accent-color), transparent 92%);
+  color: var(--heading-color);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.bc-tag i { color: var(--accent-color); font-size: 13px; }
+
+.bc-fact-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+.bc-fact-card {
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #fbfcfc;
+  border: 1px solid #eef3f1;
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+.bc-fact-num { font-family: var(--bc-heading-font); font-size: 26px; font-weight: 800; color: var(--accent-color); }
+.bc-fact-label { font-size: 12px; color: #5c6b69; line-height: 1.5; }
+
+/* ---------------- Member profiles ---------------- */
+.bc-people-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+.bc-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1.5px solid #e1e8e6;
+  background: #fff;
+  color: #5c6b69;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: .15s;
+}
+.bc-filter-btn span { font-size: 11px; font-weight: 700; color: inherit; opacity: .7; }
+.bc-filter-btn:hover { border-color: color-mix(in srgb, var(--accent-color), transparent 40%); }
+.bc-filter-btn.is-active {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+  color: #fff;
+}
+
+.bc-people-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+.bc-person {
+  flex: 0 1 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  background: #fbfcfc;
+  border: 1px solid #eef3f1;
+  border-radius: 16px;
+  padding: 24px 16px 20px;
+  transition: transform .18s, box-shadow .18s, border-color .18s, background .18s;
+}
+.bc-person:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgba(23, 42, 40, 0.08);
+  border-color: color-mix(in srgb, var(--accent-color), transparent 65%);
+  background: #ffffff;
+}
+.bc-person.is-hidden { display: none; }
+
+.bc-avatar {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--av-bg, var(--accent-color));
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--bc-heading-font);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: .02em;
+}
+.bc-person h4 { margin: 2px 0 0; font-size: 13.5px; font-weight: 700; color: var(--heading-color); line-height: 1.35; }
+.bc-person-role { font-size: 11.5px; font-weight: 600; color: var(--accent-color); }
+.bc-person-tag { font-size: 11px; color: #8a9492; }
+
+/* ---------------- Meeting arrangements table ---------------- */
+.bc-table-wrap { overflow-x: auto; margin-bottom: 26px; }
+.bc-table { width: 100%; border-collapse: collapse; min-width: 640px; }
+.bc-table thead th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: #8a9492;
+  padding: 0 14px 12px;
+  border-bottom: 1px solid #eef3f1;
+}
+.bc-table tbody td {
+  padding: 16px 14px;
+  border-bottom: 1px solid #eef3f1;
+  font-size: 13px;
+  color: #43514f;
+  vertical-align: top;
+}
+.bc-table tbody tr:last-child td { border-bottom: none; }
+.bc-table strong { color: var(--heading-color); }
+
+.bc-meeting-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.bc-note {
+  flex: 1 1 260px;
+  display: flex;
+  gap: 12px;
+  background: #fbfcfc;
+  border: 1px solid #eef3f1;
+  border-radius: 14px;
+  padding: 18px;
+}
+.bc-note-icon {
+  flex-shrink: 0;
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--accent-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+.bc-note h4 { margin: 0 0 4px; font-size: 13.5px; font-weight: 700; color: var(--heading-color); }
+.bc-note p { margin: 0; font-size: 12.5px; line-height: 1.6; color: #5c6b69; }
+.bc-note p a { color: var(--accent-color); font-weight: 600; }
+
+/* ---------------- Closing CTA ---------------- */
+.bc-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: var(--heading-color);
+  border-radius: 20px;
+  padding: 30px 34px;
+  margin: 8px 0 40px;
+}
+.bc-cta h4 { margin: 0 0 4px; font-size: 17px; font-weight: 700; color: #fff; }
+.bc-cta p { margin: 0; font-size: 13.5px; color: rgba(255,255,255,0.75); }
+.bc-cta-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.bc-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 12px 22px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+.bc-cta-btn-primary { background: #fff; color: var(--heading-color); }
+.bc-cta-btn-primary:hover { background: #f2f6f5; color: var(--heading-color); }
+.bc-cta-btn-ghost { border: 1.5px solid rgba(255,255,255,0.3); color: #fff; }
+.bc-cta-btn-ghost:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 991px) {
+  .bc-hero { grid-template-columns: 1fr; gap: 30px; padding: 34px; }
+  .bc-hero-visual { order: -1; }
+  .bc-structure-grid { grid-template-columns: 1fr; gap: 26px; }
+  .bc-toolbar { top: 76px; }
+}
+
+@media (max-width: 700px) {
+  .bc-main { padding-top: 130px; }
+  .bc-hero { padding: 26px; border-radius: 20px; }
+  .bc-section { padding: 24px 20px; }
+  .bc-cta { flex-direction: column; align-items: flex-start; text-align: left; }
+  .bc-table thead { display: none; }
+  .bc-table, .bc-table tbody, .bc-table tr, .bc-table td { display: block; width: 100%; }
+  .bc-table tr { padding: 14px 0; border-bottom: 1px solid #eef3f1; }
+  .bc-table td { border-bottom: none; padding: 4px 0; }
+  .bc-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: #8a9492;
+    margin-bottom: 2px;
+  }
+}
+
+@media (max-width: 480px) {
+  .bc-main { padding-top: 150px; }
+  .bc-wrap { padding: 0 14px; }
+}
