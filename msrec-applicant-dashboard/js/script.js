@@ -19,12 +19,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   overlay.addEventListener("click", closeSidebar);
 
-  // Close mobile sidebar automatically when a nav link is clicked
+  // Close mobile sidebar automatically when a nav link is clicked. Links that
+  // point at a real page (anything other than the "#" placeholder used by
+  // stubs not yet built) are left alone so they navigate normally — the
+  // destination page marks its own sidebar entry "active" in its markup.
   document.querySelectorAll(".nav-item, .nav-sublink").forEach((item) => {
     item.addEventListener("click", (e) => {
-      e.preventDefault();
-      document.querySelectorAll(".nav-item, .nav-sublink").forEach((n) => n.classList.remove("active"));
-      item.classList.add("active");
+      const href = item.getAttribute("href") || "";
+      if (href === "#") {
+        e.preventDefault();
+        document.querySelectorAll(".nav-item, .nav-sublink").forEach((n) => n.classList.remove("active"));
+        item.classList.add("active");
+      }
       closeSidebar();
     });
   });

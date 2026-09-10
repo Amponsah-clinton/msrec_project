@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Applicant Dashboard | MSREC</title>
+<title>Under Review | MSREC</title>
 <meta name="theme-color" content="#f4f6f9" id="themeColorMeta">
 <link rel="stylesheet" href="css/style.css">
 <script>
@@ -43,13 +43,13 @@
     </div>
 
     <nav class="nav">
-      <a href="index.html" class="nav-item active">
+      <a href="index.html" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg></span>
         <span>Dashboard</span>
       </a>
 
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
+      <div class="nav-group open">
+        <button type="button" class="nav-group-toggle" aria-expanded="true">
           <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
           <span>Applications</span>
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
@@ -58,7 +58,7 @@
           <a href="application-new.html" class="nav-sublink">New Application</a>
           <a href="application-drafts.html" class="nav-sublink">Draft Applications</a>
           <a href="application-submitted.html" class="nav-sublink">Submitted Applications</a>
-          <a href="application-under-review.html" class="nav-sublink">Under Review</a>
+          <a href="application-under-review.html" class="nav-sublink active">Under Review</a>
           <a href="application-revisions.html" class="nav-sublink">Revisions Required</a>
           <a href="application-approved.html" class="nav-sublink">Approved Studies</a>
           <a href="application-not-approved.html" class="nav-sublink">Not Approved / Closed</a>
@@ -153,8 +153,8 @@
 
     <header class="topbar">
       <div class="topbar-title">
-        <h1>Applicant Dashboard</h1>
-        <p>Welcome back, Ama Owusu</p>
+        <h1>Under Review</h1>
+        <p>Applications currently with a reviewer or the Committee</p>
       </div>
       <div class="topbar-actions">
         <div class="search-box">
@@ -241,216 +241,86 @@
 
     <main class="content">
 
-      <!-- STAT CARDS -->
-      <section class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon blue">
-            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
-          </div>
-          <p class="stat-label">Draft Applications</p>
-          <p class="stat-value">2</p>
-          <a href="#" class="stat-link">View drafts <span>&rsaquo;</span></a>
+      <div class="page-head">
+        <div class="page-head-text">
+          <h2>Under Review</h2>
+          <p>Passed screening and now with a reviewer or the Committee.</p>
         </div>
+      </div>
 
-        <div class="stat-card">
-          <div class="stat-icon purple">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      <div class="revision-card neutral">
+        <div class="revision-top">
+          <div class="revision-title">
+            <h3>Household Water Treatment Practices in Flood-Prone Districts</h3>
+            <span>MSREC/2026/0093 &nbsp;&bull;&nbsp; <span class="badge-tag purple">Full Committee Review</span></span>
           </div>
-          <p class="stat-label">Under Review</p>
-          <p class="stat-value">3</p>
-          <a href="#" class="stat-link">View status <span>&rsaquo;</span></a>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-icon orange">
-            <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>
+          <div class="revision-due">
+            <span class="due-label">Expected Decision</span>
+            <span class="due-date">12 Jun 2026</span>
+            <span class="due-days" style="color:var(--text-faint);">Next Committee meeting</span>
           </div>
-          <p class="stat-label">Revisions Required</p>
-          <p class="stat-value">1</p>
-          <a href="#" class="stat-link">View revisions <span>&rsaquo;</span></a>
         </div>
-
-        <div class="stat-card">
-          <div class="stat-icon green">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+        <div class="pipeline">
+          <div class="pipeline-step done">
+            <div class="pipeline-dot"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/></svg></div>
+            <span class="pipeline-label">Submitted</span>
+            <div class="pipeline-line"></div>
           </div>
-          <p class="stat-label">Approved Studies</p>
-          <p class="stat-value">4</p>
-          <a href="#" class="stat-link">View approved <span>&rsaquo;</span></a>
-        </div>
-
-        <div class="stat-card">
-          <div class="stat-icon teal">
-            <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          <div class="pipeline-step done">
+            <div class="pipeline-dot"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/></svg></div>
+            <span class="pipeline-label">Screening</span>
+            <div class="pipeline-line"></div>
           </div>
-          <p class="stat-label">Outstanding Fees</p>
-          <p class="stat-value">GHS 0</p>
-          <a href="#" class="stat-link">View payments <span>&rsaquo;</span></a>
-        </div>
-      </section>
-
-      <!-- URGENT BANNER -->
-      <section class="urgent-banner">
-        <div class="urgent-icon">
-          <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
-        </div>
-        <div class="urgent-body">
-          <h3>Revisions Required &ndash; Action Needed</h3>
-          <p>
-            <span class="ref-no">Ref No.: MSREC/2026/0104</span>
-            <span class="sep">|</span>
-            Study Title: Barriers to Antenatal Care Uptake Among Adolescent Mothers in Peri-Urban Communities
-          </p>
-          <p class="urgent-note">The assigned reviewer has requested changes. Respond to each comment and re-upload your revised protocol.</p>
-        </div>
-        <div class="urgent-due">
-          <span class="due-label">Respond By</span>
-          <span class="due-date">30 May 2026</span>
-          <span class="due-days">(10 days remaining)</span>
-        </div>
-        <button class="btn btn-danger">Respond Now</button>
-      </section>
-
-      <!-- BODY GRID -->
-      <div class="body-grid">
-
-        <!-- MY APPLICATIONS -->
-        <section class="panel reviews-panel">
-          <div class="panel-header">
-            <h2>My Applications</h2>
-            <a href="#" class="panel-link">View all applications</a>
+          <div class="pipeline-step current">
+            <div class="pipeline-dot">3</div>
+            <span class="pipeline-label">Review</span>
+            <div class="pipeline-line"></div>
           </div>
-
-          <div class="table-wrap">
-            <table class="reviews-table">
-              <thead>
-                <tr>
-                  <th>Ref No.</th>
-                  <th>Study Title</th>
-                  <th>Status</th>
-                  <th>Submitted</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0104</td>
-                  <td data-label="Study Title">Barriers to Antenatal Care Uptake Among Adolescent Mothers</td>
-                  <td data-label="Status"><span class="badge-tag orange">Revisions Required</span></td>
-                  <td data-label="Submitted"><span class="due-main">02 May 2026</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></button></td>
-                </tr>
-                <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0098</td>
-                  <td data-label="Study Title">Digital Literacy and Remote Learning Outcomes in Rural Schools</td>
-                  <td data-label="Status"><span class="badge-tag green">Approved</span></td>
-                  <td data-label="Submitted"><span class="due-main">18 Apr 2026</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
-                </tr>
-                <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0093</td>
-                  <td data-label="Study Title">Household Water Treatment Practices in Flood-Prone Districts</td>
-                  <td data-label="Status"><span class="badge-tag purple">Under Review</span></td>
-                  <td data-label="Submitted"><span class="due-main">10 Apr 2026</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
-                </tr>
-                <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0071</td>
-                  <td data-label="Study Title">Community Perceptions of Mental Health Stigma</td>
-                  <td data-label="Status"><span class="badge-tag green">Approved</span></td>
-                  <td data-label="Submitted"><span class="due-main">22 Feb 2026</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
-                </tr>
-                <tr>
-                  <td data-label="Ref No." class="ref-cell">&mdash;</td>
-                  <td data-label="Study Title">Nutrition Education Preferences Among Urban Caregivers (draft)</td>
-                  <td data-label="Status"><span class="badge-tag blue">Draft</span></td>
-                  <td data-label="Submitted"><span class="due-main">Not submitted</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></button></td>
-                </tr>
-              </tbody>
-            </table>
+          <div class="pipeline-step">
+            <div class="pipeline-dot">4</div>
+            <span class="pipeline-label">Decision</span>
           </div>
+        </div>
+        <div class="revision-actions" style="margin-top:16px;">
+          <a href="#" class="btn-secondary"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg> View Submission</a>
+        </div>
+      </div>
 
-          <div class="panel-footer">
-            <span>Showing 1 to 5 of 5 entries</span>
-            <a href="#" class="panel-link">View all applications</a>
+      <div class="revision-card neutral">
+        <div class="revision-top">
+          <div class="revision-title">
+            <h3>Perceptions of AI-Assisted Diagnostic Tools Among Nurses</h3>
+            <span>MSREC/2026/0102 &nbsp;&bull;&nbsp; <span class="badge-tag purple">Expedited Review</span></span>
           </div>
-        </section>
-
-        <!-- RIGHT COLUMN -->
-        <div class="side-col">
-
-          <section class="panel notices-panel">
-            <div class="panel-header">
-              <h2>Notices</h2>
-              <a href="#" class="panel-link">View all</a>
-            </div>
-            <ul class="notice-list">
-              <li>
-                <span class="notice-icon warn">
-                  <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
-                </span>
-                <div class="notice-body">
-                  <p>Reviewer has requested revisions on MSREC/2026/0104.</p>
-                </div>
-                <span class="notice-date">19 May 2026</span>
-              </li>
-              <li>
-                <span class="notice-icon success">
-                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
-                </span>
-                <div class="notice-body">
-                  <p>MSREC/2026/0098 has been approved with conditions.</p>
-                </div>
-                <span class="notice-date">16 May 2026</span>
-              </li>
-              <li>
-                <span class="notice-icon info">
-                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
-                </span>
-                <div class="notice-body">
-                  <p>Annual progress report for MSREC/2026/0071 is due soon.</p>
-                </div>
-                <span class="notice-date">12 May 2026</span>
-              </li>
-            </ul>
-          </section>
-
-          <section class="panel actions-panel">
-            <h2>Quick Actions</h2>
-            <div class="actions-list">
-              <button class="qa-btn qa-teal">
-                <span class="qa-left">
-                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                  New Application
-                </span>
-                <svg class="qa-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-              </button>
-              <button class="qa-btn qa-blue">
-                <span class="qa-left">
-                  <svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-                  Make Payment
-                </span>
-                <svg class="qa-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-              </button>
-              <button class="qa-btn qa-purple">
-                <span class="qa-left">
-                  <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
-                  View Decision Letters
-                </span>
-                <svg class="qa-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-              </button>
-              <button class="qa-btn qa-navy">
-                <span class="qa-left">
-                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m4.9 4.9 3.5 3.5M19.1 4.9l-3.5 3.5M4.9 19.1l3.5-3.5M19.1 19.1l-3.5-3.5"/></svg>
-                  Contact Secretariat
-                </span>
-                <svg class="qa-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-              </button>
-            </div>
-          </section>
-
+          <div class="revision-due">
+            <span class="due-label">Expected Decision</span>
+            <span class="due-date">05 Jun 2026</span>
+            <span class="due-days" style="color:var(--text-faint);">Rolling review</span>
+          </div>
+        </div>
+        <div class="pipeline">
+          <div class="pipeline-step done">
+            <div class="pipeline-dot"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/></svg></div>
+            <span class="pipeline-label">Submitted</span>
+            <div class="pipeline-line"></div>
+          </div>
+          <div class="pipeline-step done">
+            <div class="pipeline-dot"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/></svg></div>
+            <span class="pipeline-label">Screening</span>
+            <div class="pipeline-line"></div>
+          </div>
+          <div class="pipeline-step current">
+            <div class="pipeline-dot">3</div>
+            <span class="pipeline-label">Review</span>
+            <div class="pipeline-line"></div>
+          </div>
+          <div class="pipeline-step">
+            <div class="pipeline-dot">4</div>
+            <span class="pipeline-label">Decision</span>
+          </div>
+        </div>
+        <div class="revision-actions" style="margin-top:16px;">
+          <a href="#" class="btn-secondary"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg> View Submission</a>
         </div>
       </div>
     </main>

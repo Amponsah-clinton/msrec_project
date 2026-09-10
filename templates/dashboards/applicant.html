@@ -4,7 +4,7 @@
 
 {% block nav_content %}
 
-      <a href="#" class="nav-item active">
+      <a href="{% url 'applicant_dashboard:home' %}" class="nav-item active">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg></span>
         <span>Dashboard</span>
       </a>
@@ -16,13 +16,13 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">New Application</a>
-          <a href="#" class="nav-sublink">Draft Applications</a>
-          <a href="#" class="nav-sublink">Submitted Applications</a>
-          <a href="#" class="nav-sublink">Under Review</a>
-          <a href="#" class="nav-sublink">Revisions Required</a>
-          <a href="#" class="nav-sublink">Approved Studies</a>
-          <a href="#" class="nav-sublink">Not Approved / Closed</a>
+          <a href="{% url 'applicant_dashboard:application_new' %}" class="nav-sublink">New Application</a>
+          <a href="{% url 'applicant_dashboard:application_drafts' %}" class="nav-sublink">Draft Applications</a>
+          <a href="{% url 'applicant_dashboard:application_submitted' %}" class="nav-sublink">Submitted Applications</a>
+          <a href="{% url 'applicant_dashboard:application_under_review' %}" class="nav-sublink">Under Review</a>
+          <a href="{% url 'applicant_dashboard:application_revisions' %}" class="nav-sublink">Revisions Required</a>
+          <a href="{% url 'applicant_dashboard:application_approved' %}" class="nav-sublink">Approved Studies</a>
+          <a href="{% url 'applicant_dashboard:application_not_approved' %}" class="nav-sublink">Not Approved / Closed</a>
         </div>
       </div>
 

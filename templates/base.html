@@ -35,7 +35,7 @@
         </a>
         <nav id="navmenu" class="navmenu">
           <ul>
-            <li><a href="{% url 'pages:index' %}#hero"{% if request.resolver_match.url_name == 'index' %} class="active"{% endif %}>Home</a></li>
+            <li><a href="{% url 'pages:index' %}"{% if request.resolver_match.url_name == 'index' %} class="active"{% endif %}>Home</a></li>
             <li><a href="{% url 'pages:about' %}"{% if request.resolver_match.url_name == 'about' %} class="active"{% endif %}>About</a></li>
             <li><a href="{% url 'pages:applicants' %}"{% if request.resolver_match.url_name == 'applicants' %} class="active"{% endif %}>Applicants</a></li>
             <li><a href="{% url 'pages:ethics_review' %}"{% if request.resolver_match.url_name == 'ethics_review' %} class="active"{% endif %}>Ethics Review</a></li>
@@ -75,7 +75,7 @@
         <div class="col-lg-2 col-6 footer-links">
           <h4>Useful Links</h4>
           <ul>
-            <li><a href="{% url 'pages:index' %}#hero">Home</a></li>
+            <li><a href="{% url 'pages:index' %}">Home</a></li>
             <li><a href="{% url 'pages:about' %}">About us</a></li>
             <li><a href="{% url 'pages:governance' %}">Governance</a></li>
             <li><a href="{% url 'pages:board_committee' %}">Board &amp; Committee</a></li>
