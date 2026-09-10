@@ -24,13 +24,14 @@ SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-this-in-production"
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DEBUG", "True").strip().lower() in {"1", "true", "yes", "on"}
 
-_allowed_hosts = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost")
+_allowed_hosts = os.getenv("ALLOWED_HOSTS", "127.0.0.1,localhost,.sslip.io")
 ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts.split(",") if h.strip()]
 
 CSRF_TRUSTED_ORIGINS = [
     o.strip()
     for o in os.getenv(
-        "CSRF_TRUSTED_ORIGINS", "http://127.0.0.1:8000,http://localhost:8000"
+        "CSRF_TRUSTED_ORIGINS",
+        "http://127.0.0.1:8000,http://localhost:8000,https://*.sslip.io",
     ).split(",")
     if o.strip()
 ]
