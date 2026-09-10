@@ -14,6 +14,17 @@ body.about-page {
 
 .about-main { padding-top: 150px; padding-bottom: 20px; }
 
+.about-governance-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--accent-color);
+}
+.about-governance-link:hover { color: var(--accent-color); text-decoration: underline; }
+
 .section-label {
   display: inline-block;
   font-size: 12.5px;
