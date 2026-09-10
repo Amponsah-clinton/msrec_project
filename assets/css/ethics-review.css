@@ -306,6 +306,92 @@ body.er-page {
 .er-card-boundary:hover { background: #fdf6f0; border-color: #ecd4bb; }
 .er-card-boundary .er-card-icon { background: color-mix(in srgb, #d97b29, transparent 85%); color: #d97b29; }
 
+/* ---------------- Photo sections (Workflow, Assessment Domains) ----------------
+   The two sections on this page with a photographic background: a flat,
+   solid-color dark overlay (no gradient) sits between the image and the
+   content so the existing white-card / ladder components can flip to a
+   frosted-glass treatment and stay readable. Every override below is scoped
+   under .er-section-photo — .er-card, .er-flow and .er-logic-card are shared
+   with the plain white sections elsewhere on the page and must keep their
+   normal styling there. */
+.er-section-photo {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--heading-color);
+  background-size: cover;
+  background-position: center;
+  border: none;
+}
+.er-section-photo-overlay {
+  position: absolute;
+  inset: 0;
+  /* Dark enough that text legibility does not depend on the photo underneath
+     — the image should read as texture, not as a competing layer of detail. */
+  background: rgba(6, 12, 11, 0.8);
+  z-index: 1;
+}
+.er-section-photo > .er-section-head,
+.er-section-photo > .er-card-grid,
+.er-section-photo > .er-flow,
+.er-section-photo > .er-logic-grid {
+  position: relative;
+  z-index: 2;
+}
+.er-section-photo .er-section-head { border-bottom-color: rgba(255, 255, 255, 0.25); }
+.er-section-photo .er-section-icon { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.er-section-photo .er-section-head h2,
+.er-section-photo .er-section-head p {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 4px 18px rgba(0, 0, 0, 0.55);
+}
+.er-section-photo .er-section-head h2 { color: #fff; }
+.er-section-photo .er-section-head p { color: rgba(255, 255, 255, 0.92); }
+
+.er-section-photo .er-card {
+  background: rgba(15, 26, 24, 0.74);
+  border-color: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.er-section-photo .er-card:hover {
+  background: rgba(15, 26, 24, 0.86);
+  border-color: rgba(255, 255, 255, 0.38);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.35);
+}
+.er-section-photo .er-card-icon { background: rgba(255, 255, 255, 0.16); color: #fff; }
+.er-section-photo .er-card h4 { color: #fff; }
+.er-section-photo .er-card p { color: rgba(255, 255, 255, 0.85); }
+
+/* Workflow ladder, frosted */
+.er-section-photo .er-flow-step::before { background: rgba(255, 255, 255, 0.32) !important; }
+.er-section-photo .er-flow-marker {
+  background: rgba(15, 26, 24, 0.8);
+  border: 1.5px solid rgba(255, 255, 255, 0.38);
+  color: #fff;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.er-section-photo .er-flow-text strong,
+.er-section-photo .er-flow-text span {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9), 0 4px 16px rgba(0, 0, 0, 0.55);
+}
+.er-section-photo .er-flow-text strong { color: #fff; }
+.er-section-photo .er-flow-text span { color: rgba(255, 255, 255, 0.9); }
+
+/* Decision-outcome strip, frosted */
+.er-section-photo .er-logic-grid { border-top-color: rgba(255, 255, 255, 0.25); }
+.er-section-photo .er-logic-card {
+  background: rgba(15, 26, 24, 0.74);
+  border-color: rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.er-section-photo .er-logic-card strong { color: #fff; }
+.er-section-photo .er-logic-card span { color: rgba(255, 255, 255, 0.85); }
+.er-section-photo .er-logic-good .er-logic-icon { background: rgba(46, 204, 141, 0.28); color: #7fe7bd; }
+.er-section-photo .er-logic-amber .er-logic-icon { background: rgba(230, 168, 46, 0.28); color: #f3c76a; }
+.er-section-photo .er-logic-red .er-logic-icon { background: rgba(214, 76, 76, 0.28); color: #f19b9b; }
+.er-section-photo .er-logic-blue .er-logic-icon { background: rgba(66, 133, 191, 0.28); color: #92c6ef; }
+
 /* ---------------- Reviewer assignment two-column layout ---------------- */
 .er-structure-grid {
   display: grid;

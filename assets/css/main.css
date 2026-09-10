@@ -698,38 +698,115 @@ h6 {
 }
 
 /*--------------------------------------------------------------
-# Preloader
+# Preloader — a 36-spoke "metronome" sunburst behind the MSREC mark.
+# Every spoke's rotation and animation-delay is baked into its inline
+# style (generated), so this stylesheet only defines the shared shape,
+# color and motion; nothing here needs a per-spoke rule.
 --------------------------------------------------------------*/
 #preloader {
   position: fixed;
   inset: 0;
   z-index: 999999;
   overflow: hidden;
-  background: var(--background-color);
-  transition: all 0.6s ease-out;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  opacity: 1;
+  transition: opacity 0.5s ease;
+}
+#preloader.pl-hide { opacity: 0; pointer-events: none; }
+
+.pl-stage { position: relative; width: 320px; height: 320px; }
+
+.pl-baton-wrap { position: absolute; top: 50%; left: 50%; width: 140px; height: 0; }
+
+.pl-metronome {
+  transform-origin: 0 0;
+  animation: pl-metronome 1.25s infinite linear;
 }
 
-#preloader:before {
+.pl-baton {
+  position: relative;
+  height: 2px;
+  width: 76px;
+  background-color: var(--accent-color);
+  transform-origin: 0 0;
+  transform: rotate(-10deg);
+  animation: pl-scale 1.25s infinite linear;
+}
+.pl-baton::before,
+.pl-baton::after {
   content: "";
-  position: fixed;
-  top: calc(50% - 30px);
-  left: calc(50% - 30px);
-  border: 6px solid #ffffff;
-  border-color: var(--accent-color) transparent var(--accent-color) transparent;
+  position: absolute;
+  top: -2px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  animation: animate-preloader 1.5s linear infinite;
+  background-color: #d97b29;
+}
+.pl-baton::before { left: -2px; }
+.pl-baton::after { right: -2px; }
+
+.pl-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 5;
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 10px 34px rgba(23, 42, 40, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pl-logo {
+  width: 56px;
+  height: auto;
+  display: block;
+  animation: pl-breathe 2.6s ease-in-out infinite;
 }
 
-@keyframes animate-preloader {
-  0% {
-    transform: rotate(0deg);
-  }
+.pl-label {
+  font-family: var(--heading-font);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  animation: pl-breathe 2.6s ease-in-out infinite;
+}
 
-  100% {
-    transform: rotate(360deg);
-  }
+@keyframes pl-metronome {
+  0% { transform: rotate(-25deg); }
+  50% { transform: rotate(25deg); }
+  100% { transform: rotate(-25deg); }
+}
+
+@keyframes pl-scale {
+  0% { transform: scaleX(1); }
+  25% { transform: scaleX(0.74); }
+  50% { transform: scaleX(1); }
+  75% { transform: scaleX(1.16); }
+  100% { transform: scaleX(1); }
+}
+
+@keyframes pl-breathe {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: 0.78; }
+}
+
+@media (max-width: 480px) {
+  .pl-stage { width: 240px; height: 240px; }
+  .pl-baton-wrap { width: 104px; }
+  .pl-baton { width: 56px; }
+  .pl-center { width: 74px; height: 74px; }
+  .pl-logo { width: 44px; }
 }
 
 /*--------------------------------------------------------------

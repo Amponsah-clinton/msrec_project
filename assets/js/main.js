@@ -96,7 +96,8 @@
   const preloader = document.querySelector('#preloader');
   if (preloader) {
     window.addEventListener('load', () => {
-      preloader.remove();
+      preloader.classList.add('pl-hide');
+      preloader.addEventListener('transitionend', () => preloader.remove(), { once: true });
     });
   }
 

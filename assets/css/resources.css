@@ -418,15 +418,27 @@ body.resources-page { margin: 0; font-family: var(--default-font); }
 .res-help-link {
   margin-left: auto;
   flex-shrink: 0;
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--accent-color);
-  white-space: nowrap;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 9px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  background: var(--accent-color);
+  padding: 13px 24px;
+  border-radius: 50px;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--accent-color), transparent 72%);
+  transition: transform .18s, box-shadow .18s, background .18s;
 }
-.res-help-link:hover { color: var(--accent-color); text-decoration: underline; }
+.res-help-link i { font-size: 14px; color: #fff; transition: transform .18s; }
+.res-help-link:hover {
+  color: #fff;
+  background: color-mix(in srgb, var(--accent-color), #000 12%);
+  box-shadow: 0 14px 30px color-mix(in srgb, var(--accent-color), transparent 65%);
+  transform: translateY(-2px);
+}
+.res-help-link:hover i { transform: translateX(3px); }
 
 /* ---------------- Responsive ---------------- */
 @media (max-width: 991px) {
