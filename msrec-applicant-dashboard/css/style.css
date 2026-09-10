@@ -122,9 +122,16 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--text-main);
-  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+.mono, .stat-value, .ref-no, .ref-cell {
+  font-family: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-feature-settings: normal;
+  letter-spacing: -0.02em;
 }
 
 a { text-decoration: none; color: inherit; }
@@ -554,7 +561,6 @@ svg {
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
   padding: 20px 18px;
   display: flex;
   flex-direction: column;
@@ -662,7 +668,6 @@ svg {
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
 }
 
 .reviews-panel { padding: 20px 22px 8px; }
@@ -707,20 +712,23 @@ svg {
 .ref-cell { font-weight: 600; color: var(--text-main); white-space: nowrap; }
 
 .badge-tag {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid transparent;
   font-size: 11.5px;
   font-weight: 600;
+  letter-spacing: 0.01em;
   white-space: nowrap;
 }
-.badge-tag.blue   { background: var(--blue-light);   color: var(--blue); }
-.badge-tag.green  { background: var(--green-light);  color: var(--green); }
-.badge-tag.purple { background: var(--purple-light); color: var(--purple); }
-.badge-tag.orange { background: var(--orange-light); color: var(--orange); }
-.badge-tag.red    { background: var(--red-light);    color: var(--red); }
-.badge-tag.teal   { background: var(--teal-light);   color: var(--teal); }
-.badge-tag.gray   { background: var(--gray-light);   color: var(--gray); }
+.badge-tag.blue   { background: var(--blue-light);   color: var(--blue);   border-color: color-mix(in srgb, var(--blue) 22%, transparent); }
+.badge-tag.green  { background: var(--green-light);  color: var(--green);  border-color: color-mix(in srgb, var(--green) 22%, transparent); }
+.badge-tag.purple { background: var(--purple-light); color: var(--purple); border-color: color-mix(in srgb, var(--purple) 22%, transparent); }
+.badge-tag.orange { background: var(--orange-light); color: var(--orange); border-color: color-mix(in srgb, var(--orange) 22%, transparent); }
+.badge-tag.red    { background: var(--red-light);    color: var(--red);    border-color: color-mix(in srgb, var(--red) 22%, transparent); }
+.badge-tag.teal   { background: var(--teal-light);   color: var(--teal);   border-color: color-mix(in srgb, var(--teal) 22%, transparent); }
+.badge-tag.gray   { background: var(--gray-light);   color: var(--gray);   border-color: color-mix(in srgb, var(--gray) 22%, transparent); }
 
 /* ---------------- Page header (list pages) ---------------- */
 
@@ -877,7 +885,6 @@ svg {
   background: var(--white);
   border: 1px solid var(--red-border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
   padding: 20px 22px;
   margin-bottom: 16px;
 }

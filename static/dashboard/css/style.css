@@ -29,6 +29,8 @@
   --red: #e0483f;
   --red-light: #fdeceb;
   --navy: #1b2a4a;
+  --gray: #6b7280;
+  --gray-light: #eef1f5;
 
   --radius: 10px;
   --radius-sm: 7px;
@@ -63,6 +65,8 @@
   --red: #f1685f;
   --red-light: rgba(241, 104, 95, 0.15);
   --navy: #24365c;
+  --gray: #9aa1b0;
+  --gray-light: rgba(154, 161, 176, 0.16);
 
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
   --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
@@ -95,6 +99,8 @@
     --red: #f1685f;
     --red-light: rgba(241, 104, 95, 0.15);
     --navy: #24365c;
+    --gray: #9aa1b0;
+    --gray-light: rgba(154, 161, 176, 0.16);
 
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
     --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.35);
@@ -116,9 +122,16 @@ html, body {
   padding: 0;
   background: var(--bg);
   color: var(--text-main);
-  font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
+}
+
+.mono, .stat-value, .ref-no, .ref-cell {
+  font-family: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-feature-settings: normal;
+  letter-spacing: -0.02em;
 }
 
 a { text-decoration: none; color: inherit; }
@@ -528,6 +541,64 @@ svg {
   .dropdown-menu { position: fixed; left: 16px; right: 16px; top: 64px; width: auto; }
 }
 
+/* Compact topbar: theme toggle + notifications move inside the profile
+   dropdown (script.js re-parents the real elements, nothing is duplicated)
+   so the topbar itself only shows one avatar trigger. Restyle both from
+   small round icon buttons into plain full-width dropdown rows. */
+@media (max-width: 600px) {
+  .profile-menu .theme-toggle,
+  .profile-menu .bell-btn {
+    width: 100%;
+    height: auto;
+    border: none;
+    border-radius: var(--radius-sm);
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 9px 10px;
+  }
+  .profile-menu .theme-toggle:hover,
+  .profile-menu .bell-btn:hover { background: var(--bg); }
+
+  .profile-menu .theme-toggle::after,
+  .profile-menu .bell-btn::after {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-main);
+  }
+  .profile-menu .theme-toggle::after { content: "Dark Mode"; }
+  :root[data-theme="dark"] .profile-menu .theme-toggle::after { content: "Light Mode"; }
+  .profile-menu .bell-btn::after { content: "Notifications"; margin-right: auto; }
+
+  /* The badge was an absolute dot on a 38px circle; on a full-width row it
+     reads better as a plain trailing count. */
+  .profile-menu .bell-btn .badge {
+    position: static;
+    border: none;
+    margin-left: 8px;
+  }
+
+  /* Visually separate the two moved rows from the head above and the
+     regular nav links below, since they're not part of either group. */
+  .profile-menu #bellDropdown {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+    margin-bottom: 6px;
+  }
+
+  /* Nested notifications panel opens from inside the profile dropdown —
+     give it the same full-bleed mobile treatment as every other
+     dropdown-menu instead of trying to fit a 340px panel inside a 260px
+     profile menu. */
+  .profile-menu .bell-menu {
+    position: fixed;
+    left: 16px;
+    right: 16px;
+    top: 64px;
+    width: auto;
+    max-width: none;
+  }
+}
+
 /* ---------------- Content ---------------- */
 
 .content {
@@ -548,7 +619,6 @@ svg {
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
   padding: 20px 18px;
   display: flex;
   flex-direction: column;
@@ -656,7 +726,6 @@ svg {
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
 }
 
 .reviews-panel { padding: 20px 22px 8px; }
@@ -701,19 +770,268 @@ svg {
 .ref-cell { font-weight: 600; color: var(--text-main); white-space: nowrap; }
 
 .badge-tag {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: 6px;
+  border: 1px solid transparent;
   font-size: 11.5px;
   font-weight: 600;
+  letter-spacing: 0.01em;
   white-space: nowrap;
 }
-.badge-tag.blue   { background: var(--blue-light);   color: var(--blue); }
-.badge-tag.green  { background: var(--green-light);  color: var(--green); }
-.badge-tag.purple { background: var(--purple-light); color: var(--purple); }
-.badge-tag.orange { background: var(--orange-light); color: var(--orange); }
-.badge-tag.red    { background: var(--red-light);    color: var(--red); }
-.badge-tag.teal   { background: var(--teal-light);   color: var(--teal); }
+.badge-tag.blue   { background: var(--blue-light);   color: var(--blue);   border-color: color-mix(in srgb, var(--blue) 22%, transparent); }
+.badge-tag.green  { background: var(--green-light);  color: var(--green);  border-color: color-mix(in srgb, var(--green) 22%, transparent); }
+.badge-tag.purple { background: var(--purple-light); color: var(--purple); border-color: color-mix(in srgb, var(--purple) 22%, transparent); }
+.badge-tag.orange { background: var(--orange-light); color: var(--orange); border-color: color-mix(in srgb, var(--orange) 22%, transparent); }
+.badge-tag.red    { background: var(--red-light);    color: var(--red);    border-color: color-mix(in srgb, var(--red) 22%, transparent); }
+.badge-tag.teal   { background: var(--teal-light);   color: var(--teal);   border-color: color-mix(in srgb, var(--teal) 22%, transparent); }
+.badge-tag.gray   { background: var(--gray-light);   color: var(--gray);   border-color: color-mix(in srgb, var(--gray) 22%, transparent); }
+
+/* ---------------- Page header (list pages) ---------------- */
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.page-head-text h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.page-head-text p { margin: 4px 0 0; font-size: 12.5px; color: var(--text-sub); }
+
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px;
+  flex-wrap: wrap;
+}
+.filter-tab {
+  border: none;
+  background: transparent;
+  color: var(--text-sub);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 7px;
+  white-space: nowrap;
+}
+.filter-tab:hover { color: var(--text-main); }
+.filter-tab.active { background: var(--white); color: var(--text-main); box-shadow: var(--shadow); }
+.filter-tab .count { color: var(--text-faint); font-weight: 600; margin-left: 4px; }
+.filter-tab.active .count { color: inherit; }
+
+/* ---------------- Empty state ---------------- */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 56px 24px;
+  color: var(--text-sub);
+}
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+.empty-icon svg { width: 28px; height: 28px; }
+.empty-state h3 { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: var(--text-main); }
+.empty-state p { margin: 0 0 18px; font-size: 13px; max-width: 40ch; line-height: 1.6; }
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--teal);
+}
+.btn-primary:hover { background: #128581; }
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: var(--white);
+}
+.btn-secondary:hover { background: var(--hover-bg); }
+
+/* ---------------- Draft completion bar ---------------- */
+
+.completion-wrap { display: flex; align-items: center; gap: 8px; min-width: 130px; }
+.completion-track {
+  flex: 1;
+  height: 6px;
+  border-radius: 100px;
+  background: var(--border);
+  overflow: hidden;
+}
+.completion-fill { height: 100%; border-radius: 100px; background: var(--teal); }
+.completion-pct { font-size: 11.5px; font-weight: 700; color: var(--text-sub); width: 32px; text-align: right; flex-shrink: 0; }
+
+/* ---------------- Pipeline stepper (Under Review) ---------------- */
+
+.pipeline {
+  display: flex;
+  align-items: center;
+  min-width: 260px;
+}
+.pipeline-step {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  position: relative;
+}
+.pipeline-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg);
+  border: 2px solid var(--border);
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  z-index: 1;
+}
+.pipeline-dot svg { width: 11px; height: 11px; }
+.pipeline-line { flex: 1; height: 2px; background: var(--border); }
+.pipeline-step.done .pipeline-dot { background: var(--teal); border-color: var(--teal); color: #fff; }
+.pipeline-step.done .pipeline-line { background: var(--teal); }
+.pipeline-step.current .pipeline-dot { background: var(--blue); border-color: var(--blue); color: #fff; }
+.pipeline-label {
+  position: absolute;
+  top: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+  white-space: nowrap;
+}
+.pipeline-step.done .pipeline-label,
+.pipeline-step.current .pipeline-label { color: var(--text-sub); }
+.pipeline-step:last-child .pipeline-line { display: none; }
+
+/* ---------------- Revision cards (Revisions Required) ---------------- */
+
+.revision-card {
+  background: var(--white);
+  border: 1px solid var(--red-border);
+  border-radius: var(--radius);
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+.revision-card:last-child { margin-bottom: 0; }
+/* Same card shell, used where the border shouldn't read as "urgent" (e.g.
+   Under Review, which is a normal in-progress state, not one needing action). */
+.revision-card.neutral { border-color: var(--border); }
+.revision-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.revision-title h3 { margin: 0 0 4px; font-size: 14.5px; font-weight: 700; }
+.revision-title span { font-size: 12px; color: var(--text-sub); }
+.revision-due { text-align: right; flex-shrink: 0; }
+
+.comment-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.comment-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+}
+.comment-item svg { width: 15px; height: 15px; color: var(--orange); flex-shrink: 0; margin-top: 1px; }
+.comment-item p { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--text-main); }
+.comment-item span { display: block; font-size: 11px; color: var(--text-faint); margin-top: 3px; }
+
+.revision-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ---------------- Review-type picker (New Application) ---------------- */
+
+.review-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.review-type-card {
+  display: block;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  cursor: pointer;
+  background: var(--white);
+}
+.review-type-card:hover { border-color: var(--teal); }
+/* Selection state driven by the card's own hidden radio input (native
+   keyboard/screen-reader operable), not a JS-toggled class. */
+.review-type-card:has(input:checked) { border-color: var(--teal); background: var(--teal-light); }
+.review-type-icon {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  background: var(--teal-light);
+  color: var(--teal);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+}
+.review-type-card:has(input:checked) .review-type-icon { background: var(--teal); color: #fff; }
+.review-type-card h4 { margin: 0 0 4px; font-size: 13.5px; font-weight: 700; }
+.review-type-card p { margin: 0; font-size: 12px; color: var(--text-sub); line-height: 1.5; }
+
+.checklist { display: flex; flex-direction: column; gap: 10px; margin: 0 0 22px; }
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text-main);
+}
+.checklist-item svg { width: 17px; height: 17px; color: var(--green); flex-shrink: 0; margin-top: 1px; }
+
+.info-card {
+  display: flex;
+  gap: 12px;
+  background: var(--blue-light);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  margin-bottom: 22px;
+}
+.info-card svg { width: 18px; height: 18px; color: var(--blue); flex-shrink: 0; margin-top: 1px; }
+.info-card p { margin: 0; font-size: 12.5px; line-height: 1.6; color: var(--text-main); }
+.info-card strong { color: var(--blue); }
 
 .due-main { display: block; font-weight: 600; color: var(--text-main); white-space: nowrap; }
 .due-main.warn { color: var(--orange); }
@@ -930,9 +1248,20 @@ svg {
     text-align: left;
   }
   .due-main, .due-sub { text-align: right; }
+
+  /* New list-page components, same treatment */
+  .page-head { flex-direction: column; align-items: flex-start; }
+  .filter-tabs { width: 100%; overflow-x: auto; flex-wrap: nowrap; }
+  .completion-wrap { min-width: 0; width: 100%; justify-content: flex-end; }
+  .pipeline { min-width: 0; width: 100%; }
+  .pipeline-label { display: none; }
+  .revision-top { flex-direction: column; }
+  .revision-due { text-align: left; }
+  .revision-actions .btn-primary, .revision-actions .btn-secondary { flex: 1; justify-content: center; }
 }
 
 @media (max-width: 480px) {
   .stats-grid { grid-template-columns: 1fr; }
   .footer { flex-direction: column; align-items: flex-start; }
+  .review-type-grid { grid-template-columns: 1fr; }
 }

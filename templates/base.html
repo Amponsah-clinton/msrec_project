@@ -10,11 +10,17 @@
 <link rel="icon" href="{% static 'assets/img/favicon.png' %}">
 <link rel="apple-touch-icon" href="{% static 'assets/img/apple-touch-icon.png' %}">
 
-{% block fonts %}
+<!-- Base site fonts -- always loaded on every page, regardless of which
+     page-specific font block below adds to it. main.css's --default-font,
+     --heading-font and --nav-font (Roboto / Montserrat / Poppins) depend on
+     all three being present, and the header/navmenu use --nav-font, so this
+     can never be page-conditional or the nav falls back to a generic font
+     on any page that forgets to re-declare it. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
-{% endblock %}
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+
+{% block fonts %}{% endblock %}
 
 <link href="{% static 'assets/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
 <link href="{% static 'assets/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
