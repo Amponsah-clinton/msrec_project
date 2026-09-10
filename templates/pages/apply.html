@@ -1,0 +1,1234 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Apply for Ethics Review - MSREC | MetaScholar Research Ethics Committee{% endblock %}
+{% block description %}Universal Research Ethics Application Form — submit your study for MSREC ethics determination, expedited review, or full committee review.{% endblock %}
+{% block body_class %}apply-page{% endblock %}
+{% block fonts %}<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/apply.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <main class="main apply-main">
+
+
+    <!-- ============ FORM VIEW ============ -->
+    <div class="apply-wrap" id="applyFormView">
+
+      <!-- ============ INTRO / META / REQUESTED REVIEW ============ -->
+      <div class="apply-intro">
+        <span class="section-label">Metascholar Research Ethics Committee (MSREC)</span>
+        <h1>Universal Research Ethics Application Form</h1>
+        <p>For Human Participant, Health, Social Science, Education, ICT, Artificial Intelligence, Engineering, Data-Based, System Development and Evidence-Synthesis Research.</p>
+
+        <div class="apply-meta-row">
+          <div class="apply-meta-item">
+            <span>Application Reference No.</span>
+            <strong>Assigned automatically upon submission</strong>
+          </div>
+          <div class="apply-meta-item">
+            <span>Date Submitted</span>
+            <strong id="applyDateSubmitted">&mdash;</strong>
+          </div>
+        </div>
+
+        <div class="reuse-hint">
+          <i class="bi bi-info-circle"></i>
+          <span><strong>Applicant Guidance:</strong> Complete the sections that apply to your study. Where a question does not apply, indicate N/A. MSREC will determine the appropriate ethics review category.</span>
+        </div>
+
+        <div class="apply-review-request">
+          <label>Requested Review <span class="field-hint" style="margin:0 0 0 6px;">(select one)</span></label>
+          <div class="chip-checkbox-grid">
+            <label class="chip-checkbox"><input type="radio" name="requestedReview" value="exemption"><span>Ethics Determination / Exemption Assessment</span></label>
+            <label class="chip-checkbox"><input type="radio" name="requestedReview" value="expedited"><span>Expedited Review</span></label>
+            <label class="chip-checkbox"><input type="radio" name="requestedReview" value="full"><span>Full Committee Review</span></label>
+            <label class="chip-checkbox"><input type="radio" name="requestedReview" value="not-sure"><span>Not Sure &mdash; MSREC to Determine</span></label>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ SHELL: SIDEBAR + FORM ============ -->
+      <div class="apply-shell">
+
+        <aside class="apply-sidebar">
+          <div class="apply-progress-card">
+            <div class="apply-progress-label"><span>Form completion</span><strong id="applyProgressPct">0%</strong></div>
+            <div class="apply-progress-track"><div class="apply-progress-fill" id="applyProgressFill"></div></div>
+          </div>
+
+          <nav class="apply-toc" aria-label="Application sections" id="applyToc">
+            <a href="#sec-1" data-toc="sec-1"><span class="apply-toc-num">1</span>Research Information</a>
+            <a href="#sec-2" data-toc="sec-2"><span class="apply-toc-num">2</span>Type &amp; Field of Research</a>
+            <a href="#sec-3" data-toc="sec-3"><span class="apply-toc-num">3</span>Principal Investigator</a>
+            <a href="#sec-4" data-toc="sec-4"><span class="apply-toc-num">4</span>Research Team</a>
+            <a href="#sec-5" data-toc="sec-5"><span class="apply-toc-num">5</span>Institution / Affiliation</a>
+            <a href="#sec-6" data-toc="sec-6"><span class="apply-toc-num">6</span>Study Site &amp; Location</a>
+            <a href="#sec-7" data-toc="sec-7"><span class="apply-toc-num">7</span>Research Methodology</a>
+            <a href="#sec-8" data-toc="sec-8"><span class="apply-toc-num">8</span>Study Participants</a>
+            <a href="#sec-9" data-toc="sec-9"><span class="apply-toc-num">9</span>Participant Recruitment</a>
+            <a href="#sec-10" data-toc="sec-10"><span class="apply-toc-num">10</span>Risks &amp; Benefits</a>
+            <a href="#sec-11" data-toc="sec-11"><span class="apply-toc-num">11</span>Informed Consent</a>
+            <a href="#sec-12" data-toc="sec-12"><span class="apply-toc-num">12</span>Privacy &amp; Confidentiality</a>
+            <a href="#sec-13" data-toc="sec-13"><span class="apply-toc-num">13</span>Data Management &amp; Security</a>
+            <a href="#sec-14" data-toc="sec-14"><span class="apply-toc-num">14</span>AI / ML / Automated Systems</a>
+            <a href="#sec-15" data-toc="sec-15"><span class="apply-toc-num">15</span>Software / System / Device</a>
+            <a href="#sec-16" data-toc="sec-16"><span class="apply-toc-num">16</span>Reviews &amp; Evidence Synthesis</a>
+            <a href="#sec-17" data-toc="sec-17"><span class="apply-toc-num">17</span>Secondary Data &amp; Records</a>
+            <a href="#sec-18" data-toc="sec-18"><span class="apply-toc-num">18</span>Vulnerable Populations</a>
+            <a href="#sec-19" data-toc="sec-19"><span class="apply-toc-num">19</span>Funding &amp; Collaboration</a>
+            <a href="#sec-20" data-toc="sec-20"><span class="apply-toc-num">20</span>Conflict of Interest</a>
+            <a href="#sec-21" data-toc="sec-21"><span class="apply-toc-num">21</span>Documents Attached</a>
+            <a href="#sec-22" data-toc="sec-22"><span class="apply-toc-num">22</span>PI Declaration</a>
+            <div class="apply-toc-divider"></div>
+            <a href="#sec-official" data-toc="sec-official" class="apply-toc-locked"><span class="apply-toc-num"><i class="bi bi-lock-fill"></i></span>Official Use Only</a>
+          </nav>
+        </aside>
+
+        <div class="apply-main-col">
+          <form id="applyForm" novalidate>
+
+            <!-- ============ 1. RESEARCH INFORMATION ============ -->
+            <section class="apply-section" id="sec-1">
+              <div class="apply-section-head">
+                <span class="apply-section-num">1</span>
+                <div><h2>Research Information</h2></div>
+              </div>
+
+              <div class="field field-wide">
+                <label for="studyTitle">Full Title of Study</label>
+                <textarea id="studyTitle" name="studyTitle" rows="2"></textarea>
+              </div>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="shortTitle">Short Title / Acronym, if applicable</label>
+                  <input type="text" id="shortTitle" name="shortTitle">
+                </div>
+                <div class="field">
+                  <label for="startDate">Expected Start Date</label>
+                  <input type="date" id="startDate" name="startDate">
+                </div>
+                <div class="field field-wide">
+                  <label for="studyPurpose">Purpose of the Study</label>
+                  <textarea id="studyPurpose" name="studyPurpose" rows="3"></textarea>
+                </div>
+                <div class="field">
+                  <label for="completionDate">Expected Completion Date</label>
+                  <input type="date" id="completionDate" name="completionDate">
+                </div>
+              </div>
+
+              <div class="field field-wide" style="margin-top:16px;">
+                <label>Current Status of Study</label>
+                <div class="chip-checkbox-grid" data-other-group="studyStatus">
+                  <label class="chip-checkbox"><input type="radio" name="studyStatus" value="not-started"><span>Not Started</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="studyStatus" value="protocol-development"><span>Protocol Development</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="studyStatus" value="data-collection-not-started"><span>Data Collection Not Started</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="studyStatus" value="data-collection-started"><span>Data Collection Started</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="studyStatus" value="data-analysis"><span>Data Analysis</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="studyStatus" value="other" class="chip-other-trigger" data-other-target="studyStatusOther"><span>Other</span></label>
+                </div>
+                <div class="apply-other-wrap" hidden data-other-for="studyStatusOther">
+                  <input type="text" placeholder="Please specify" name="studyStatusOther">
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 2. TYPE AND FIELD OF RESEARCH ============ -->
+            <section class="apply-section" id="sec-2">
+              <div class="apply-section-head">
+                <span class="apply-section-num">2</span>
+                <div><h2>Type &amp; Field of Research</h2></div>
+              </div>
+
+              <h3 class="signup-subsection-title">2.1 Main Research Area <span class="field-hint" style="margin:0;">&mdash; select all that apply</span></h3>
+              <div class="chip-checkbox-grid">
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="health-biomedical"><span>Health / Biomedical Sciences</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="nursing-allied"><span>Nursing / Allied Health</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="public-health"><span>Public Health</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="clinical"><span>Clinical Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="pharmaceutical"><span>Pharmaceutical Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="social-behavioral"><span>Social / Behavioral Sciences</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="education"><span>Education</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="business"><span>Business / Management</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="economics"><span>Economics</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="agriculture"><span>Agriculture / Food Science</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="environmental"><span>Environmental Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="engineering"><span>Engineering</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="cs-ict"><span>Computer Science / ICT</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="ai-ml"><span>Artificial Intelligence / Machine Learning</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="data-science"><span>Data Science / Big Data</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="cybersecurity"><span>Cybersecurity / Networking</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="hci"><span>Human-Computer Interaction</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="software-systems"><span>Software / Information System Development</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="energy"><span>Renewable Energy / Energy Systems</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="multidisciplinary"><span>Multidisciplinary Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="other" class="chip-other-trigger" data-other-target="researchAreaOther"><span>Other</span></label>
+              </div>
+              <div class="apply-other-wrap" hidden data-other-for="researchAreaOther">
+                <input type="text" placeholder="Please specify" name="researchAreaOther">
+              </div>
+
+              <h3 class="signup-subsection-title" style="margin-top:22px;">2.2 Type of Study <span class="field-hint" style="margin:0;">&mdash; select all that apply</span></h3>
+              <div class="chip-checkbox-grid">
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="quantitative"><span>Quantitative Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="qualitative"><span>Qualitative Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="mixed-methods"><span>Mixed-Methods Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="cross-sectional"><span>Cross-Sectional Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="cohort"><span>Cohort Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="case-control"><span>Case-Control Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="experimental"><span>Experimental Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="quasi-experimental"><span>Quasi-Experimental Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="rct"><span>Randomized Controlled Trial</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="clinical-trial"><span>Clinical Trial</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="observational"><span>Observational Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="case-study"><span>Case Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="survey"><span>Survey Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="interview"><span>Interview Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="focus-group"><span>Focus Group Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="ethnographic"><span>Ethnographic Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="community-based"><span>Community-Based Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="action-research"><span>Action Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="implementation"><span>Implementation Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="evaluation"><span>Evaluation Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="quality-improvement"><span>Quality Improvement / Audit</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="retrospective"><span>Retrospective Records Review</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="prospective"><span>Prospective Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="secondary-data-analysis"><span>Secondary Data Analysis</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="database-registry"><span>Database / Registry Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="big-data"><span>Big Data Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="ai-ml-study"><span>Artificial Intelligence / Machine Learning Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="software-dev"><span>Software / System Development and Evaluation</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="prototype-dev"><span>Prototype / Device Development</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="usability"><span>Usability / User Experience Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="simulation"><span>Simulation / Modelling Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="systematic-review"><span>Systematic Review</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="scoping-review"><span>Scoping Review</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="meta-analysis"><span>Meta-Analysis</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="narrative-review"><span>Narrative / Literature Review</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="bibliometric"><span>Bibliometric / Scientometric Study</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="evidence-synthesis"><span>Evidence Synthesis</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="studyType" value="other" class="chip-other-trigger" data-other-target="studyTypeOther"><span>Other</span></label>
+              </div>
+              <div class="apply-other-wrap" hidden data-other-for="studyTypeOther">
+                <input type="text" placeholder="Please specify" name="studyTypeOther">
+              </div>
+            </section>
+
+            <!-- ============ 3. PRINCIPAL INVESTIGATOR ============ -->
+            <section class="apply-section" id="sec-3">
+              <div class="apply-section-head">
+                <span class="apply-section-num">3</span>
+                <div><h2>Principal Investigator</h2></div>
+              </div>
+
+              <div class="field-grid">
+                <div class="field"><label for="piName">Full Name</label><input type="text" id="piName" name="piName"></div>
+                <div class="field"><label for="piTitle">Title</label><input type="text" id="piTitle" name="piTitle"></div>
+                <div class="field"><label for="piQualification">Highest Qualification</label><input type="text" id="piQualification" name="piQualification"></div>
+                <div class="field"><label for="piDepartment">Department</label><input type="text" id="piDepartment" name="piDepartment"></div>
+                <div class="field"><label for="piInstitution">Institution / Organization</label><input type="text" id="piInstitution" name="piInstitution"></div>
+                <div class="field"><label for="piEmail">Email</label><input type="email" id="piEmail" name="piEmail"></div>
+                <div class="field"><label for="piPhone">Telephone</label><input type="tel" id="piPhone" name="piPhone"></div>
+                <div class="field"><label for="piOrcid">ORCID, if available</label><input type="text" id="piOrcid" name="piOrcid" placeholder="0000-0000-0000-0000"></div>
+              </div>
+
+              <div class="field field-wide" style="margin-top:6px;">
+                <label>Applicant Category</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="undergraduate"><span>Undergraduate Student</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="postgraduate"><span>Postgraduate Student</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="faculty"><span>Academic / Faculty</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="independent"><span>Independent Researcher</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="health"><span>Health Professional</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="institutional"><span>Institutional Researcher</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="industry"><span>Industry Researcher</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="other" class="chip-other-trigger" data-other-target="applicantCategoryOther"><span>Other</span></label>
+                </div>
+                <div class="apply-other-wrap" hidden data-other-for="applicantCategoryOther">
+                  <input type="text" placeholder="Please specify" name="applicantCategoryOther">
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 4. RESEARCH TEAM ============ -->
+            <section class="apply-section" id="sec-4">
+              <div class="apply-section-head">
+                <span class="apply-section-num">4</span>
+                <div><h2>Research Team</h2></div>
+              </div>
+
+              <div class="apply-team-table" id="applyTeamTable">
+                <div class="apply-team-row apply-team-head">
+                  <span>Name</span><span>Role</span><span>Institution / Organization</span><span></span>
+                </div>
+                <div class="apply-team-row">
+                  <input type="text" name="teamName[]" placeholder="Full name">
+                  <input type="text" name="teamRole[]" placeholder="e.g. Co-Investigator">
+                  <input type="text" name="teamInstitution[]" placeholder="Institution / organization">
+                  <button type="button" class="apply-team-remove" aria-label="Remove row"><i class="bi bi-x-lg"></i></button>
+                </div>
+                <div class="apply-team-row">
+                  <input type="text" name="teamName[]" placeholder="Full name">
+                  <input type="text" name="teamRole[]" placeholder="e.g. Co-Investigator">
+                  <input type="text" name="teamInstitution[]" placeholder="Institution / organization">
+                  <button type="button" class="apply-team-remove" aria-label="Remove row"><i class="bi bi-x-lg"></i></button>
+                </div>
+              </div>
+              <button type="button" class="apply-add-row" id="addTeamRow"><i class="bi bi-plus-lg"></i> Add team member</button>
+
+              <h3 class="signup-subsection-title" style="margin-top:24px;">Supervisor, if applicable</h3>
+              <div class="field-grid">
+                <div class="field"><label for="supervisorName">Supervisor Name</label><input type="text" id="supervisorName" name="supervisorName"></div>
+                <div class="field"><label for="supervisorInstitution">Supervisor's Institution</label><input type="text" id="supervisorInstitution" name="supervisorInstitution"></div>
+                <div class="field field-wide"><label for="supervisorEmail">Supervisor Email</label><input type="email" id="supervisorEmail" name="supervisorEmail"></div>
+              </div>
+            </section>
+
+            <!-- ============ 5. INSTITUTION / AFFILIATION ============ -->
+            <section class="apply-section" id="sec-5">
+              <div class="apply-section-head">
+                <span class="apply-section-num">5</span>
+                <div><h2>Institution / Affiliation</h2></div>
+              </div>
+
+              <div class="field-grid">
+                <div class="field field-wide"><label for="primaryInstitution">Primary Institution</label><input type="text" id="primaryInstitution" name="primaryInstitution"></div>
+                <div class="field field-wide"><label for="facultySchoolDept">Faculty / School / Department</label><input type="text" id="facultySchoolDept" name="facultySchoolDept"></div>
+                <div class="field field-wide"><label for="institutionAddressFull">Institution Address</label><input type="text" id="institutionAddressFull" name="institutionAddressFull"></div>
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Is this research being conducted as part of an academic programme?</label>
+                <div class="yn-toggle" data-hidden-id="academicProgrammeYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="academicProgrammeYn" name="academicProgrammeYn">
+              </div>
+              <div class="apply-conditional" id="academicProgrammeDetails" hidden>
+                <div class="field-grid">
+                  <div class="field"><label for="programmeName">Programme</label><input type="text" id="programmeName" name="programmeName"></div>
+                  <div class="field"><label for="degreeLevelApply">Degree Level</label>
+                    <select id="degreeLevelApply" name="degreeLevelApply">
+                      <option value="">Select degree level</option>
+                      <option>Bachelor's</option>
+                      <option>Master's</option>
+                      <option>PhD / Doctorate</option>
+                      <option>Postgraduate Diploma</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 6. STUDY SITE AND LOCATION ============ -->
+            <section class="apply-section" id="sec-6">
+              <div class="apply-section-head">
+                <span class="apply-section-num">6</span>
+                <div><h2>Study Site &amp; Location</h2></div>
+              </div>
+
+              <div class="field-grid">
+                <div class="field"><label for="studyCountries">Country/Countries</label><input type="text" id="studyCountries" name="studyCountries"></div>
+                <div class="field"><label for="studyRegion">Region/State</label><input type="text" id="studyRegion" name="studyRegion"></div>
+                <div class="field field-wide"><label for="studySites">Study Site(s) / Facility / Community / Organization</label><textarea id="studySites" name="studySites" rows="2"></textarea></div>
+              </div>
+
+              <div class="field field-wide" style="margin-top:6px;">
+                <label>Is formal permission required from the study site?</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="radio" name="sitePermissionRequired" value="yes"><span>Yes</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="sitePermissionRequired" value="no"><span>No</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="sitePermissionRequired" value="not-sure"><span>Not Sure</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="sitePermissionRequired" value="na"><span>N/A</span></label>
+                </div>
+              </div>
+              <div class="field field-wide" style="margin-top:16px;">
+                <label>Permission Status</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="radio" name="permissionStatus" value="obtained"><span>Obtained</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="permissionStatus" value="pending"><span>Pending</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="permissionStatus" value="will-obtain"><span>Will Be Obtained Before Data Collection</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="permissionStatus" value="na"><span>N/A</span></label>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 7. RESEARCH METHODOLOGY ============ -->
+            <section class="apply-section" id="sec-7">
+              <div class="apply-section-head">
+                <span class="apply-section-num">7</span>
+                <div><h2>Research Methodology</h2></div>
+              </div>
+
+              <div class="field field-wide">
+                <label for="methodologyDesc">Briefly describe the study design and procedures</label>
+                <textarea id="methodologyDesc" name="methodologyDesc" rows="4"></textarea>
+              </div>
+
+              <div class="field field-wide" style="margin-top:6px;">
+                <label>Data Collection Methods <span class="field-hint" style="margin:0;">&mdash; select all that apply</span></label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="questionnaire"><span>Questionnaire</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="online-survey"><span>Online Survey</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="interview"><span>Interview</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="focus-group"><span>Focus Group</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="observation"><span>Observation</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="experiment"><span>Experiment</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="clinical-exam"><span>Clinical Examination</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="lab-investigation"><span>Laboratory Investigation</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="biological-specimen"><span>Biological Specimen</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="medical-records"><span>Medical / Health Records</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="institutional-records"><span>Institutional Records</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="public-dataset"><span>Publicly Available Dataset</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="restricted-dataset"><span>Restricted / Private Dataset</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="social-media"><span>Social Media Data</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="website-data"><span>Website / Online Data</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="sensors"><span>Sensors / Wearable Devices</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="mobile-app"><span>Mobile Application</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="software-system"><span>Software / Computer System</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="ai-system"><span>Artificial Intelligence System</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="audio"><span>Audio Recording</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="video"><span>Video Recording</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="photographs"><span>Photographs / Images</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="other" class="chip-other-trigger" data-other-target="dataCollectionOther"><span>Other</span></label>
+                </div>
+                <div class="apply-other-wrap" hidden data-other-for="dataCollectionOther">
+                  <input type="text" placeholder="Please specify" name="dataCollectionOther">
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 8. STUDY PARTICIPANTS ============ -->
+            <section class="apply-section" id="sec-8">
+              <div class="apply-section-head">
+                <span class="apply-section-num">8</span>
+                <div><h2>Study Participants</h2></div>
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Does the research directly involve living human participants?</label>
+                <div class="yn-toggle" id="participantsGate" data-hidden-id="participantsYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="participantsYn" name="participantsYn">
+              </div>
+
+              <div class="apply-conditional" id="participantsDetails" hidden>
+                <div class="field-grid">
+                  <div class="field field-wide"><label for="targetPopulation">Target Population</label><textarea id="targetPopulation" name="targetPopulation" rows="2"></textarea></div>
+                  <div class="field"><label for="sampleSize">Estimated Sample Size</label><input type="number" id="sampleSize" name="sampleSize" min="0"></div>
+                  <div class="field"><label for="ageRange">Age Range</label><input type="text" id="ageRange" name="ageRange"></div>
+                  <div class="field field-wide"><label for="sexEligibility">Sex/Gender Eligibility, if relevant</label><input type="text" id="sexEligibility" name="sexEligibility"></div>
+                  <div class="field field-wide"><label for="inclusionCriteria">Main Inclusion Criteria</label><textarea id="inclusionCriteria" name="inclusionCriteria" rows="2"></textarea></div>
+                  <div class="field field-wide"><label for="exclusionCriteria">Main Exclusion Criteria</label><textarea id="exclusionCriteria" name="exclusionCriteria" rows="2"></textarea></div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 9. PARTICIPANT RECRUITMENT ============ -->
+            <section class="apply-section" id="sec-9">
+              <div class="apply-section-head">
+                <span class="apply-section-num">9</span>
+                <div><h2>Participant Recruitment</h2></div>
+              </div>
+
+              <div class="field-grid">
+                <div class="field field-wide"><label for="recruitmentMethod">How will participants be identified and recruited?</label><textarea id="recruitmentMethod" name="recruitmentMethod" rows="3"></textarea></div>
+                <div class="field field-wide"><label for="recruitmentApproach">Who will approach potential participants?</label><textarea id="recruitmentApproach" name="recruitmentApproach" rows="2"></textarea></div>
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Will advertisements or recruitment materials be used?</label>
+                <div class="yn-toggle" data-hidden-id="advertisementsYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="advertisementsYn" name="advertisementsYn">
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Will participants receive compensation, reimbursement, gifts or incentives?</label>
+                <div class="yn-toggle" data-hidden-id="compensationYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="compensationYn" name="compensationYn">
+              </div>
+              <div class="apply-conditional" id="compensationDetails" hidden>
+                <div class="field field-wide"><label for="compensationDesc">Specify compensation, reimbursement, gifts or incentives</label><textarea id="compensationDesc" name="compensationDesc" rows="2"></textarea></div>
+              </div>
+            </section>
+
+            <!-- ============ 10. RISKS AND BENEFITS ============ -->
+            <section class="apply-section" id="sec-10">
+              <div class="apply-section-head">
+                <span class="apply-section-num">10</span>
+                <div><h2>Risks &amp; Benefits</h2></div>
+              </div>
+
+              <div class="field field-wide">
+                <label>Anticipated Risk Level</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="radio" name="riskLevel" value="none"><span>No Foreseeable Risk</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="riskLevel" value="minimal"><span>Minimal Risk</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="riskLevel" value="more-than-minimal"><span>More than Minimal Risk</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="riskLevel" value="uncertain"><span>Uncertain &mdash; MSREC Assessment Requested</span></label>
+                </div>
+              </div>
+
+              <div class="field field-wide" style="margin-top:16px;">
+                <label>Possible Risks <span class="field-hint" style="margin:0;">&mdash; select all that apply</span></label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="physical"><span>Physical</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="psychological"><span>Psychological / Emotional</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="social"><span>Social</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="financial"><span>Financial</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="legal"><span>Legal</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="privacy"><span>Privacy</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="confidentiality"><span>Confidentiality</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="reputational"><span>Reputational</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="cybersecurity"><span>Cybersecurity / Digital</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="discrimination"><span>Discrimination / Bias</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="none-significant"><span>No Significant Foreseeable Risk</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="other" class="chip-other-trigger" data-other-target="possibleRisksOther"><span>Other</span></label>
+                </div>
+                <div class="apply-other-wrap" hidden data-other-for="possibleRisksOther">
+                  <input type="text" placeholder="Please specify" name="possibleRisksOther">
+                </div>
+              </div>
+
+              <div class="field-grid" style="margin-top:16px;">
+                <div class="field field-wide"><label for="risksDescribe">Briefly describe significant risks</label><textarea id="risksDescribe" name="risksDescribe" rows="2"></textarea></div>
+                <div class="field field-wide"><label for="risksMinimize">How will risks be minimized?</label><textarea id="risksMinimize" name="risksMinimize" rows="2"></textarea></div>
+                <div class="field field-wide"><label for="expectedBenefits">Expected Benefits</label><textarea id="expectedBenefits" name="expectedBenefits" rows="2"></textarea></div>
+              </div>
+            </section>
+
+            <!-- ============ 11. INFORMED CONSENT ============ -->
+            <section class="apply-section" id="sec-11">
+              <div class="apply-section-head">
+                <span class="apply-section-num">11</span>
+                <div><h2>Informed Consent</h2></div>
+              </div>
+
+              <div class="field field-wide">
+                <label>Will informed consent be obtained?</label>
+                <div class="chip-checkbox-grid" id="consentObtainedGrid">
+                  <label class="chip-checkbox"><input type="radio" name="consentObtained" value="yes"><span>Yes</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="consentObtained" value="no"><span>No</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="consentObtained" value="waiver"><span>Waiver Requested</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="consentObtained" value="na"><span>N/A</span></label>
+                </div>
+              </div>
+
+              <div class="field field-wide" style="margin-top:16px;">
+                <label>Consent Method <span class="field-hint" style="margin:0;">&mdash; select all that apply</span></label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="checkbox" name="consentMethod" value="written"><span>Written</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="consentMethod" value="verbal"><span>Verbal</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="consentMethod" value="electronic"><span>Electronic</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="consentMethod" value="recorded"><span>Recorded</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="consentMethod" value="parental"><span>Parental / Guardian Consent</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="consentMethod" value="assent"><span>Participant Assent</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="consentMethod" value="other" class="chip-other-trigger" data-other-target="consentMethodOther"><span>Other</span></label>
+                </div>
+                <div class="apply-other-wrap" hidden data-other-for="consentMethodOther">
+                  <input type="text" placeholder="Please specify" name="consentMethodOther">
+                </div>
+              </div>
+
+              <div class="apply-conditional" id="consentExplainWrap" hidden style="margin-top:16px;">
+                <div class="field field-wide"><label for="consentExplain">If consent will not be obtained, briefly explain why</label><textarea id="consentExplain" name="consentExplain" rows="3"></textarea></div>
+              </div>
+            </section>
+
+            <!-- ============ 12. PRIVACY AND CONFIDENTIALITY ============ -->
+            <section class="apply-section" id="sec-12">
+              <div class="apply-section-head">
+                <span class="apply-section-num">12</span>
+                <div><h2>Privacy &amp; Confidentiality</h2></div>
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Will identifiable personal information be collected?</label>
+                <div class="yn-toggle" data-hidden-id="identifiableInfoYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="identifiableInfoYn" name="identifiableInfoYn">
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Will sensitive personal information be collected?</label>
+                <div class="yn-toggle" id="sensitiveInfoGate" data-hidden-id="sensitiveInfoYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="sensitiveInfoYn" name="sensitiveInfoYn">
+              </div>
+
+              <div class="apply-conditional" id="sensitiveInfoDetails" hidden>
+                <label>If yes, select applicable information</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="checkbox" name="sensitiveInfo" value="health"><span>Health Information</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="sensitiveInfo" value="biometric"><span>Biometric Data</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="sensitiveInfo" value="genetic"><span>Genetic Data</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="sensitiveInfo" value="financial"><span>Financial Information</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="sensitiveInfo" value="location"><span>Location Data</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="sensitiveInfo" value="images"><span>Images / Facial Data</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="sensitiveInfo" value="voice"><span>Voice Recordings</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="sensitiveInfo" value="opinions"><span>Political / Religious / Sensitive Opinions</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="sensitiveInfo" value="sexual"><span>Sexual / Reproductive Information</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="sensitiveInfo" value="other" class="chip-other-trigger" data-other-target="sensitiveInfoOther"><span>Other</span></label>
+                </div>
+                <div class="apply-other-wrap" hidden data-other-for="sensitiveInfoOther">
+                  <input type="text" placeholder="Please specify" name="sensitiveInfoOther">
+                </div>
+              </div>
+
+              <div class="field field-wide" style="margin-top:16px;">
+                <label>Data Identification</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="radio" name="dataIdentification" value="anonymous"><span>Anonymous</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="dataIdentification" value="anonymized"><span>Anonymized</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="dataIdentification" value="pseudonymized"><span>Pseudonymized</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="dataIdentification" value="coded"><span>Coded</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="dataIdentification" value="directly-identifiable"><span>Directly Identifiable</span></label>
+                </div>
+              </div>
+
+              <div class="field field-wide" style="margin-top:16px;">
+                <label for="confidentialityProtect">Briefly describe how confidentiality will be protected</label>
+                <textarea id="confidentialityProtect" name="confidentialityProtect" rows="3"></textarea>
+              </div>
+            </section>
+
+            <!-- ============ 13. DATA MANAGEMENT AND SECURITY ============ -->
+            <section class="apply-section" id="sec-13">
+              <div class="apply-section-head">
+                <span class="apply-section-num">13</span>
+                <div><h2>Data Management &amp; Security</h2></div>
+              </div>
+
+              <div class="field-grid">
+                <div class="field field-wide"><label for="dataStorageLocation">Data Storage Location</label><input type="text" id="dataStorageLocation" name="dataStorageLocation"></div>
+              </div>
+
+              <div class="field field-wide" style="margin-top:6px;">
+                <label>Storage Method</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="checkbox" name="storageMethod" value="password-computer"><span>Password-Protected Computer</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="storageMethod" value="encrypted"><span>Encrypted Storage</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="storageMethod" value="institutional-server"><span>Institutional Server</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="storageMethod" value="secure-cloud"><span>Secure Cloud Storage</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="storageMethod" value="locked-physical"><span>Locked Physical Storage</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="storageMethod" value="other" class="chip-other-trigger" data-other-target="storageMethodOther"><span>Other</span></label>
+                </div>
+                <div class="apply-other-wrap" hidden data-other-for="storageMethodOther">
+                  <input type="text" placeholder="Please specify" name="storageMethodOther">
+                </div>
+              </div>
+
+              <div class="field-grid" style="margin-top:16px;">
+                <div class="field field-wide"><label for="dataAccess">Who will have access to identifiable data?</label><textarea id="dataAccess" name="dataAccess" rows="2"></textarea></div>
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Will data be shared with another institution, researcher or third party?</label>
+                <div class="yn-toggle" data-hidden-id="dataSharedYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="dataSharedYn" name="dataSharedYn">
+              </div>
+
+              <div class="field-grid" style="margin-top:16px;">
+                <div class="field"><label for="dataRetention">Data Retention Period</label><input type="text" id="dataRetention" name="dataRetention"></div>
+                <div class="field field-wide"><label for="dataDisposal">Method of Final Data Disposal / Destruction</label><textarea id="dataDisposal" name="dataDisposal" rows="2"></textarea></div>
+              </div>
+
+              <div class="field field-wide" style="margin-top:6px;">
+                <label>Will data be transferred outside the country where it was collected?</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="radio" name="dataTransferOutside" value="yes"><span>Yes</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="dataTransferOutside" value="no"><span>No</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="dataTransferOutside" value="na"><span>N/A</span></label>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 14. ARTIFICIAL INTELLIGENCE ============ -->
+            <section class="apply-section" id="sec-14">
+              <div class="apply-section-head">
+                <span class="apply-section-num">14</span>
+                <div>
+                  <h2>Artificial Intelligence, Machine Learning or Automated Systems</h2>
+                  <p class="section-note">Complete this section only if AI, machine learning, algorithms, automated decision-making, intelligent systems or generative AI are involved.</p>
+                </div>
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Does this study involve AI/ML?</label>
+                <div class="yn-toggle" id="aiGate" data-hidden-id="aiInvolvedYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="aiInvolvedYn" name="aiInvolvedYn">
+              </div>
+
+              <div class="apply-conditional" id="aiDetails" hidden>
+                <label>Type of AI Research</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="machine-learning"><span>Machine Learning</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="deep-learning"><span>Deep Learning</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="generative-ai"><span>Generative AI</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="llm"><span>Large Language Model</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="nlp"><span>Natural Language Processing</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="computer-vision"><span>Computer Vision</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="facial-recognition"><span>Facial Recognition</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="speech-recognition"><span>Speech / Voice Recognition</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="predictive-analytics"><span>Predictive Analytics</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="recommendation"><span>Recommendation System</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="automated-decision"><span>Automated Decision-Making</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="robotics"><span>Robotics / Autonomous System</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="medical-ai"><span>Medical AI / Clinical Decision Support</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="ai-app"><span>AI-Based Mobile / Web Application</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="ai-model-dev"><span>AI Model Development</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="ai-model-validation"><span>AI Model Validation / Testing</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="human-ai-interaction"><span>Human-AI Interaction</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiType" value="other" class="chip-other-trigger" data-other-target="aiTypeOther"><span>Other</span></label>
+                </div>
+                <div class="apply-other-wrap" hidden data-other-for="aiTypeOther">
+                  <input type="text" placeholder="Please specify" name="aiTypeOther">
+                </div>
+
+                <div class="field-grid" style="margin-top:16px;">
+                  <div class="field field-wide"><label for="aiModelName">Name of AI model/system, if applicable</label><input type="text" id="aiModelName" name="aiModelName"></div>
+                  <div class="field field-wide"><label for="aiPurpose">Purpose of the AI system</label><textarea id="aiPurpose" name="aiPurpose" rows="2"></textarea></div>
+                </div>
+
+                <label style="margin-top:6px;">AI Data Source</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="checkbox" name="aiDataSource" value="new-human-data"><span>Newly Collected Human Data</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiDataSource" value="institutional-data"><span>Existing Institutional Data</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiDataSource" value="public-dataset"><span>Public Dataset</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiDataSource" value="commercial-dataset"><span>Commercial Dataset</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiDataSource" value="social-web-data"><span>Social Media / Web Data</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiDataSource" value="synthetic-data"><span>Synthetic Data</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiDataSource" value="images-videos"><span>Images / Videos</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiDataSource" value="health-clinical"><span>Health / Clinical Data</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiDataSource" value="biometric"><span>Biometric Data</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="aiDataSource" value="other" class="chip-other-trigger" data-other-target="aiDataSourceOther"><span>Other</span></label>
+                </div>
+                <div class="apply-other-wrap" hidden data-other-for="aiDataSourceOther">
+                  <input type="text" placeholder="Please specify" name="aiDataSourceOther">
+                </div>
+
+                <div class="apply-yn-row" style="margin-top:16px;">
+                  <label>Does the AI system make or support decisions about individuals?</label>
+                  <div class="yn-toggle" data-hidden-id="aiDecisionsYn">
+                    <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                    <button type="button" class="yn-btn" data-value="no">No</button>
+                  </div>
+                  <input type="hidden" id="aiDecisionsYn" name="aiDecisionsYn">
+                </div>
+
+                <div class="apply-yn-row">
+                  <label>Could the system significantly affect health, education, employment, finance, security or access to services?</label>
+                  <div class="yn-toggle" data-hidden-id="aiSignificantEffectYn">
+                    <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                    <button type="button" class="yn-btn" data-value="no">No</button>
+                  </div>
+                  <input type="hidden" id="aiSignificantEffectYn" name="aiSignificantEffectYn">
+                </div>
+
+                <div class="field field-wide" style="margin-top:6px;">
+                  <label>Have possible bias, fairness or discrimination risks been considered?</label>
+                  <div class="chip-checkbox-grid">
+                    <label class="chip-checkbox"><input type="radio" name="aiBiasConsidered" value="yes"><span>Yes</span></label>
+                    <label class="chip-checkbox"><input type="radio" name="aiBiasConsidered" value="no"><span>No</span></label>
+                    <label class="chip-checkbox"><input type="radio" name="aiBiasConsidered" value="na"><span>N/A</span></label>
+                  </div>
+                </div>
+
+                <div class="field field-wide" style="margin-top:16px;"><label for="aiRiskControl">How will AI-related risks, bias, privacy and misuse be controlled?</label><textarea id="aiRiskControl" name="aiRiskControl" rows="3"></textarea></div>
+
+                <div class="field field-wide" style="margin-top:6px;">
+                  <label>Will participants know when they are interacting with an AI system?</label>
+                  <div class="chip-checkbox-grid">
+                    <label class="chip-checkbox"><input type="radio" name="aiParticipantsAware" value="yes"><span>Yes</span></label>
+                    <label class="chip-checkbox"><input type="radio" name="aiParticipantsAware" value="no"><span>No</span></label>
+                    <label class="chip-checkbox"><input type="radio" name="aiParticipantsAware" value="na"><span>N/A</span></label>
+                  </div>
+                </div>
+
+                <div class="field field-wide" style="margin-top:16px;">
+                  <label>Will human oversight be maintained for important decisions?</label>
+                  <div class="chip-checkbox-grid">
+                    <label class="chip-checkbox"><input type="radio" name="aiHumanOversight" value="yes"><span>Yes</span></label>
+                    <label class="chip-checkbox"><input type="radio" name="aiHumanOversight" value="no"><span>No</span></label>
+                    <label class="chip-checkbox"><input type="radio" name="aiHumanOversight" value="na"><span>N/A</span></label>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 15. SOFTWARE, SYSTEM, DEVICE OR PROTOTYPE RESEARCH ============ -->
+            <section class="apply-section" id="sec-15">
+              <div class="apply-section-head">
+                <span class="apply-section-num">15</span>
+                <div>
+                  <h2>Software, System, Device or Prototype Research</h2>
+                  <p class="section-note">Complete where applicable.</p>
+                </div>
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Does the study involve development or testing of a system, application, device or prototype?</label>
+                <div class="yn-toggle" id="systemGate" data-hidden-id="systemInvolvedYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="systemInvolvedYn" name="systemInvolvedYn">
+              </div>
+
+              <div class="apply-conditional" id="systemDetails" hidden>
+                <label>Type</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="web-app"><span>Web Application</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="mobile-app"><span>Mobile Application</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="info-system"><span>Information System</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="decision-support"><span>Decision Support System</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="medical-device"><span>Medical Device</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="wearable"><span>Wearable Device</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="iot"><span>IoT System</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="embedded"><span>Embedded System</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="robotics-system"><span>Robotics System</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="network-security"><span>Network / Cybersecurity System</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="hardware-prototype"><span>Hardware Prototype</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="software-prototype"><span>Software Prototype</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="systemType" value="other" class="chip-other-trigger" data-other-target="systemTypeOther"><span>Other</span></label>
+                </div>
+                <div class="apply-other-wrap" hidden data-other-for="systemTypeOther">
+                  <input type="text" placeholder="Please specify" name="systemTypeOther">
+                </div>
+
+                <div class="apply-yn-row" style="margin-top:16px;">
+                  <label>Will humans test, evaluate or interact with the system?</label>
+                  <div class="yn-toggle" data-hidden-id="systemHumansYn">
+                    <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                    <button type="button" class="yn-btn" data-value="no">No</button>
+                  </div>
+                  <input type="hidden" id="systemHumansYn" name="systemHumansYn">
+                </div>
+
+                <div class="apply-yn-row">
+                  <label>Will system testing collect user data, performance data, biometric data, logs or behavioral information?</label>
+                  <div class="yn-toggle" data-hidden-id="systemDataYn">
+                    <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                    <button type="button" class="yn-btn" data-value="no">No</button>
+                  </div>
+                  <input type="hidden" id="systemDataYn" name="systemDataYn">
+                </div>
+
+                <div class="field field-wide" style="margin-top:6px;"><label for="systemSafetyControls">Briefly describe system-related safety, privacy or security controls</label><textarea id="systemSafetyControls" name="systemSafetyControls" rows="3"></textarea></div>
+              </div>
+            </section>
+
+            <!-- ============ 16. SYSTEMATIC REVIEWS, SCOPING REVIEWS AND EVIDENCE SYNTHESIS ============ -->
+            <section class="apply-section" id="sec-16">
+              <div class="apply-section-head">
+                <span class="apply-section-num">16</span>
+                <div>
+                  <h2>Systematic Reviews, Scoping Reviews &amp; Evidence Synthesis</h2>
+                  <p class="section-note">Complete only if applicable.</p>
+                </div>
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Is the study involving any type of review?</label>
+                <div class="yn-toggle" id="reviewGate" data-hidden-id="reviewInvolvedYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="reviewInvolvedYn" name="reviewInvolvedYn">
+              </div>
+
+              <div class="apply-conditional" id="reviewDetails" hidden>
+                <label>Review Type</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="checkbox" name="reviewType" value="systematic"><span>Systematic Review</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="reviewType" value="scoping"><span>Scoping Review</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="reviewType" value="meta-analysis"><span>Meta-Analysis</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="reviewType" value="umbrella"><span>Umbrella Review</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="reviewType" value="rapid"><span>Rapid Review</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="reviewType" value="narrative"><span>Narrative Review</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="reviewType" value="bibliometric"><span>Bibliometric / Scientometric Review</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="reviewType" value="other" class="chip-other-trigger" data-other-target="reviewTypeOther"><span>Other</span></label>
+                </div>
+                <div class="apply-other-wrap" hidden data-other-for="reviewTypeOther">
+                  <input type="text" placeholder="Please specify" name="reviewTypeOther">
+                </div>
+
+                <div class="apply-yn-row" style="margin-top:16px;">
+                  <label>Will the study use only published or publicly available literature/data?</label>
+                  <div class="yn-toggle" data-hidden-id="reviewPublicOnlyYn">
+                    <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                    <button type="button" class="yn-btn" data-value="no">No</button>
+                  </div>
+                  <input type="hidden" id="reviewPublicOnlyYn" name="reviewPublicOnlyYn">
+                </div>
+
+                <div class="apply-yn-row">
+                  <label>Will individual-level participant data be obtained from original researchers or restricted databases?</label>
+                  <div class="yn-toggle" data-hidden-id="reviewIndividualDataYn">
+                    <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                    <button type="button" class="yn-btn" data-value="no">No</button>
+                  </div>
+                  <input type="hidden" id="reviewIndividualDataYn" name="reviewIndividualDataYn">
+                </div>
+
+                <div class="apply-yn-row">
+                  <label>Will unpublished, identifiable or confidential data be used?</label>
+                  <div class="yn-toggle" data-hidden-id="reviewUnpublishedYn">
+                    <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                    <button type="button" class="yn-btn" data-value="no">No</button>
+                  </div>
+                  <input type="hidden" id="reviewUnpublishedYn" name="reviewUnpublishedYn">
+                </div>
+
+                <div class="field field-wide" style="margin-top:6px;"><label for="reviewProtocolReg">Review Protocol Registration, if applicable</label><input type="text" id="reviewProtocolReg" name="reviewProtocolReg"></div>
+                <p class="field-hint">Applicants using only published/public information may request an MSREC ethics determination.</p>
+              </div>
+            </section>
+
+            <!-- ============ 17. SECONDARY DATA, RECORDS AND DATABASE RESEARCH ============ -->
+            <section class="apply-section" id="sec-17">
+              <div class="apply-section-head">
+                <span class="apply-section-num">17</span>
+                <div><h2>Secondary Data, Records &amp; Database Research</h2></div>
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Does the study use existing data originally collected for another purpose?</label>
+                <div class="yn-toggle" id="secondaryDataGate" data-hidden-id="secondaryDataYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="secondaryDataYn" name="secondaryDataYn">
+              </div>
+
+              <div class="apply-conditional" id="secondaryDataDetails" hidden>
+                <div class="field field-wide"><label for="secondaryDataSource">Data Source</label><textarea id="secondaryDataSource" name="secondaryDataSource" rows="2"></textarea></div>
+
+                <label style="margin-top:6px;">Data are</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="checkbox" name="secondaryDataNature" value="public"><span>Publicly Available</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="secondaryDataNature" value="institutional"><span>Institutional</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="secondaryDataNature" value="restricted"><span>Restricted</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="secondaryDataNature" value="identifiable"><span>Identifiable</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="secondaryDataNature" value="de-identified"><span>De-identified</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="secondaryDataNature" value="anonymous"><span>Anonymous</span></label>
+                </div>
+
+                <label style="margin-top:16px;">Permission to use the data</label>
+                <div class="chip-checkbox-grid">
+                  <label class="chip-checkbox"><input type="radio" name="secondaryDataPermission" value="obtained"><span>Obtained</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="secondaryDataPermission" value="pending"><span>Pending</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="secondaryDataPermission" value="not-required"><span>Publicly Available / Permission Not Required</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="secondaryDataPermission" value="not-obtained"><span>Not Yet Obtained</span></label>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 18. VULNERABLE OR SPECIAL POPULATIONS ============ -->
+            <section class="apply-section" id="sec-18">
+              <div class="apply-section-head">
+                <span class="apply-section-num">18</span>
+                <div><h2>Vulnerable or Special Populations</h2></div>
+              </div>
+
+              <label>Does the research include</label>
+              <div class="chip-checkbox-grid">
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="children"><span>Children / Minors</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="pregnant"><span>Pregnant Participants</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="prisoners"><span>Prisoners / Detainees</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="cognitive-impairment"><span>Persons with Cognitive Impairment</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="disabilities"><span>Persons with Disabilities</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="hospitalized"><span>Patients / Hospitalized Persons</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="disadvantaged"><span>Economically Disadvantaged Persons</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="students-by-teachers"><span>Students Recruited by Their Teachers</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="employees-by-employers"><span>Employees Recruited by Employers</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="refugees"><span>Refugees / Displaced Persons</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="dependent-relationships"><span>Persons in Dependent Relationships</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="other" class="chip-other-trigger" data-other-target="vulnerablePopulationsOther"><span>Other Potentially Vulnerable Group</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="vulnerablePopulations" value="none"><span>None</span></label>
+              </div>
+              <div class="apply-other-wrap" hidden data-other-for="vulnerablePopulationsOther">
+                <input type="text" placeholder="Please specify" name="vulnerablePopulationsOther">
+              </div>
+
+              <div class="field field-wide" style="margin-top:16px;"><label for="vulnerableSafeguards">Describe additional safeguards, if applicable</label><textarea id="vulnerableSafeguards" name="vulnerableSafeguards" rows="3"></textarea></div>
+            </section>
+
+            <!-- ============ 19. FUNDING, SPONSORSHIP AND COLLABORATION ============ -->
+            <section class="apply-section" id="sec-19">
+              <div class="apply-section-head">
+                <span class="apply-section-num">19</span>
+                <div><h2>Funding, Sponsorship &amp; Collaboration</h2></div>
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Is the research funded?</label>
+                <div class="yn-toggle" id="fundedGate" data-hidden-id="fundedYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="fundedYn" name="fundedYn">
+              </div>
+              <div class="apply-conditional" id="fundedDetails" hidden>
+                <div class="field field-wide"><label for="fundingOrg">Funding / Sponsoring Organization</label><input type="text" id="fundingOrg" name="fundingOrg"></div>
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Is the research commercially sponsored?</label>
+                <div class="yn-toggle" data-hidden-id="commerciallySponsoredYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="commerciallySponsoredYn" name="commerciallySponsoredYn">
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Is this a multi-institutional study?</label>
+                <div class="yn-toggle" data-hidden-id="multiInstitutionalYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="multiInstitutionalYn" name="multiInstitutionalYn">
+              </div>
+
+              <div class="apply-yn-row">
+                <label>Is this an international collaborative study?</label>
+                <div class="yn-toggle" id="internationalGate" data-hidden-id="internationalYn">
+                  <button type="button" class="yn-btn" data-value="yes">Yes</button>
+                  <button type="button" class="yn-btn" data-value="no">No</button>
+                </div>
+                <input type="hidden" id="internationalYn" name="internationalYn">
+              </div>
+              <div class="apply-conditional" id="internationalDetails" hidden>
+                <div class="field field-wide"><label for="collaboratingInstitutions">Collaborating Institution(s)</label><textarea id="collaboratingInstitutions" name="collaboratingInstitutions" rows="2"></textarea></div>
+              </div>
+            </section>
+
+            <!-- ============ 20. CONFLICT OF INTEREST ============ -->
+            <section class="apply-section" id="sec-20">
+              <div class="apply-section-head">
+                <span class="apply-section-num">20</span>
+                <div><h2>Conflict of Interest</h2></div>
+              </div>
+
+              <div class="field field-wide">
+                <label>Do the investigator, research team, institution or sponsor have any financial, professional, personal, academic or other interest that could influence the research?</label>
+                <div class="chip-checkbox-grid" id="coiGrid">
+                  <label class="chip-checkbox"><input type="radio" name="coi" value="no"><span>No</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="coi" value="yes"><span>Yes</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="coi" value="unsure"><span>Unsure</span></label>
+                </div>
+              </div>
+
+              <div class="apply-conditional" id="coiDetails" hidden style="margin-top:16px;">
+                <div class="field field-wide"><label for="coiExplain">If yes, provide details and proposed management measures</label><textarea id="coiExplain" name="coiExplain" rows="3"></textarea></div>
+              </div>
+            </section>
+
+            <!-- ============ 21. DOCUMENTS ATTACHED ============ -->
+            <section class="apply-section" id="sec-21">
+              <div class="apply-section-head">
+                <span class="apply-section-num">21</span>
+                <div><h2>Documents Attached</h2></div>
+              </div>
+
+              <label>Select all documents submitted <span class="field-hint" style="margin:0;">(tick only documents you have attached)</span></label>
+              <div class="chip-checkbox-grid">
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="protocol"><span>Full Research Protocol</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="questionnaire"><span>Questionnaire</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="interview-guide"><span>Interview Guide</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="focus-group-guide"><span>Focus Group Guide</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="participant-info-sheet"><span>Participant Information Sheet</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="consent-form"><span>Informed Consent Form</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="parental-consent"><span>Parental Consent Form</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="assent-form"><span>Assent Form</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="recruitment-materials"><span>Recruitment Materials</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="data-collection-tools"><span>Data Collection Tools</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="data-management-plan"><span>Data Management Plan</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="site-permission"><span>Institutional / Site Permission</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="investigator-cv"><span>Investigator CV</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="supervisor-letter"><span>Supervisor Letter</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="funding-document"><span>Funding / Sponsorship Document</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="ai-technical-description"><span>AI / System Technical Description</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="review-protocol"><span>Systematic Review Protocol</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="data-access-permission"><span>Data Access Permission</span></label>
+                <label class="chip-checkbox"><input type="checkbox" name="documentsAttached" value="other" class="chip-other-trigger" data-other-target="documentsAttachedOther"><span>Other</span></label>
+              </div>
+              <div class="apply-other-wrap" hidden data-other-for="documentsAttachedOther">
+                <input type="text" placeholder="Please specify" name="documentsAttachedOther">
+              </div>
+
+              <h3 class="signup-subsection-title" style="margin-top:22px;">Document Uploads <span class="field-hint" style="margin:0;">&mdash; more than one document can be uploaded</span></h3>
+              <label class="apply-file-drop" for="applyFileInput">
+                <span class="apply-file-drop-icon"><i class="bi bi-cloud-arrow-up"></i></span>
+                <strong>Click to upload</strong>
+                <span>or drag &amp; drop files &mdash; PDF, DOC, DOCX, JPG, PNG</span>
+                <input type="file" id="applyFileInput" multiple hidden accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+              </label>
+              <div class="apply-file-list" id="applyFileList"></div>
+            </section>
+
+            <!-- ============ 22. PRINCIPAL INVESTIGATOR DECLARATION ============ -->
+            <section class="apply-section" id="sec-22">
+              <div class="apply-section-head">
+                <span class="apply-section-num">22</span>
+                <div><h2>Principal Investigator Declaration</h2></div>
+              </div>
+
+              <blockquote class="apply-declaration-quote">
+                I certify that the information provided in this application is complete and accurate. I undertake to conduct the study in accordance with the protocol reviewed by MSREC and applicable ethical requirements. I understand that substantive changes to an approved study may require prior MSREC review and that submission of an application or payment of a review fee does not guarantee ethical approval.
+              </blockquote>
+
+              <div class="field-grid">
+                <div class="field field-wide"><label for="declarationName">Principal Investigator Name</label><input type="text" id="declarationName" name="declarationName"></div>
+                <div class="field">
+                  <label for="declarationSignature">Signature <span class="field-hint" style="margin:0;">(type your full name)</span></label>
+                  <input type="text" id="declarationSignature" name="declarationSignature" class="apply-signature-input" placeholder="Your full name">
+                </div>
+                <div class="field"><label for="declarationDate">Date</label><input type="date" id="declarationDate" name="declarationDate"></div>
+              </div>
+
+              <label class="agree-row" style="margin-top:18px;">
+                <input type="checkbox" name="confirmDeclaration" id="confirmDeclaration" required>
+                <span>I certify that the information provided in this application is complete and accurate, as declared above. <span class="req">*</span></span>
+              </label>
+            </section>
+
+            <!-- ============ FOR MSREC OFFICIAL USE ONLY ============ -->
+            <section class="apply-official" id="sec-official">
+              <span class="apply-official-badge"><i class="bi bi-lock-fill"></i> Reserved &mdash; MSREC Secretariat &amp; Committee Use Only</span>
+              <h2>For MSREC Official Use Only</h2>
+              <p class="section-note">This section is completed by the Secretariat and Committee during screening and review. It is shown here for reference and cannot be edited by applicants.</p>
+
+              <div class="field-grid">
+                <div class="field field-wide"><label>MSREC Reference Number</label><input type="text" disabled placeholder="Assigned by MSREC"></div>
+              </div>
+
+              <label>Administrative Screening (Secretariat / Admin Portal)</label>
+              <div class="chip-checkbox-grid">
+                <label class="chip-checkbox"><input type="radio" name="officialScreening" disabled><span>Complete</span></label>
+                <label class="chip-checkbox"><input type="radio" name="officialScreening" disabled><span>Incomplete</span></label>
+                <label class="chip-checkbox"><input type="radio" name="officialScreening" disabled><span>Additional Documents Required</span></label>
+              </div>
+
+              <label style="margin-top:16px;">Research Classification</label>
+              <div class="chip-checkbox-grid">
+                <label class="chip-checkbox"><input type="checkbox" disabled><span>Human Participant Research</span></label>
+                <label class="chip-checkbox"><input type="checkbox" disabled><span>Health / Biomedical</span></label>
+                <label class="chip-checkbox"><input type="checkbox" disabled><span>Social / Behavioral</span></label>
+                <label class="chip-checkbox"><input type="checkbox" disabled><span>Education</span></label>
+                <label class="chip-checkbox"><input type="checkbox" disabled><span>AI / Machine Learning</span></label>
+                <label class="chip-checkbox"><input type="checkbox" disabled><span>ICT / Engineering / System Development</span></label>
+                <label class="chip-checkbox"><input type="checkbox" disabled><span>Secondary Data</span></label>
+                <label class="chip-checkbox"><input type="checkbox" disabled><span>Systematic / Evidence Review</span></label>
+                <label class="chip-checkbox"><input type="checkbox" disabled><span>Multidisciplinary</span></label>
+                <label class="chip-checkbox"><input type="checkbox" disabled><span>Other</span></label>
+              </div>
+
+              <label style="margin-top:16px;">Review Pathway Assigned</label>
+              <div class="chip-checkbox-grid">
+                <label class="chip-checkbox"><input type="radio" name="officialPathway" disabled><span>Ethics Determination / Exemption</span></label>
+                <label class="chip-checkbox"><input type="radio" name="officialPathway" disabled><span>Expedited Review</span></label>
+                <label class="chip-checkbox"><input type="radio" name="officialPathway" disabled><span>Full Committee Review</span></label>
+                <label class="chip-checkbox"><input type="radio" name="officialPathway" disabled><span>Outside MSREC Scope</span></label>
+                <label class="chip-checkbox"><input type="radio" name="officialPathway" disabled><span>Additional Assessment Required</span></label>
+              </div>
+
+              <div class="field field-wide" style="margin-top:16px;"><label>Reviewer(s)</label><textarea disabled rows="2"></textarea></div>
+
+              <label style="margin-top:6px;">Final Decision</label>
+              <div class="chip-checkbox-grid">
+                <label class="chip-checkbox"><input type="radio" name="officialDecision" disabled><span>Approved</span></label>
+                <label class="chip-checkbox"><input type="radio" name="officialDecision" disabled><span>Approved with Conditions</span></label>
+                <label class="chip-checkbox"><input type="radio" name="officialDecision" disabled><span>Modifications Required</span></label>
+                <label class="chip-checkbox"><input type="radio" name="officialDecision" disabled><span>Deferred</span></label>
+                <label class="chip-checkbox"><input type="radio" name="officialDecision" disabled><span>Not Approved</span></label>
+                <label class="chip-checkbox"><input type="radio" name="officialDecision" disabled><span>Ethics Determination Issued</span></label>
+                <label class="chip-checkbox"><input type="radio" name="officialDecision" disabled><span>Outside MSREC Scope</span></label>
+              </div>
+
+              <div class="field-grid" style="margin-top:16px;">
+                <div class="field"><label>Decision Date</label><input type="date" disabled></div>
+                <div class="field"><label>Approval Valid Until, if applicable</label><input type="date" disabled></div>
+                <div class="field field-wide"><label>MSREC Chairperson / Authorized Officer</label><input type="text" disabled></div>
+                <div class="field"><label>Signature</label><input type="text" disabled placeholder="Signed upon decision"></div>
+                <div class="field"><label>Date</label><input type="date" disabled></div>
+              </div>
+            </section>
+
+            <button type="submit" class="btn-create-account"><i class="bi bi-send-check"></i> Submit Application</button>
+            <p class="signin-instead">Already submitted an application? <a href="{% url 'pages:login' %}">Sign in to track its status</a></p>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ CONFIRMATION VIEW ============ -->
+    <div class="apply-wrap" id="applyConfirmView" hidden>
+      <div class="signup-card">
+        <div class="signup-confirm">
+          <div class="confirm-icon"><i class="bi bi-check-lg"></i></div>
+          <h1>Application submitted</h1>
+          <p class="confirm-sub">Thank you. Your Universal Research Ethics Application has been received. Here's what happens next.</p>
+          <ul class="confirm-status-list">
+            <li>
+              <i class="bi bi-hourglass-split"></i>
+              <span>
+                <span class="status-badge">Reference Assigned</span>
+                <strong>Administrative Screening</strong>
+                <span class="status-desc">The Secretariat will check your submission for completeness and may request additional documents.</span>
+              </span>
+            </li>
+            <li>
+              <i class="bi bi-diagram-3"></i>
+              <span>
+                <span class="status-badge">Next</span>
+                <strong>Review Pathway Assignment</strong>
+                <span class="status-desc">MSREC will classify your study and assign it to Ethics Determination, Expedited, or Full Committee Review.</span>
+              </span>
+            </li>
+            <li>
+              <i class="bi bi-shield-check"></i>
+              <span>
+                <span class="status-badge">Track Progress</span>
+                <strong>Applicant Portal</strong>
+                <span class="status-desc">Sign in at any time to track your application status and respond to reviewer queries.</span>
+              </span>
+            </li>
+          </ul>
+          <a href="{% url 'pages:index' %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to MSREC Website</a>
+        </div>
+      </div>
+    </div>
+
+  
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/apply.js' %}"></script>
+{% endblock %}

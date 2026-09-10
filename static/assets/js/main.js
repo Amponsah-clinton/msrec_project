@@ -126,6 +126,7 @@
    * Animation on scroll function and init
    */
   function aosInit() {
+    if (typeof AOS === 'undefined') return;
     AOS.init({
       duration: 600,
       easing: 'ease-in-out',
@@ -138,9 +139,9 @@
   /**
    * Initiate glightbox
    */
-  const glightbox = GLightbox({
+  const glightbox = typeof GLightbox !== 'undefined' ? GLightbox({
     selector: '.glightbox'
-  });
+  }) : null;
 
   /**
    * Init swiper sliders
@@ -164,7 +165,7 @@
   /**
    * Initiate Pure Counter
    */
-  new PureCounter();
+  if (typeof PureCounter !== 'undefined') new PureCounter();
 
   /**
    * Init isotope layout and filters

@@ -1,0 +1,168 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}MSREC - Metascholar Research Ethics Committee{% endblock %}</title>
+<meta name="description" content="{% block description %}Structured ethical review, post-approval oversight and verifiable decisions for researchers and institutions across health, social science, engineering, AI and evidence-synthesis disciplines.{% endblock %}">
+
+<link rel="icon" href="{% static 'assets/img/favicon.png' %}">
+<link rel="apple-touch-icon" href="{% static 'assets/img/apple-touch-icon.png' %}">
+
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+{% endblock %}
+
+<link href="{% static 'assets/vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+<link href="{% static 'assets/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
+
+{% block vendor_css %}{% endblock %}
+
+<link href="{% static 'assets/css/main.css' %}" rel="stylesheet">
+{% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+
+  <header id="header" class="header fixed-top">
+    <div class="branding d-flex align-items-cente">
+      <div class="container-fluid position-relative d-flex align-items-center justify-content-between">
+        <a href="{% url 'pages:index' %}" class="logo d-flex align-items-center">
+          <img src="{% static 'assets/img/MSREC_LOGO.png' %}" alt="MSREC logo">
+          <h1 class="sitename">MSREC</h1>
+        </a>
+        <nav id="navmenu" class="navmenu">
+          <ul>
+            <li><a href="{% url 'pages:index' %}#hero"{% if request.resolver_match.url_name == 'index' %} class="active"{% endif %}>Home</a></li>
+            <li><a href="{% url 'pages:about' %}"{% if request.resolver_match.url_name == 'about' %} class="active"{% endif %}>About</a></li>
+            <li><a href="{% url 'pages:applicants' %}"{% if request.resolver_match.url_name == 'applicants' %} class="active"{% endif %}>Applicants</a></li>
+            <li><a href="{% url 'pages:ethics_review' %}"{% if request.resolver_match.url_name == 'ethics_review' %} class="active"{% endif %}>Ethics Review</a></li>
+            <li><a href="{% url 'pages:resources' %}"{% if request.resolver_match.url_name == 'resources' %} class="active"{% endif %}>Resources</a></li>
+            <li><a href="{% url 'pages:governance' %}"{% if request.resolver_match.url_name == 'governance' %} class="active"{% endif %}>Governance</a></li>
+            <li><a href="{% url 'pages:board_committee' %}"{% if request.resolver_match.url_name == 'board_committee' %} class="active"{% endif %}>Board &amp; Committee</a></li>
+            <li><a href="{% url 'pages:verify' %}"{% if request.resolver_match.url_name == 'verify' %} class="active"{% endif %}>Verify Approval</a></li>
+            <li><a href="{% url 'pages:contact' %}"{% if request.resolver_match.url_name == 'contact' %} class="active"{% endif %}>Contact</a></li>
+            <li><a href="{% url 'pages:apply' %}"{% if request.resolver_match.url_name == 'apply' %} class="active"{% endif %}>Apply Now</a></li>
+            <li><a href="{% url 'pages:login' %}"{% if request.resolver_match.url_name == 'login' %} class="active"{% endif %}>Login</a></li>
+          </ul>
+          <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  {% block content %}{% endblock %}
+
+  <!-- ============ FOOTER ============ -->
+  <footer id="footer" class="footer accent-background">
+    <div class="container footer-top">
+      <div class="row gy-4">
+        <div class="col-lg-5 col-md-12 footer-about">
+          <a href="{% url 'pages:index' %}" class="logo d-flex align-items-center">
+            <span class="sitename">MSREC</span>
+          </a>
+          <p>MetaScholar Research Ethics Committee provides structured ethical review, post-approval oversight and verifiable decisions for researchers and institutions across multiple disciplines.</p>
+          <div class="social-links d-flex mt-4">
+            <a href=""><i class="bi bi-twitter-x"></i></a>
+            <a href=""><i class="bi bi-facebook"></i></a>
+            <a href=""><i class="bi bi-instagram"></i></a>
+            <a href=""><i class="bi bi-linkedin"></i></a>
+          </div>
+        </div>
+
+        <div class="col-lg-2 col-6 footer-links">
+          <h4>Useful Links</h4>
+          <ul>
+            <li><a href="{% url 'pages:index' %}#hero">Home</a></li>
+            <li><a href="{% url 'pages:about' %}">About us</a></li>
+            <li><a href="{% url 'pages:governance' %}">Governance</a></li>
+            <li><a href="{% url 'pages:board_committee' %}">Board &amp; Committee</a></li>
+            <li><a href="{% url 'pages:contact' %}">Contact</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-2 col-6 footer-links">
+          <h4>For Researchers</h4>
+          <ul>
+            <li><a href="{% url 'pages:applicants' %}">Applicants</a></li>
+            <li><a href="{% url 'pages:ethics_review' %}">Ethics Review</a></li>
+            <li><a href="{% url 'pages:apply' %}">Apply Now</a></li>
+            <li><a href="{% url 'pages:resources' %}">Resources</a></li>
+            <li><a href="{% url 'pages:verify' %}">Verify Approval</a></li>
+          </ul>
+        </div>
+
+        <div class="col-lg-3 col-md-12 footer-contact text-center text-md-start">
+          <h4>Contact Us</h4>
+          <p>MetaScholar Research Ethics Committee</p>
+          <p>Established under MetaScholar Limited</p>
+          <p>Ghana</p>
+          <p class="mt-4"><strong>Phone:</strong> <span>+1 5589 55488 55</span></p>
+          <p><strong>Email:</strong> <span>secretariat@msrec.org</span></p>
+        </div>
+      </div>
+    </div>
+
+    <div class="container copyright text-center mt-4">
+      <p>© <span id="copyYear">2026</span> <span>Copyright</span> <strong class="px-1 sitename">MSREC</strong> <span>All Rights Reserved</span></p>
+      <div class="credits">
+        Powered by <a href="https://metascholar.academicdigital.space/">Metascholar Consult Limited</a>
+      </div>
+    </div>
+  </footer>
+
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <div id="preloader">
+    <div class="pl-stage">
+      <div class="pl-batons">
+        <div class="pl-baton-wrap" style="transform: rotate(0deg);"><div class="pl-metronome" style="animation-delay: -0.0s;"><div class="pl-baton" style="animation-delay: -0.0s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(10deg);"><div class="pl-metronome" style="animation-delay: -0.14s;"><div class="pl-baton" style="animation-delay: -0.14s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(20deg);"><div class="pl-metronome" style="animation-delay: -0.28s;"><div class="pl-baton" style="animation-delay: -0.28s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(30deg);"><div class="pl-metronome" style="animation-delay: -0.42s;"><div class="pl-baton" style="animation-delay: -0.42s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(40deg);"><div class="pl-metronome" style="animation-delay: -0.56s;"><div class="pl-baton" style="animation-delay: -0.56s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(50deg);"><div class="pl-metronome" style="animation-delay: -0.7s;"><div class="pl-baton" style="animation-delay: -0.7s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(60deg);"><div class="pl-metronome" style="animation-delay: -0.84s;"><div class="pl-baton" style="animation-delay: -0.84s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(70deg);"><div class="pl-metronome" style="animation-delay: -0.98s;"><div class="pl-baton" style="animation-delay: -0.98s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(80deg);"><div class="pl-metronome" style="animation-delay: -1.12s;"><div class="pl-baton" style="animation-delay: -1.12s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(90deg);"><div class="pl-metronome" style="animation-delay: -1.26s;"><div class="pl-baton" style="animation-delay: -1.26s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(100deg);"><div class="pl-metronome" style="animation-delay: -1.4s;"><div class="pl-baton" style="animation-delay: -1.4s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(110deg);"><div class="pl-metronome" style="animation-delay: -1.54s;"><div class="pl-baton" style="animation-delay: -1.54s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(120deg);"><div class="pl-metronome" style="animation-delay: -1.68s;"><div class="pl-baton" style="animation-delay: -1.68s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(130deg);"><div class="pl-metronome" style="animation-delay: -1.82s;"><div class="pl-baton" style="animation-delay: -1.82s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(140deg);"><div class="pl-metronome" style="animation-delay: -1.96s;"><div class="pl-baton" style="animation-delay: -1.96s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(150deg);"><div class="pl-metronome" style="animation-delay: -2.1s;"><div class="pl-baton" style="animation-delay: -2.1s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(160deg);"><div class="pl-metronome" style="animation-delay: -2.24s;"><div class="pl-baton" style="animation-delay: -2.24s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(170deg);"><div class="pl-metronome" style="animation-delay: -2.38s;"><div class="pl-baton" style="animation-delay: -2.38s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(180deg);"><div class="pl-metronome" style="animation-delay: -2.52s;"><div class="pl-baton" style="animation-delay: -2.52s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(190deg);"><div class="pl-metronome" style="animation-delay: -2.66s;"><div class="pl-baton" style="animation-delay: -2.66s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(200deg);"><div class="pl-metronome" style="animation-delay: -2.8s;"><div class="pl-baton" style="animation-delay: -2.8s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(210deg);"><div class="pl-metronome" style="animation-delay: -2.94s;"><div class="pl-baton" style="animation-delay: -2.94s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(220deg);"><div class="pl-metronome" style="animation-delay: -3.08s;"><div class="pl-baton" style="animation-delay: -3.08s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(230deg);"><div class="pl-metronome" style="animation-delay: -3.22s;"><div class="pl-baton" style="animation-delay: -3.22s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(240deg);"><div class="pl-metronome" style="animation-delay: -3.36s;"><div class="pl-baton" style="animation-delay: -3.36s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(250deg);"><div class="pl-metronome" style="animation-delay: -3.5s;"><div class="pl-baton" style="animation-delay: -3.5s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(260deg);"><div class="pl-metronome" style="animation-delay: -3.64s;"><div class="pl-baton" style="animation-delay: -3.64s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(270deg);"><div class="pl-metronome" style="animation-delay: -3.78s;"><div class="pl-baton" style="animation-delay: -3.78s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(280deg);"><div class="pl-metronome" style="animation-delay: -3.92s;"><div class="pl-baton" style="animation-delay: -3.92s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(290deg);"><div class="pl-metronome" style="animation-delay: -4.06s;"><div class="pl-baton" style="animation-delay: -4.06s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(300deg);"><div class="pl-metronome" style="animation-delay: -4.2s;"><div class="pl-baton" style="animation-delay: -4.2s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(310deg);"><div class="pl-metronome" style="animation-delay: -4.34s;"><div class="pl-baton" style="animation-delay: -4.34s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(320deg);"><div class="pl-metronome" style="animation-delay: -4.48s;"><div class="pl-baton" style="animation-delay: -4.48s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(330deg);"><div class="pl-metronome" style="animation-delay: -4.62s;"><div class="pl-baton" style="animation-delay: -4.62s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(340deg);"><div class="pl-metronome" style="animation-delay: -4.76s;"><div class="pl-baton" style="animation-delay: -4.76s;"></div></div></div>
+        <div class="pl-baton-wrap" style="transform: rotate(350deg);"><div class="pl-metronome" style="animation-delay: -4.9s;"><div class="pl-baton" style="animation-delay: -4.9s;"></div></div></div>
+      </div>
+      <div class="pl-center"><img src="{% static 'assets/img/MSREC_LOGO.png' %}" alt="MSREC" class="pl-logo"></div>
+    </div>
+    <span class="pl-label">Loading</span>
+  </div>
+
+  <script src="{% static 'assets/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  {% block vendor_js %}{% endblock %}
+  <script src="{% static 'assets/js/main.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

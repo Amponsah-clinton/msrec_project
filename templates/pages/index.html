@@ -1,0 +1,619 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}MSREC - Metascholar Research Ethics Committee{% endblock %}
+{% block description %}Structured ethical review, post-approval oversight and verifiable decisions for researchers and institutions across health, social science, engineering, AI and evidence-synthesis disciplines.{% endblock %}
+{% block body_class %}index-page{% endblock %}
+
+{% block fonts %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Montserrat:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block vendor_css %}
+<link href="{% static 'assets/vendor/aos/aos.css' %}" rel="stylesheet">
+<link href="{% static 'assets/vendor/glightbox/css/glightbox.min.css' %}" rel="stylesheet">
+<link href="{% static 'assets/vendor/swiper/swiper-bundle.min.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'assets/css/index.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <main class="main">
+
+    <!-- Hero Section -->
+    <section id="hero" class="hero section accent-background">
+
+      <div class="container position-relative" data-aos="fade-up" data-aos-delay="100">
+        <div class="row gy-5 justify-content-between">
+          <div class="col-lg-6 order-2 order-lg-1 d-flex flex-column justify-content-center">
+            <h2><span>Research ethics review built for </span><span class="accent hero-rotator"><span class="hero-rotator-text" id="heroRotatorText">clarity, independence and accountability</span></span></h2>
+            <p>MSREC provides structured ethical review, post-approval oversight and verifiable decisions for researchers and institutions across health, social science, engineering, AI and evidence-synthesis disciplines.</p>
+            <div class="d-flex">
+              <a href="{% url 'pages:apply' %}" class="btn-get-started">Apply for Review</a>
+              <a href="{% url 'pages:verify' %}" class="btn-watch-video d-flex align-items-center"><i class="bi bi-patch-check"></i><span>Verify Approval</span></a>
+            </div>
+          </div>
+          <div class="col-lg-5 order-1 order-lg-2">
+            <img src="{% static 'assets/img/hero-img.svg' %}" class="img-fluid" alt="">
+          </div>
+        </div>
+      </div>
+
+      <div class="icon-boxes position-relative" data-aos="fade-up" data-aos-delay="200">
+        <div class="container position-relative">
+          <div class="row gy-4 mt-5">
+
+            <div class="col-xl-3 col-md-6">
+              <div class="icon-box">
+                <div class="icon"><i class="bi bi-heart-pulse"></i></div>
+                <h4 class="title"><a href="{% url 'pages:applicants' %}" class="stretched-link">Health &amp; Biomedical</a></h4>
+              </div>
+            </div><!--End Icon Box -->
+
+            <div class="col-xl-3 col-md-6">
+              <div class="icon-box">
+                <div class="icon"><i class="bi bi-people"></i></div>
+                <h4 class="title"><a href="{% url 'pages:applicants' %}" class="stretched-link">Social &amp; Education</a></h4>
+              </div>
+            </div><!--End Icon Box -->
+
+            <div class="col-xl-3 col-md-6">
+              <div class="icon-box">
+                <div class="icon"><i class="bi bi-cpu"></i></div>
+                <h4 class="title"><a href="{% url 'pages:applicants' %}" class="stretched-link">AI, ICT &amp; Systems</a></h4>
+              </div>
+            </div><!--End Icon Box -->
+
+            <div class="col-xl-3 col-md-6">
+              <div class="icon-box">
+                <div class="icon"><i class="bi bi-database"></i></div>
+                <h4 class="title"><a href="{% url 'pages:applicants' %}" class="stretched-link">Data &amp; Evidence</a></h4>
+              </div>
+            </div><!--End Icon Box -->
+
+          </div>
+        </div>
+      </div>
+
+    </section><!-- /Hero Section -->
+
+    <!-- About Section -->
+    <section id="about" class="about-simple section">
+
+      <div class="container">
+        <div class="about-simple-grid">
+
+          <div class="about-simple-copy" data-aos="fade-up">
+            <span class="about-simple-label">About MSREC</span>
+            <h2>A research-governance system, not a certificate service.</h2>
+            <p class="about-simple-lead">An institutional platform for transparent, independent research ethics review &mdash; structured applications, multidisciplinary review, Committee decision-making and post-approval oversight, with confidential research materials protected throughout.</p>
+
+            <ul class="about-simple-facts">
+              <li><i class="bi bi-file-earmark-text"></i> Structured Applications</li>
+              <li><i class="bi bi-people"></i> Multidisciplinary Review</li>
+              <li><i class="bi bi-patch-check"></i> Verifiable Approvals</li>
+            </ul>
+
+            <a href="{% url 'pages:about' %}" class="about-simple-cta">Learn More About MSREC <i class="bi bi-arrow-right"></i></a>
+          </div>
+
+          <div class="about-simple-media" data-aos="fade-up" data-aos-delay="100">
+            <img src="{% static 'assets/img/about.jpg' %}" alt="Researchers reviewing study documentation">
+            <div class="about-simple-badge">
+              <i class="bi bi-shield-check"></i>
+              <span>Independent &amp; Verifiable</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </section><!-- /About Section -->
+
+    <!-- Clients Section -->
+    <section id="clients" class="clients section">
+
+      <div class="container">
+
+        <div class="swiper init-swiper">
+          <script type="application/json" class="swiper-config">
+            {
+              "loop": true,
+              "speed": 600,
+              "autoplay": {
+                "delay": 5000
+              },
+              "slidesPerView": "auto",
+              "pagination": {
+                "el": ".swiper-pagination",
+                "type": "bullets",
+                "clickable": true
+              },
+              "breakpoints": {
+                "320": {
+                  "slidesPerView": 2,
+                  "spaceBetween": 40
+                },
+                "480": {
+                  "slidesPerView": 3,
+                  "spaceBetween": 60
+                },
+                "640": {
+                  "slidesPerView": 4,
+                  "spaceBetween": 80
+                },
+                "992": {
+                  "slidesPerView": 6,
+                  "spaceBetween": 120
+                }
+              }
+            }
+          </script>
+          <div class="swiper-wrapper align-items-center">
+            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-1.png' %}" class="img-fluid" alt=""></div>
+            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-2.png' %}" class="img-fluid" alt=""></div>
+            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-3.png' %}" class="img-fluid" alt=""></div>
+            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-4.png' %}" class="img-fluid" alt=""></div>
+            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-5.png' %}" class="img-fluid" alt=""></div>
+            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-6.png' %}" class="img-fluid" alt=""></div>
+            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-7.png' %}" class="img-fluid" alt=""></div>
+            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-8.png' %}" class="img-fluid" alt=""></div>
+          </div>
+        </div>
+
+      </div>
+
+    </section><!-- /Clients Section -->
+
+    <!-- Stats Section -->
+    <section id="stats" class="stats section">
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+
+        <div class="row gy-4 align-items-center">
+
+          <div class="col-lg-5">
+            <img src="{% static 'assets/img/stats-img.svg' %}" alt="" class="img-fluid">
+          </div>
+
+          <div class="col-lg-7">
+
+            <div class="row gy-4">
+
+              <div class="col-lg-6">
+                <div class="stats-item d-flex">
+                  <i class="bi bi-diagram-3 flex-shrink-0"></i>
+                  <div>
+                    <span data-purecounter-start="0" data-purecounter-end="6" data-purecounter-duration="1" class="purecounter"></span>
+                    <p><strong>Research Domains</strong> <span>health to evidence-synthesis</span></p>
+                  </div>
+                </div>
+              </div><!-- End Stats Item -->
+
+              <div class="col-lg-6">
+                <div class="stats-item d-flex">
+                  <i class="bi bi-signpost-split flex-shrink-0"></i>
+                  <div>
+                    <span data-purecounter-start="0" data-purecounter-end="6" data-purecounter-duration="1" class="purecounter"></span>
+                    <p><strong>Review Pathway Stages</strong> <span>submit through monitor</span></p>
+                  </div>
+                </div>
+              </div><!-- End Stats Item -->
+
+              <div class="col-lg-6">
+                <div class="stats-item d-flex">
+                  <i class="bi bi-hourglass-split flex-shrink-0"></i>
+                  <div>
+                    <span data-purecounter-start="0" data-purecounter-end="21" data-purecounter-duration="1" class="purecounter"></span>
+                    <p><strong>Median Review Days</strong> <span>indicative, subject to completeness</span></p>
+                  </div>
+                </div>
+              </div><!-- End Stats Item -->
+
+              <div class="col-lg-6">
+                <div class="stats-item d-flex">
+                  <i class="bi bi-signpost-2 flex-shrink-0"></i>
+                  <div>
+                    <span data-purecounter-start="0" data-purecounter-end="4" data-purecounter-duration="1" class="purecounter"></span>
+                    <p><strong>Review Pathways</strong> <span>determination to full committee</span></p>
+                  </div>
+                </div>
+              </div><!-- End Stats Item -->
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </section><!-- /Stats Section -->
+
+    <!-- Call To Action Section -->
+    <section id="call-to-action" class="call-to-action section dark-background">
+
+      <div class="container">
+        <video class="cta-bg-video" autoplay muted loop playsinline preload="metadata" poster="{% static 'assets/img/cta-independence-bg.jpg' %}">
+          <source src="{% static 'assets/video/governance-lab.mp4' %}" type="video/mp4">
+        </video>
+        <div class="content row justify-content-center" data-aos="zoom-in" data-aos-delay="100">
+          <div class="col-xl-10">
+            <div class="text-center">
+              <h3>Independent by Design</h3>
+              <p>Review fees fund the administrative cost of independent review &mdash; they are never a condition of approval. Committee members with an actual, potential or perceived conflict of interest must disclose it and be recused.</p>
+              <a class="cta-btn" href="{% url 'pages:board_committee' %}">Our Governance Structure</a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section><!-- /Call To Action Section -->
+
+    <!-- Services Section -->
+    <section id="services" class="services section">
+
+      <!-- Section Title -->
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Our Services</h2>
+        <p>Structured ethics review, oversight and verification for researchers, institutions and the Committee itself.</p>
+      </div><!-- End Section Title -->
+
+      <div class="container">
+
+        <div class="row gy-4">
+
+          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="100">
+            <div class="service-item  position-relative">
+              <div class="icon">
+                <i class="bi bi-activity"></i>
+              </div>
+              <h3>Ethics Review</h3>
+              <p>Independent, multidisciplinary assessment of research protocols against ethical, methodological and privacy requirements.</p>
+              <a href="{% url 'pages:applicants' %}" class="readmore stretched-link">Read more <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div><!-- End Service Item -->
+
+          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="200">
+            <div class="service-item position-relative">
+              <div class="icon">
+                <i class="bi bi-broadcast"></i>
+              </div>
+              <h3>Ethics Determination</h3>
+              <p>A formal pathway for uncertain projects to receive an MSREC determination rather than a self-issued exemption.</p>
+              <a href="{% url 'pages:applicants' %}" class="readmore stretched-link">Read more <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div><!-- End Service Item -->
+
+          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="300">
+            <div class="service-item position-relative">
+              <div class="icon">
+                <i class="bi bi-arrow-repeat"></i>
+              </div>
+              <h3>Post-Approval Oversight</h3>
+              <p>Amendments, annual and continuing reviews, deviation and safety reporting, and formal study closure.</p>
+              <a href="{% url 'pages:ethics_review' %}#er-post-approval" class="readmore stretched-link">Read more <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div><!-- End Service Item -->
+
+          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="400">
+            <div class="service-item position-relative">
+              <div class="icon">
+                <i class="bi bi-patch-check"></i>
+              </div>
+              <h3>Verification Services</h3>
+              <p>Independent verification of approval letters using a unique reference number and QR code, with no confidential data exposed.</p>
+              <a href="{% url 'pages:verify' %}" class="readmore stretched-link">Read more <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div><!-- End Service Item -->
+
+          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="500">
+            <div class="service-item position-relative">
+              <div class="icon">
+                <i class="bi bi-calendar4-week"></i>
+              </div>
+              <h3>Committee Meetings</h3>
+              <p>A predictable meeting schedule and submission deadlines published so researchers can plan realistically.</p>
+              <a href="{% url 'pages:board_committee' %}#bc-meetings" class="readmore stretched-link">Read more <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div><!-- End Service Item -->
+
+          <div class="col-lg-4 col-md-6" data-aos="fade-up" data-aos-delay="600">
+            <div class="service-item position-relative">
+              <div class="icon">
+                <i class="bi bi-chat-square-text"></i>
+              </div>
+              <h3>Secretariat Support</h3>
+              <p>Application support, complaints handling, ethics concerns and technical assistance from the Secretariat.</p>
+              <a href="{% url 'pages:contact' %}" class="readmore stretched-link">Read more <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </div><!-- End Service Item -->
+
+        </div>
+
+      </div>
+
+    </section><!-- /Services Section -->
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="testimonials section">
+
+      <!-- Section Title -->
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Grounded in Recognized Standards</h2>
+        <p>MSREC's governance, workflow and audit architecture is built on widely recognized principles of research ethics governance.</p>
+      </div><!-- End Section Title -->
+
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+
+        <div class="swiper init-swiper">
+          <script type="application/json" class="swiper-config">
+            {
+              "loop": true,
+              "speed": 600,
+              "autoplay": {
+                "delay": 5000
+              },
+              "slidesPerView": "auto",
+              "pagination": {
+                "el": ".swiper-pagination",
+                "type": "bullets",
+                "clickable": true
+              },
+              "breakpoints": {
+                "320": {
+                  "slidesPerView": 1,
+                  "spaceBetween": 40
+                },
+                "1200": {
+                  "slidesPerView": 3,
+                  "spaceBetween": 10
+                }
+              }
+            }
+          </script>
+          <div class="swiper-wrapper">
+
+            <div class="swiper-slide">
+              <div class="testimonial-item">
+                <img src="{% static 'assets/img/testimonials/testimonials-1.jpg' %}" class="testimonial-img" alt="">
+                <h3>World Health Organization</h3>
+                <h4>Ethics Review Standards, 2011</h4>
+                <div class="stars">
+                  <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                </div>
+                <p>
+                  <i class="bi bi-quote quote-icon-left"></i>
+                  <span>Competent, transparent and independent ethics review supported by documented procedures and appropriate records is central to protecting the dignity, rights and welfare of research participants.</span>
+                  <i class="bi bi-quote quote-icon-right"></i>
+                </p>
+              </div>
+            </div><!-- End testimonial item -->
+
+            <div class="swiper-slide">
+              <div class="testimonial-item">
+                <img src="{% static 'assets/img/testimonials/testimonials-2.jpg' %}" class="testimonial-img" alt="">
+                <h3>CIOMS</h3>
+                <h4>International Ethical Guidelines, 2016</h4>
+                <div class="stars">
+                  <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                </div>
+                <p>
+                  <i class="bi bi-quote quote-icon-left"></i>
+                  <span>Independent ethical review is required, and payment must never be offered or accepted to obtain approval.</span>
+                  <i class="bi bi-quote quote-icon-right"></i>
+                </p>
+              </div>
+            </div><!-- End testimonial item -->
+
+            <div class="swiper-slide">
+              <div class="testimonial-item">
+                <img src="{% static 'assets/img/testimonials/testimonials-3.jpg' %}" class="testimonial-img" alt="">
+                <h3>ICH E6(R3)</h3>
+                <h4>Guideline for Good Clinical Practice, 2025</h4>
+                <div class="stars">
+                  <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                </div>
+                <p>
+                  <i class="bi bi-quote quote-icon-left"></i>
+                  <span>An IRB/IEC should operate according to documented procedures and maintain written records of its activities and meeting minutes.</span>
+                  <i class="bi bi-quote quote-icon-right"></i>
+                </p>
+              </div>
+            </div><!-- End testimonial item -->
+
+            <div class="swiper-slide">
+              <div class="testimonial-item">
+                <img src="{% static 'assets/img/testimonials/testimonials-4.jpg' %}" class="testimonial-img" alt="">
+                <h3>UNESCO</h3>
+                <h4>Ethics of Artificial Intelligence, 2021</h4>
+                <div class="stars">
+                  <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                </div>
+                <p>
+                  <i class="bi bi-quote quote-icon-left"></i>
+                  <span>Human dignity, fairness, transparency, accountability and human oversight must guide the ethical governance of artificial intelligence.</span>
+                  <i class="bi bi-quote quote-icon-right"></i>
+                </p>
+              </div>
+            </div><!-- End testimonial item -->
+
+            <div class="swiper-slide">
+              <div class="testimonial-item">
+                <img src="{% static 'assets/img/testimonials/testimonials-5.jpg' %}" class="testimonial-img" alt="">
+                <h3>Data Protection Commission</h3>
+                <h4>Ghana, Data Protection Act 2012 (Act 843)</h4>
+                <div class="stars">
+                  <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+                </div>
+                <p>
+                  <i class="bi bi-quote quote-icon-left"></i>
+                  <span>Organizations acting as data controllers or processors must comply with registration and data-protection requirements.</span>
+                  <i class="bi bi-quote quote-icon-right"></i>
+                </p>
+              </div>
+            </div><!-- End testimonial item -->
+
+          </div>
+          <div class="swiper-pagination"></div>
+        </div>
+
+      </div>
+
+    </section><!-- /Testimonials Section -->
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing section">
+
+      <!-- Section Title -->
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Review Fees</h2>
+        <p>Review fees fund the administrative cost of independent review &mdash; they are never a condition of approval.</p>
+      </div><!-- End Section Title -->
+
+      <div class="container" data-aos="zoom-in" data-aos-delay="100">
+
+        <div class="row g-4">
+
+          <div class="col-lg-4">
+            <div class="pricing-item">
+              <h3>Student Applicant</h3>
+              <div class="icon">
+                <i class="bi bi-box"></i>
+              </div>
+              <h4><sup>$</sup>0<span> / review</span></h4>
+              <ul>
+                <li><i class="bi bi-check"></i> <span>Full review pathway included</span></li>
+                <li><i class="bi bi-check"></i> <span>Supervisor sign-off required</span></li>
+                <li><i class="bi bi-check"></i> <span>Waived for MetaScholar-affiliated students</span></li>
+                <li class="na"><i class="bi bi-x"></i> <span>Priority scheduling</span></li>
+                <li class="na"><i class="bi bi-x"></i> <span>Dedicated case manager</span></li>
+              </ul>
+              <div class="text-center"><a href="{% url 'pages:apply' %}" class="buy-btn">Apply Now</a></div>
+            </div>
+          </div><!-- End Pricing Item -->
+
+          <div class="col-lg-4">
+            <div class="pricing-item featured">
+              <h3>Standard Institutional</h3>
+              <div class="icon">
+                <i class="bi bi-rocket"></i>
+              </div>
+
+              <h4><sup>$</sup>150<span> / review</span></h4>
+              <ul>
+                <li><i class="bi bi-check"></i> <span>Full review pathway included</span></li>
+                <li><i class="bi bi-check"></i> <span>One free amendment</span></li>
+                <li><i class="bi bi-check"></i> <span>Faculty, staff and institutional research</span></li>
+                <li><i class="bi bi-check"></i> <span>Non-refundable administrative fee</span></li>
+                <li><i class="bi bi-check"></i> <span>Never a condition of approval</span></li>
+              </ul>
+              <div class="text-center"><a href="{% url 'pages:apply' %}" class="buy-btn">Apply Now</a></div>
+            </div>
+          </div><!-- End Pricing Item -->
+
+          <div class="col-lg-4">
+            <div class="pricing-item">
+              <h3>External / Industry</h3>
+              <div class="icon">
+                <i class="bi bi-send"></i>
+              </div>
+              <h4><sup>$</sup>450<span> / review</span></h4>
+              <ul>
+                <li><i class="bi bi-check"></i> <span>Full review pathway included</span></li>
+                <li><i class="bi bi-check"></i> <span>Data-sharing agreement review</span></li>
+                <li><i class="bi bi-check"></i> <span>Externally sponsored research</span></li>
+                <li><i class="bi bi-check"></i> <span>Industry-funded research</span></li>
+                <li><i class="bi bi-check"></i> <span>Priority reviewer assignment</span></li>
+              </ul>
+              <div class="text-center"><a href="{% url 'pages:apply' %}" class="buy-btn">Apply Now</a></div>
+            </div>
+          </div><!-- End Pricing Item -->
+
+        </div>
+
+      </div>
+
+    </section><!-- /Pricing Section -->
+
+    <!-- Faq Section -->
+    <section id="faq" class="faq section">
+
+      <div class="container">
+
+        <div class="row gy-4">
+
+          <div class="col-lg-4" data-aos="fade-up" data-aos-delay="100">
+            <div class="content px-xl-5">
+              <h3><span>Frequently Asked </span><strong>Questions</strong></h3>
+              <p>
+                These answers are general guidance only. If your project's status is uncertain, request a formal ethics determination rather than relying on this page as a decision.
+              </p>
+            </div>
+          </div>
+
+          <div class="col-lg-8" data-aos="fade-up" data-aos-delay="200">
+
+            <div class="faq-container">
+              <div class="faq-item faq-active">
+                <h3><span class="num">1.</span> <span>Do I need ethics review for an online survey?</span></h3>
+                <div class="faq-content">
+                  <p>Possibly. Research type alone does not determine whether formal approval is required &mdash; submit a request so MSREC, not the applicant, can issue a formal determination.</p>
+                </div>
+                <i class="faq-toggle bi bi-chevron-right"></i>
+              </div><!-- End Faq item-->
+
+              <div class="faq-item">
+                <h3><span class="num">2.</span> <span>Is review required for previously collected or published data?</span></h3>
+                <div class="faq-content">
+                  <p>Often a shorter determination pathway applies, but applicants should not self-declare exemption. MSREC confirms whether individual-level, restricted or unpublished identifiable data trigger full review.</p>
+                </div>
+                <i class="faq-toggle bi bi-chevron-right"></i>
+              </div><!-- End Faq item-->
+
+              <div class="faq-item">
+                <h3><span class="num">3.</span> <span>Does my AI or machine-learning project need review?</span></h3>
+                <div class="faq-content">
+                  <p>AI-related review is risk-based. Projects using human data, producing automated outputs that affect individuals, or lacking human oversight will generally require review of data provenance, bias, safety and oversight.</p>
+                </div>
+                <i class="faq-toggle bi bi-chevron-right"></i>
+              </div><!-- End Faq item-->
+
+              <div class="faq-item">
+                <h3><span class="num">4.</span> <span>Can payment of a review fee speed up or guarantee approval?</span></h3>
+                <div class="faq-content">
+                  <p>No. Review fees are non-refundable administrative charges and are never a condition of approval. Protocol-specific decisions remain independent of payment.</p>
+                </div>
+                <i class="faq-toggle bi bi-chevron-right"></i>
+              </div><!-- End Faq item-->
+
+              <div class="faq-item">
+                <h3><span class="num">5.</span> <span>How long does a decision take?</span></h3>
+                <div class="faq-content">
+                  <p>Timelines depend on the assigned pathway &mdash; ethics determination, expedited review or full Committee review &mdash; and on the completeness of the submission and reviewer availability.</p>
+                </div>
+                <i class="faq-toggle bi bi-chevron-right"></i>
+              </div><!-- End Faq item-->
+
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+    </section><!-- /Faq Section -->
+
+  </main>
+{% endblock %}
+
+{% block vendor_js %}
+<script src="{% static 'assets/vendor/aos/aos.js' %}"></script>
+<script src="{% static 'assets/vendor/glightbox/js/glightbox.min.js' %}"></script>
+<script src="{% static 'assets/vendor/swiper/swiper-bundle.min.js' %}"></script>
+<script src="{% static 'assets/vendor/purecounter/purecounter_vanilla.js' %}"></script>
+{% endblock %}

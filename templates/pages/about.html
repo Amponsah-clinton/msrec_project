@@ -1,0 +1,213 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}About - MSREC | MetaScholar Research Ethics Committee{% endblock %}
+{% block description %}MSREC overview, history, vision, mission, mandate, ethical principles, governance structure and independence.{% endblock %}
+{% block body_class %}ab-page{% endblock %}
+{% block fonts %}<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/about.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <main class="main ab-main">
+
+    <div class="ab-wrap">
+
+      <!-- ============ HERO ============ -->
+      <section class="ab-hero">
+        <div class="ab-hero-copy">
+          <span class="section-label">How MSREC Started</span>
+          <h1>Independent oversight, built on documented principle.</h1>
+          <p>An independent, multidisciplinary committee providing structured ethics review, oversight and accountability across every stage of the research lifecycle &mdash; for researchers, institutions and the participants who trust them.</p>
+
+          <dl class="ab-stats-row">
+            <div class="ab-stat"><dt>6</dt><dd>Research domains covered</dd></div>
+            <div class="ab-stat"><dt>6</dt><dd>Stages in the review pathway</dd></div>
+            <div class="ab-stat"><dt>3</dt><dd>Coordinated governance bodies</dd></div>
+            <div class="ab-stat"><dt>3</dt><dd>International standards followed</dd></div>
+          </dl>
+        </div>
+
+        <div class="ab-hero-media">
+          <img src="{% static 'assets/img/about.jpg' %}" alt="Researchers reviewing study documentation">
+        </div>
+      </section>
+
+      <!-- ============ OVERVIEW / HISTORY / VISION / MISSION / MANDATE ============ -->
+      <section class="ab-section" id="ab-overview">
+        <div class="ab-section-head">
+          <span class="ab-section-icon"><i class="bi bi-info-circle"></i></span>
+          <div>
+            <h2>An Independent Committee, Built on Documented Principle</h2>
+            <p>MSREC's work rests on a clear overview, a documented history and a defined vision, mission and mandate.</p>
+          </div>
+        </div>
+
+        <div class="ab-tabs" role="tablist">
+          <button type="button" class="ab-tab active" data-tab="overview" role="tab" aria-selected="true"><i class="bi bi-eye"></i> Overview</button>
+          <button type="button" class="ab-tab" data-tab="history" role="tab" aria-selected="false"><i class="bi bi-clock-history"></i> History</button>
+          <button type="button" class="ab-tab" data-tab="vision" role="tab" aria-selected="false"><i class="bi bi-binoculars"></i> Vision</button>
+          <button type="button" class="ab-tab" data-tab="mission" role="tab" aria-selected="false"><i class="bi bi-bullseye"></i> Mission</button>
+          <button type="button" class="ab-tab" data-tab="mandate" role="tab" aria-selected="false"><i class="bi bi-journal-check"></i> Mandate</button>
+        </div>
+
+        <div class="ab-tab-panels">
+          <div class="ab-tab-panel active" data-panel="overview">
+            <p>MSREC (MetaScholar Research Ethics Committee) is a multidisciplinary committee established under MetaScholar Limited to review ethically sensitive research and support responsible research conduct. It safeguards the rights, dignity, safety and wellbeing of research participants while supporting rigorous, ethically sound research across health, social science, engineering, artificial intelligence and evidence-synthesis disciplines.</p>
+            <p>Every application moves through a documented, transparent pathway &mdash; from submission and screening, through independent review and decision, to post-approval monitoring &mdash; so outcomes remain consistent, accountable and verifiable.</p>
+          </div>
+          <div class="ab-tab-panel" data-panel="history">
+            <p>MSREC was established to formalize ethics oversight for MetaScholar-affiliated researchers and partner institutions. What began as a single review panel has grown into a structured committee with defined governance, documented standard operating procedures and a transparent, repeatable review pathway.</p>
+            <p>Until formal external registrations are obtained, MSREC's historical content avoids language implying national accreditation or regulator endorsement. That evolution continues today as MSREC extends its multidisciplinary review capacity to new research domains, including AI, ICT and evidence-synthesis work.</p>
+          </div>
+          <div class="ab-tab-panel" data-panel="vision">
+            <p>To be a trusted, independent and technology-enabled research ethics committee that promotes participant protection, responsible innovation and high standards of research integrity.</p>
+          </div>
+          <div class="ab-tab-panel" data-panel="mission">
+            <p>To provide timely, competent, transparent and impartial ethical review; support responsible research practice; monitor approved studies; and maintain secure, verifiable and accountable ethics-review records across diverse disciplines.</p>
+          </div>
+          <div class="ab-tab-panel" data-panel="mandate">
+            <p>MSREC's mandate authorizes it to determine whether a project requires ethics review; undertake expedited or full Committee review where appropriate; require modifications; approve or decline protocols; and review amendments.</p>
+            <p>The mandate further covers continuing oversight, receiving safety and deviation reports, suspending or withdrawing approval when necessary, and issuing study-closure determinations &mdash; all defined in the MSREC Charter and SOPs.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ETHICAL PRINCIPLES ============ -->
+      <section class="ab-section" id="ab-principles">
+        <div class="ab-section-head">
+          <span class="ab-section-icon"><i class="bi bi-shield-check"></i></span>
+          <div>
+            <h2>Ethical Principles</h2>
+            <p>Every review is grounded in four principles, consistent with WHO, CIOMS and ICH&nbsp;E6(R3) guidance on research ethics governance.</p>
+          </div>
+        </div>
+
+        <div class="ab-card-grid">
+          <div class="ab-card">
+            <span class="ab-card-icon"><i class="bi bi-person-check"></i></span>
+            <h4>Respect for Persons</h4>
+            <p>Voluntary participation, meaningful information, valid consent and respect for withdrawal rights.</p>
+          </div>
+          <div class="ab-card">
+            <span class="ab-card-icon"><i class="bi bi-heart"></i></span>
+            <h4>Beneficence</h4>
+            <p>Proportionate risk minimization and careful assessment of foreseeable harms and benefits.</p>
+          </div>
+          <div class="ab-card">
+            <span class="ab-card-icon"><i class="bi bi-bank2"></i></span>
+            <h4>Justice</h4>
+            <p>Fair participant selection and avoidance of unjustified exclusion, exploitation or burden concentration.</p>
+          </div>
+          <div class="ab-card">
+            <span class="ab-card-icon"><i class="bi bi-clipboard-check"></i></span>
+            <h4>Transparency &amp; Accountability</h4>
+            <p>Documented procedures, traceable decisions, conflict management and auditable records.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ GOVERNANCE: BOARD / COMMITTEE / SECRETARIAT ============ -->
+      <section class="ab-section" id="ab-governance">
+        <div class="ab-section-head">
+          <span class="ab-section-icon"><i class="bi bi-diagram-3"></i></span>
+          <div>
+            <h2>Board, Committee &amp; Secretariat</h2>
+            <p>MSREC operates with clear separation between institutional governance and protocol-specific ethical decision-making, so that ethics decisions remain protected from commercial or managerial influence.</p>
+          </div>
+        </div>
+
+        <div class="ab-gov-grid">
+          <div class="ab-gov-card">
+            <span class="ab-gov-icon"><i class="bi bi-bank2"></i></span>
+            <h4>Board</h4>
+            <span class="ab-gov-role">Institutional governance</span>
+            <p>MetaScholar Limited's Board provides institutional governance, legal support, financial stewardship and resources. It does not direct or reverse protocol-specific ethics decisions.</p>
+            <ul class="ab-tag-list">
+              <li>Governance</li>
+              <li>Resources</li>
+              <li>Independence safeguard</li>
+            </ul>
+          </div>
+
+          <div class="ab-gov-card">
+            <span class="ab-gov-icon"><i class="bi bi-people"></i></span>
+            <h4>Committee</h4>
+            <span class="ab-gov-role">Review body</span>
+            <p>A multidisciplinary panel of qualified reviewers assesses each application on its ethical, methodological and safety merits, independent of the applicant, with collective authority over protocol review.</p>
+            <ul class="ab-tag-list">
+              <li>Independent review</li>
+              <li>Multidisciplinary</li>
+              <li>Decisions</li>
+            </ul>
+          </div>
+
+          <div class="ab-gov-card">
+            <span class="ab-gov-icon"><i class="bi bi-briefcase"></i></span>
+            <h4>Secretariat</h4>
+            <span class="ab-gov-role">Administrative body</span>
+            <p>Handles administrative screening, records, scheduling, correspondence and workflow. The Secretariat cannot convert administrative payment or screening into ethical approval.</p>
+            <ul class="ab-tag-list">
+              <li>Screening</li>
+              <li>Records</li>
+              <li>Workflow</li>
+            </ul>
+          </div>
+        </div>
+
+        <a href="{% url 'pages:board_committee' %}" class="ab-inline-link">See full Board &amp; Committee details <i class="bi bi-arrow-right"></i></a>
+
+        <!-- Organizational Structure -->
+        <div class="ab-org">
+          <span class="section-label ab-org-label">Organizational Structure</span>
+
+          <div class="ab-org-tree">
+            <div class="ab-org-top">
+              <span class="ab-org-avatar ab-org-avatar-logo"><img src="{% static 'assets/img/MSREC_LOGO.png' %}" alt="MSREC"></span>
+              <span class="ab-org-name ab-org-name-top">MSREC</span>
+              <span class="ab-org-role">Research Ethics Committee</span>
+            </div>
+
+            <div class="ab-org-branch" aria-hidden="true"></div>
+
+            <div class="ab-org-children">
+              <div class="ab-org-child">
+                <span class="ab-org-avatar"><i class="bi bi-bank2"></i></span>
+                <span class="ab-org-name">Board</span>
+                <span class="ab-org-role">Governing Body</span>
+              </div>
+              <div class="ab-org-child">
+                <span class="ab-org-avatar"><i class="bi bi-people"></i></span>
+                <span class="ab-org-name">Committee</span>
+                <span class="ab-org-role">Review Body</span>
+              </div>
+              <div class="ab-org-child">
+                <span class="ab-org-avatar"><i class="bi bi-briefcase"></i></span>
+                <span class="ab-org-name">Secretariat</span>
+                <span class="ab-org-role">Administrative Body</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="ab-org-note">The Board, Committee and Secretariat operate as distinct but coordinated bodies, each with defined responsibilities, to preserve checks and balances throughout the review process.</p>
+        </div>
+      </section>
+
+      <!-- ============ INDEPENDENCE ============ -->
+      <section class="ab-quote">
+        <i class="bi bi-quote"></i>
+        <p>Protocol-specific decisions are protected from commercial, managerial, sponsor or applicant pressure. Committee members with an actual, potential or perceived conflict of interest must disclose it and be recused where required.</p>
+        <span class="ab-quote-label">Independence</span>
+      </section>
+
+    </div>
+  
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/about.js' %}"></script>
+{% endblock %}

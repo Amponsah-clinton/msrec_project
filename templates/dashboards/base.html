@@ -1,0 +1,84 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}MSREC Dashboard{% endblock %}</title>
+<meta name="theme-color" content="#f4f6f9" id="themeColorMeta">
+<link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+<script>
+  (function () {
+    try {
+      var stored = localStorage.getItem("msrec-theme");
+      var theme = stored || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+  })();
+</script>
+</head>
+<body>
+
+<button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+  <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+</button>
+<div class="overlay" id="overlay"></div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">MSREC</span>
+        <span class="brand-sub">MetaScholar Research<br>Ethics Committee</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      {% block nav_content %}{% endblock %}
+    </nav>
+
+    <div class="help-box">
+      <div class="help-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 5a2 2 0 0 1 2-2h2l2 5-2 1a10 10 0 0 0 6 6l1-2 5 2v2a2 2 0 0 1-2 2A16 16 0 0 1 3 5Z"/></svg>
+      </div>
+      <div class="help-text">
+        <strong>Need Help?</strong>
+        <p>Contact the MSREC Secretariat</p>
+        <a href="mailto:msrec@metascholar.edu">msrec@metascholar.edu</a>
+        <span>+254 20 123 4567</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <header class="topbar">
+      {% block topbar %}{% endblock %}
+    </header>
+
+    <main class="content">
+      {% block main_content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+      <span>&copy; 2026 MetaScholar Research Ethics Committee (MSREC). All rights reserved.</span>
+      <span class="footer-links"><a href="#">Privacy Policy</a><span class="dot">|</span><a href="#">Terms of Use</a></span>
+    </footer>
+
+  </div>
+</div>
+
+<script src="{% static 'dashboard/js/script.js' %}"></script>
+</body>
+</html>

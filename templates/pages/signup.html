@@ -1,0 +1,476 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Create Account - MSREC | MetaScholar Research Ethics Committee{% endblock %}
+{% block description %}Create your MSREC account as an Applicant, Reviewer or Committee Member.{% endblock %}
+{% block body_class %}signup-page{% endblock %}
+{% block fonts %}<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/signup.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <main class="main signup-main">
+
+    <div class="signup-wrap">
+      <div class="signup-card">
+
+        <!-- ============ FORM VIEW ============ -->
+        <div id="signupFormView">
+          <div class="signup-head">
+            <h1>Create your MSREC account</h1>
+            <p>Select all roles that apply to you, then complete the sections that appear below.</p>
+            <p class="required-legend"><span class="req">*</span> indicates a required field</p>
+          </div>
+
+          <form id="signupForm" novalidate>
+
+            <!-- ============ 1. ACCOUNT ROLES ============ -->
+            <section class="signup-section">
+              <h2 class="signup-section-title">Account Roles</h2>
+              <p class="section-note">Select at least one role. Roles can be combined &mdash; for example Applicant + Reviewer.</p>
+
+              <div class="role-grid">
+                <label class="role-option">
+                  <input type="checkbox" name="role" value="applicant" class="role-checkbox" data-target="section-applicant">
+                  <span class="role-box">
+                    <i class="bi bi-person-lines-fill"></i>
+                    <span class="role-box-title">Applicant / Researcher</span>
+                    <span class="role-box-note">Can be combined with other roles</span>
+                  </span>
+                </label>
+                <label class="role-option">
+                  <input type="checkbox" name="role" value="reviewer" class="role-checkbox" data-target="section-reviewer">
+                  <span class="role-box">
+                    <i class="bi bi-search-heart"></i>
+                    <span class="role-box-title">Reviewer</span>
+                    <span class="role-box-note">Requires MSREC verification</span>
+                  </span>
+                </label>
+                <label class="role-option">
+                  <input type="checkbox" name="role" value="committee" class="role-checkbox" data-target="section-committee">
+                  <span class="role-box">
+                    <i class="bi bi-people-fill"></i>
+                    <span class="role-box-title">Committee Member</span>
+                    <span class="role-box-note">Requires MSREC verification</span>
+                  </span>
+                </label>
+              </div>
+              <p class="role-error" id="roleError" hidden>Please select at least one role.</p>
+            </section>
+
+            <!-- ============ 2. PERSONAL INFORMATION ============ -->
+            <section class="signup-section">
+              <h2 class="signup-section-title">Personal Information</h2>
+              <div class="field-grid">
+                <div class="field">
+                  <label for="firstName">First Name <span class="req">*</span></label>
+                  <input type="text" id="firstName" name="firstName" required>
+                </div>
+                <div class="field">
+                  <label for="middleName">Middle Name</label>
+                  <input type="text" id="middleName" name="middleName">
+                </div>
+                <div class="field">
+                  <label for="lastName">Last Name / Surname <span class="req">*</span></label>
+                  <input type="text" id="lastName" name="lastName" required>
+                </div>
+                <div class="field">
+                  <label for="title">Professional Title</label>
+                  <select id="title" name="title">
+                    <option value="">Select title</option>
+                    <option>Prof.</option>
+                    <option>Dr.</option>
+                    <option>Mr.</option>
+                    <option>Mrs.</option>
+                    <option>Ms.</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label for="email">Email Address <span class="req">*</span></label>
+                  <input type="email" id="email" name="email" required>
+                </div>
+                <div class="field">
+                  <label for="confirmEmail">Confirm Email <span class="req">*</span></label>
+                  <input type="email" id="confirmEmail" name="confirmEmail" required>
+                  <p class="field-error" id="emailMatchError" hidden>Email addresses do not match.</p>
+                </div>
+                <div class="field">
+                  <label for="phone">Phone Number <span class="req">*</span></label>
+                  <input type="tel" id="phone" name="phone" required>
+                </div>
+                <div class="field">
+                  <label for="countryResidence">Country of Residence <span class="req">*</span></label>
+                  <input type="text" id="countryResidence" name="countryResidence" required>
+                </div>
+                <div class="field">
+                  <label for="profilePhoto">Profile Photo</label>
+                  <input type="file" id="profilePhoto" name="profilePhoto" accept="image/*">
+                </div>
+                <div class="field">
+                  <label for="highestQualification">Highest Qualification <span class="req">*</span></label>
+                  <input type="text" id="highestQualification" name="highestQualification" required>
+                </div>
+                <div class="field">
+                  <label for="password">Password <span class="req">*</span></label>
+                  <input type="password" id="password" name="password" required minlength="8">
+                </div>
+                <div class="field">
+                  <label for="confirmPassword">Confirm Password <span class="req">*</span></label>
+                  <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8">
+                  <p class="field-error" id="passwordMatchError" hidden>Passwords do not match.</p>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ 3. INSTITUTION / PROFESSIONAL INFORMATION ============ -->
+            <section class="signup-section">
+              <h2 class="signup-section-title">Institution / Professional Information</h2>
+
+              <label class="agree-row inline-toggle">
+                <input type="checkbox" id="noInstitution" name="noInstitution">
+                <span>I do not have an institutional affiliation (independent researcher / professional).</span>
+              </label>
+
+              <div class="field-grid">
+                <div class="field">
+                  <label for="institution">Institution / Organization <span class="req" id="institutionReqTag">*</span></label>
+                  <input type="text" id="institution" name="institution" required>
+                </div>
+                <div class="field">
+                  <label for="department">Department / Faculty / Unit <span class="req" id="departmentReqTag">*</span></label>
+                  <input type="text" id="department" name="department" required>
+                </div>
+                <div class="field">
+                  <label for="position">Professional / Academic Position</label>
+                  <input type="text" id="position" name="position" placeholder="e.g. Lecturer, Research Officer">
+                </div>
+                <div class="field">
+                  <label for="institutionCountry">Institution Country</label>
+                  <input type="text" id="institutionCountry" name="institutionCountry">
+                </div>
+                <div class="field field-wide">
+                  <label for="institutionAddress">Institution Address</label>
+                  <input type="text" id="institutionAddress" name="institutionAddress">
+                </div>
+                <div class="field">
+                  <label for="orcidGeneral">ORCID</label>
+                  <input type="text" id="orcidGeneral" name="orcidGeneral" placeholder="0000-0000-0000-0000">
+                </div>
+                <div class="field">
+                  <label for="regNumberGeneral">Professional Registration Number</label>
+                  <input type="text" id="regNumberGeneral" name="regNumberGeneral">
+                </div>
+                <div class="field field-wide">
+                  <label for="profileUrl">Personal Website / Profile URL</label>
+                  <input type="url" id="profileUrl" name="profileUrl">
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ APPLICANT INFORMATION ============ -->
+            <section class="signup-section role-conditional" id="section-applicant" hidden>
+              <h2 class="signup-section-title">Applicant Information</h2>
+
+              <div class="field-grid">
+                <div class="field">
+                  <label for="applicantCategory">Applicant Category <span class="req">*</span></label>
+                  <select id="applicantCategory" name="applicantCategory">
+                    <option value="">Select category</option>
+                    <option value="undergraduate">Undergraduate Student</option>
+                    <option value="postgraduate">Postgraduate Student</option>
+                    <option value="faculty">Academic / Faculty</option>
+                    <option value="independent">Independent Researcher</option>
+                    <option value="health">Health Professional</option>
+                    <option value="institutional">Institutional Researcher</option>
+                    <option value="industry">Industry Researcher</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div class="field field-wide" data-tag-field="primaryResearchArea">
+                  <label for="tagInput_primaryResearchArea">Primary Research Area <span class="req">*</span></label>
+                  <div class="tag-input" data-name="primaryResearchArea">
+                    <div class="tag-list"></div>
+                    <input type="text" id="tagInput_primaryResearchArea" placeholder="Type an area and press Enter">
+                  </div>
+                  <input type="hidden" name="primaryResearchArea" required>
+                  <p class="field-hint">Add one or more research areas.</p>
+                  <p class="field-error" id="primaryResearchAreaError">Please add at least one research area.</p>
+                </div>
+                <div class="field">
+                  <label for="applicantAffiliation">Current Institution / Affiliation</label>
+                  <input type="text" id="applicantAffiliation" name="applicantAffiliation">
+                </div>
+                <div class="field">
+                  <label for="applicantDepartment">Department</label>
+                  <input type="text" id="applicantDepartment" name="applicantDepartment">
+                </div>
+
+                <div class="field student-field" id="field-academicProgramme" hidden>
+                  <label for="academicProgramme">Academic Programme <span class="req">*</span></label>
+                  <input type="text" id="academicProgramme" name="academicProgramme">
+                </div>
+                <div class="field student-field" id="field-degreeLevel" hidden>
+                  <label for="degreeLevel">Degree Level <span class="req">*</span></label>
+                  <select id="degreeLevel" name="degreeLevel">
+                    <option value="">Select degree level</option>
+                    <option>Bachelor's</option>
+                    <option>Master's</option>
+                    <option>PhD / Doctorate</option>
+                    <option>Postgraduate Diploma</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="applicantOrcid">ORCID</label>
+                  <input type="text" id="applicantOrcid" name="applicantOrcid" placeholder="0000-0000-0000-0000">
+                </div>
+                <div class="field field-wide">
+                  <label for="applicantExperience">Research Experience</label>
+                  <textarea id="applicantExperience" name="applicantExperience" rows="3"></textarea>
+                </div>
+                <div class="field field-wide">
+                  <label for="applicantCv">CV</label>
+                  <input type="file" id="applicantCv" name="applicantCv">
+                </div>
+              </div>
+
+              <div class="student-supervisor-block student-field" id="field-supervisorBlock" hidden>
+                <h3 class="signup-subsection-title">Supervisor Information</h3>
+                <p class="section-note">You may also complete this later in your applicant profile before submitting an application.</p>
+                <div class="field-grid">
+                  <div class="field">
+                    <label for="supervisorName">Supervisor Name</label>
+                    <input type="text" id="supervisorName" name="supervisorName">
+                  </div>
+                  <div class="field">
+                    <label for="supervisorInstitution">Supervisor Institution</label>
+                    <input type="text" id="supervisorInstitution" name="supervisorInstitution">
+                  </div>
+                  <div class="field">
+                    <label for="supervisorEmail">Supervisor Email</label>
+                    <input type="email" id="supervisorEmail" name="supervisorEmail">
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- ============ REVIEWER PROFILE ============ -->
+            <section class="signup-section role-conditional" id="section-reviewer" hidden>
+              <h2 class="signup-section-title">Reviewer Profile</h2>
+              <p class="field-hint reuse-hint"><i class="bi bi-info-circle"></i> Highest Qualification is reused from your Personal Information above.</p>
+
+              <label class="agree-row inline-toggle">
+                <input type="checkbox" id="independentReviewer" name="independentReviewer">
+                <span>I am an independent reviewer without institutional affiliation.</span>
+              </label>
+
+              <div class="field-grid">
+                <div class="field">
+                  <label for="reviewerPosition">Professional Title / Current Position <span class="req">*</span></label>
+                  <input type="text" id="reviewerPosition" name="reviewerPosition">
+                </div>
+                <div class="field">
+                  <label for="reviewerInstitution">Institution / Organization <span class="req" id="reviewerInstitutionReqTag">*</span></label>
+                  <input type="text" id="reviewerInstitution" name="reviewerInstitution">
+                </div>
+                <div class="field">
+                  <label for="reviewerDiscipline">Primary Discipline <span class="req">*</span></label>
+                  <input type="text" id="reviewerDiscipline" name="reviewerDiscipline">
+                </div>
+                <div class="field">
+                  <label for="reviewerYearsProfessional">Years of Professional Experience <span class="req">*</span></label>
+                  <input type="number" id="reviewerYearsProfessional" name="reviewerYearsProfessional" min="0">
+                </div>
+                <div class="field">
+                  <label for="reviewerYearsResearch">Years of Research Experience</label>
+                  <input type="number" id="reviewerYearsResearch" name="reviewerYearsResearch" min="0">
+                </div>
+                <div class="field">
+                  <label for="reviewerPriorExperience">Previous Ethics Review Experience <span class="req">*</span></label>
+                  <select id="reviewerPriorExperience" name="reviewerPriorExperience">
+                    <option value="">Select an answer</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+                <div class="field field-wide conditional-field" id="field-reviewerCommitteeExperience" hidden>
+                  <label for="reviewerCommitteeExperience">Ethics Committee Experience</label>
+                  <textarea id="reviewerCommitteeExperience" name="reviewerCommitteeExperience" rows="3"></textarea>
+                </div>
+
+                <div class="field field-wide" data-tag-field="reviewerExpertise">
+                  <label for="tagInput_reviewerExpertise">Areas of Expertise <span class="req">*</span></label>
+                  <div class="tag-input" data-name="reviewerExpertise">
+                    <div class="tag-list"></div>
+                    <input type="text" id="tagInput_reviewerExpertise" placeholder="Type an area and press Enter">
+                  </div>
+                  <input type="hidden" name="reviewerExpertise" required>
+                  <p class="field-error" id="reviewerExpertiseError">Please add at least one area of expertise.</p>
+                </div>
+                <div class="field field-wide" data-tag-field="reviewerResearchAreas">
+                  <label for="tagInput_reviewerResearchAreas">Research Areas Able to Review <span class="req">*</span></label>
+                  <div class="tag-input" data-name="reviewerResearchAreas">
+                    <div class="tag-list"></div>
+                    <input type="text" id="tagInput_reviewerResearchAreas" placeholder="Type an area and press Enter">
+                  </div>
+                  <input type="hidden" name="reviewerResearchAreas" required>
+                  <p class="field-error" id="reviewerResearchAreasError">Please add at least one research area you can review.</p>
+                </div>
+
+                <div class="field">
+                  <label for="reviewerTraining">Research Ethics Training</label>
+                  <input type="text" id="reviewerTraining" name="reviewerTraining">
+                </div>
+                <div class="field">
+                  <label for="reviewerOrcid">ORCID</label>
+                  <input type="text" id="reviewerOrcid" name="reviewerOrcid" placeholder="0000-0000-0000-0000">
+                </div>
+                <div class="field">
+                  <label for="reviewerRegistration">Professional Registration</label>
+                  <input type="text" id="reviewerRegistration" name="reviewerRegistration">
+                </div>
+                <div class="field field-wide">
+                  <label for="reviewerCv">CV / R&eacute;sum&eacute; <span class="req">*</span></label>
+                  <input type="file" id="reviewerCv" name="reviewerCv">
+                </div>
+                <div class="field field-wide">
+                  <label for="reviewerBio">Short Professional Biography</label>
+                  <textarea id="reviewerBio" name="reviewerBio" rows="3"></textarea>
+                </div>
+              </div>
+
+              <p class="field-hint reuse-hint"><i class="bi bi-shield-check"></i> Confidentiality and Conflict-of-Interest declarations for this role are confirmed in the declarations section below.</p>
+            </section>
+
+            <!-- ============ COMMITTEE MEMBER PROFILE ============ -->
+            <section class="signup-section role-conditional" id="section-committee" hidden>
+              <h2 class="signup-section-title">Committee Member Profile</h2>
+              <p class="field-hint reuse-hint"><i class="bi bi-info-circle"></i> Highest Qualification is reused from your Personal Information above.</p>
+
+              <div class="field">
+                <label>Committee Expertise Category <span class="req">*</span></label>
+                <div class="chip-checkbox-grid" id="committeeExpertiseGrid">
+                  <label class="chip-checkbox"><input type="checkbox" name="committeeExpertiseCategory" value="health-biomedical"><span>Health / Biomedical Science</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="committeeExpertiseCategory" value="social-behavioral"><span>Social / Behavioral Science</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="committeeExpertiseCategory" value="methodology-biostatistics"><span>Research Methodology / Biostatistics</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="committeeExpertiseCategory" value="law-privacy"><span>Law / Data Protection / Privacy</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="committeeExpertiseCategory" value="ethics-bioethics"><span>Ethics / Bioethics</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="committeeExpertiseCategory" value="lay-community" id="layCommunityCheckbox"><span>Lay / Community Representative</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="committeeExpertiseCategory" value="independent-external"><span>Independent External Member</span></label>
+                  <label class="chip-checkbox"><input type="checkbox" name="committeeExpertiseCategory" value="other"><span>Other</span></label>
+                </div>
+                <p class="role-error" id="committeeCategoryError" hidden>Please select at least one expertise category.</p>
+              </div>
+
+              <div class="field-grid">
+                <div class="field">
+                  <label for="committeePosition">Current Professional Position <span class="req">*</span></label>
+                  <input type="text" id="committeePosition" name="committeePosition">
+                </div>
+                <div class="field">
+                  <label for="committeeInstitution">Institution / Organization <span class="req" id="committeeInstitutionReqTag">*</span></label>
+                  <input type="text" id="committeeInstitution" name="committeeInstitution">
+                </div>
+                <div class="field">
+                  <label for="committeeYears">Years of Professional Experience <span class="req">*</span></label>
+                  <input type="number" id="committeeYears" name="committeeYears" min="0">
+                </div>
+                <div class="field">
+                  <label for="committeeEthicsExperience">Research Ethics Experience <span class="req">*</span></label>
+                  <select id="committeeEthicsExperience" name="committeeEthicsExperience">
+                    <option value="">Select an answer</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+                <div class="field field-wide conditional-field" id="field-committeeEthicsDetails" hidden>
+                  <label for="committeeEthicsDetails">Research Ethics Experience &mdash; Details</label>
+                  <textarea id="committeeEthicsDetails" name="committeeEthicsDetails" rows="3"></textarea>
+                </div>
+                <div class="field field-wide">
+                  <label for="committeeBackground">Professional Background <span class="req">*</span></label>
+                  <textarea id="committeeBackground" name="committeeBackground" rows="3"></textarea>
+                </div>
+                <div class="field">
+                  <label for="committeeTraining">Ethics / Governance Training</label>
+                  <input type="text" id="committeeTraining" name="committeeTraining">
+                </div>
+                <div class="field">
+                  <label for="committeeOrcid">ORCID</label>
+                  <input type="text" id="committeeOrcid" name="committeeOrcid" placeholder="0000-0000-0000-0000">
+                </div>
+                <div class="field">
+                  <label for="committeeRegistration">Professional Registration</label>
+                  <input type="text" id="committeeRegistration" name="committeeRegistration">
+                </div>
+                <div class="field">
+                  <label for="committeeReference">MSREC Membership / Appointment Reference</label>
+                  <input type="text" id="committeeReference" name="committeeReference">
+                </div>
+                <div class="field field-wide">
+                  <label for="committeeCv">CV / R&eacute;sum&eacute; <span class="req" id="committeeCvReqTag">*</span></label>
+                  <input type="file" id="committeeCv" name="committeeCv">
+                </div>
+                <div class="field field-wide">
+                  <label for="committeeBio">Short Biography</label>
+                  <textarea id="committeeBio" name="committeeBio" rows="3"></textarea>
+                </div>
+              </div>
+
+              <p class="field-hint reuse-hint"><i class="bi bi-shield-check"></i> Confidentiality and Conflict-of-Interest declarations for this role are confirmed in the declarations section below.</p>
+            </section>
+
+            <!-- ============ FINAL DECLARATIONS ============ -->
+            <section class="signup-section signup-agreements">
+              <h2 class="signup-section-title">Final Declarations</h2>
+
+              <label class="agree-row">
+                <input type="checkbox" name="confirmAccurate" id="confirmAccurate" required>
+                <span>I certify that the information provided is accurate. <span class="req">*</span></span>
+              </label>
+              <label class="agree-row">
+                <input type="checkbox" name="confirmTerms" id="confirmTerms" required>
+                <span>I agree to the MSREC <a href="#">Terms of Use</a> and <a href="#">Privacy Notice</a>. <span class="req">*</span></span>
+              </label>
+
+              <div class="reviewer-committee-declarations" id="rcDeclarations" hidden>
+                <label class="agree-row">
+                  <input type="checkbox" name="confirmConfidentiality" id="confirmConfidentiality">
+                  <span>I agree to maintain the confidentiality of information accessed through MSREC. <span class="req">*</span></span>
+                </label>
+                <label class="agree-row">
+                  <input type="checkbox" name="confirmCoi" id="confirmCoi">
+                  <span>I agree to disclose actual, potential or perceived conflicts of interest. <span class="req">*</span></span>
+                </label>
+              </div>
+            </section>
+
+            <button type="submit" class="btn-create-account">Create Account</button>
+
+            <p class="signin-instead">Already have an account? <a href="{% url 'pages:login' %}">Sign in</a></p>
+          </form>
+        </div>
+
+        <!-- ============ CONFIRMATION VIEW ============ -->
+        <div id="signupConfirmView" class="signup-confirm" hidden>
+          <div class="confirm-icon"><i class="bi bi-check-lg"></i></div>
+          <h1>Account request received</h1>
+          <p class="confirm-sub">Thank you for registering with MSREC. Here's what happens next for each role you selected:</p>
+          <ul class="confirm-status-list" id="confirmStatusList"></ul>
+          <a href="{% url 'pages:index' %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to MSREC Website</a>
+        </div>
+
+      </div>
+    </div>
+  
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/signup.js' %}"></script>
+{% endblock %}

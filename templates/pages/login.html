@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Login - MSREC | MetaScholar Research Ethics Committee{% endblock %}
+{% block description %}Log in to your MSREC secure portal account.{% endblock %}
+{% block body_class %}login-page{% endblock %}
+{% block fonts %}<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/login.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <main class="main login-main">
+
+
+    <div class="login-wrap">
+      <div class="login-card">
+
+        <div class="login-panel">
+          <div class="login-form-wrap">
+            <h1>Welcome Back!</h1>
+            <p class="login-sub">Access your research ethics account.</p>
+
+            <form id="loginForm" novalidate>
+              <div class="field">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email" placeholder="you@institution.edu" required autocomplete="email">
+              </div>
+
+              <div class="field">
+                <label for="password">Password</label>
+                <div class="password-field">
+                  <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                  <button type="button" class="toggle-password" id="togglePassword" aria-label="Show password">
+                    <i class="bi bi-eye" id="toggleIcon"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="field-row">
+                <label class="remember">
+                  <input type="checkbox" name="remember">
+                  <span>Remember me</span>
+                </label>
+                <a href="#" class="forgot-link">Forgot password?</a>
+              </div>
+
+              <button type="submit" class="btn-signin">Sign In</button>
+
+              <p class="create-account">New researcher? <a href="{% url 'pages:signup' %}">Create an account</a></p>
+            </form>
+
+            <a href="{% url 'pages:index' %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to MSREC Website</a>
+          </div>
+        </div>
+
+        <div class="login-media" aria-hidden="true">
+          <div class="login-media-inner">
+            <img src="{% static 'assets/img/about.jpg' %}" alt="">
+            <div class="login-media-overlay"></div>
+            <div class="login-media-caption">
+              <span class="eyebrow">Institutional Research Ethics Governance</span>
+              <h2>Structured review. Verifiable decisions.</h2>
+            </div>
+            <button type="button" class="login-media-arrow" aria-label="Learn more"><i class="bi bi-arrow-up-right"></i></button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/login.js' %}"></script>
+{% endblock %}

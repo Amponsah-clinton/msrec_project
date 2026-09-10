@@ -1,0 +1,220 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Verify Approval - MSREC | MetaScholar Research Ethics Committee{% endblock %}
+{% block description %}Verify the authenticity and current status of an MSREC research ethics approval by approval number, verification code, or QR code.{% endblock %}
+{% block body_class %}verify-page{% endblock %}
+{% block fonts %}<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900&family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/verify.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <main class="main verify-main">
+
+
+    <!-- ============ PAGE INTRO / HERO ============ -->
+    <section class="container verify-hero">
+      <div class="verify-hero-copy">
+        <span class="section-label">Approval Verification</span>
+        <h1>Verify a research ethics approval in seconds.</h1>
+        <p>Confirm that an MSREC approval is genuine and see its current status &mdash; instantly, using the approval number, verification code, or QR code printed on the certificate.</p>
+
+        <ul class="verify-trust-row">
+          <li><i class="bi bi-patch-check-fill"></i> Official registry lookup</li>
+          <li><i class="bi bi-clock-history"></i> Real-time status</li>
+          <li><i class="bi bi-shield-lock-fill"></i> Tamper-evident codes</li>
+        </ul>
+
+        <a href="#verify-lookup" class="verify-hero-cta">Start a verification <i class="bi bi-arrow-down"></i></a>
+      </div>
+
+      <div class="verify-hero-visual" aria-hidden="true">
+        <div class="verify-orbit-ring verify-orbit-ring-a"></div>
+        <div class="verify-orbit-ring verify-orbit-ring-b"></div>
+        <div class="verify-orbit-track verify-orbit-track-a"><span class="verify-orbit-dot"></span></div>
+        <div class="verify-orbit-track verify-orbit-track-b"><span class="verify-orbit-dot dot-b"></span></div>
+        <div class="verify-cert-card">
+          <div class="verify-cert-ribbon"><i class="bi bi-patch-check-fill"></i> Verified</div>
+          <span class="verify-cert-eyebrow">MSREC Approval Certificate</span>
+          <span class="verify-cert-number">MSREC/2024/0142</span>
+          <div class="verify-cert-row"><span>Status</span><strong class="cert-ok">Approved</strong></div>
+          <div class="verify-cert-row"><span>Expires</span><strong>17 Mar 2026</strong></div>
+          <div class="verify-cert-qr">
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="verify-float-badge verify-float-badge-a"><i class="bi bi-qr-code-scan"></i></div>
+        <div class="verify-float-badge verify-float-badge-b"><i class="bi bi-fingerprint"></i></div>
+      </div>
+    </section>
+
+    <!-- ============ LOOKUP CARD ============ -->
+    <section class="container verify-lookup-section" id="verify-lookup">
+      <div class="verify-card">
+
+        <div class="verify-tabs" role="tablist">
+          <button type="button" class="verify-tab active" data-mode="number" role="tab" aria-selected="true">
+            <i class="bi bi-hash"></i> Approval Number
+          </button>
+          <button type="button" class="verify-tab" data-mode="code" role="tab" aria-selected="false">
+            <i class="bi bi-key-fill"></i> Verification Code
+          </button>
+          <button type="button" class="verify-tab" data-mode="qr" role="tab" aria-selected="false">
+            <i class="bi bi-qr-code-scan"></i> Scan QR Code
+          </button>
+        </div>
+
+        <div class="verify-panels">
+
+          <!-- Approval number -->
+          <div class="verify-panel active" data-panel="number">
+            <label for="approvalNumber">Approval Number</label>
+            <div class="verify-input-row">
+              <input type="text" id="approvalNumber" placeholder="e.g. MSREC/2024/0142" autocomplete="off">
+              <button type="button" class="verify-btn" data-by="number"><i class="bi bi-search"></i> Verify</button>
+            </div>
+            <p class="verify-hint">Printed at the top of your approval letter or certificate. Try the sample: <button type="button" class="verify-sample-btn" data-sample-target="approvalNumber" data-sample="MSREC/2024/0142">MSREC/2024/0142</button></p>
+          </div>
+
+          <!-- Verification code -->
+          <div class="verify-panel" data-panel="code">
+            <label for="verificationCode">Verification Code</label>
+            <div class="verify-input-row">
+              <input type="text" id="verificationCode" placeholder="e.g. VER-8842-XQ" autocomplete="off">
+              <button type="button" class="verify-btn" data-by="code"><i class="bi bi-search"></i> Verify</button>
+            </div>
+            <p class="verify-hint">The short code beneath the QR code on your certificate. Try the sample: <button type="button" class="verify-sample-btn" data-sample-target="verificationCode" data-sample="VER-8842-XQ">VER-8842-XQ</button></p>
+          </div>
+
+          <!-- QR code -->
+          <div class="verify-panel" data-panel="qr">
+            <div class="verify-qr-grid">
+
+              <div class="verify-qr-col verify-qr-col-camera">
+                <div class="verify-qr-col-head">
+                  <span class="verify-qr-col-icon"><i class="bi bi-camera-fill"></i></span>
+                  <div>
+                    <h5>Scan with your camera</h5>
+                    <p>Point it at the QR code on the certificate.</p>
+                  </div>
+                </div>
+
+                <div class="verify-qr-frame" id="qrFrame">
+                  <video id="qrVideo" playsinline muted></video>
+                  <span class="verify-qr-live-badge" id="qrLiveBadge"><i class="bi bi-record-circle-fill"></i> Live</span>
+                  <div class="verify-qr-frame-corner tl"></div>
+                  <div class="verify-qr-frame-corner tr"></div>
+                  <div class="verify-qr-frame-corner bl"></div>
+                  <div class="verify-qr-frame-corner br"></div>
+                  <div class="verify-qr-scanline" id="qrScanline"></div>
+                  <div class="verify-qr-placeholder" id="qrPlaceholder">
+                    <span class="verify-qr-placeholder-icon"><i class="bi bi-camera-video"></i></span>
+                    Camera preview appears here
+                  </div>
+                </div>
+
+                <div class="verify-qr-actions">
+                  <button type="button" class="verify-btn" id="qrStartBtn"><i class="bi bi-camera-fill"></i> Start Camera Scan</button>
+                  <button type="button" class="verify-btn verify-btn-ghost" id="qrStopBtn" hidden><i class="bi bi-stop-fill"></i> Stop</button>
+                </div>
+
+                <p class="verify-qr-status" id="qrStatus"><i class="bi bi-shield-lock-fill"></i> Camera access is only used locally to read the QR code &mdash; nothing is uploaded.</p>
+              </div>
+
+              <div class="verify-qr-divider"><span>OR</span></div>
+
+              <div class="verify-qr-col verify-qr-col-upload">
+                <div class="verify-qr-col-head">
+                  <span class="verify-qr-col-icon"><i class="bi bi-cloud-arrow-up-fill"></i></span>
+                  <div>
+                    <h5>Upload an image</h5>
+                    <p>Choose a photo, or drag &amp; drop it below.</p>
+                  </div>
+                </div>
+
+                <label class="verify-qr-drop" for="qrFileInput">
+                  <span class="verify-qr-drop-icon"><i class="bi bi-cloud-arrow-up"></i></span>
+                  <strong>Click to upload</strong>
+                  <span>or drag &amp; drop a photo of the certificate</span>
+                  <input type="file" id="qrFileInput" accept="image/*" hidden>
+                </label>
+                <canvas id="qrCanvas" hidden></canvas>
+
+                <button type="button" class="verify-qr-sample-card" id="qrSampleTrigger" title="Verify the sample certificate MSREC/2024/0142">
+                  <span id="qrSampleCode" class="verify-qr-sample-code" aria-hidden="true"></span>
+                  <span class="verify-qr-sample-info">
+                    <span class="verify-qr-sample-eyebrow">No QR handy?</span>
+                    <strong>Try the sample certificate</strong>
+                    <span class="verify-qr-sample-hint">Scan it above, or click to verify instantly</span>
+                  </span>
+                  <i class="bi bi-arrow-right verify-qr-sample-arrow"></i>
+                </button>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============ RESULT ============ -->
+    <section class="container verify-result-section" id="verifyResultSection" hidden>
+      <div class="verify-result-card" id="verifyResultCard"><!-- injected by verify.js --></div>
+    </section>
+
+    <!-- ============ HOW IT WORKS ============ -->
+    <section class="verify-steps section light-background">
+      <div class="container section-title">
+        <span class="section-label">How Verification Works</span>
+        <h2>Three steps to a verified answer</h2>
+        <p>Every approval issued by MSREC is registered with a unique number, verification code and QR code the moment it is granted.</p>
+      </div>
+
+      <div class="container">
+        <div class="verify-steps-grid">
+          <div class="verify-step">
+            <span class="verify-step-num">01</span>
+            <div class="verify-step-icon"><i class="bi bi-input-cursor-text"></i></div>
+            <h4>Enter or scan</h4>
+            <p>Provide the approval number, verification code, or scan the QR code printed on the certificate.</p>
+          </div>
+          <div class="verify-step">
+            <span class="verify-step-num">02</span>
+            <div class="verify-step-icon"><i class="bi bi-database-check"></i></div>
+            <h4>We check the registry</h4>
+            <p>The code is matched against MSREC's official record of every approval ever issued, amended or withdrawn.</p>
+          </div>
+          <div class="verify-step">
+            <span class="verify-step-num">03</span>
+            <div class="verify-step-icon"><i class="bi bi-shield-check"></i></div>
+            <h4>See the current status</h4>
+            <p>You get the live status &mdash; approved, conditional, expired or suspended &mdash; not just a copy of the original letter.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HELP / INTEGRITY NOTE ============ -->
+    <section class="container verify-help">
+      <div class="verify-help-card">
+        <i class="bi bi-exclamation-diamond"></i>
+        <div>
+          <h4>Result doesn't look right?</h4>
+          <p>If a certificate you were shown doesn't match what appears here, or a code cannot be found, do not treat the approval as valid. Report it to the Secretariat so it can be investigated.</p>
+        </div>
+        <a href="{% url 'pages:contact' %}" class="verify-help-link">Contact the Secretariat <i class="bi bi-arrow-right"></i></a>
+      </div>
+    </section>
+
+  
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/verify.js' %}"></script>
+{% endblock %}

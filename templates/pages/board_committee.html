@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Board &amp; Committee - MSREC | MetaScholar Research Ethics Committee{% endblock %}
+{% block description %}MSREC's Board structure and responsibilities, Committee composition, member profiles, the Secretariat, and meeting arrangements.{% endblock %}
+{% block body_class %}bc-page{% endblock %}
+{% block fonts %}<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/board-committee.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <main class="main bc-main">
+
+    <div class="bc-wrap">
+
+      <!-- ============ HERO ============ -->
+      <section class="bc-hero">
+        <div class="bc-hero-copy">
+          <span class="section-label">Governance</span>
+          <h1>The people and structure behind every decision.</h1>
+          <p>MSREC separates institutional governance from protocol-specific ethical decision-making, so no single person or body can direct an outcome. Here's exactly how the Board, Committee and Secretariat are composed, what each is responsible for, and how they meet.</p>
+
+          <dl class="bc-stats-row">
+            <div class="bc-stat"><dt>3</dt><dd>Board members</dd></div>
+            <div class="bc-stat"><dt>7</dt><dd>Committee reviewers</dd></div>
+            <div class="bc-stat"><dt>7</dt><dd>Disciplines represented</dd></div>
+            <div class="bc-stat"><dt>12</dt><dd>Meetings a year</dd></div>
+          </dl>
+        </div>
+
+        <div class="bc-hero-visual" aria-hidden="true">
+          <div class="bc-hero-tier bc-hero-tier-board"><i class="bi bi-bank2"></i> Board</div>
+          <div class="bc-hero-connector"></div>
+          <div class="bc-hero-tier bc-hero-tier-committee"><i class="bi bi-people-fill"></i> Committee</div>
+          <div class="bc-hero-connector"></div>
+          <div class="bc-hero-tier bc-hero-tier-secretariat"><i class="bi bi-folder2-open"></i> Secretariat</div>
+        </div>
+      </section>
+
+      <!-- ============ CATEGORY NAV ============ -->
+      <nav class="bc-toolbar" id="bcCatNav" aria-label="Board and Committee sections">
+        <a href="#bc-structure" data-cat="bc-structure"><i class="bi bi-diagram-3"></i> Board Structure</a>
+        <a href="#bc-responsibilities" data-cat="bc-responsibilities"><i class="bi bi-clipboard-check"></i> Board Responsibilities</a>
+        <a href="#bc-composition" data-cat="bc-composition"><i class="bi bi-people"></i> Committee Composition</a>
+        <a href="#bc-profiles" data-cat="bc-profiles"><i class="bi bi-person-badge"></i> Member Profiles</a>
+        <a href="#bc-secretariat" data-cat="bc-secretariat"><i class="bi bi-folder2-open"></i> Secretariat</a>
+        <a href="#bc-meetings" data-cat="bc-meetings"><i class="bi bi-calendar-week"></i> Meeting Arrangements</a>
+      </nav>
+
+      <!-- ============ BOARD STRUCTURE ============ -->
+      <section class="bc-section" id="bc-structure">
+        <div class="bc-section-head">
+          <span class="bc-section-icon"><i class="bi bi-diagram-3"></i></span>
+          <div>
+            <h2>Board Structure</h2>
+            <p>Institutional governance sits above the Committee, but stops short of touching its decisions.</p>
+          </div>
+        </div>
+
+        <div class="bc-structure-grid">
+          <div class="bc-structure-copy">
+            <p>MetaScholar Limited's Board provides institutional governance for MSREC &mdash; legal standing, financial stewardship, appointments and resourcing. It has no authority to direct, review or reverse a protocol-specific ethics decision; that authority sits entirely with the Committee.</p>
+            <dl class="bc-fact-list">
+              <div><dt>Chairperson</dt><dd>Elected by the Board from among its independent members</dd></div>
+              <div><dt>Composition</dt><dd>3 members, a majority of whom are independent of MetaScholar management</dd></div>
+              <div><dt>Term length</dt><dd>3 years, renewable once</dd></div>
+              <div><dt>Appointment</dt><dd>Board appoints and reappoints Committee members and the Committee Chairperson</dd></div>
+            </dl>
+          </div>
+
+          <div class="bc-flow" role="img" aria-label="Board governs and resources the Committee and Secretariat; the Committee makes independent decisions; the Secretariat administratively supports both.">
+            <div class="bc-flow-step">
+              <span class="bc-flow-marker"><i class="bi bi-bank2"></i></span>
+              <div class="bc-flow-text"><strong>Board</strong><span>Institutional governance</span></div>
+            </div>
+            <div class="bc-flow-step">
+              <span class="bc-flow-marker"><i class="bi bi-people-fill"></i></span>
+              <div class="bc-flow-text"><strong>Committee</strong><span>Independent ethics decisions</span></div>
+            </div>
+            <div class="bc-flow-step">
+              <span class="bc-flow-marker"><i class="bi bi-folder2-open"></i></span>
+              <div class="bc-flow-text"><strong>Secretariat</strong><span>Screening, records &amp; scheduling</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ BOARD RESPONSIBILITIES ============ -->
+      <section class="bc-section" id="bc-responsibilities">
+        <div class="bc-section-head">
+          <span class="bc-section-icon"><i class="bi bi-clipboard-check"></i></span>
+          <div>
+            <h2>Board Responsibilities</h2>
+            <p>What institutional governance covers &mdash; and, just as importantly, what it deliberately stays out of.</p>
+          </div>
+        </div>
+
+        <div class="bc-resp-grid">
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-shield-check"></i></span>
+            <h4>Institutional Governance</h4>
+            <p>Holds legal, financial and reputational responsibility for MSREC's operation within MetaScholar Limited.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-person-plus"></i></span>
+            <h4>Appointments</h4>
+            <p>Appoints and reappoints the Committee Chairperson and members, and confirms Secretariat leadership.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-file-earmark-ruled"></i></span>
+            <h4>Charter &amp; Policy Approval</h4>
+            <p>Approves the MSREC Charter, standard operating procedures and major policy changes.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-cash-coin"></i></span>
+            <h4>Resourcing</h4>
+            <p>Ensures the Committee and Secretariat are adequately staffed, trained and funded to review without delay.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-graph-up"></i></span>
+            <h4>Periodic Reporting</h4>
+            <p>Receives aggregate reporting on review activity, timelines and adverse events &mdash; never individual protocol files.</p>
+          </div>
+          <div class="bc-resp-card bc-resp-card-boundary">
+            <span class="bc-resp-icon"><i class="bi bi-slash-circle"></i></span>
+            <h4>Does Not Direct Decisions</h4>
+            <p>Cannot approve, deny, expedite or reverse a specific protocol decision. That authority belongs to the Committee alone.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ COMMITTEE COMPOSITION ============ -->
+      <section class="bc-section" id="bc-composition">
+        <div class="bc-section-head">
+          <span class="bc-section-icon"><i class="bi bi-people"></i></span>
+          <div>
+            <h2>Committee Composition</h2>
+            <p>A multidisciplinary panel, built so no single perspective can dominate a decision.</p>
+          </div>
+        </div>
+
+        <p class="bc-composition-lead">Every application is reviewed by members spanning at least these seven areas of expertise. At least one member is independent of any applicant's institution, and at least one is a lay or community representative with no research affiliation.</p>
+
+        <div class="bc-expertise-tags">
+          <span class="bc-tag"><i class="bi bi-heart-pulse"></i> Health &amp; Biomedical Science</span>
+          <span class="bc-tag"><i class="bi bi-people"></i> Social &amp; Behavioral Science</span>
+          <span class="bc-tag"><i class="bi bi-bar-chart"></i> Research Methodology &amp; Biostatistics</span>
+          <span class="bc-tag"><i class="bi bi-scale"></i> Law, Data Protection &amp; Privacy</span>
+          <span class="bc-tag"><i class="bi bi-journal-bookmark"></i> Ethics &amp; Bioethics</span>
+          <span class="bc-tag"><i class="bi bi-house-heart"></i> Lay / Community Representative</span>
+          <span class="bc-tag"><i class="bi bi-globe"></i> Independent External Member</span>
+        </div>
+
+        <div class="bc-fact-grid">
+          <div class="bc-fact-card">
+            <span class="bc-fact-num">5</span>
+            <span class="bc-fact-label">Quorum &mdash; minimum members present to decide</span>
+          </div>
+          <div class="bc-fact-card">
+            <span class="bc-fact-num">3 yrs</span>
+            <span class="bc-fact-label">Standard Committee term, renewable once</span>
+          </div>
+          <div class="bc-fact-card">
+            <span class="bc-fact-num">1+</span>
+            <span class="bc-fact-label">Lay / independent member required for quorum</span>
+          </div>
+          <div class="bc-fact-card">
+            <span class="bc-fact-num">0</span>
+            <span class="bc-fact-label">Conflicted members permitted to vote on that item</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ MEMBER PROFILES ============ -->
+      <section class="bc-section" id="bc-profiles">
+        <div class="bc-section-head">
+          <span class="bc-section-icon"><i class="bi bi-person-badge"></i></span>
+          <div>
+            <h2>Member Profiles</h2>
+            <p>Every named individual currently serving across the Board, Committee and Secretariat.</p>
+          </div>
+        </div>
+
+        <div class="bc-people-filter" id="bcPeopleFilter">
+          <button type="button" class="bc-filter-btn is-active" data-group="all">All <span>13</span></button>
+          <button type="button" class="bc-filter-btn" data-group="board">Board <span>3</span></button>
+          <button type="button" class="bc-filter-btn" data-group="committee">Committee <span>7</span></button>
+          <button type="button" class="bc-filter-btn" data-group="secretariat">Secretariat <span>3</span></button>
+        </div>
+
+        <div class="bc-people-grid" id="bcPeopleGrid">
+
+          <!-- Board -->
+          <div class="bc-person" data-group="board">
+            <span class="bc-avatar" style="--av-bg:#2a4747;">KA</span>
+            <h4>Prof. Kojo Antwi-Boateng</h4>
+            <span class="bc-person-role">Board Chairperson</span>
+            <span class="bc-person-tag">Governance &amp; Higher Education</span>
+          </div>
+          <div class="bc-person" data-group="board">
+            <span class="bc-avatar" style="--av-bg:#7a4fb5;">ED</span>
+            <h4>Mrs. Efua Darko-Mensah</h4>
+            <span class="bc-person-role">Board Vice-Chair</span>
+            <span class="bc-person-tag">Finance &amp; Administration</span>
+          </div>
+          <div class="bc-person" data-group="board">
+            <span class="bc-avatar" style="--av-bg:#2f5fa8;">YS</span>
+            <h4>Mr. Yaw Sarpong</h4>
+            <span class="bc-person-role">Independent Board Member</span>
+            <span class="bc-person-tag">Legal &amp; Compliance</span>
+          </div>
+
+          <!-- Committee -->
+          <div class="bc-person" data-group="committee">
+            <span class="bc-avatar" style="--av-bg:#1f7a5c;">MO</span>
+            <h4>Prof. Michael Osei-Frimpong</h4>
+            <span class="bc-person-role">Committee Chairperson</span>
+            <span class="bc-person-tag">Health &amp; Biomedical Science</span>
+          </div>
+          <div class="bc-person" data-group="committee">
+            <span class="bc-avatar" style="--av-bg:#d97b29;">AF</span>
+            <h4>Dr. Abena Fosu-Ackah</h4>
+            <span class="bc-person-role">Committee Vice-Chairperson</span>
+            <span class="bc-person-tag">Social &amp; Behavioral Science</span>
+          </div>
+          <div class="bc-person" data-group="committee">
+            <span class="bc-avatar" style="--av-bg:#2f5fa8;">SN</span>
+            <h4>Dr. Samuel Nkrumah-Boateng</h4>
+            <span class="bc-person-role">Committee Member</span>
+            <span class="bc-person-tag">Methodology &amp; Biostatistics</span>
+          </div>
+          <div class="bc-person" data-group="committee">
+            <span class="bc-avatar" style="--av-bg:#7a4fb5;">CA</span>
+            <h4>Barr. Comfort Aidoo</h4>
+            <span class="bc-person-role">Committee Member</span>
+            <span class="bc-person-tag">Law, Data Protection &amp; Privacy</span>
+          </div>
+          <div class="bc-person" data-group="committee">
+            <span class="bc-avatar" style="--av-bg:#c0392b;">IA</span>
+            <h4>Rev. Dr. Isaac Amponsah</h4>
+            <span class="bc-person-role">Committee Member</span>
+            <span class="bc-person-tag">Ethics &amp; Bioethics</span>
+          </div>
+          <div class="bc-person" data-group="committee">
+            <span class="bc-avatar" style="--av-bg:#196D8A;">GT</span>
+            <h4>Madam Grace Tetteh</h4>
+            <span class="bc-person-role">Committee Member</span>
+            <span class="bc-person-tag">Lay / Community Representative</span>
+          </div>
+          <div class="bc-person" data-group="committee">
+            <span class="bc-avatar" style="--av-bg:#1f7a5c;">EK</span>
+            <h4>Dr. Elorm Kudjordji</h4>
+            <span class="bc-person-role">Independent External Member</span>
+            <span class="bc-person-tag">Data Science &amp; AI</span>
+          </div>
+
+          <!-- Secretariat -->
+          <div class="bc-person" data-group="secretariat">
+            <span class="bc-avatar" style="--av-bg:#2a4747;">AB</span>
+            <h4>Ms. Adjoa Boakye</h4>
+            <span class="bc-person-role">Head of Secretariat / Ethics Officer</span>
+            <span class="bc-person-tag">Secretariat</span>
+          </div>
+          <div class="bc-person" data-group="secretariat">
+            <span class="bc-avatar" style="--av-bg:#d97b29;">NQ</span>
+            <h4>Mr. Nathaniel Quarshie</h4>
+            <span class="bc-person-role">Administrative &amp; Records Coordinator</span>
+            <span class="bc-person-tag">Secretariat</span>
+          </div>
+          <div class="bc-person" data-group="secretariat">
+            <span class="bc-avatar" style="--av-bg:#2f5fa8;">PO</span>
+            <h4>Ms. Priscilla Owusu-Ansah</h4>
+            <span class="bc-person-role">Applicant Support Officer</span>
+            <span class="bc-person-tag">Secretariat</span>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- ============ SECRETARIAT ============ -->
+      <section class="bc-section" id="bc-secretariat">
+        <div class="bc-section-head">
+          <span class="bc-section-icon"><i class="bi bi-folder2-open"></i></span>
+          <div>
+            <h2>Secretariat</h2>
+            <p>The administrative engine that keeps applications moving &mdash; without ever deciding one.</p>
+          </div>
+        </div>
+
+        <div class="bc-resp-grid">
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-inboxes"></i></span>
+            <h4>Administrative Screening</h4>
+            <p>Checks every submission for completeness before it reaches a reviewer, and requests missing documents directly.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-calendar-check"></i></span>
+            <h4>Scheduling</h4>
+            <p>Builds the meeting agenda, assigns reviewers by expertise, and coordinates Committee availability.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-archive"></i></span>
+            <h4>Records &amp; Minutes</h4>
+            <p>Maintains the official record of every application, decision, amendment and meeting minute.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-chat-dots"></i></span>
+            <h4>Correspondence</h4>
+            <p>Issues outcome letters, amendment acknowledgements and reviewer queries on the Committee's behalf.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-life-preserver"></i></span>
+            <h4>Applicant Support</h4>
+            <p>First point of contact for questions on forms, templates, status and the <a href="{% url 'pages:verify' %}">Verify Approval</a> tool.</p>
+          </div>
+          <div class="bc-resp-card bc-resp-card-boundary">
+            <span class="bc-resp-icon"><i class="bi bi-slash-circle"></i></span>
+            <h4>Cannot Grant Approval</h4>
+            <p>Administrative screening or fee payment is never a substitute for Committee review &mdash; the Secretariat cannot approve a study.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ MEETING ARRANGEMENTS ============ -->
+      <section class="bc-section" id="bc-meetings">
+        <div class="bc-section-head">
+          <span class="bc-section-icon"><i class="bi bi-calendar-week"></i></span>
+          <div>
+            <h2>Meeting Arrangements</h2>
+            <p>How and when the Committee actually sits down to decide.</p>
+          </div>
+        </div>
+
+        <div class="bc-table-wrap">
+          <table class="bc-table">
+            <thead>
+              <tr>
+                <th>Meeting Type</th>
+                <th>Frequency</th>
+                <th>Notice / Cut-off</th>
+                <th>Quorum</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td data-label="Meeting Type"><strong>Regular Committee Meeting</strong></td>
+                <td data-label="Frequency">Second Thursday of every month</td>
+                <td data-label="Notice / Cut-off">Complete applications due 10 working days prior</td>
+                <td data-label="Quorum">5 members, incl. 1 lay representative</td>
+              </tr>
+              <tr>
+                <td data-label="Meeting Type"><strong>Expedited Review</strong></td>
+                <td data-label="Frequency">Rolling, asynchronous</td>
+                <td data-label="Notice / Cut-off">Decision within 10 working days of assignment</td>
+                <td data-label="Quorum">Chair or Vice-Chair + 2 designated reviewers</td>
+              </tr>
+              <tr>
+                <td data-label="Meeting Type"><strong>Special / Emergency Meeting</strong></td>
+                <td data-label="Frequency">As needed</td>
+                <td data-label="Notice / Cut-off">Convened within 5 working days of a trigger event</td>
+                <td data-label="Quorum">5 members, incl. Chair or Vice-Chair</td>
+              </tr>
+              <tr>
+                <td data-label="Meeting Type"><strong>Annual Governance Review</strong></td>
+                <td data-label="Frequency">Once a year</td>
+                <td data-label="Notice / Cut-off">Board and Committee leadership, scheduled in advance</td>
+                <td data-label="Quorum">Board quorum applies</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="bc-meeting-notes">
+          <div class="bc-note">
+            <span class="bc-note-icon"><i class="bi bi-journal-text"></i></span>
+            <div>
+              <h4>Minutes &amp; Records</h4>
+              <p>Draft minutes circulate within 5 working days and are ratified at the following meeting, then retained under MSREC's document retention policy.</p>
+            </div>
+          </div>
+          <div class="bc-note">
+            <span class="bc-note-icon"><i class="bi bi-send-check"></i></span>
+            <div>
+              <h4>Decision Communication</h4>
+              <p>Outcome letters are issued within 5 working days of a decision, and the record becomes visible through <a href="{% url 'pages:verify' %}">Verify Approval</a>.</p>
+            </div>
+          </div>
+          <div class="bc-note">
+            <span class="bc-note-icon"><i class="bi bi-camera-video"></i></span>
+            <div>
+              <h4>Format</h4>
+              <p>Meetings run hybrid by default &mdash; in person at the Secretariat office, with a virtual option for members joining remotely.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CLOSING CTA ============ -->
+      <section class="bc-cta">
+        <div>
+          <h4>Ready to move forward?</h4>
+          <p>Submit an application for the next available meeting, or ask the Secretariat a question first.</p>
+        </div>
+        <div class="bc-cta-actions">
+          <a href="{% url 'pages:apply' %}" class="bc-cta-btn bc-cta-btn-primary">Start an Application <i class="bi bi-arrow-right"></i></a>
+          <a href="{% url 'pages:contact' %}" class="bc-cta-btn bc-cta-btn-ghost">Contact the Secretariat</a>
+        </div>
+      </section>
+
+    </div>
+  
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/board-committee.js' %}"></script>
+{% endblock %}

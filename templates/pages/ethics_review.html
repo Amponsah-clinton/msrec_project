@@ -1,0 +1,470 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Ethics Review - MSREC | MetaScholar Research Ethics Committee{% endblock %}
+{% block description %}How MSREC reviews a protocol: administrative screening, reviewer assignment, assessment domains, decision categories, appeals, researcher responses, committee meetings and post-approval management.{% endblock %}
+{% block body_class %}er-page{% endblock %}
+{% block fonts %}<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/ethics-review.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <main class="main er-main">
+
+    <div class="er-wrap">
+
+      <!-- ============ HERO ============ -->
+      <section class="er-hero">
+        <div class="er-hero-copy">
+          <span class="section-label">Ethics Review</span>
+          <h1>From submission to decision &mdash; and everything that follows.</h1>
+          <p>Approval is a process of independent evaluation, not an administrative transaction. Every state change is time-stamped and attributable to a specific authorized user, from the moment a protocol lands with the Secretariat to the day a study formally closes.</p>
+
+          <dl class="er-stats-row">
+            <div class="er-stat"><dt>7</dt><dd>Workflow stages</dd></div>
+            <div class="er-stat"><dt>8</dt><dd>Assessment domains</dd></div>
+            <div class="er-stat"><dt>5</dt><dd>Decision categories</dd></div>
+            <div class="er-stat"><dt>8</dt><dd>Post-approval submission types</dd></div>
+          </dl>
+        </div>
+
+        <div class="er-hero-visual" aria-hidden="true">
+          <div class="er-hero-tier er-tier-1"><i class="bi bi-inboxes"></i> Submit</div>
+          <div class="er-hero-connector"></div>
+          <div class="er-hero-tier er-tier-2"><i class="bi bi-clipboard-check"></i> Screen</div>
+          <div class="er-hero-connector"></div>
+          <div class="er-hero-tier er-tier-3"><i class="bi bi-search-heart"></i> Review</div>
+          <div class="er-hero-connector"></div>
+          <div class="er-hero-tier er-tier-4"><i class="bi bi-signpost-split"></i> Decide</div>
+          <div class="er-hero-connector"></div>
+          <div class="er-hero-tier er-tier-5"><i class="bi bi-graph-up-arrow"></i> Monitor</div>
+        </div>
+      </section>
+
+      <!-- ============ TOOLBAR ============ -->
+      <nav class="er-toolbar" id="erCatNav" aria-label="Ethics review sections">
+        <a href="#er-workflow" data-cat="er-workflow"><i class="bi bi-diagram-3"></i> Workflow</a>
+        <a href="#er-screening" data-cat="er-screening"><i class="bi bi-clipboard-check"></i> Screening</a>
+        <a href="#er-assignment" data-cat="er-assignment"><i class="bi bi-person-check"></i> Reviewer Assignment</a>
+        <a href="#er-domains" data-cat="er-domains"><i class="bi bi-list-check"></i> Assessment Domains</a>
+        <a href="#er-decisions" data-cat="er-decisions"><i class="bi bi-signpost-split"></i> Decisions</a>
+        <a href="#er-appeals" data-cat="er-appeals"><i class="bi bi-arrow-left-right"></i> Appeals &amp; Responses</a>
+        <a href="#er-meetings" data-cat="er-meetings"><i class="bi bi-calendar-week"></i> Committee Meetings</a>
+        <a href="#er-post-approval" data-cat="er-post-approval"><i class="bi bi-graph-up-arrow"></i> Post-Approval</a>
+      </nav>
+
+      <!-- ============ WORKFLOW ============ -->
+      <section class="er-section er-section-photo" id="er-workflow" style="background-image: url('{% static 'assets/img/workflow-management.jpg' %}');">
+        <div class="er-section-photo-overlay" aria-hidden="true"></div>
+        <div class="er-section-head">
+          <span class="er-section-icon"><i class="bi bi-diagram-3"></i></span>
+          <div>
+            <h2>The End-to-End Workflow</h2>
+            <p>Seven stages, applied identically regardless of research discipline.</p>
+          </div>
+        </div>
+
+        <div class="er-flow">
+          <div class="er-flow-step">
+            <span class="er-flow-marker">1</span>
+            <div class="er-flow-text"><strong>Applicant Submission</strong><span>Protocol, forms and supporting documents enter the system.</span></div>
+          </div>
+          <div class="er-flow-step">
+            <span class="er-flow-marker">2</span>
+            <div class="er-flow-text"><strong>Administrative Screening</strong><span>Completeness and scope checks &mdash; no ethical judgement yet.</span></div>
+          </div>
+          <div class="er-flow-step">
+            <span class="er-flow-marker">3</span>
+            <div class="er-flow-text"><strong>Review Pathway</strong><span>Determination, expedited or full Committee route is assigned.</span></div>
+          </div>
+          <div class="er-flow-step">
+            <span class="er-flow-marker">4</span>
+            <div class="er-flow-text"><strong>Ethical Review</strong><span>Scientific, ethical, privacy and risk assessment against eight domains.</span></div>
+          </div>
+          <div class="er-flow-step">
+            <span class="er-flow-marker">5</span>
+            <div class="er-flow-text"><strong>Researcher Response</strong><span>Clarifications and revisions where the reviewer or Committee requires them.</span></div>
+          </div>
+          <div class="er-flow-step">
+            <span class="er-flow-marker">6</span>
+            <div class="er-flow-text"><strong>Decision</strong><span>Approve, modify, defer or decline &mdash; recorded with reasoning.</span></div>
+          </div>
+          <div class="er-flow-step">
+            <span class="er-flow-marker">7</span>
+            <div class="er-flow-text"><strong>Post-Approval</strong><span>Amendments, annual reports, safety oversight and eventual closure.</span></div>
+          </div>
+        </div>
+
+        <div class="er-logic-grid">
+          <div class="er-logic-card er-logic-good">
+            <span class="er-logic-icon"><i class="bi bi-check2-circle"></i></span>
+            <div><strong>Approved</strong><span>Proceed under the approved protocol.</span></div>
+          </div>
+          <div class="er-logic-card er-logic-amber">
+            <span class="er-logic-icon"><i class="bi bi-pencil-square"></i></span>
+            <div><strong>Modifications Required</strong><span>Return to applicant and re-review.</span></div>
+          </div>
+          <div class="er-logic-card er-logic-red">
+            <span class="er-logic-icon"><i class="bi bi-x-octagon"></i></span>
+            <div><strong>Not Approved</strong><span>Close, or permit appeal under policy.</span></div>
+          </div>
+          <div class="er-logic-card er-logic-blue">
+            <span class="er-logic-icon"><i class="bi bi-graph-up-arrow"></i></span>
+            <div><strong>Active Study</strong><span>Annual review, amendments and safety oversight.</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ADMINISTRATIVE SCREENING ============ -->
+      <section class="er-section" id="er-screening">
+        <div class="er-section-head">
+          <span class="er-section-icon"><i class="bi bi-clipboard-check"></i></span>
+          <div>
+            <h2>Administrative Screening</h2>
+            <p>The Secretariat's first pass &mdash; a completeness check, not an ethics decision.</p>
+          </div>
+        </div>
+
+        <div class="er-card-grid">
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-clipboard-data"></i></span>
+            <h4>Completeness</h4>
+            <p>Every required field, form and attachment is present before a reviewer ever sees the file.</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-person-badge"></i></span>
+            <h4>Applicant Identity</h4>
+            <p>Principal investigator and research-team identity and institutional affiliation are verified.</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-building"></i></span>
+            <h4>Institutional Information</h4>
+            <p>Affiliation, supervisor endorsement and site permissions are checked where applicable.</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-paperclip"></i></span>
+            <h4>Required Attachments</h4>
+            <p>Protocol, consent materials, instruments and technical annexes match what the study needs.</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-cash-coin"></i></span>
+            <h4>Payment Status</h4>
+            <p>Fee status is confirmed where a review fee applies &mdash; it never substitutes for ethical review.</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-bullseye"></i></span>
+            <h4>Scope Check</h4>
+            <p>Confirms the submission genuinely falls within MSREC's remit before it proceeds further.</p>
+          </div>
+          <div class="er-card er-card-boundary">
+            <span class="er-card-icon"><i class="bi bi-slash-circle"></i></span>
+            <h4>Not a Decision</h4>
+            <p>Screening never makes a substantive ethics judgement &mdash; that authority belongs to reviewers and the Committee alone.</p>
+          </div>
+          <div class="er-card er-card-boundary">
+            <span class="er-card-icon"><i class="bi bi-arrow-counterclockwise"></i></span>
+            <h4>"Incomplete" State</h4>
+            <p>Missing information returns the application to the applicant with a structured checklist until corrected.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ REVIEWER ASSIGNMENT ============ -->
+      <section class="er-section" id="er-assignment">
+        <div class="er-section-head">
+          <span class="er-section-icon"><i class="bi bi-person-check"></i></span>
+          <div>
+            <h2>Reviewer Assignment</h2>
+            <p>Matched by expertise, cleared for independence, before a single protocol page is opened.</p>
+          </div>
+        </div>
+
+        <div class="er-structure-grid">
+          <div class="er-structure-copy">
+            <p>Reviewer assignment is based on subject expertise, current workload and independence from the applicant. Before a reviewer can open the full protocol, they must first confirm whether an actual, potential or perceived conflict of interest exists.</p>
+            <p>Where MSREC policy adopts a blinded or non-disclosure model, reviewer identity may remain confidential to the applicant throughout the process.</p>
+            <dl class="er-fact-list">
+              <div><dt>Assignment basis</dt><dd>Expertise, workload and independence from the applicant</dd></div>
+              <div><dt>Conflict check</dt><dd>Completed before full protocol access is granted</dd></div>
+              <div><dt>If a conflict exists</dt><dd>Assignment is blocked and returned for reassignment</dd></div>
+              <div><dt>Reviewer identity</dt><dd>May remain confidential under a blinded review policy</dd></div>
+            </dl>
+          </div>
+
+          <div class="er-flow" role="img" aria-label="A reviewer is assigned, declares any conflict, and either gains protocol access or is reassigned by the Secretariat or Chairperson.">
+            <div class="er-flow-step">
+              <span class="er-flow-marker er-flow-marker-outline"><i class="bi bi-person-plus"></i></span>
+              <div class="er-flow-text"><strong>Assigned</strong><span>Matched to the protocol by expertise and availability.</span></div>
+            </div>
+            <div class="er-flow-step">
+              <span class="er-flow-marker er-flow-marker-outline"><i class="bi bi-shield-exclamation"></i></span>
+              <div class="er-flow-text"><strong>Conflict Declaration</strong><span>Confirms no actual, potential or perceived conflict exists.</span></div>
+            </div>
+            <div class="er-flow-step">
+              <span class="er-flow-marker er-flow-marker-outline"><i class="bi bi-unlock"></i></span>
+              <div class="er-flow-text"><strong>Full Access Granted</strong><span>Protocol documents unlock only once cleared.</span></div>
+            </div>
+            <div class="er-flow-step">
+              <span class="er-flow-marker er-flow-marker-outline"><i class="bi bi-arrow-repeat"></i></span>
+              <div class="er-flow-text"><strong>If Conflicted &mdash; Reassigned</strong><span>Secretariat or Chairperson routes it to another reviewer.</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ ASSESSMENT DOMAINS ============ -->
+      <section class="er-section er-section-photo" id="er-domains" style="background-image: url('{% static 'assets/img/domains-assessment.jpg' %}');">
+        <div class="er-section-photo-overlay" aria-hidden="true"></div>
+        <div class="er-section-head">
+          <span class="er-section-icon"><i class="bi bi-list-check"></i></span>
+          <div>
+            <h2>Assessment Domains</h2>
+            <p>Every protocol is measured against the same eight domains, whatever the discipline.</p>
+          </div>
+        </div>
+
+        <div class="er-card-grid">
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-lightbulb"></i></span>
+            <h4>Scientific &amp; Social Value</h4>
+            <p>Is the research question meaningful, and is the design capable of producing useful knowledge?</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-people"></i></span>
+            <h4>Participant Selection</h4>
+            <p>Are inclusion, exclusion and recruitment fair and appropriately justified?</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-shield-check"></i></span>
+            <h4>Risk &amp; Benefit</h4>
+            <p>Are foreseeable harms minimized and proportionate to anticipated benefits or knowledge value?</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-file-earmark-check"></i></span>
+            <h4>Consent</h4>
+            <p>Is information understandable, voluntary and appropriate to the participant population?</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-lock"></i></span>
+            <h4>Privacy &amp; Confidentiality</h4>
+            <p>Are data collection, access, sharing, retention and disclosure risks adequately controlled?</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-heart"></i></span>
+            <h4>Vulnerability</h4>
+            <p>Are additional safeguards appropriate for children, dependent relationships or other vulnerable groups?</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-cpu"></i></span>
+            <h4>AI &amp; Digital Systems</h4>
+            <p>Are data provenance, bias, safety, cybersecurity, explainability and human oversight addressed?</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-cash-stack"></i></span>
+            <h4>Conflicts &amp; Funding</h4>
+            <p>Could financial, institutional or personal interests distort participant protection or reporting?</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ DECISION CATEGORIES ============ -->
+      <section class="er-section" id="er-decisions">
+        <div class="er-section-head">
+          <span class="er-section-icon"><i class="bi bi-signpost-split"></i></span>
+          <div>
+            <h2>Decision Categories</h2>
+            <p>Five possible outcomes, each with a defined meaning and a defined system action.</p>
+          </div>
+        </div>
+
+        <div class="er-decision-grid">
+          <div class="er-decision-card">
+            <span class="er-decision-dot er-dot-good"></span>
+            <h4>Approved</h4>
+            <p>Protocol satisfies MSREC requirements, subject to any stated conditions of approval.</p>
+            <span class="er-decision-action"><i class="bi bi-arrow-right-short"></i> Approval letter generated; post-approval obligations activate</span>
+          </div>
+          <div class="er-decision-card">
+            <span class="er-decision-dot er-dot-good"></span>
+            <h4>Approved with Conditions</h4>
+            <p>Approval is granted, but specific conditions must be met or observed.</p>
+            <span class="er-decision-action"><i class="bi bi-arrow-right-short"></i> Conditions recorded; activation restricted until pre-implementation items are met</span>
+          </div>
+          <div class="er-decision-card">
+            <span class="er-decision-dot er-dot-amber"></span>
+            <h4>Modifications Required</h4>
+            <p>Changes must be made before the protocol can receive final approval.</p>
+            <span class="er-decision-action"><i class="bi bi-arrow-right-short"></i> Structured comments returned; revision workflow opens</span>
+          </div>
+          <div class="er-decision-card">
+            <span class="er-decision-dot er-dot-amber"></span>
+            <h4>Deferred</h4>
+            <p>Substantial information or further Committee deliberation is required first.</p>
+            <span class="er-decision-action"><i class="bi bi-arrow-right-short"></i> Decision held pending specified information or additional review</span>
+          </div>
+          <div class="er-decision-card">
+            <span class="er-decision-dot er-dot-red"></span>
+            <h4>Not Approved</h4>
+            <p>The protocol is not ethically acceptable in its current form.</p>
+            <span class="er-decision-action"><i class="bi bi-arrow-right-short"></i> Reasoned decision issued, with appeal information where permitted</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ APPEALS & RESEARCHER RESPONSES ============ -->
+      <section class="er-section" id="er-appeals">
+        <div class="er-section-head">
+          <span class="er-section-icon"><i class="bi bi-arrow-left-right"></i></span>
+          <div>
+            <h2>Appeals &amp; Researcher Responses</h2>
+            <p>Two different mechanisms, kept deliberately distinct.</p>
+          </div>
+        </div>
+
+        <div class="er-compare-card">
+          <div class="er-compare-col">
+            <h3><i class="bi bi-reply-fill er-icon-good"></i> Responding to Modifications</h3>
+            <ul>
+              <li>Answer each reviewer or Committee comment individually.</li>
+              <li>Describe the specific change made in response.</li>
+              <li>Upload a tracked or clean revised document, as MSREC policy requires.</li>
+              <li>Routine, and available on any protocol returned for changes.</li>
+            </ul>
+          </div>
+          <div class="er-compare-divider" aria-hidden="true"></div>
+          <div class="er-compare-col">
+            <h3><i class="bi bi-flag-fill er-icon-warn" ></i> Formal Appeals</h3>
+            <ul>
+              <li>Permitted only under MSREC's Appeals Policy.</li>
+              <li>Distinguished from a routine response to modifications.</li>
+              <li>Cannot be used to bypass a substantive, unresolved ethical concern.</li>
+              <li>Reserved for genuine procedural or decision-level disputes.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ COMMITTEE MEETINGS ============ -->
+      <section class="er-section" id="er-meetings">
+        <div class="er-section-head">
+          <span class="er-section-icon"><i class="bi bi-calendar-week"></i></span>
+          <div>
+            <h2>Committee Meetings</h2>
+            <p>How a review actually reaches a Committee decision.</p>
+          </div>
+        </div>
+
+        <p class="er-lead">Full Committee review happens only when quorum is met. Members with a declared conflict cannot contribute to that decision and, where the conflict policy requires it, are not counted toward quorum at all. Meeting records capture attendance, recusals, the protocol identifier, the key ethical issues and the final decision &mdash; without reproducing confidential participant information.</p>
+
+        <div class="er-fact-grid">
+          <div class="er-fact-card">
+            <span class="er-fact-icon"><i class="bi bi-people"></i></span>
+            <span class="er-fact-label">Quorum is calculated after recusals &mdash; a decision cannot proceed without it</span>
+          </div>
+          <div class="er-fact-card">
+            <span class="er-fact-icon"><i class="bi bi-shield-exclamation"></i></span>
+            <span class="er-fact-label">Members are prompted to declare conflicts on every agenda item before deliberation</span>
+          </div>
+          <div class="er-fact-card">
+            <span class="er-fact-icon"><i class="bi bi-eye-slash"></i></span>
+            <span class="er-fact-label">The public calendar never discloses confidential protocol titles or applicant details</span>
+          </div>
+          <div class="er-fact-card">
+            <span class="er-fact-icon"><i class="bi bi-journal-check"></i></span>
+            <span class="er-fact-label">Approved minutes are stored securely with full version history retained</span>
+          </div>
+        </div>
+
+        <a href="{% url 'pages:board_committee' %}#bc-meetings" class="er-inline-link">See the full meeting schedule, quorum rules and format on the Board &amp; Committee page <i class="bi bi-arrow-right"></i></a>
+      </section>
+
+      <!-- ============ POST-APPROVAL MANAGEMENT ============ -->
+      <section class="er-section" id="er-post-approval">
+        <div class="er-section-head">
+          <span class="er-section-icon"><i class="bi bi-graph-up-arrow"></i></span>
+          <div>
+            <h2>Post-Approval Management</h2>
+            <p>An approved study is an active record with obligations &mdash; not a completed transaction.</p>
+          </div>
+        </div>
+
+        <div class="er-card-grid">
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-pencil-square"></i></span>
+            <h4>Amendments</h4>
+            <p>Review before implementing a material change to an approved protocol, outside of immediate safety actions.</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-arrow-repeat"></i></span>
+            <h4>Continuing Review</h4>
+            <p>Confirms a study's ongoing ethical acceptability and whether its approval should continue.</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-clipboard-data"></i></span>
+            <h4>Progress Reports</h4>
+            <p>A short annual report &mdash; mostly pre-populated &mdash; covering status, recruitment and any changes.</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-exclamation-triangle"></i></span>
+            <h4>Deviations</h4>
+            <p>Documents any departure from the approved protocol, its cause and the corrective action taken.</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-exclamation-octagon"></i></span>
+            <h4>Adverse Events</h4>
+            <p>Escalates participant safety issues or serious unexpected problems as soon as they arise.</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-pause-circle"></i></span>
+            <h4>Suspension</h4>
+            <p>Controls a study that should not continue under its existing approval, with participant protections.</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-door-closed"></i></span>
+            <h4>Study Closure</h4>
+            <p>Formally closes an approved record once a study's active obligations have been met.</p>
+          </div>
+          <div class="er-card">
+            <span class="er-card-icon"><i class="bi bi-file-earmark-text"></i></span>
+            <h4>Final Reports</h4>
+            <p>Captures completion date, final sample, outstanding events, data status and study outputs.</p>
+          </div>
+        </div>
+
+        <div class="er-status-block">
+          <span class="er-status-label"><i class="bi bi-info-circle"></i> Portal rule</span>
+          <p>An expired study never silently remains &ldquo;Approved.&rdquo; The system distinguishes six clear statuses and controls exactly what actions are available in each one:</p>
+          <div class="er-status-tags">
+            <span class="er-status-tag er-status-active">Active</span>
+            <span class="er-status-tag er-status-amber">Expiring</span>
+            <span class="er-status-tag er-status-red">Expired</span>
+            <span class="er-status-tag er-status-red">Suspended</span>
+            <span class="er-status-tag er-status-neutral">Closed</span>
+            <span class="er-status-tag er-status-neutral">Withdrawn</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CLOSING CTA ============ -->
+      <section class="er-cta">
+        <div>
+          <h4>Ready to see where your study fits?</h4>
+          <p>Start a new application, or check the requirements first if you're not quite ready.</p>
+        </div>
+        <div class="er-cta-actions">
+          <a href="{% url 'pages:apply' %}" class="er-cta-btn er-cta-btn-primary">Start an Application <i class="bi bi-arrow-right"></i></a>
+          <a href="{% url 'pages:applicants' %}" class="er-cta-btn er-cta-btn-ghost">Applicant Requirements</a>
+        </div>
+      </section>
+
+    </div>
+  
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/ethics-review.js' %}"></script>
+{% endblock %}
