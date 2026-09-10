@@ -1,0 +1,528 @@
+/* ==========================================================
+   MSREC — Ethics Review page
+   Same editorial system as board-committee.css: Fraunces for headings,
+   Inter for body copy, flat surfaces, no gradients anywhere. Card grids
+   use flexbox+wrap+justify-center so an incomplete trailing row centers
+   itself instead of leaving a gap. State/outcome color is always carried
+   by a tinted icon square or a small dot — never by a card edge/border.
+   Self-contained; only main.css is a dependency.
+========================================================== */
+
+body.er-page {
+  margin: 0;
+  --er-heading-font: "Fraunces", "Georgia", serif;
+  --er-body-font: "Inter", "Roboto", sans-serif;
+  font-family: var(--er-body-font);
+}
+
+.er-main { background: #faf6ee; padding: 150px 0 20px; }
+
+.er-wrap { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+
+.er-page .section-label {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  margin-bottom: 14px;
+}
+
+/* ---------------- Hero ---------------- */
+.er-hero {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 44px;
+  align-items: center;
+  background: #ffffff;
+  border-radius: 26px;
+  box-shadow: 0 30px 70px rgba(23, 42, 40, 0.1);
+  padding: 48px;
+  margin-bottom: 22px;
+}
+
+.er-hero-copy h1 {
+  font-family: var(--er-heading-font);
+  font-size: clamp(26px, 3vw, 32px);
+  font-weight: 800;
+  line-height: 1.25;
+  color: var(--heading-color);
+  margin: 0 0 14px;
+}
+.er-hero-copy > p {
+  color: #5c6b69;
+  font-size: 14.5px;
+  line-height: 1.75;
+  max-width: 60ch;
+  margin: 0 0 26px;
+}
+
+.er-stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 26px;
+  margin: 0;
+}
+.er-stat dt {
+  font-family: var(--er-heading-font);
+  font-size: 25px;
+  font-weight: 800;
+  color: var(--accent-color);
+  margin: 0;
+}
+.er-stat dd {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: #8a9492;
+}
+
+/* ---------------- Hero visual: flat vertical ladder ---------------- */
+.er-hero-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+.er-hero-tier {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-radius: 12px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--heading-color);
+}
+.er-hero-tier i { font-size: 15px; }
+.er-tier-1 { background: var(--heading-color); }
+.er-tier-2 { background: color-mix(in srgb, var(--heading-color), var(--accent-color) 25%); margin-left: 10px; }
+.er-tier-3 { background: var(--accent-color); margin-left: 20px; }
+.er-tier-4 { background: color-mix(in srgb, var(--accent-color), #5c6b69 35%); margin-left: 30px; }
+.er-tier-5 { background: #5c6b69; margin-left: 40px; }
+.er-hero-connector {
+  width: 2px;
+  height: 14px;
+  background: #dbe6e3;
+  margin: 0 0 0 22px;
+}
+
+/* ---------------- Sticky category toolbar ---------------- */
+.er-toolbar {
+  position: sticky;
+  top: 96px;
+  z-index: 20;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  border-radius: 16px;
+  padding: 10px;
+  margin-bottom: 30px;
+}
+.er-toolbar::-webkit-scrollbar { display: none; }
+.er-toolbar a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 9px 16px;
+  border-radius: 50px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #5c6b69;
+  background: #f7faf9;
+  white-space: nowrap;
+  transition: .15s;
+}
+.er-toolbar a i { font-size: 13px; }
+.er-toolbar a:hover { background: #eef3f1; color: var(--heading-color); }
+.er-toolbar a.is-active { background: var(--accent-color); color: #fff; }
+
+/* ---------------- Section shell ---------------- */
+.er-section {
+  background: #ffffff;
+  border: 1px solid #eef3f1;
+  border-radius: 20px;
+  padding: 32px 34px;
+  margin-bottom: 22px;
+  scroll-margin-top: 165px;
+}
+.er-section-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 26px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eef3f1;
+}
+.er-section-icon {
+  flex-shrink: 0;
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--accent-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 19px;
+}
+.er-section-head h2 {
+  margin: 0 0 4px;
+  font-family: var(--er-heading-font);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--heading-color);
+}
+.er-section-head p { margin: 0; font-size: 13.5px; color: #5c6b69; }
+
+.er-lead {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: #43514f;
+  max-width: 82ch;
+  margin: 0 0 22px;
+}
+
+/* ---------------- Workflow ladder ---------------- */
+.er-flow {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 4px;
+  margin-bottom: 8px;
+}
+.er-flow-step {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  position: relative;
+  padding: 18px 0;
+}
+.er-flow-step:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 21px;
+  top: 52px;
+  bottom: -4px;
+  width: 1px;
+  background: #e1e8e6;
+}
+.er-flow-marker {
+  flex-shrink: 0;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--er-heading-font);
+  font-size: 16px;
+  font-weight: 700;
+  position: relative;
+  z-index: 1;
+}
+.er-flow-marker-outline {
+  background: #fff;
+  border: 1.5px solid #dbe6e3;
+  color: var(--accent-color);
+  font-size: 16px;
+}
+.er-flow-text { display: flex; flex-direction: column; gap: 2px; }
+.er-flow-text strong { font-family: var(--er-heading-font); font-size: 15.5px; font-weight: 600; color: var(--heading-color); }
+.er-flow-text span { font-size: 12.5px; color: #8a9492; }
+
+/* Four-state decision logic strip beneath the workflow ladder */
+.er-logic-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 14px;
+  padding-top: 26px;
+  border-top: 1px solid #eef3f1;
+}
+.er-logic-card {
+  flex: 1 1 220px;
+  max-width: 280px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fbfcfc;
+  border: 1px solid #eef3f1;
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+.er-logic-icon {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+.er-logic-card div { display: flex; flex-direction: column; gap: 2px; }
+.er-logic-card strong { font-size: 13px; font-weight: 700; color: var(--heading-color); }
+.er-logic-card span { font-size: 12px; line-height: 1.5; color: #5c6b69; }
+.er-logic-good .er-logic-icon { background: color-mix(in srgb, #1f8a5f, transparent 85%); color: #1f8a5f; }
+.er-logic-amber .er-logic-icon { background: color-mix(in srgb, #b3791f, transparent 85%); color: #b3791f; }
+.er-logic-red .er-logic-icon { background: color-mix(in srgb, #b23a3a, transparent 85%); color: #b23a3a; }
+.er-logic-blue .er-logic-icon { background: color-mix(in srgb, #2b5f8a, transparent 85%); color: #2b5f8a; }
+
+/* ---------------- Generic flat card grid (screening / domains / post-approval) --- */
+.er-card-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+.er-card {
+  flex: 1 1 250px;
+  max-width: 280px;
+  background: #fbfcfc;
+  border: 1px solid #eef3f1;
+  border-radius: 16px;
+  padding: 22px;
+  transition: transform .18s, box-shadow .18s, border-color .18s, background .18s;
+}
+.er-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 34px rgba(23, 42, 40, 0.08);
+  border-color: color-mix(in srgb, var(--accent-color), transparent 65%);
+  background: #ffffff;
+}
+.er-card-icon {
+  width: 40px; height: 40px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--accent-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  margin-bottom: 14px;
+}
+.er-card h4 { margin: 0 0 6px; font-size: 14.5px; font-weight: 700; color: var(--heading-color); }
+.er-card p { margin: 0; font-size: 13px; line-height: 1.6; color: #5c6b69; }
+
+.er-card-boundary { background: #fdf6f0; border-color: #f2e3d3; }
+.er-card-boundary:hover { background: #fdf6f0; border-color: #ecd4bb; }
+.er-card-boundary .er-card-icon { background: color-mix(in srgb, #d97b29, transparent 85%); color: #d97b29; }
+
+/* ---------------- Reviewer assignment two-column layout ---------------- */
+.er-structure-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+.er-structure-copy > p {
+  font-size: 13.5px;
+  line-height: 1.75;
+  color: #43514f;
+  margin: 0 0 20px;
+}
+
+.er-fact-list { display: flex; flex-direction: column; gap: 12px; margin: 0; }
+.er-fact-list > div { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; border-top: 1px dashed #eef3f1; }
+.er-fact-list > div:first-child { border-top: none; padding-top: 0; }
+.er-fact-list dt { font-size: 11.5px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: #8a9492; }
+.er-fact-list dd { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--heading-color); }
+
+/* ---------------- Decision categories ---------------- */
+.er-decision-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+}
+.er-decision-card {
+  flex: 1 1 220px;
+  max-width: 260px;
+  background: #fbfcfc;
+  border: 1px solid #eef3f1;
+  border-radius: 16px;
+  padding: 22px;
+}
+.er-decision-dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  margin-bottom: 14px;
+}
+.er-dot-good { background: #1f8a5f; }
+.er-dot-amber { background: #b3791f; }
+.er-dot-red { background: #b23a3a; }
+.er-decision-card h4 { margin: 0 0 6px; font-size: 14.5px; font-weight: 700; color: var(--heading-color); }
+.er-decision-card p { margin: 0 0 14px; font-size: 12.5px; line-height: 1.6; color: #5c6b69; }
+.er-decision-action {
+  display: flex;
+  align-items: flex-start;
+  gap: 2px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #8a9492;
+  padding-top: 12px;
+  border-top: 1px dashed #eef3f1;
+}
+.er-decision-action i { font-size: 15px; flex-shrink: 0; color: var(--accent-color); }
+
+/* ---------------- Appeals vs responses comparison ---------------- */
+.er-compare-card {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 30px;
+  background: #fbfcfc;
+  border: 1px solid #eef3f1;
+  border-radius: 16px;
+  padding: 30px 34px;
+}
+.er-compare-col h3 {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--er-heading-font);
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--heading-color);
+  margin: 0 0 16px;
+}
+.er-icon-good { color: #1f8a5f; }
+.er-icon-warn { color: #b3791f; }
+.er-compare-col ul { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.er-compare-col li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #43514f;
+}
+.er-compare-col li::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 8px;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--accent-color);
+}
+.er-compare-divider { width: 1px; background: #eef3f1; }
+
+/* ---------------- Committee meetings ---------------- */
+.er-fact-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.er-fact-card {
+  flex: 1 1 220px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: #fbfcfc;
+  border: 1px solid #eef3f1;
+  border-radius: 14px;
+  padding: 18px 20px;
+}
+.er-fact-icon {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  color: var(--accent-color);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+}
+.er-fact-label { font-size: 12.5px; line-height: 1.55; color: #43514f; padding-top: 4px; }
+
+.er-inline-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent-color);
+}
+.er-inline-link i { font-size: 14px; transition: transform .15s; }
+.er-inline-link:hover i { transform: translateX(3px); }
+
+/* ---------------- Post-approval status block ---------------- */
+.er-status-block {
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid #eef3f1;
+}
+.er-status-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  margin-bottom: 10px;
+}
+.er-status-block > p { margin: 0 0 16px; font-size: 13.5px; line-height: 1.7; color: #43514f; max-width: 78ch; }
+.er-status-tags { display: flex; flex-wrap: wrap; gap: 10px; }
+.er-status-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 50px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.er-status-active { background: color-mix(in srgb, #1f8a5f, transparent 88%); color: #1f8a5f; }
+.er-status-amber { background: color-mix(in srgb, #b3791f, transparent 88%); color: #b3791f; }
+.er-status-red { background: color-mix(in srgb, #b23a3a, transparent 88%); color: #b23a3a; }
+.er-status-neutral { background: #eef3f1; color: #5c6b69; }
+
+/* ---------------- Closing CTA ---------------- */
+.er-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: var(--heading-color);
+  border-radius: 20px;
+  padding: 30px 34px;
+  margin: 8px 0 40px;
+}
+.er-cta h4 { margin: 0 0 4px; font-size: 17px; font-weight: 700; color: #fff; }
+.er-cta p { margin: 0; font-size: 13.5px; color: rgba(255,255,255,0.75); }
+.er-cta-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.er-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  padding: 12px 22px;
+  border-radius: 50px;
+  white-space: nowrap;
+}
+.er-cta-btn-primary { background: #fff; color: var(--heading-color); }
+.er-cta-btn-primary:hover { background: #f2f6f5; color: var(--heading-color); }
+.er-cta-btn-ghost { border: 1.5px solid rgba(255,255,255,0.3); color: #fff; }
+.er-cta-btn-ghost:hover { background: rgba(255,255,255,0.08); color: #fff; }
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 991px) {
+  .er-hero { grid-template-columns: 1fr; gap: 30px; padding: 34px; }
+  .er-hero-visual { order: -1; }
+  .er-structure-grid { grid-template-columns: 1fr; gap: 26px; }
+  .er-compare-card { grid-template-columns: 1fr; padding: 26px; }
+  .er-compare-divider { display: none; }
+  .er-toolbar { top: 76px; }
+}
+
+@media (max-width: 700px) {
+  .er-main { padding-top: 130px; }
+  .er-hero { padding: 26px; border-radius: 20px; }
+  .er-section { padding: 24px 20px; }
+  .er-cta { flex-direction: column; align-items: flex-start; text-align: left; }
+}
+
+@media (max-width: 480px) {
+  .er-main { padding-top: 150px; }
+  .er-wrap { padding: 0 14px; }
+}

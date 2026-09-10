@@ -1155,7 +1155,8 @@ section,
   clip-path: inset(0 round 15px);
 }
 
-.call-to-action .container img {
+.call-to-action .container img,
+.call-to-action .container video {
   position: fixed;
   top: 0;
   left: 0;
