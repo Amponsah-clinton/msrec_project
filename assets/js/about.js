@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const tabs = document.querySelectorAll(".about-tab");
-  const panels = document.querySelectorAll(".about-tab-panel");
+  const tabs = document.querySelectorAll(".ab-tab");
+  const panels = document.querySelectorAll(".ab-tab-panel");
   if (!tabs.length) return;
 
   tabs.forEach((tab) => {

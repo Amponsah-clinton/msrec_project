@@ -719,9 +719,21 @@ h6 {
 }
 #preloader.pl-hide { opacity: 0; pointer-events: none; }
 
-.pl-stage { position: relative; width: 320px; height: 320px; }
+.pl-stage { position: relative; width: 400px; height: 400px; }
 
-.pl-baton-wrap { position: absolute; top: 50%; left: 50%; width: 140px; height: 0; }
+.pl-baton-wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 172px;
+  height: 0;
+  /* Each spoke's rotate() is set inline — without pinning the pivot to this
+     element's own top-left corner (which is anchored exactly at the stage's
+     50%/50% center above), it rotates around its own box-center instead,
+     50%/50% of ITS OWN box. That silently drags the whole sunburst off-center
+     relative to the logo — the pivot must be the same point for every spoke. */
+  transform-origin: 0 0;
+}
 
 .pl-metronome {
   transform-origin: 0 0;
@@ -731,7 +743,7 @@ h6 {
 .pl-baton {
   position: relative;
   height: 2px;
-  width: 76px;
+  width: 92px;
   background-color: var(--accent-color);
   transform-origin: 0 0;
   transform: rotate(-10deg);
@@ -741,14 +753,14 @@ h6 {
 .pl-baton::after {
   content: "";
   position: absolute;
-  top: -2px;
-  width: 6px;
-  height: 6px;
+  top: -2.5px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background-color: #d97b29;
 }
-.pl-baton::before { left: -2px; }
-.pl-baton::after { right: -2px; }
+.pl-baton::before { left: -2.5px; }
+.pl-baton::after { right: -2.5px; }
 
 .pl-center {
   position: absolute;
@@ -756,8 +768,8 @@ h6 {
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 5;
-  width: 92px;
-  height: 92px;
+  width: 112px;
+  height: 112px;
   border-radius: 50%;
   background: #ffffff;
   box-shadow: 0 10px 34px rgba(23, 42, 40, 0.14);
@@ -766,7 +778,7 @@ h6 {
   justify-content: center;
 }
 .pl-logo {
-  width: 56px;
+  width: 68px;
   height: auto;
   display: block;
   animation: pl-breathe 2.6s ease-in-out infinite;
@@ -802,11 +814,11 @@ h6 {
 }
 
 @media (max-width: 480px) {
-  .pl-stage { width: 240px; height: 240px; }
-  .pl-baton-wrap { width: 104px; }
-  .pl-baton { width: 56px; }
-  .pl-center { width: 74px; height: 74px; }
-  .pl-logo { width: 44px; }
+  .pl-stage { width: 280px; height: 280px; }
+  .pl-baton-wrap { width: 122px; }
+  .pl-baton { width: 66px; }
+  .pl-center { width: 84px; height: 84px; }
+  .pl-logo { width: 50px; }
 }
 
 /*--------------------------------------------------------------
