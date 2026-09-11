@@ -30,11 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* Section 8 -> gates its own detail block AND the whole of section 9 */
-  gateYesNo("participantsGate", document.getElementById("participantsDetails"), ["yes"]);
-  gateYesNo("participantsGate", document.getElementById("sec-9"), ["yes"]);
-
-  /* Section 9 compensation detail */
+  /* Participant Recruitment: compensation detail */
   (function () {
     const toggle = document.querySelector('.yn-toggle[data-hidden-id="compensationYn"]');
     const detail = document.getElementById("compensationDetails");
@@ -43,26 +39,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })();
 
-  /* Section 12 sensitive info */
+  /* Privacy & Confidentiality: sensitive info */
   gateYesNo("sensitiveInfoGate", document.getElementById("sensitiveInfoDetails"), ["yes"]);
 
-  /* Section 14 AI/ML */
+  /* AI / ML / Automated Systems */
   gateYesNo("aiGate", document.getElementById("aiDetails"), ["yes"]);
 
-  /* Section 15 system/device */
+  /* Software, System, Device or Prototype Research */
   gateYesNo("systemGate", document.getElementById("systemDetails"), ["yes"]);
 
-  /* Section 16 reviews */
-  gateYesNo("reviewGate", document.getElementById("reviewDetails"), ["yes"]);
-
-  /* Section 17 secondary data */
-  gateYesNo("secondaryDataGate", document.getElementById("secondaryDataDetails"), ["yes"]);
-
-  /* Section 19 funding / international collaboration */
+  /* Funding, Sponsorship & Collaboration */
   gateYesNo("fundedGate", document.getElementById("fundedDetails"), ["yes"]);
   gateYesNo("internationalGate", document.getElementById("internationalDetails"), ["yes"]);
 
-  /* Section 5 academic programme */
+  /* Research Team: academic programme, if applicable */
   (function () {
     const toggle = form.querySelector('.yn-toggle[data-hidden-id="academicProgrammeYn"]');
     const detail = document.getElementById("academicProgrammeDetails");

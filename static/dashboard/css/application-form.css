@@ -1,0 +1,299 @@
+/* ==========================================================
+   MSREC — Universal Research Ethics Application Form
+   (dashboard edition)
+
+   Same form, same fields, same markup and class names as the
+   public /apply/ page (see apply.css / signup.css) and driven by
+   the same apply.js — this file just re-skins it in the
+   dashboard's own flat, no-gradient token set (--teal / --navy /
+   --border / --bg etc., see style.css) instead of the marketing
+   site's --accent-color / --heading-color, so it reads as part of
+   the dashboard rather than a page pasted in from elsewhere.
+   Loaded only on the "New Application" form page — the class
+   names below are scoped by nothing more than "not used anywhere
+   else in the dashboard" (verified against style.css), so there is
+   no need to prefix or rename them.
+========================================================== */
+
+/* ---------------- Page shell ---------------- */
+
+.apply-wrap { max-width: 1180px; margin: 0 auto; }
+
+.apply-intro {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 26px 28px;
+  margin-bottom: 20px;
+}
+.apply-intro h1 { font-size: 19px; font-weight: 700; color: var(--text-main); margin: 0 0 6px; }
+.apply-intro > p { color: var(--text-sub); font-size: 13px; line-height: 1.65; max-width: 72ch; margin: 0 0 18px; }
+
+.apply-meta-row { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 16px; }
+.apply-meta-item { flex: 1; min-width: 220px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 14px; }
+.apply-meta-item span { display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 3px; }
+.apply-meta-item strong { font-size: 13px; color: var(--text-main); font-weight: 700; }
+
+.reuse-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin: 0 0 16px;
+  color: var(--text-sub);
+  font-size: 12.5px;
+}
+.reuse-hint i { color: var(--teal); }
+
+.apply-review-request { margin-top: 16px; }
+.apply-review-request > label { display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; }
+
+/* ---------------- Fields ---------------- */
+
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
+.field-wide { grid-column: 1 / -1; }
+
+.field label { display: block; font-size: 12.5px; font-weight: 600; color: var(--text-main); margin-bottom: 6px; }
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 13.5px;
+  background: var(--bg);
+  color: var(--text-main);
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  resize: vertical;
+}
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--teal);
+  background: var(--white);
+  box-shadow: 0 0 0 3px var(--teal-light);
+}
+.field input[type="file"] { padding: 8px 10px; }
+
+.field-hint { color: var(--text-faint); font-size: 11.5px; margin: 6px 0 0; }
+.field-error { color: var(--red); font-size: 11.5px; font-weight: 600; margin: 6px 0 0; display: none; }
+.field-error.show { display: block; }
+
+/* ---------------- Chip checkbox / radio grid ---------------- */
+
+.chip-checkbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 12px; margin-top: 2px; }
+.chip-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 8px 8px;
+  border-radius: var(--radius-sm);
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.chip-checkbox span { padding-top: 1px; }
+.chip-checkbox:hover { background: var(--hover-bg); }
+.chip-checkbox:has(input:checked) { background: var(--teal-light); color: var(--text-main); font-weight: 600; }
+
+.chip-checkbox input {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  width: 17px;
+  height: 17px;
+  margin: 1px 0 0;
+  padding: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 5px;
+  background: var(--white);
+  position: relative;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.chip-checkbox input[type="radio"] { border-radius: 50%; }
+.chip-checkbox input:hover { border-color: var(--teal); }
+.chip-checkbox input:checked { background: var(--teal); border-color: var(--teal); }
+.chip-checkbox input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.chip-checkbox input[type="radio"]:checked::after { content: ""; position: absolute; inset: 4px; border-radius: 50%; background: #fff; }
+.chip-checkbox input:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.chip-checkbox input:disabled { cursor: not-allowed; opacity: 0.6; }
+
+.apply-other-wrap { margin-top: 10px; max-width: 420px; }
+.apply-other-wrap input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 13px;
+  background: var(--bg);
+}
+.apply-other-wrap input:focus { outline: none; border-color: var(--teal); background: var(--white); box-shadow: 0 0 0 3px var(--teal-light); }
+
+/* ---------------- Shell: TOC sidebar + form column ---------------- */
+
+.apply-shell { display: grid; grid-template-columns: 250px 1fr; gap: 24px; align-items: start; }
+
+.apply-sidebar { position: sticky; top: 20px; display: flex; flex-direction: column; gap: 14px; }
+
+.apply-progress-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; }
+.apply-progress-label { display: flex; justify-content: space-between; align-items: baseline; font-size: 11.5px; color: var(--text-sub); margin-bottom: 8px; }
+.apply-progress-label strong { color: var(--teal); font-size: 14px; }
+.apply-progress-track { height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.apply-progress-fill { height: 100%; width: 0%; background: var(--teal); border-radius: 999px; transition: width 0.3s ease; }
+
+.apply-toc {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px;
+  max-height: calc(100vh - 160px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.apply-toc a { display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; color: var(--text-sub); transition: background 0.15s ease, color 0.15s ease; }
+.apply-toc a:hover { background: var(--hover-bg); color: var(--text-main); }
+.apply-toc a.is-active { background: var(--blue-light); color: var(--text-main); }
+.apply-toc-num { flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: var(--bg); color: var(--text-sub); font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+.apply-toc a.is-active .apply-toc-num { background: var(--teal); color: #fff; }
+.apply-toc-divider { height: 1px; background: var(--border); margin: 6px 4px; }
+.apply-toc-locked { color: var(--text-faint) !important; }
+.apply-toc-locked .apply-toc-num { background: var(--bg); color: var(--text-faint); font-size: 9px; }
+
+/* ---------------- Numbered section cards ---------------- */
+
+.apply-section { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 26px; margin-bottom: 16px; scroll-margin-top: 20px; }
+
+.apply-section-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.apply-section-num { flex-shrink: 0; width: 32px; height: 32px; border-radius: var(--radius-sm); background: var(--teal-light); color: var(--teal); font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+.apply-section-head h2 { margin: 0; font-size: 15.5px; font-weight: 700; color: var(--text-main); }
+.apply-section-head .section-note { margin: 4px 0 0; font-size: 12px; color: var(--text-sub); }
+
+/* ---------------- Yes / No toggle ---------------- */
+
+.apply-yn-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-top: 1px dashed var(--border); }
+.apply-yn-row:first-of-type { border-top: none; padding-top: 0; }
+.apply-yn-row label { flex: 1; min-width: 220px; font-size: 13px; font-weight: 600; color: var(--text-main); margin: 0; }
+
+.yn-toggle { display: inline-flex; gap: 8px; flex-shrink: 0; }
+.yn-btn { padding: 8px 18px; border-radius: 999px; border: 1.5px solid var(--border); background: var(--white); font-size: 12.5px; font-weight: 700; color: var(--text-sub); cursor: pointer; transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease; }
+.yn-btn:hover { border-color: var(--teal); }
+.yn-btn.active[data-value="yes"] { border-color: var(--teal); background: var(--teal-light); color: var(--text-main); }
+.yn-btn.active[data-value="no"] { border-color: var(--red); background: var(--red-light); color: var(--red); }
+
+/* ---------------- Conditional reveal wrapper ---------------- */
+
+.apply-conditional { background: var(--bg); border: 1px dashed var(--border); border-radius: var(--radius-sm); padding: 18px 20px; margin: 4px 0 12px; }
+.apply-conditional > label:first-child,
+.apply-conditional label:first-of-type { margin-top: 0; }
+
+/* ---------------- Research team repeatable table ---------------- */
+
+.apply-team-table { display: flex; flex-direction: column; gap: 8px; }
+.apply-team-row { display: grid; grid-template-columns: 1.2fr 1fr 1.2fr 32px; gap: 10px; align-items: center; }
+.apply-team-head { font-size: 11px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; color: var(--text-faint); padding: 0 2px; }
+.apply-team-row input { padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: inherit; font-size: 13px; background: var(--bg); width: 100%; }
+.apply-team-row input:focus { outline: none; border-color: var(--teal); background: var(--white); box-shadow: 0 0 0 3px var(--teal-light); }
+.apply-team-remove { width: 30px; height: 30px; border: 1px solid var(--border); background: var(--white); border-radius: var(--radius-sm); color: var(--text-faint); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s ease, color 0.15s ease; }
+.apply-team-remove:hover { border-color: var(--red); color: var(--red); }
+
+.apply-add-row { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; border: 1.5px dashed var(--teal); background: var(--teal-light); color: var(--teal); font-size: 12.5px; font-weight: 700; padding: 8px 14px; border-radius: 999px; cursor: pointer; transition: opacity 0.15s ease; }
+.apply-add-row:hover { opacity: 0.8; }
+
+/* ---------------- File uploader ---------------- */
+
+.apply-file-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; padding: 30px 18px; border: 1.5px dashed var(--teal); border-radius: var(--radius); background: var(--teal-light); color: var(--text-sub); font-size: 12.5px; cursor: pointer; transition: background 0.2s ease; }
+.apply-file-drop:hover, .apply-file-drop.is-dragover { background: color-mix(in srgb, var(--teal-light), var(--teal) 15%); }
+.apply-file-drop-icon { width: 44px; height: 44px; border-radius: 50%; background: var(--white); color: var(--teal); display: flex; align-items: center; justify-content: center; font-size: 19px; margin-bottom: 4px; transition: transform 0.2s ease; }
+.apply-file-drop:hover .apply-file-drop-icon { transform: translateY(-3px); }
+.apply-file-drop strong { color: var(--text-main); font-size: 13.5px; }
+
+.apply-file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.apply-file-item { display: flex; align-items: center; gap: 10px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 13px; font-size: 12.5px; color: var(--text-main); }
+.apply-file-item i.bi-file-earmark-text { color: var(--teal); font-size: 15px; }
+.apply-file-item .apply-file-size { color: var(--text-faint); font-size: 11.5px; margin-left: auto; padding-right: 4px; }
+.apply-file-remove { border: none; background: none; color: var(--text-faint); cursor: pointer; display: flex; font-size: 13px; }
+.apply-file-remove:hover { color: var(--red); }
+
+/* ---------------- Declaration ---------------- */
+
+.apply-declaration-quote { margin: 0 0 20px; padding: 16px 18px; border-left: 3px solid var(--teal); background: var(--bg); border-radius: 0 var(--radius-sm) var(--radius-sm) 0; font-size: 13px; line-height: 1.75; color: var(--text-sub); font-style: italic; }
+.apply-signature-input { font-family: "Caveat", cursive; font-size: 20px !important; color: var(--text-main); }
+
+/* ---------------- Locked official-use panel ---------------- */
+
+.apply-official { background: var(--bg); border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 24px 26px; margin-top: 4px; margin-bottom: 16px; scroll-margin-top: 20px; }
+.apply-official-badge { display: inline-flex; align-items: center; gap: 6px; background: var(--gray-light); color: var(--text-sub); font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 5px 11px; border-radius: 999px; margin-bottom: 12px; }
+.apply-official h2 { margin: 0 0 6px; font-size: 15.5px; font-weight: 700; color: var(--text-main); }
+.apply-official .section-note { margin: 0 0 16px; font-size: 12px; color: var(--text-sub); }
+.apply-official label { color: var(--text-sub); }
+.apply-official input:disabled,
+.apply-official textarea:disabled,
+.apply-official select:disabled { background: var(--border); color: var(--text-faint); cursor: not-allowed; }
+.apply-official .chip-checkbox { cursor: not-allowed; opacity: 0.7; }
+.apply-official .chip-checkbox:has(input:checked) { background: var(--border); color: var(--text-sub); }
+
+/* ---------------- Agreement checkbox ---------------- */
+
+.agree-row { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; color: var(--text-main); cursor: pointer; margin-top: 14px; }
+.agree-row input { margin-top: 3px; accent-color: var(--teal); width: 16px; height: 16px; flex-shrink: 0; }
+.agree-row .req { color: var(--red); font-weight: 700; }
+.req { color: var(--red); font-weight: 700; }
+
+.signup-subsection-title { font-size: 13.5px; font-weight: 700; color: var(--text-main); margin: 4px 0 4px; }
+
+/* ---------------- Submit ---------------- */
+
+.apply-submit-row { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+/* ---------------- Responsive ---------------- */
+
+@media (max-width: 1100px) {
+  .apply-shell { grid-template-columns: 210px 1fr; gap: 18px; }
+}
+
+@media (max-width: 900px) {
+  .apply-shell { grid-template-columns: 1fr; }
+  .apply-sidebar { position: static; flex-direction: row; gap: 12px; }
+  .apply-progress-card { flex-shrink: 0; min-width: 190px; }
+  .apply-toc { flex-direction: row; overflow-x: auto; overflow-y: hidden; max-height: none; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  .apply-toc a { flex-shrink: 0; }
+  .apply-toc-divider { width: 1px; height: auto; margin: 4px 6px; }
+}
+
+@media (max-width: 700px) {
+  .apply-intro { padding: 20px 18px; }
+  .apply-section { padding: 20px 16px; }
+  .apply-official { padding: 20px 16px; }
+  .apply-team-row { grid-template-columns: 1fr; }
+  .apply-team-head { display: none; }
+  .apply-team-remove { justify-self: end; }
+  .apply-yn-row { flex-direction: column; align-items: flex-start; }
+  .field-grid { grid-template-columns: 1fr; }
+  .chip-checkbox-grid { grid-template-columns: 1fr; }
+}

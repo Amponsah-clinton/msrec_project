@@ -50,6 +50,39 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.innerWidth > 900) closeSidebar();
   });
 
+  // ---------------- Filter tabs ----------------
+  // Generic: a `.filter-tabs` container with `[data-filters-target]` (a
+  // selector for the items container) toggles `.active` among its
+  // `.filter-tab[data-filter]` buttons and shows/hides that container's
+  // `[data-filter-item]` children whose `data-filter` matches (or every
+  // item, for the "all" tab). Opt-in via data attributes, so it only
+  // affects pages that actually use it.
+  document.querySelectorAll(".filter-tabs[data-filters-target]").forEach((tabs) => {
+    const target = document.querySelector(tabs.dataset.filtersTarget);
+    if (!target) return;
+    const items = Array.from(target.querySelectorAll("[data-filter-item]"));
+
+    tabs.querySelectorAll(".filter-tab[data-filter]").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        tabs.querySelectorAll(".filter-tab").forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+
+        const filter = tab.dataset.filter;
+        items.forEach((item) => {
+          const matches = filter === "all" || item.dataset.filter === filter;
+          item.hidden = !matches;
+        });
+
+        // A .doc-group with every one of its rows hidden shouldn't leave
+        // an empty header floating around.
+        target.querySelectorAll(".doc-group").forEach((group) => {
+          const rows = group.querySelectorAll("[data-filter-item]");
+          group.hidden = rows.length > 0 && Array.from(rows).every((r) => r.hidden);
+        });
+      });
+    });
+  });
+
   // Quick action buttons — simple visual feedback
   document.querySelectorAll(".qa-btn, .btn-danger, .action-btn, .stat-link, .panel-link").forEach((el) => {
     el.addEventListener("click", (e) => {
@@ -198,6 +231,65 @@ document.addEventListener("DOMContentLoaded", () => {
         hasStoredChoice = false;
       }
       if (!hasStoredChoice) applyTheme(e.matches ? "dark" : "light");
+    });
+  }
+
+  // ---------------- Message threads (Messages page) ----------------
+  // Clicking a conversation in the list shows its thread panel and hides
+  // the others. On small screens (see the max-width: 900px rule in
+  // style.css) the thread panel becomes a full-screen overlay instead of a
+  // second column, so opening one also flags the shell with .thread-open
+  // and reveals the back button; closing it just removes that flag.
+  const messageRows = document.querySelectorAll(".message-row[data-thread]");
+  if (messageRows.length) {
+    const shell = document.querySelector(".messages-shell");
+    const threads = document.querySelectorAll(".thread-panel[data-thread]");
+    const backBtn = document.querySelector(".thread-back-btn");
+
+    messageRows.forEach((row) => {
+      row.addEventListener("click", () => {
+        messageRows.forEach((r) => r.classList.remove("active"));
+        row.classList.add("active");
+        row.classList.remove("unread");
+        threads.forEach((t) => t.classList.toggle("is-active", t.dataset.thread === row.dataset.thread));
+        if (shell) shell.classList.add("thread-open");
+      });
+    });
+
+    if (backBtn && shell) {
+      backBtn.addEventListener("click", () => shell.classList.remove("thread-open"));
+    }
+
+    // Reply composer: no backend, so sending just echoes the message into
+    // the open thread as a locally-sent bubble -- enough to feel real
+    // without pretending to persist anywhere.
+    document.querySelectorAll(".thread-composer").forEach((form) => {
+      const textarea = form.querySelector("textarea");
+      const scroll = form.closest(".thread-panel")?.querySelector(".thread-scroll");
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+        const text = (textarea.value || "").trim();
+        if (!text || !scroll) return;
+        const bubble = document.createElement("div");
+        bubble.className = "msg-bubble out";
+        const p = document.createElement("p");
+        p.textContent = text;
+        const time = document.createElement("span");
+        time.className = "msg-time";
+        time.textContent = "Just now";
+        bubble.appendChild(p);
+        bubble.appendChild(time);
+        scroll.appendChild(bubble);
+        scroll.scrollTop = scroll.scrollHeight;
+        textarea.value = "";
+      });
+      // Enter sends, Shift+Enter inserts a newline.
+      textarea?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          form.requestSubmit();
+        }
+      });
     });
   }
 });

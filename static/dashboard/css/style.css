@@ -677,6 +677,9 @@ svg {
   gap: 18px;
   margin-bottom: 22px;
 }
+/* For a summary strip with only 2-3 cards — repeat(5) would leave most of
+   the row empty instead of sizing cards to the content. */
+.stats-grid.compact { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 
 .stat-card {
   background: var(--white);
@@ -766,6 +769,9 @@ svg {
 .due-days { font-size: 11.5px; color: var(--red); font-weight: 600; }
 
 .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   border: none;
   border-radius: 8px;
   padding: 11px 22px;
@@ -773,6 +779,7 @@ svg {
   font-weight: 600;
   white-space: nowrap;
 }
+.btn svg { width: 16px; height: 16px; flex-shrink: 0; }
 .btn-danger { background: var(--red); color: #fff; }
 .btn-danger:hover { background: #c9392f; }
 
@@ -1043,12 +1050,48 @@ svg {
 .revision-title span { font-size: 12px; color: var(--text-sub); }
 .revision-due { text-align: right; flex-shrink: 0; }
 
+/* Structured record fields — e.g. an adverse-event's type, outcome and
+   relatedness. Read as data, not prose, so incident records don't collapse
+   into an undifferentiated paragraph. */
+.fact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px 28px;
+  margin-bottom: 18px;
+  padding: 16px 0 18px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.fact-grid > div {
+  position: relative;
+  padding-left: 14px;
+}
+.fact-grid > div::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 1px;
+  bottom: 1px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--teal);
+}
+.fact-grid dt {
+  margin: 0 0 3px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+.fact-grid dd { margin: 0; font-size: 12.5px; font-weight: 600; color: var(--text-main); line-height: 1.4; }
+
 .comment-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
 .comment-item {
   display: flex;
   gap: 10px;
   align-items: flex-start;
-  background: var(--bg);
+  background: var(--orange-light);
   border-radius: var(--radius-sm);
   padding: 10px 12px;
 }
@@ -1132,6 +1175,80 @@ svg {
 }
 .action-btn:hover { background: var(--blue-light); color: var(--blue); border-color: var(--blue-light); }
 .action-btn svg { width: 16px; height: 16px; }
+
+/* ---------------- Document list (Documents section) ----------------
+   A file, letter, certificate or receipt is a single visual "thing" a
+   person recognizes at a glance — a colored type tile + name reads faster
+   than another spreadsheet-style row of cells, so this is a dedicated
+   list pattern rather than another .reviews-table. Built from the same
+   tokens as everything else (no gradients), and reuses .badge-tag /
+   .action-btn / .panel-footer so it still feels native to the app. */
+
+.doc-group { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 16px; }
+.doc-group:last-child { margin-bottom: 0; }
+
+.doc-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+.doc-group-head h3 { margin: 0; font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+.doc-group-ref {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-sub);
+  font-family: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+
+.doc-list { display: flex; flex-direction: column; }
+
+.doc-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+}
+.doc-list .doc-row:last-child,
+.panel > .doc-list > .doc-row:last-child { border-bottom: none; }
+.doc-row:hover { background: var(--hover-bg); }
+
+.doc-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.doc-icon svg { width: 20px; height: 20px; }
+.doc-icon.ext { font-size: 10px; font-weight: 800; letter-spacing: 0.02em; }
+.doc-icon.pdf { background: var(--red-light); color: var(--red); }
+.doc-icon.docx { background: var(--blue-light); color: var(--blue); }
+.doc-icon.xlsx { background: var(--green-light); color: var(--green); }
+.doc-icon.letter { background: var(--purple-light); color: var(--purple); }
+.doc-icon.approval { background: var(--teal-light); color: var(--teal); }
+.doc-icon.certificate { background: var(--navy); color: #fff; }
+.doc-icon.receipt { background: var(--green-light); color: var(--green); }
+
+.doc-info { flex: 1 1 200px; min-width: 0; }
+.doc-name { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--text-main); }
+.doc-meta { display: block; margin-top: 3px; font-size: 11.5px; color: var(--text-sub); }
+
+.doc-trailing { display: flex; align-items: center; gap: 10px; margin-left: auto; flex-shrink: 0; }
+
+@media (max-width: 480px) {
+  .doc-trailing { margin-left: 62px; }
+}
 
 .panel-footer {
   display: flex;
@@ -1257,6 +1374,549 @@ svg {
 }
 .overlay.show { display: block; }
 
+/* ---------------- Fee summary row (Fees & Invoices) ---------------- */
+
+.fee-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+/* ---------------- Selectable invoice list (Make Payment) ---------------- */
+
+.pay-option-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 26px; }
+.pay-option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.pay-option:hover { border-color: var(--teal); }
+.pay-option input { position: absolute; opacity: 0; width: 0; height: 0; }
+.pay-option:has(input:checked) { border-color: var(--teal); background: var(--teal-light); }
+.pay-option-main { display: flex; align-items: center; gap: 14px; flex: 1; min-width: 0; }
+.pay-option-radio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+  background: var(--white);
+  transition: border-color 0.15s ease;
+}
+.pay-option:has(input:checked) .pay-option-radio { border-color: var(--teal); }
+.pay-option:has(input:checked) .pay-option-radio::after {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--teal);
+}
+.pay-option-info { flex: 1; min-width: 0; }
+.pay-option-info h4 { margin: 0 0 3px; font-size: 13.5px; font-weight: 700; }
+.pay-option-info span { font-size: 12px; color: var(--text-sub); }
+.pay-option-amount { text-align: right; flex-shrink: 0; }
+.pay-option-amount .amt { display: block; font-size: 15px; font-weight: 700; }
+.pay-option-amount .due { display: block; font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+
+/* ---------------- Payment method fields (Make Payment) ---------------- */
+
+.method-detail { display: none; margin-top: 16px; }
+.pay-methods-wrap:has(#m-momo:checked) .method-detail[data-for="momo"] { display: block; }
+.pay-methods-wrap:has(#m-bank:checked) .method-detail[data-for="bank"] { display: block; }
+.pay-methods-wrap:has(#m-card:checked) .method-detail[data-for="card"] { display: block; }
+
+.field-group { margin-bottom: 14px; }
+.field-group:last-child { margin-bottom: 0; }
+.field-group label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; color: var(--text-main); }
+.field-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  font-family: inherit;
+  background: var(--white);
+  color: var(--text-main);
+}
+.field-input:focus { outline: 2px solid var(--teal); outline-offset: 1px; border-color: var(--teal); }
+
+.field-select-wrap { position: relative; }
+.field-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 36px;
+  cursor: pointer;
+}
+.field-select-chevron {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+.field-row { display: flex; gap: 12px; }
+.field-row .field-group { flex: 1; }
+
+.static-detail-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 12.5px;
+  color: var(--text-sub);
+  line-height: 1.8;
+}
+.static-detail-box strong { color: var(--text-main); }
+
+/* ---------------- Payment summary panel (Make Payment) ---------------- */
+
+.summary-panel { padding: 20px 22px; position: sticky; top: 22px; }
+.summary-list { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+.summary-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--text-sub); }
+.summary-row strong { color: var(--text-main); font-weight: 600; text-align: right; }
+.summary-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.summary-total { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+.summary-total span:first-child { font-size: 13.5px; font-weight: 600; color: var(--text-main); }
+.summary-total span:last-child { font-size: 20px; font-weight: 700; color: var(--text-main); }
+.summary-secure { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 11.5px; color: var(--text-faint); }
+.summary-secure svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* ---------------- Receipts grid ---------------- */
+
+.receipt-grid { display: flex; flex-wrap: wrap; gap: 16px; }
+.receipt-card {
+  flex: 1 1 260px;
+  max-width: 320px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--white);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.receipt-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  background: var(--teal-light);
+  color: var(--teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.receipt-card-icon svg { width: 20px; height: 20px; }
+.receipt-card h4 { margin: 0 0 4px; font-size: 13.5px; font-weight: 700; line-height: 1.4; }
+.receipt-card .receipt-ref { font-size: 11.5px; color: var(--text-faint); margin-bottom: 14px; }
+.receipt-card .receipt-amount { font-size: 20px; font-weight: 700; margin-top: auto; }
+.receipt-card .receipt-date { font-size: 12px; color: var(--text-sub); margin-top: 2px; margin-bottom: 16px; }
+.receipt-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------------- badge-tag: solid variant (role tags) ---------------- */
+
+.badge-tag.navy { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+/* ---------------- Section heading inside a panel (form pages) ----------------
+   Groups a panel's fields under a small labeled heading -- Institution
+   Details / Ethics & Regulatory / Profile / Security etc. Pairs with the
+   existing .field-group / .field-input / .field-row from the payments
+   pages rather than a new form system. */
+
+.form-section { margin-bottom: 28px; }
+.form-section:last-child { margin-bottom: 0; }
+.form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.form-section-title svg { width: 17px; height: 17px; color: var(--teal); flex-shrink: 0; }
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------------- Toggle switch ----------------
+   Flat, no gradient -- a plain track that fills solid teal when checked and
+   slides a plain white knob. Used for 2FA, notification channel prefs, etc. */
+
+.switch { position: relative; display: inline-flex; width: 40px; height: 23px; flex-shrink: 0; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.switch-track {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 999px;
+  transition: background-color 0.15s ease;
+  pointer-events: none;
+}
+.switch-track::before {
+  content: "";
+  position: absolute;
+  width: 17px;
+  height: 17px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.25);
+}
+.switch input:checked + .switch-track { background: var(--teal); }
+.switch input:checked + .switch-track::before { transform: translateX(17px); }
+.switch input:focus-visible + .switch-track { outline: 2px solid var(--teal); outline-offset: 2px; }
+.switch input:disabled + .switch-track { opacity: 0.5; }
+
+/* ---------------- Settings row (label/description + a control) ----------------
+   Generic preference row: 2FA toggle, notification channels, anything that
+   pairs a short label + description on the left with one control on the
+   right. */
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child { border-bottom: none; padding-bottom: 0; }
+.settings-row:first-child { padding-top: 0; }
+.settings-row-text strong { display: block; font-size: 13px; font-weight: 700; color: var(--text-main); }
+.settings-row-text span { display: block; margin-top: 2px; font-size: 12px; color: var(--text-sub); line-height: 1.5; max-width: 46ch; }
+
+/* ---------------- Avatar edit row (Profile) ---------------- */
+
+.avatar-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.avatar-edit-row img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.avatar-edit-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.avatar-edit-hint { flex-basis: 100%; margin: 0; font-size: 11.5px; color: var(--text-faint); }
+
+/* ---------------- Session row (active sessions) ---------------- */
+
+.session-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.session-row:last-child { border-bottom: none; padding-bottom: 0; }
+.session-row:first-child { padding-top: 0; }
+.session-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.session-icon svg { width: 18px; height: 18px; }
+.session-info { flex: 1; min-width: 180px; }
+.session-info strong { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text-main); }
+.session-info span { display: block; margin-top: 2px; font-size: 12px; color: var(--text-sub); }
+.session-revoke { flex-shrink: 0; }
+
+/* ---------------- Notifications feed ---------------- */
+
+.notif-day-label {
+  margin: 22px 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+.notif-day-label:first-child { margin-top: 0; }
+.notif-list { display: flex; flex-direction: column; }
+.notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.notif-list .notif-row:last-child { border-bottom: none; }
+.notif-row:hover { background: var(--hover-bg); }
+.notif-row.unread { background: var(--hover-bg); }
+.notif-row.unread::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--text-faint); }
+/* Icon chips stay monochrome on purpose -- the row's own words carry the
+   meaning, and a feed of five different colored pills reads as decoration
+   rather than signal. Status colour is reserved for badge-tags. */
+.notif-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+}
+.notif-icon svg { width: 17px; height: 17px; }
+.notif-body { flex: 1; min-width: 0; }
+.notif-body h4 { margin: 0 0 3px; font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+.notif-body p { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--text-sub); }
+.notif-time { display: block; margin-top: 6px; font-size: 11px; color: var(--text-faint); }
+.notif-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-sub); flex-shrink: 0; margin-top: 7px; }
+
+/* ---------------- Research team ---------------- */
+
+/* Fixed tracks rather than flex-wrap: every row's avatar, name, contact and
+   action column then line up down the list instead of each row finding its
+   own ragged widths. */
+.team-list { display: flex; flex-direction: column; }
+.team-row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) minmax(0, 230px) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 15px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.team-list .team-row:last-child { border-bottom: none; }
+.team-row:hover { background: var(--hover-bg); }
+.team-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.team-avatar.initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: #fff;
+}
+.team-info { min-width: 0; }
+.team-info h4 { margin: 0 0 3px; display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--text-main); flex-wrap: wrap; }
+.team-info p { margin: 0; font-size: 12px; color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-contact { display: flex; flex-direction: column; gap: 2px; font-size: 12px; color: var(--text-sub); min-width: 0; }
+.team-contact a { color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-contact a:hover { color: var(--blue); }
+.team-contact span { color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+.invite-form-grid { display: grid; grid-template-columns: 1.2fr 1.4fr 1fr auto; gap: 14px; align-items: end; }
+.invite-form-grid .field-group { margin-bottom: 0; }
+
+/* ---------------- Compact summary strip ----------------
+   Four numbers in one bordered band. Four separate .stat-cards for counts
+   this small left tall, mostly-empty boxes; this keeps the same information
+   at a density that matches its importance. */
+
+.summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+.summary-cell { padding: 16px 20px; border-right: 1px solid var(--border); }
+.summary-cell:last-child { border-right: none; }
+.summary-cell .sc-value { display: block; font-size: 22px; font-weight: 700; color: var(--text-main); line-height: 1.1; }
+.summary-cell .sc-label { display: block; margin-top: 5px; font-size: 12px; color: var(--text-sub); }
+
+/* ---------------- Card head (section header inside a padded panel) ---------------- */
+
+.card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+.card-head h3 { margin: 0; font-size: 14px; font-weight: 700; color: var(--text-main); }
+.card-head p { margin: 4px 0 0; font-size: 12.5px; color: var(--text-sub); line-height: 1.5; }
+.card-head .card-head-meta { font-size: 12.5px; color: var(--text-sub); flex-shrink: 0; }
+.panel.flush { padding: 0; }
+.panel.flush .card-head { margin: 0; padding: 20px 22px 16px; }
+
+/* Vertical run of cards inside one column of .body-grid */
+.stack { display: flex; flex-direction: column; gap: 20px; min-width: 0; }
+
+/* ---------------- Help & Support ---------------- */
+
+.support-contact-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+.support-contact-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.support-contact-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.support-contact-icon svg { width: 19px; height: 19px; }
+.support-contact-card h4 { margin: 0; font-size: 13px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.03em; font-size: 11px; }
+.support-contact-card .support-value { font-size: 14.5px; font-weight: 700; color: var(--text-main); }
+.support-contact-card .support-sub { font-size: 12px; color: var(--text-sub); margin-top: -6px; }
+.support-contact-card a.support-action { font-size: 12.5px; font-weight: 600; color: var(--teal); margin-top: auto; }
+.support-contact-card a.support-action:hover { text-decoration: underline; }
+
+.faq-list { display: flex; flex-direction: column; gap: 10px; }
+.faq-item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--white);
+  overflow: hidden;
+}
+.faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary:hover { background: var(--hover-bg); }
+.faq-chev { width: 16px; height: 16px; color: var(--text-faint); transition: transform 0.2s ease; flex-shrink: 0; }
+.faq-item[open] .faq-chev { transform: rotate(180deg); }
+.faq-item[open] summary { border-bottom: 1px solid var(--border); }
+.faq-answer { margin: 0; padding: 4px 20px 18px; font-size: 12.5px; line-height: 1.7; color: var(--text-sub); }
+
+/* ---------------- Messages ---------------- */
+
+.messages-shell {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  gap: 20px;
+  height: calc(100vh - 168px);
+  min-height: 520px;
+}
+.messages-list-panel, .thread-panel { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.messages-list-head { padding: 16px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.messages-list-head .search-box { width: 100%; max-width: none; }
+.messages-list { flex: 1; overflow-y: auto; }
+.message-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 18px;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  background: none;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  position: relative;
+}
+.messages-list .message-row:last-child { border-bottom: none; }
+.message-row:hover { background: var(--hover-bg); }
+.message-row.active { background: var(--teal-light); }
+.message-row.active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--teal); }
+.message-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.message-avatar.initials { display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; }
+.message-row-body { flex: 1; min-width: 0; }
+.message-row-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.message-row-top strong { min-width: 0; font-size: 13px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.message-row-time { font-size: 11px; color: var(--text-faint); flex-shrink: 0; }
+/* display:block matters -- these are <span>s inside a block, and
+   text-overflow/overflow are ignored on an inline box, so without it the
+   snippet runs past the panel edge instead of truncating. */
+.message-snippet { display: block; margin: 3px 0 0; font-size: 12px; color: var(--text-sub); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.message-row.unread .message-snippet { color: var(--text-main); font-weight: 600; }
+.message-row-meta { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+.message-row-meta .badge-tag { font-size: 10px; padding: 2px 7px; }
+.message-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); flex-shrink: 0; margin-top: 5px; }
+
+.thread-panel { display: none; }
+.thread-panel.is-active { display: flex; }
+.thread-header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.thread-back-btn { display: none; }
+.thread-header-avatar { width: 38px; height: 38px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.thread-header-avatar.initials { display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12.5px; color: #fff; }
+.thread-header-info { flex: 1; min-width: 0; }
+.thread-header-info strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+.thread-header-info span { display: block; font-size: 11.5px; color: var(--text-sub); margin-top: 1px; }
+.thread-scroll { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; background: var(--bg); }
+.msg-bubble { max-width: 72%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.55; }
+.msg-bubble p { margin: 0; }
+.msg-bubble.in { align-self: flex-start; background: var(--white); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+.msg-bubble.out { align-self: flex-end; background: var(--teal); color: #fff; border-bottom-right-radius: 4px; }
+.msg-time { display: block; margin-top: 5px; font-size: 10.5px; opacity: 0.7; }
+.thread-composer { display: flex; align-items: flex-end; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--border); background: var(--white); flex-shrink: 0; }
+.thread-composer textarea {
+  flex: 1;
+  resize: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-main);
+  background: var(--bg);
+  max-height: 110px;
+  transition: 0.15s;
+}
+.thread-composer textarea:focus { outline: none; border-color: var(--teal); background: var(--white); }
+.thread-send-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.thread-send-btn:hover { background: #128581; }
+.thread-send-btn svg { width: 17px; height: 17px; }
+
 /* ---------------- Responsive ---------------- */
 
 @media (max-width: 1180px) {
@@ -1264,6 +1924,7 @@ svg {
   .body-grid { grid-template-columns: 1fr; }
   .side-col { flex-direction: row; }
   .side-col .panel { flex: 1; }
+  .messages-shell { grid-template-columns: 280px 1fr; }
 }
 
 @media (max-width: 900px) {
@@ -1285,6 +1946,26 @@ svg {
 
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .side-col { flex-direction: column; }
+
+  /* Messages: list + thread can no longer sit side by side, so the thread
+     becomes a full-screen panel opened from the list instead (script.js
+     toggles .thread-open / .is-active — see the Message threads block).
+     A thread is pre-selected on load for the desktop two-pane view, so on
+     mobile it must stay hidden until the shell explicitly opts in. */
+  .messages-shell { grid-template-columns: 1fr; height: auto; min-height: 0; }
+  .thread-panel.is-active { display: none; }
+  .messages-shell.thread-open .thread-panel.is-active {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    /* Above .menu-toggle (z-index: 60) -- otherwise the fixed hamburger
+       button sits on top of this panel's own back button in the same
+       top-left corner and eats its clicks. */
+    z-index: 65;
+    border-radius: 0;
+  }
+  .messages-shell.thread-open .messages-list-panel { display: none; }
+  .thread-back-btn { display: flex; }
 }
 
 @media (max-width: 720px) {
@@ -1338,6 +2019,34 @@ svg {
   .revision-top { flex-direction: column; }
   .revision-due { text-align: left; }
   .revision-actions .btn-primary, .revision-actions .btn-secondary { flex: 1; justify-content: center; }
+
+  /* Payments pages */
+  .fee-stats-grid { grid-template-columns: 1fr; }
+  .pay-option { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .pay-option-amount { text-align: left; }
+  .field-row { flex-direction: column; gap: 0; }
+  .summary-panel { position: static; }
+
+  /* Research Team / Institution / Profile & Security / Help & Support */
+  .team-row {
+    grid-template-columns: 40px minmax(0, 1fr);
+    grid-template-areas: "avatar info" "contact contact" "actions actions";
+    row-gap: 10px;
+    align-items: start;
+  }
+  .team-avatar { grid-area: avatar; width: 40px; height: 40px; }
+  .team-info { grid-area: info; }
+  .team-contact { grid-area: contact; }
+  .team-actions { grid-area: actions; justify-content: flex-start; }
+  .invite-form-grid { grid-template-columns: 1fr; }
+  .invite-form-grid .btn-primary { justify-content: center; }
+  .support-contact-grid { grid-template-columns: 1fr; }
+  .summary-strip { grid-template-columns: repeat(2, 1fr); }
+  .summary-cell:nth-child(2) { border-right: none; }
+  .summary-cell:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
+  .avatar-edit-row { text-align: center; justify-content: center; }
+  .settings-row { flex-wrap: wrap; }
+  .session-row { align-items: flex-start; }
 }
 
 @media (max-width: 480px) {
