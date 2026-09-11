@@ -40,4 +40,34 @@ urlpatterns = [
         TemplateView.as_view(template_name="dashboards/applicant/application-not-approved.html"),
         name="application_not_approved",
     ),
+    path(
+        "post-approval/amendments/",
+        TemplateView.as_view(template_name="dashboards/applicant/postapproval-amendments.html"),
+        name="postapproval_amendments",
+    ),
+    path(
+        "post-approval/continuing-reviews/",
+        TemplateView.as_view(template_name="dashboards/applicant/postapproval-continuing-reviews.html"),
+        name="postapproval_continuing_reviews",
+    ),
+    path(
+        "post-approval/progress-reports/",
+        TemplateView.as_view(template_name="dashboards/applicant/postapproval-progress-reports.html"),
+        name="postapproval_progress_reports",
+    ),
+    path(
+        "post-approval/adverse-events/",
+        TemplateView.as_view(template_name="dashboards/applicant/postapproval-adverse-events.html"),
+        name="postapproval_adverse_events",
+    ),
+    path(
+        "post-approval/deviations/",
+        TemplateView.as_view(template_name="dashboards/applicant/postapproval-deviations.html"),
+        name="postapproval_deviations",
+    ),
+    path(
+        "post-approval/closure/",
+        TemplateView.as_view(template_name="dashboards/applicant/postapproval-closure.html"),
+        name="postapproval_closure",
+    ),
 ]

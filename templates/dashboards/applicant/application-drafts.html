@@ -33,12 +33,12 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Amendments</a>
-          <a href="#" class="nav-sublink">Continuing Reviews</a>
-          <a href="#" class="nav-sublink">Annual / Progress Reports</a>
-          <a href="#" class="nav-sublink">Adverse Events</a>
-          <a href="#" class="nav-sublink">Deviations / Violations</a>
-          <a href="#" class="nav-sublink">Study Closure / Final Report</a>
+          <a href="{% url 'applicant_dashboard:postapproval_amendments' %}" class="nav-sublink">Amendments</a>
+          <a href="{% url 'applicant_dashboard:postapproval_continuing_reviews' %}" class="nav-sublink">Continuing Reviews</a>
+          <a href="{% url 'applicant_dashboard:postapproval_progress_reports' %}" class="nav-sublink">Annual / Progress Reports</a>
+          <a href="{% url 'applicant_dashboard:postapproval_adverse_events' %}" class="nav-sublink">Adverse Events</a>
+          <a href="{% url 'applicant_dashboard:postapproval_deviations' %}" class="nav-sublink">Deviations / Violations</a>
+          <a href="{% url 'applicant_dashboard:postapproval_closure' %}" class="nav-sublink">Study Closure / Final Report</a>
         </div>
       </div>
 
@@ -190,11 +190,7 @@
 {% block main_content %}
 
 
-      <div class="page-head">
-        <div class="page-head-text">
-          <h2>Draft Applications</h2>
-          <p>Not yet submitted &mdash; only visible to you until you submit.</p>
-        </div>
+      <div class="page-head" style="justify-content:flex-end;">
         <a href="{% url 'applicant_dashboard:application_new' %}" class="btn-primary">
           <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
           New Draft

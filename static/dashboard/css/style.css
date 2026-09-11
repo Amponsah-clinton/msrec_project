@@ -599,6 +599,69 @@ svg {
   }
 }
 
+/* ---------------- Applicant dashboard: compact topbar layout ----------------
+   On small screens only, the applicant dashboard's search box drops to its
+   own full-width row and the profile trigger pins to the top-right corner,
+   instead of three items competing for one cramped row. Desktop is entirely
+   untouched — this whole thing lives inside the max-width query below, and
+   applicant.html's topbar markup itself is unchanged (plain topbar-title +
+   topbar-actions, identical to every other dashboard).
+
+   Scoped to just this dashboard via :has() on its (unique) search
+   placeholder text — <header class="topbar"> itself lives once in
+   dashboards/base.html and is shared by every dashboard, so there's no class
+   on the tag itself to key off without a wider template change. */
+@media (max-width: 600px) {
+  .topbar:has(.search-box input[placeholder="Search my applications..."]) {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "title   profile"
+      "search  search";
+    align-items: center;
+    row-gap: 12px;
+    column-gap: 12px;
+  }
+  .topbar:has(.search-box input[placeholder="Search my applications..."]) .topbar-title {
+    grid-area: title;
+    min-width: 0;
+  }
+  /* The title column now shares its row with the avatar instead of having
+     the full topbar width to itself, so long titles ("Not Approved /
+     Closed") need to shrink a step to keep to one line instead of wrapping
+     under the avatar column. */
+  .topbar:has(.search-box input[placeholder="Search my applications..."]) .topbar-title h1 {
+    font-size: 17px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* Unwrap topbar-actions so its children (search box + the profile dropdown
+     — theme toggle and notifications have already been moved into the
+     profile menu by script.js at this width) become direct grid items and
+     can be placed independently. */
+  .topbar:has(.search-box input[placeholder="Search my applications..."]) .topbar-actions {
+    display: contents;
+  }
+  .topbar:has(.search-box input[placeholder="Search my applications..."]) .search-box {
+    grid-area: search;
+    width: 100%;
+    max-width: none;
+  }
+  .topbar:has(.search-box input[placeholder="Search my applications..."]) #profileDropdown {
+    grid-area: profile;
+    justify-self: end;
+  }
+  /* Guards against a one-frame flash of these two as loose circular buttons
+     before script.js's matchMedia handler re-parents them into the profile
+     menu on first paint — harmless once moved, since they're then no longer
+     direct children of topbar-actions and this stops matching. */
+  .topbar:has(.search-box input[placeholder="Search my applications..."]) .topbar-actions > .theme-toggle,
+  .topbar:has(.search-box input[placeholder="Search my applications..."]) .topbar-actions > #bellDropdown {
+    display: none;
+  }
+}
+
 /* ---------------- Content ---------------- */
 
 .content {
@@ -892,9 +955,18 @@ svg {
 
 /* ---------------- Pipeline stepper (Under Review) ---------------- */
 
+.pipeline-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding-bottom: 14px;
+}
+.pipeline-row .revision-actions { flex-shrink: 0; }
+
 .pipeline {
   display: flex;
   align-items: center;
+  flex: 1;
   min-width: 260px;
 }
 .pipeline-step {
@@ -904,37 +976,44 @@ svg {
   position: relative;
 }
 .pipeline-dot {
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
-  background: var(--bg);
+  background: var(--white);
   border: 2px solid var(--border);
   color: var(--text-faint);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
   flex-shrink: 0;
   z-index: 1;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.pipeline-dot svg { width: 11px; height: 11px; }
-.pipeline-line { flex: 1; height: 2px; background: var(--border); }
+.pipeline-dot svg { width: 13px; height: 13px; stroke-width: 3.2; }
+.pipeline-line { flex: 1; height: 2px; border-radius: 999px; background: var(--border); }
 .pipeline-step.done .pipeline-dot { background: var(--teal); border-color: var(--teal); color: #fff; }
 .pipeline-step.done .pipeline-line { background: var(--teal); }
-.pipeline-step.current .pipeline-dot { background: var(--blue); border-color: var(--blue); color: #fff; }
+.pipeline-step.current .pipeline-dot {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #fff;
+  box-shadow: 0 0 0 4px var(--blue-light);
+}
 .pipeline-label {
   position: absolute;
-  top: 28px;
-  left: 50%;
+  top: 36px;
+  left: 13px;
   transform: translateX(-50%);
-  font-size: 9.5px;
+  font-size: 10.5px;
   font-weight: 600;
+  letter-spacing: 0.01em;
   color: var(--text-faint);
   white-space: nowrap;
 }
 .pipeline-step.done .pipeline-label,
-.pipeline-step.current .pipeline-label { color: var(--text-sub); }
+.pipeline-step.current .pipeline-label { color: var(--text-main); font-weight: 700; }
 .pipeline-step:last-child .pipeline-line { display: none; }
 
 /* ---------------- Revision cards (Revisions Required) ---------------- */
@@ -1255,6 +1334,7 @@ svg {
   .completion-wrap { min-width: 0; width: 100%; justify-content: flex-end; }
   .pipeline { min-width: 0; width: 100%; }
   .pipeline-label { display: none; }
+  .pipeline-row { flex-direction: column; align-items: stretch; gap: 14px; }
   .revision-top { flex-direction: column; }
   .revision-due { text-align: left; }
   .revision-actions .btn-primary, .revision-actions .btn-secondary { flex: 1; justify-content: center; }
