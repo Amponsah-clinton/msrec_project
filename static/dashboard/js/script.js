@@ -83,18 +83,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // Quick action buttons — simple visual feedback
+  // Quick action buttons — only swallow the click for still-unwired demo
+  // links (href="#"); anything pointing at a real URL should navigate.
   document.querySelectorAll(".qa-btn, .btn-danger, .action-btn, .stat-link, .panel-link").forEach((el) => {
     el.addEventListener("click", (e) => {
-      if (el.tagName === "A") e.preventDefault();
+      if (el.tagName === "A" && el.getAttribute("href") === "#") e.preventDefault();
     });
   });
 
   // ---------------- Dropdowns (notifications + profile) ----------------
+  // Not every dashboard page carries both (e.g. the admin Accounts page has
+  // no bell dropdown in its topbar) -- filter out whichever ids aren't
+  // present rather than assuming all three elements of a pair exist.
   const dropdowns = [
     { wrap: document.getElementById("bellDropdown"), btn: document.getElementById("bellBtn"), menu: document.getElementById("bellMenu") },
     { wrap: document.getElementById("profileDropdown"), btn: document.getElementById("profileBtn"), menu: document.getElementById("profileMenu") },
-  ];
+  ].filter(({ wrap, btn, menu }) => wrap && btn && menu);
 
   function closeAllDropdowns(except) {
     dropdowns.forEach(({ wrap, btn, menu }) => {

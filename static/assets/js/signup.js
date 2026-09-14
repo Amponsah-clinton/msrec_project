@@ -3,6 +3,23 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!form) return;
 
   /* ============================================================
+     Password visibility toggles (Password / Confirm Password)
+  ============================================================ */
+  form.querySelectorAll(".password-field").forEach((wrap) => {
+    const input = wrap.querySelector("input");
+    const btn = wrap.querySelector(".toggle-password");
+    const icon = btn.querySelector("i");
+    if (!input || !btn || !icon) return;
+    btn.addEventListener("click", () => {
+      const isHidden = input.type === "password";
+      input.type = isHidden ? "text" : "password";
+      icon.classList.toggle("bi-eye", !isHidden);
+      icon.classList.toggle("bi-eye-slash", isHidden);
+      btn.setAttribute("aria-label", isHidden ? "Hide password" : "Show password");
+    });
+  });
+
+  /* ============================================================
      Tag input (Primary Research Area / Areas of Expertise / etc.)
   ============================================================ */
   function initTagInput(container) {
@@ -151,6 +168,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const department = document.getElementById("department");
   const institutionReqTag = document.getElementById("institutionReqTag");
   const departmentReqTag = document.getElementById("departmentReqTag");
+  // Position / country / address aren't required either way, but they're
+  // still institution details -- lock them too so "I don't have one"
+  // isn't contradicted by a half-filled-in section. Personal Website is
+  // left alone: that's the applicant's own, not the institution's.
+  const institutionLockFields = [
+    institution, department,
+    document.getElementById("position"),
+    document.getElementById("institutionCountry"),
+    document.getElementById("institutionAddress"),
+  ];
 
   function applyInstitutionRequirement() {
     const independent = noInstitution.checked;
@@ -158,6 +185,11 @@ document.addEventListener("DOMContentLoaded", () => {
     department.required = !independent;
     institutionReqTag.hidden = independent;
     departmentReqTag.hidden = independent;
+    institutionLockFields.forEach((field) => {
+      if (!field) return;
+      field.disabled = independent;
+      if (independent) field.value = "";
+    });
   }
   noInstitution.addEventListener("change", applyInstitutionRequirement);
   applyInstitutionRequirement();
@@ -250,23 +282,6 @@ document.addEventListener("DOMContentLoaded", () => {
   /* ============================================================
      Submit
   ============================================================ */
-  const STATUS_MESSAGES = {
-    applicant: {
-      title: "Applicant / Researcher",
-      badge: "Active after verification",
-      desc: "Your account will be activated once you verify your email address.",
-    },
-    reviewer: {
-      title: "Reviewer",
-      badge: "Pending Verification",
-      desc: "Your reviewer profile is pending MSREC verification before you can be assigned protocols.",
-    },
-    committee: {
-      title: "Committee Member",
-      badge: "Pending MSREC Verification",
-      desc: "Your committee membership is pending MSREC verification and appointment confirmation.",
-    },
-  };
 
   const emailInput = document.getElementById("email");
   const confirmEmailInput = document.getElementById("confirmEmail");
@@ -327,45 +342,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const submitBtn = form.querySelector(".btn-create-account");
-    const originalText = submitBtn.textContent;
     submitBtn.disabled = true;
     submitBtn.textContent = "Creating account...";
 
-    setTimeout(() => {
-      showConfirmation(selectedRoles);
-      submitBtn.disabled = false;
-      submitBtn.textContent = originalText;
-    }, 700);
+    // All client-side checks above passed — hand off to the real endpoint.
+    // (Not form.requestSubmit(): that would re-dispatch this same "submit"
+    // listener and loop. form.submit() bypasses it and does the real POST.)
+    form.submit();
   });
 
   emailInput.addEventListener("input", () => emailMatchError.classList.remove("show"));
   confirmEmailInput.addEventListener("input", () => emailMatchError.classList.remove("show"));
   passwordInput.addEventListener("input", () => passwordMatchError.classList.remove("show"));
   confirmPasswordInput.addEventListener("input", () => passwordMatchError.classList.remove("show"));
-
-  function showConfirmation(selectedRoles) {
-    const formView = document.getElementById("signupFormView");
-    const confirmView = document.getElementById("signupConfirmView");
-    const list = document.getElementById("confirmStatusList");
-
-    list.innerHTML = "";
-    selectedRoles.forEach((role) => {
-      const info = STATUS_MESSAGES[role];
-      if (!info) return;
-      const li = document.createElement("li");
-      li.innerHTML = `
-        <i class="bi bi-hourglass-split"></i>
-        <span>
-          <span class="status-badge">${info.badge}</span>
-          <strong>${info.title}</strong>
-          <span class="status-desc">${info.desc}</span>
-        </span>
-      `;
-      list.appendChild(li);
-    });
-
-    formView.hidden = true;
-    confirmView.hidden = false;
-    confirmView.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
 });

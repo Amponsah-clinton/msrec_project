@@ -22,7 +22,16 @@
             <p class="required-legend"><span class="req">*</span> indicates a required field</p>
           </div>
 
-          <form id="signupForm" novalidate>
+          {% if messages %}
+            <div class="signup-messages">
+              {% for message in messages %}
+                <p class="signup-message{% if message.tags %} {{ message.tags }}{% endif %}">{{ message }}</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <form id="signupForm" method="post" action="{% url 'pages:signup' %}" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
 
             <!-- ============ 1. ACCOUNT ROLES ============ -->
             <section class="signup-section">
@@ -109,15 +118,35 @@
                 </div>
                 <div class="field">
                   <label for="highestQualification">Highest Qualification <span class="req">*</span></label>
-                  <input type="text" id="highestQualification" name="highestQualification" required>
+                  <select id="highestQualification" name="highestQualification" required>
+                    <option value="">Select qualification</option>
+                    <option>Secondary / High School</option>
+                    <option>Diploma</option>
+                    <option>Bachelor's Degree</option>
+                    <option>Postgraduate Diploma</option>
+                    <option>Master's Degree</option>
+                    <option>PhD / Doctorate</option>
+                    <option>Professional Certification</option>
+                    <option>Other</option>
+                  </select>
                 </div>
                 <div class="field">
                   <label for="password">Password <span class="req">*</span></label>
-                  <input type="password" id="password" name="password" required minlength="8">
+                  <div class="password-field">
+                    <input type="password" id="password" name="password" required minlength="8">
+                    <button type="button" class="toggle-password" aria-label="Show password">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </div>
                 </div>
                 <div class="field">
                   <label for="confirmPassword">Confirm Password <span class="req">*</span></label>
-                  <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8">
+                  <div class="password-field">
+                    <input type="password" id="confirmPassword" name="confirmPassword" required minlength="8">
+                    <button type="button" class="toggle-password" aria-label="Show password">
+                      <i class="bi bi-eye"></i>
+                    </button>
+                  </div>
                   <p class="field-error" id="passwordMatchError" hidden>Passwords do not match.</p>
                 </div>
               </div>
@@ -426,15 +455,6 @@
 
             <p class="signin-instead">Already have an account? <a href="{% url 'pages:login' %}">Sign in</a></p>
           </form>
-        </div>
-
-        <!-- ============ CONFIRMATION VIEW ============ -->
-        <div id="signupConfirmView" class="signup-confirm" hidden>
-          <div class="confirm-icon"><i class="bi bi-check-lg"></i></div>
-          <h1>Account request received</h1>
-          <p class="confirm-sub">Thank you for registering with MSREC. Here's what happens next for each role you selected:</p>
-          <ul class="confirm-status-list" id="confirmStatusList"></ul>
-          <a href="{% url 'pages:index' %}" class="back-link"><i class="bi bi-arrow-left"></i> Back to MSREC Website</a>
         </div>
 
       </div>

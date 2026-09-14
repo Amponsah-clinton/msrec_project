@@ -16,19 +16,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("loginForm");
   if (form) {
     form.addEventListener("submit", (e) => {
-      e.preventDefault();
       if (!form.checkValidity()) {
+        e.preventDefault();
         form.reportValidity();
         return;
       }
+      // Valid: let the real POST to the server go through. Just show a
+      // busy state on the button while the page navigates away.
       const btn = form.querySelector(".btn-signin");
-      const original = btn.textContent;
       btn.disabled = true;
       btn.textContent = "Signing in...";
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.textContent = original;
-      }, 900);
     });
   }
 });

@@ -20,10 +20,19 @@
             <h1>Welcome Back!</h1>
             <p class="login-sub">Access your research ethics account.</p>
 
-            <form id="loginForm" novalidate>
+            {% if messages %}
+              <div class="login-messages">
+                {% for message in messages %}
+                  <p class="login-message{% if message.tags %} {{ message.tags }}{% endif %}">{{ message }}</p>
+                {% endfor %}
+              </div>
+            {% endif %}
+
+            <form id="loginForm" method="post" action="{% url 'pages:login' %}" novalidate>
+              {% csrf_token %}
               <div class="field">
                 <label for="email">Email Address</label>
-                <input type="email" id="email" name="email" placeholder="you@institution.edu" required autocomplete="email">
+                <input type="email" id="email" name="email" value="{{ form.email.value|default:'' }}" placeholder="you@institution.edu" required autocomplete="email">
               </div>
 
               <div class="field">

@@ -1,14 +1,20 @@
+from django.contrib.auth.decorators import login_required
 from django.urls import path
 from django.views.generic import TemplateView
 
 app_name = "applicant_dashboard"
 
-urlpatterns = [
+_urlpatterns = [
     path("", TemplateView.as_view(template_name="dashboards/applicant.html"), name="home"),
     path(
         "applications/new/",
         TemplateView.as_view(template_name="dashboards/applicant/application-new.html"),
         name="application_new",
+    ),
+    path(
+        "applications/new/form/",
+        TemplateView.as_view(template_name="dashboards/applicant/application-form.html"),
+        name="application_form",
     ),
     path(
         "applications/drafts/",
@@ -141,3 +147,11 @@ urlpatterns = [
         name="help_support",
     ),
 ]
+
+# Every applicant-dashboard page requires a signed-in account -- wrap each
+# resolved view here rather than repeat login_required(...) on every path()
+# above. (URLPattern.callback is set post-construction, so mutating it here
+# is equivalent to having wrapped each TemplateView.as_view(...) by hand.)
+urlpatterns = _urlpatterns
+for _pattern in urlpatterns:
+    _pattern.callback = login_required(_pattern.callback)

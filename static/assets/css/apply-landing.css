@@ -1,0 +1,114 @@
+/* ==========================================================
+   MSREC — Apply landing page
+   Flat, clean layout. No gradients, solid accent colors only.
+========================================================== */
+
+body.apply-landing-page {
+  margin: 0;
+  font-family: var(--default-font);
+  background: color-mix(in srgb, var(--accent-color), white 96%);
+}
+
+.apply-landing-main { padding-top: 150px; padding-bottom: 20px; }
+
+/* ---------------- Pathway cards ---------------- */
+.apply-path-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.apply-path-card {
+  background: #ffffff;
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 88%);
+  border-radius: 16px;
+  padding: 26px 24px;
+}
+
+.apply-path-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--accent-color), transparent 90%);
+  color: var(--accent-color);
+  font-size: 20px;
+  margin-bottom: 16px;
+}
+
+.apply-path-card h3 {
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--heading-color);
+  margin: 0 0 8px;
+}
+
+.apply-path-card p {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: color-mix(in srgb, var(--default-color), transparent 20%);
+  margin: 0;
+}
+
+/* ---------------- Final CTA band — flat solid color ---------------- */
+.apply-cta-band {
+  background: var(--accent-color);
+  border-radius: 24px;
+  padding: 56px 48px;
+  text-align: center;
+  margin-bottom: 70px;
+}
+
+.apply-cta-band h2 {
+  font-family: var(--heading-font);
+  font-size: clamp(24px, 3vw, 32px);
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 14px;
+}
+
+.apply-cta-band p {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 15px;
+  max-width: 52ch;
+  margin: 0 auto 30px;
+}
+
+.apply-cta-actions {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.apply-cta-band .btn-ap-primary {
+  background: #ffffff;
+  color: var(--accent-color);
+  border-color: #ffffff;
+}
+
+.apply-cta-band .btn-ap-primary:hover {
+  background: color-mix(in srgb, #ffffff, black 6%);
+  color: var(--accent-color);
+}
+
+.apply-cta-band .btn-ap-secondary {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.apply-cta-band .btn-ap-secondary:hover {
+  border-color: #ffffff;
+  color: #ffffff;
+}
+
+@media (max-width: 991px) {
+  .apply-path-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 575px) {
+  .apply-path-grid { grid-template-columns: 1fr; }
+  .apply-cta-band { padding: 40px 24px; }
+}

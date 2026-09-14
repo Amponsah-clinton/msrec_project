@@ -669,6 +669,27 @@ svg {
   flex: 1;
 }
 
+/* ---------------- Flash messages (django.contrib.messages) ---------------- */
+.flash-messages { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+.flash-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--green-light);
+  color: var(--text-main);
+  border: 1px solid color-mix(in srgb, var(--green) 25%, transparent);
+}
+.flash-message svg { width: 17px; height: 17px; color: var(--green); flex-shrink: 0; }
+.flash-message.error {
+  background: var(--red-light);
+  border-color: color-mix(in srgb, var(--red) 25%, transparent);
+}
+.flash-message.error svg { color: var(--red); }
+
 /* Stat cards */
 
 .stats-grid {
@@ -796,6 +817,7 @@ svg {
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  padding: 20px 22px;
 }
 
 .reviews-panel { padding: 20px 22px 8px; }
@@ -804,6 +826,8 @@ svg {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 14px;
   margin-bottom: 14px;
 }
 .panel-header h2 { margin: 0; font-size: 16px; font-weight: 700; }
@@ -2036,7 +2060,9 @@ svg {
   }
   .team-avatar { grid-area: avatar; width: 40px; height: 40px; }
   .team-info { grid-area: info; }
+  .team-info p { white-space: normal; overflow: visible; text-overflow: clip; }
   .team-contact { grid-area: contact; }
+  .team-contact a, .team-contact span { white-space: normal; }
   .team-actions { grid-area: actions; justify-content: flex-start; }
   .invite-form-grid { grid-template-columns: 1fr; }
   .invite-form-grid .btn-primary { justify-content: center; }

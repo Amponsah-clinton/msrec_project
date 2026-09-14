@@ -74,6 +74,16 @@
     </header>
 
     <main class="content">
+      {% if messages %}
+        <div class="flash-messages">
+          {% for message in messages %}
+            <div class="flash-message{% if message.tags %} {{ message.tags }}{% endif %}">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
       {% block main_content %}{% endblock %}
     </main>
 

@@ -44,13 +44,18 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "accounts",
     "pages",
     "reviewer_dashboard",
     "applicant_dashboard",
     "committee_dashboard",
     "chair_dashboard",
     "secretariat_dashboard",
+    "admin_dashboard",
 ]
+
+AUTH_USER_MODEL = "accounts.User"
+LOGIN_URL = "pages:login"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

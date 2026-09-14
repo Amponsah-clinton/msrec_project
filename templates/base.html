@@ -33,6 +33,20 @@
 <body class="{% block body_class %}{% endblock %}">
 
   <header id="header" class="header fixed-top">
+    <div class="topbar d-flex align-items-center">
+      <div class="container-fluid d-flex justify-content-end align-items-center">
+        <div class="topbar-actions d-flex align-items-center">
+          <a href="{% url 'pages:apply' %}" class="topbar-btn topbar-btn-ghost">
+            <i class="bi bi-file-earmark-text"></i>
+            <span>Apply</span>
+          </a>
+          <a href="{% url 'pages:login' %}" class="topbar-btn topbar-btn-solid">
+            <i class="bi bi-box-arrow-in-right"></i>
+            <span>Sign In</span>
+          </a>
+        </div>
+      </div>
+    </div>
     <div class="branding d-flex align-items-cente">
       <div class="container-fluid position-relative d-flex align-items-center justify-content-between">
         <a href="{% url 'pages:index' %}" class="logo d-flex align-items-center">
@@ -50,8 +64,6 @@
             <li><a href="{% url 'pages:board_committee' %}"{% if request.resolver_match.url_name == 'board_committee' %} class="active"{% endif %}>Board &amp; Committee</a></li>
             <li><a href="{% url 'pages:verify' %}"{% if request.resolver_match.url_name == 'verify' %} class="active"{% endif %}>Verify Approval</a></li>
             <li><a href="{% url 'pages:contact' %}"{% if request.resolver_match.url_name == 'contact' %} class="active"{% endif %}>Contact</a></li>
-            <li><a href="{% url 'pages:apply' %}"{% if request.resolver_match.url_name == 'apply' %} class="active"{% endif %}>Apply Now</a></li>
-            <li><a href="{% url 'pages:login' %}"{% if request.resolver_match.url_name == 'login' %} class="active"{% endif %}>Login</a></li>
           </ul>
           <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>

@@ -177,7 +177,7 @@
               Messages
             </a>
             <div class="dropdown-divider"></div>
-            <a href="#" class="dropdown-item logout">
+            <a href="{% url 'pages:logout' %}" class="dropdown-item logout">
               <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
               Log Out
             </a>
@@ -189,13 +189,6 @@
 
 {% block main_content %}
 
-
-      <div class="page-head">
-        <div class="page-head-text">
-          <h2>Research Team</h2>
-          <p>Everyone listed on your active protocols, and their role on each study.</p>
-        </div>
-      </div>
 
       <section class="stats-grid compact" style="margin-bottom:22px;">
         <div class="stat-card">

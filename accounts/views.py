@@ -1,0 +1,178 @@
+import uuid
+
+from django.contrib import messages
+from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.shortcuts import redirect, render
+from django.urls import reverse
+
+from . import storage
+from .forms import LoginForm, SignupForm
+from .models import User
+
+# Extra, role-specific fields collected on the signup form. These aren't
+# validated as strict Django fields (see forms.SignupForm's docstring) --
+# they're saved as-is into the matching *_profile JSONField for a human
+# reviewer to read, so a stray missing/extra key never breaks signup.
+APPLICANT_PROFILE_FIELDS = [
+    "applicantCategory", "primaryResearchArea", "academicProgramme", "degreeLevel",
+    "supervisorName", "supervisorInstitution", "supervisorEmail",
+]
+REVIEWER_PROFILE_FIELDS = [
+    "independentReviewer", "reviewerPosition", "reviewerInstitution", "reviewerDiscipline",
+    "reviewerYearsProfessional", "reviewerYearsResearch", "reviewerPriorExperience",
+    "reviewerCommitteeExperience", "reviewerExpertise", "reviewerResearchAreas",
+    "reviewerTraining", "reviewerOrcid", "reviewerRegistration", "reviewerBio",
+]
+COMMITTEE_PROFILE_FIELDS = [
+    "committeePosition", "committeeInstitution", "committeeYears", "committeeEthicsExperience",
+    "committeeEthicsDetails", "committeeBackground", "committeeTraining", "committeeOrcid",
+    "committeeRegistration", "committeeReference", "committeeBio",
+]
+
+
+def _collect_profile(post, fields, multi_fields=()):
+    data = {}
+    for key in fields:
+        if key in multi_fields:
+            values = post.getlist(key)
+            if values:
+                data[key] = values
+        else:
+            value = post.get(key, "").strip()
+            if value:
+                data[key] = value
+    return data
+
+
+def signup(request):
+    if request.user.is_authenticated:
+        return redirect(request.user.dashboard_url_name())
+
+    if request.method == "POST":
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            cd = form.cleaned_data
+            roles = cd["role"]
+
+            user = User(
+                email=cd["email"],
+                first_name=cd["firstName"],
+                middle_name=cd.get("middleName", ""),
+                last_name=cd["lastName"],
+                title=cd.get("title", ""),
+                phone=cd["phone"],
+                country_residence=cd["countryResidence"],
+                highest_qualification=cd["highestQualification"],
+                no_institution=cd.get("noInstitution", False),
+                institution=cd.get("institution", ""),
+                department=cd.get("department", ""),
+                position=cd.get("position", ""),
+                institution_country=cd.get("institutionCountry", ""),
+                institution_address=cd.get("institutionAddress", ""),
+                profile_url=cd.get("profileUrl", ""),
+                role=User.Role.APPLICANT,
+            )
+
+            # Note: primaryResearchArea / reviewerExpertise / reviewerResearchAreas are
+            # tag-inputs (see signup.js initTagInput) -- each posts as ONE hidden field
+            # holding a comma-joined string, not repeated same-name inputs, so they are
+            # NOT multi_fields here. committeeExpertiseCategory is real checkboxes
+            # (repeated name="committeeExpertiseCategory" per option) and does need getlist.
+            if "reviewer" in roles:
+                user.wants_reviewer = True
+                user.reviewer_status = User.RequestStatus.PENDING
+                user.reviewer_profile = _collect_profile(request.POST, REVIEWER_PROFILE_FIELDS)
+            if "committee" in roles:
+                user.wants_committee = True
+                user.committee_status = User.RequestStatus.PENDING
+                user.committee_profile = _collect_profile(
+                    request.POST, COMMITTEE_PROFILE_FIELDS,
+                    multi_fields=("committeeExpertiseCategory",),
+                )
+            if "applicant" in roles:
+                user.applicant_profile = _collect_profile(request.POST, APPLICANT_PROFILE_FIELDS)
+
+            # Signup documents (profile photo + role CVs) -> Supabase Storage
+            # "signup" bucket, grouped under one folder per submission. A
+            # Storage outage must never block account creation, so a failed
+            # upload just means that particular field stays unset (see
+            # accounts/storage.py) -- it doesn't fail the signup.
+            upload_folder = uuid.uuid4().hex
+            photo_path = storage.upload_signup_file(
+                request.FILES.get("profilePhoto"), folder=upload_folder, field_name="profilePhoto"
+            )
+            if photo_path:
+                user.profile_photo_path = photo_path
+
+            if "applicant" in roles:
+                cv_path = storage.upload_signup_file(
+                    request.FILES.get("applicantCv"), folder=upload_folder, field_name="applicantCv"
+                )
+                if cv_path:
+                    user.applicant_profile["cv_path"] = cv_path
+            if "reviewer" in roles:
+                cv_path = storage.upload_signup_file(
+                    request.FILES.get("reviewerCv"), folder=upload_folder, field_name="reviewerCv"
+                )
+                if cv_path:
+                    user.reviewer_profile["cv_path"] = cv_path
+            if "committee" in roles:
+                cv_path = storage.upload_signup_file(
+                    request.FILES.get("committeeCv"), folder=upload_folder, field_name="committeeCv"
+                )
+                if cv_path:
+                    user.committee_profile["cv_path"] = cv_path
+
+            user.set_password(cd["password"])
+            user.save()
+
+            auth_login(request, user)
+
+            if user.has_pending_requests:
+                messages.success(
+                    request,
+                    "Welcome to MSREC! Your account is ready. The extra role(s) you requested are "
+                    "pending admin approval — we'll notify you once they're reviewed.",
+                )
+            else:
+                messages.success(request, "Welcome to MSREC! Your account has been created.")
+            return redirect(user.dashboard_url_name())
+
+        for error in form.non_field_errors():
+            messages.error(request, error)
+        for field, errors in form.errors.items():
+            if field == "__all__":
+                continue
+            label = form.fields[field].label or field
+            for error in errors:
+                messages.error(request, f"{label}: {error}")
+        return render(request, "pages/signup.html", {"form": form}, status=400)
+
+    form = SignupForm()
+    return render(request, "pages/signup.html", {"form": form})
+
+
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect(request.user.dashboard_url_name())
+
+    if request.method == "POST":
+        form = LoginForm(request.POST, request=request)
+        if form.is_valid():
+            user = form.get_user()
+            auth_login(request, user)
+            messages.success(request, f"Welcome back, {user.first_name}.")
+            next_url = request.POST.get("next") or request.GET.get("next")
+            return redirect(next_url or user.dashboard_url_name())
+        for error in form.non_field_errors():
+            messages.error(request, error)
+        return render(request, "pages/login.html", {"form": form}, status=400)
+
+    form = LoginForm(request=request)
+    return render(request, "pages/login.html", {"form": form})
+
+
+def logout_view(request):
+    auth_logout(request)
+    messages.success(request, "You've been signed out.")
+    return redirect(reverse("pages:login"))
