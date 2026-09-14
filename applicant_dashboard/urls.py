@@ -2,10 +2,15 @@ from django.contrib.auth.decorators import login_required
 from django.urls import path
 from django.views.generic import TemplateView
 
+from messaging import views as messaging_views
+from payments import views as payment_views
+
+from . import views
+
 app_name = "applicant_dashboard"
 
 _urlpatterns = [
-    path("", TemplateView.as_view(template_name="dashboards/applicant.html"), name="home"),
+    path("", views.home, name="home"),
     path(
         "applications/new/",
         TemplateView.as_view(template_name="dashboards/applicant/application-new.html"),
@@ -13,38 +18,63 @@ _urlpatterns = [
     ),
     path(
         "applications/new/form/",
-        TemplateView.as_view(template_name="dashboards/applicant/application-form.html"),
+        views.application_form,
         name="application_form",
     ),
     path(
         "applications/drafts/",
-        TemplateView.as_view(template_name="dashboards/applicant/application-drafts.html"),
+        views.application_drafts,
         name="application_drafts",
     ),
     path(
+        "applications/drafts/<int:pk>/delete/",
+        views.delete_draft,
+        name="application_draft_delete",
+    ),
+    path(
+        "applications/autosave/",
+        views.autosave_application,
+        name="application_autosave",
+    ),
+    path(
+        "applications/new/pay/<int:pk>/",
+        payment_views.pay,
+        name="application_pay",
+    ),
+    path(
+        "applications/new/pay/<int:pk>/verify/",
+        payment_views.verify,
+        name="application_pay_verify",
+    ),
+    path(
         "applications/submitted/",
-        TemplateView.as_view(template_name="dashboards/applicant/application-submitted.html"),
+        views.application_submitted,
         name="application_submitted",
     ),
     path(
         "applications/under-review/",
-        TemplateView.as_view(template_name="dashboards/applicant/application-under-review.html"),
+        views.application_under_review,
         name="application_under_review",
     ),
     path(
         "applications/revisions/",
-        TemplateView.as_view(template_name="dashboards/applicant/application-revisions.html"),
+        views.application_revisions,
         name="application_revisions",
     ),
     path(
         "applications/approved/",
-        TemplateView.as_view(template_name="dashboards/applicant/application-approved.html"),
+        views.application_approved,
         name="application_approved",
     ),
     path(
         "applications/not-approved/",
-        TemplateView.as_view(template_name="dashboards/applicant/application-not-approved.html"),
+        views.application_not_approved,
         name="application_not_approved",
+    ),
+    path(
+        "applications/<int:pk>/",
+        views.application_detail,
+        name="application_detail",
     ),
     path(
         "post-approval/amendments/",
@@ -96,11 +126,7 @@ _urlpatterns = [
         TemplateView.as_view(template_name="dashboards/applicant/documents-certificates-receipts.html"),
         name="documents_certificates_receipts",
     ),
-    path(
-        "payments/fees/",
-        TemplateView.as_view(template_name="dashboards/applicant/payments-fees.html"),
-        name="payments_fees",
-    ),
+    path("payments/fees/", views.payments_fees, name="payments_fees"),
     path(
         "payments/make/",
         TemplateView.as_view(template_name="dashboards/applicant/payments-make.html"),
@@ -118,8 +144,18 @@ _urlpatterns = [
     ),
     path(
         "messages/",
-        TemplateView.as_view(template_name="dashboards/applicant/messages.html"),
+        messaging_views.applicant_messages,
         name="messages",
+    ),
+    path(
+        "messages/poll/",
+        messaging_views.applicant_messages_poll,
+        name="messages_poll",
+    ),
+    path(
+        "messages/send/",
+        messaging_views.applicant_messages_send,
+        name="messages_send",
     ),
     path(
         "notifications/",
@@ -133,12 +169,12 @@ _urlpatterns = [
     ),
     path(
         "institution/",
-        TemplateView.as_view(template_name="dashboards/applicant/institution-affiliation.html"),
+        views.institution,
         name="institution",
     ),
     path(
         "profile-security/",
-        TemplateView.as_view(template_name="dashboards/applicant/profile-security.html"),
+        views.profile_security,
         name="profile_security",
     ),
     path(

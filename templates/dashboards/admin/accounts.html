@@ -33,12 +33,25 @@
 
       <div class="nav-group">
         <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+          <span>Inquiries</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'admin_dashboard:inquiries' %}" class="nav-sublink">All Messages</a>
+          <a href="{% url 'admin_dashboard:inquiries' %}?tab=new" class="nav-sublink">New</a>
+          <a href="{% url 'admin_dashboard:inquiries' %}?tab=resolved" class="nav-sublink">Resolved</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
           <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
           <span>Applications</span>
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">All Applications</a>
+          <a href="{% url 'admin_dashboard:applications' %}" class="nav-sublink">All Applications</a>
           <a href="#" class="nav-sublink">By Review Pathway</a>
           <a href="#" class="nav-sublink">By Institution</a>
           <a href="#" class="nav-sublink">Flagged / Escalated</a>
@@ -65,10 +78,10 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">All Payments</a>
-          <a href="#" class="nav-sublink">Fee Configuration</a>
-          <a href="#" class="nav-sublink">Outstanding Payments</a>
-          <a href="#" class="nav-sublink">Financial Reports</a>
+          <a href="{% url 'admin_dashboard:finance' %}" class="nav-sublink">All Payments</a>
+          <a href="{% url 'admin_dashboard:finance' %}?tab=success" class="nav-sublink">Successful</a>
+          <a href="{% url 'admin_dashboard:finance' %}?tab=pending" class="nav-sublink">Pending</a>
+          <a href="{% url 'admin_dashboard:finance' %}?tab=failed" class="nav-sublink">Failed</a>
         </div>
       </div>
 
@@ -99,6 +112,10 @@
         </div>
       </div>
 
+      <a href="{% url 'admin_dashboard:messages' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+        <span>Messages</span>
+      </a>
       <a href="#" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span>
         <span>Reports &amp; Analytics</span>
@@ -136,13 +153,12 @@
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-            <img src="https://i.pravatar.cc/80?img=13" alt="{{ request.user.full_name }}">
-            <span>{{ request.user.first_name }}</span>
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
             <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="dropdown-menu profile-menu" id="profileMenu">
             <div class="profile-menu-head">
-              <img src="https://i.pravatar.cc/80?img=13" alt="{{ request.user.full_name }}">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
               <div>
                 <strong>{{ request.user.full_name }}</strong>
                 <span>{{ request.user.email }}</span>
@@ -206,8 +222,19 @@
 
         <div class="acct-list" id="acctList">
           {% for u in all_users %}
-          <div class="acct-row" data-filter-item data-filter="{{ u.category }}"
+          <div class="acct-row{% if not u.is_active %} acct-row-suspended{% endif %}" data-filter-item data-filter="{{ u.category }}"
                data-search="{{ u.full_name|lower }} {{ u.email|lower }} {{ u.institution|lower }}"
+               data-user-id="{{ u.pk }}"
+               data-first-name="{{ u.first_name }}"
+               data-middle-name="{{ u.middle_name }}"
+               data-last-name="{{ u.last_name }}"
+               data-email="{{ u.email }}"
+               data-phone="{{ u.phone }}"
+               data-institution="{{ u.institution }}"
+               data-department="{{ u.department }}"
+               data-position="{{ u.position }}"
+               data-role="{{ u.role }}"
+               data-is-superuser="{{ u.is_superuser|yesno:'1,0' }}"
                {% if active_tab != 'all' and u.category != active_tab %}hidden{% endif %}>
 
             <span class="acct-avatar cat-{{ u.category }}">{{ u.initials }}</span>
@@ -223,6 +250,7 @@
                 {% if u.reviewer_status == 'rejected' %}<span class="badge-tag red">Reviewer Declined</span>{% endif %}
                 {% if u.committee_status == 'rejected' %}<span class="badge-tag red">Committee Declined</span>{% endif %}
                 {% if u.category == 'applicants' %}<span class="badge-tag blue">Applicant</span>{% endif %}
+                {% if not u.is_active %}<span class="badge-tag red">Suspended</span>{% endif %}
               </h4>
               <p>{{ u.email }}{% if u.institution %} &middot; {{ u.institution }}{% endif %}</p>
             </div>
@@ -268,10 +296,50 @@
               {% if not u.reviewer_status == 'pending' and not u.committee_status == 'pending' %}
                 {% if u.reviewer_cv_url %}<a href="{{ u.reviewer_cv_url }}" target="_blank" rel="noopener" class="acct-cv-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> CV</a>{% endif %}
                 {% if u.committee_cv_url %}<a href="{{ u.committee_cv_url }}" target="_blank" rel="noopener" class="acct-cv-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> CV</a>{% endif %}
+                {% if u.is_active %}
                 <span class="acct-status-ok">
                   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
                   Active
                 </span>
+                {% else %}
+                <span class="acct-status-suspended">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+                  Suspended
+                </span>
+                {% endif %}
+              {% endif %}
+
+              {% if u.pk != request.user.pk %}
+              <div class="acct-manage">
+                <button type="button" class="acct-btn acct-btn-edit" data-acct-edit>
+                  <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Edit
+                </button>
+                {% if not u.is_superuser %}
+                <form method="post" class="acct-inline-form" data-confirm="{% if u.is_active %}Suspend {{ u.full_name }}? They won't be able to sign in until reactivated.{% else %}Reactivate {{ u.full_name }}'s account?{% endif %}" data-confirm-label="{% if u.is_active %}Suspend{% else %}Reactivate{% endif %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="user_id" value="{{ u.pk }}">
+                  <input type="hidden" name="tab" value="{{ active_tab }}">
+                  {% if u.is_active %}
+                  <button type="submit" name="action" value="suspend" class="acct-btn acct-btn-suspend">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg> Suspend
+                  </button>
+                  {% else %}
+                  <button type="submit" name="action" value="activate" class="acct-btn acct-btn-activate">
+                    <svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Reactivate
+                  </button>
+                  {% endif %}
+                </form>
+                <form method="post" class="acct-inline-form" data-confirm="Permanently delete {{ u.full_name }}'s account? This cannot be undone." data-confirm-variant="danger" data-confirm-label="Delete">
+                  {% csrf_token %}
+                  <input type="hidden" name="user_id" value="{{ u.pk }}">
+                  <input type="hidden" name="tab" value="{{ active_tab }}">
+                  <input type="hidden" name="action" value="delete">
+                  <button type="submit" class="acct-btn acct-btn-delete">
+                    <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Delete
+                  </button>
+                </form>
+                {% endif %}
+              </div>
               {% endif %}
             </div>
           </div>
@@ -284,6 +352,59 @@
           {% endfor %}
         </div>
       </section>
+
+      <!-- EDIT ACCOUNT MODAL -->
+      <div class="acct-modal-overlay" id="acctEditOverlay" hidden>
+        <div class="acct-modal" role="dialog" aria-modal="true" aria-labelledby="acctEditTitle">
+          <form method="post" id="acctEditForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="tab" value="{{ active_tab }}">
+            <input type="hidden" name="user_id" id="editUserId">
+
+            <div class="acct-modal-head">
+              <h3 id="acctEditTitle">Edit account</h3>
+              <button type="button" class="icon-btn" id="acctEditClose" aria-label="Close">
+                <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <div class="acct-modal-body">
+              <div class="acct-form-row">
+                <label>First name<input type="text" name="first_name" id="editFirstName" required></label>
+                <label>Middle name<input type="text" name="middle_name" id="editMiddleName"></label>
+                <label>Last name<input type="text" name="last_name" id="editLastName" required></label>
+              </div>
+              <div class="acct-form-row">
+                <label>Email<input type="email" name="email" id="editEmail" required></label>
+                <label>Phone<input type="text" name="phone" id="editPhone"></label>
+              </div>
+              <div class="acct-form-row">
+                <label>Institution<input type="text" name="institution" id="editInstitution"></label>
+                <label>Department<input type="text" name="department" id="editDepartment"></label>
+              </div>
+              <div class="acct-form-row">
+                <label>Position<input type="text" name="position" id="editPosition"></label>
+                <label>Role
+                  <select name="role" id="editRole">
+                    <option value="applicant">Applicant</option>
+                    <option value="reviewer">Reviewer</option>
+                    <option value="committee">Committee Member</option>
+                    <option value="chair">Chair</option>
+                    <option value="secretariat">Secretariat</option>
+                    <option value="admin">Administrator</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="acct-modal-actions">
+              <button type="button" class="acct-btn acct-btn-cancel" id="acctEditCancel">Cancel</button>
+              <button type="submit" class="acct-btn acct-btn-approve">Save changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
 
 {% endblock %}
 

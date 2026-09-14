@@ -1,6 +1,11 @@
 {% extends "dashboards/base.html" %}
+{% load static %}
 
 {% block title %}Profile &amp; Security | MSREC{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+{% endblock %}
 
 {% block nav_content %}
 
@@ -152,16 +157,15 @@
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-            <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
-            <span>Ama Owusu</span>
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
             <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="dropdown-menu profile-menu" id="profileMenu">
             <div class="profile-menu-head">
-              <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
               <div>
-                <strong>Ama Owusu</strong>
-                <span>ama.owusu@metascholar.edu</span>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
               </div>
             </div>
             <a href="#" class="dropdown-item">
@@ -199,89 +203,159 @@
 
       <section class="panel">
         <div class="avatar-edit-row">
-          <img src="https://i.pravatar.cc/160?img=47" alt="Ama Owusu">
+          {% if profile_photo_url %}
+            <img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}" id="avatarPreview">
+          {% else %}
+            <span class="avatar-initials avatar-initials-lg" id="avatarPreview">{{ request.user.initials }}</span>
+          {% endif %}
           <div class="avatar-edit-actions">
-            <button class="btn-secondary" type="button">Change Photo</button>
-            <button class="btn-secondary" type="button">Remove</button>
+            <form method="post" enctype="multipart/form-data" id="avatarUploadForm">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="update_avatar">
+              <input type="file" name="avatar" id="avatarInput" accept="image/png,image/jpeg,image/webp" hidden>
+              <button class="btn-secondary" type="button" id="changePhotoBtn">Change Photo</button>
+            </form>
+            {% if profile_photo_url %}
+            <form method="post" id="avatarRemoveForm">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="remove_avatar">
+              <button class="btn-secondary" type="submit">Remove</button>
+            </form>
+            {% endif %}
           </div>
-          <p class="avatar-edit-hint">JPG or PNG, at least 200&times;200px.</p>
+          <p class="avatar-edit-hint">JPG, PNG or WEBP, at least 200&times;200px.</p>
         </div>
 
-        <div class="form-section">
-          <h3 class="form-section-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg> Personal Information</h3>
-          <div class="field-row">
-              <div class="field-group">
-              <label class="field-label">Full Name</label>
-              <input type="text" class="field-input" value="Ama Owusu">
-            </div><div class="field-group">
-              <label class="field-label">Email Address</label>
-              <input type="email" class="field-input" value="ama.owusu@metascholar.edu">
-            </div>
-            </div>
-          <div class="field-row">
-              <div class="field-group">
-              <label class="field-label">Phone Number</label>
-              <input type="text" class="field-input" value="+233 24 555 0134">
-            </div><div class="field-group">
-              <label class="field-label">ORCID iD</label>
-              <input type="text" class="field-input" placeholder="0000-0000-0000-0000">
-            </div>
-            </div>
-        </div>
+        <form method="post" id="profileSettingsForm">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="update_profile">
 
-        <div class="form-section">
-          <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Change Password</h3>
-          <div class="field-row">
-              <div class="field-group">
-              <label class="field-label">Current Password</label>
-              <input type="password" class="field-input" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;">
-            </div>
-            </div>
-          <div class="field-row">
-              <div class="field-group">
-              <label class="field-label">New Password</label>
-              <input type="password" class="field-input" placeholder="At least 8 characters">
-            </div><div class="field-group">
-              <label class="field-label">Confirm New Password</label>
-              <input type="password" class="field-input" placeholder="Re-enter new password">
-            </div>
-            </div>
-        </div>
+          <div class="form-section">
+            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg> Personal Information</h3>
+            <div class="field-row">
+                <div class="field-group">
+                <label class="field-label" for="pfTitle">Title</label>
+                <select class="field-input" id="pfTitle" name="title">
+                  <option value="" {% if not request.user.title %}selected{% endif %}>Select title</option>
+                  <option {% if request.user.title == "Prof." %}selected{% endif %}>Prof.</option>
+                  <option {% if request.user.title == "Dr." %}selected{% endif %}>Dr.</option>
+                  <option {% if request.user.title == "Mr." %}selected{% endif %}>Mr.</option>
+                  <option {% if request.user.title == "Mrs." %}selected{% endif %}>Mrs.</option>
+                  <option {% if request.user.title == "Ms." %}selected{% endif %}>Ms.</option>
+                  <option {% if request.user.title == "Other" %}selected{% endif %}>Other</option>
+                </select>
+              </div><div class="field-group">
+                <label class="field-label" for="pfEmail">Email Address</label>
+                <input type="email" class="field-input" id="pfEmail" name="email" value="{{ request.user.email }}" required>
+              </div>
+              </div>
+            <div class="field-row">
+                <div class="field-group">
+                <label class="field-label" for="pfFirstName">First Name</label>
+                <input type="text" class="field-input" id="pfFirstName" name="first_name" value="{{ request.user.first_name }}" required>
+              </div><div class="field-group">
+                <label class="field-label" for="pfLastName">Last Name</label>
+                <input type="text" class="field-input" id="pfLastName" name="last_name" value="{{ request.user.last_name }}" required>
+              </div>
+              </div>
+            <div class="field-row">
+                <div class="field-group">
+                <label class="field-label" for="pfPhone">Phone Number</label>
+                <input type="text" class="field-input" id="pfPhone" name="phone" value="{{ request.user.phone }}">
+              </div><div class="field-group">
+                <label class="field-label" for="pfOrcid">ORCID iD</label>
+                <input type="text" class="field-input" id="pfOrcid" name="orcid" value="{{ request.user.orcid }}" placeholder="0000-0000-0000-0000">
+              </div>
+              </div>
+          </div>
 
-        <div class="form-section">
-          <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/><path d="M9 12l2 2 4-4"/></svg> Two-Factor Authentication</h3>
-          <div class="settings-row">
-            <div class="settings-row-text"><strong>Authenticator App</strong><span>Use an app like Google Authenticator to generate login codes.</span></div>
-            <label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label>
+          <div class="form-section">
+            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Change Password</h3>
+            <p class="field-hint" style="margin:-4px 0 12px;">Leave these blank to keep your current password.</p>
+            <div class="field-row">
+                <div class="field-group">
+                <label class="field-label" for="pfCurrentPassword">Current Password</label>
+                <div class="field-password-wrap">
+                  <i class="fa-solid fa-lock field-password-icon" aria-hidden="true"></i>
+                  <input type="password" class="field-input" id="pfCurrentPassword" name="current_password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" autocomplete="current-password">
+                  <button type="button" class="field-password-toggle" data-password-toggle="pfCurrentPassword" aria-label="Show current password" aria-controls="pfCurrentPassword" aria-pressed="false">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+              </div>
+            <div class="field-row">
+                <div class="field-group">
+                <label class="field-label" for="pfNewPassword">New Password</label>
+                <div class="field-password-wrap">
+                  <i class="fa-solid fa-lock field-password-icon" aria-hidden="true"></i>
+                  <input type="password" class="field-input" id="pfNewPassword" name="new_password" placeholder="At least 8 characters" autocomplete="new-password">
+                  <button type="button" class="field-password-toggle" data-password-toggle="pfNewPassword" aria-label="Show new password" aria-controls="pfNewPassword" aria-pressed="false">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div><div class="field-group">
+                <label class="field-label" for="pfConfirmPassword">Confirm New Password</label>
+                <div class="field-password-wrap">
+                  <i class="fa-solid fa-lock field-password-icon" aria-hidden="true"></i>
+                  <input type="password" class="field-input" id="pfConfirmPassword" name="confirm_password" placeholder="Re-enter new password" autocomplete="new-password">
+                  <button type="button" class="field-password-toggle" data-password-toggle="pfConfirmPassword" aria-label="Show confirm password" aria-controls="pfConfirmPassword" aria-pressed="false">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+              </div>
           </div>
-          <div class="settings-row">
-            <div class="settings-row-text"><strong>SMS Backup Codes</strong><span>Receive a one-time code by SMS if you lose access to your authenticator.</span></div>
-            <label class="switch"><input type="checkbox"><span class="switch-track"></span></label>
+
+          <div class="form-section">
+            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/><path d="M9 12l2 2 4-4"/></svg> Two-Factor Authentication</h3>
+            <div class="settings-row">
+              <div class="settings-row-text"><strong>Authenticator App</strong><span>Use an app like Google Authenticator to generate login codes.</span></div>
+              <label class="switch"><input type="checkbox" name="two_factor_app" {% if request.user.two_factor_app %}checked{% endif %}><span class="switch-track"></span></label>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text"><strong>SMS Backup Codes</strong><span>Receive a one-time code by SMS if you lose access to your authenticator.</span></div>
+              <label class="switch"><input type="checkbox" name="two_factor_sms" {% if request.user.two_factor_sms %}checked{% endif %}><span class="switch-track"></span></label>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text"><strong>Email me on new sign-in</strong><span>Get notified whenever your account is accessed from a new device.</span></div>
+              <label class="switch"><input type="checkbox" name="notify_new_signin" {% if request.user.notify_new_signin %}checked{% endif %}><span class="switch-track"></span></label>
+            </div>
           </div>
-          <div class="settings-row">
-            <div class="settings-row-text"><strong>Email me on new sign-in</strong><span>Get notified whenever your account is accessed from a new device.</span></div>
-            <label class="switch"><input type="checkbox" checked><span class="switch-track"></span></label>
+
+          <div class="form-actions">
+            <button class="btn-secondary" type="reset">Cancel</button>
+            <button class="btn-primary" type="submit">Save Changes</button>
           </div>
-        </div>
+        </form>
 
         <div class="form-section">
           <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg> Active Sessions</h3>
+          {% for session in sessions %}
           <div class="session-row">
             <span class="session-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg></span>
-            <div class="session-info"><strong>Windows &middot; Chrome <span class="badge-tag green">This device</span></strong><span>Accra, Ghana &middot; Active now</span></div>
+            <div class="session-info">
+              <strong>{{ session.os }} &middot; {{ session.browser }}{% if session.is_current %} <span class="badge-tag green">This device</span>{% endif %}</strong>
+              <span>{% if session.ip %}{{ session.ip }} &middot; {% endif %}{% if session.is_current %}Active now{% elif session.login_at %}Signed in {{ session.login_at|date:"d M Y, g:i A" }}{% else %}Session active{% endif %}</span>
+            </div>
+            {% if not session.is_current %}
+            <form method="post" class="session-revoke-form" data-confirm="Revoke this session? That device will be signed out immediately." data-confirm-variant="danger" data-confirm-label="Revoke">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="revoke_session">
+              <input type="hidden" name="session_key" value="{{ session.key }}">
+              <button class="btn-secondary session-revoke" type="submit">Revoke</button>
+            </form>
+            {% endif %}
           </div>
-          <div class="session-row">
-            <span class="session-icon"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
-            <div class="session-info"><strong>iPhone &middot; Safari</strong><span>Accra, Ghana &middot; Last active 2 days ago</span></div>
-            <button class="btn-secondary session-revoke" type="button">Revoke</button>
-          </div>
-        </div>
-
-        <div class="form-actions">
-          <button class="btn-secondary" type="button">Cancel</button>
-          <button class="btn-primary" type="button">Save Changes</button>
+          {% empty %}
+          <p class="field-hint">No other active sessions.</p>
+          {% endfor %}
         </div>
       </section>
 
-    
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/profile-security.js' %}"></script>
 {% endblock %}

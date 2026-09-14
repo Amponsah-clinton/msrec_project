@@ -152,16 +152,15 @@
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-            <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
-            <span>Ama Owusu</span>
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
             <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="dropdown-menu profile-menu" id="profileMenu">
             <div class="profile-menu-head">
-              <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
               <div>
-                <strong>Ama Owusu</strong>
-                <span>ama.owusu@metascholar.edu</span>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
               </div>
             </div>
             <a href="#" class="dropdown-item">
@@ -198,24 +197,26 @@
       </div>
 
       <section class="panel">
+        <form method="post" id="institutionForm">
+          {% csrf_token %}
         <div class="form-section">
           <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h1M9 11h1M9 15h1M14 7h1M14 11h1M14 15h1"/></svg> Institution Details</h3>
           <div class="field-row">
               <div class="field-group">
-              <label class="field-label">Institution Name</label>
-              <input type="text" class="field-input" value="MetaScholar University">
+              <label class="field-label" for="instName">Institution Name</label>
+              <input type="text" class="field-input" id="instName" name="institution" value="{{ request.user.institution }}" maxlength="200">
             </div><div class="field-group">
-              <label class="field-label">Department / School</label>
-              <input type="text" class="field-input" value="Department of Public Health">
+              <label class="field-label" for="instDepartment">Department / School</label>
+              <input type="text" class="field-input" id="instDepartment" name="department" value="{{ request.user.department }}" maxlength="200">
             </div>
             </div>
           <div class="field-row">
               <div class="field-group">
-              <label class="field-label">Faculty</label>
-              <input type="text" class="field-input" value="Faculty of Health Sciences">
+              <label class="field-label" for="instFaculty">Faculty</label>
+              <input type="text" class="field-input" id="instFaculty" name="faculty" value="{{ request.user.faculty }}" maxlength="200">
             </div><div class="field-group">
-              <label class="field-label">Campus / Address</label>
-              <input type="text" class="field-input" value="12 University Avenue, Accra, Ghana">
+              <label class="field-label" for="instAddress">Campus / Address</label>
+              <input type="text" class="field-input" id="instAddress" name="institution_address" value="{{ request.user.institution_address }}" maxlength="255">
             </div>
             </div>
         </div>
@@ -224,20 +225,20 @@
           <h3 class="form-section-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg> Position &amp; Role</h3>
           <div class="field-row">
               <div class="field-group">
-              <label class="field-label">Position / Title</label>
-              <input type="text" class="field-input" value="Senior Lecturer">
+              <label class="field-label" for="instPosition">Position / Title</label>
+              <input type="text" class="field-input" id="instPosition" name="position" value="{{ request.user.position }}" maxlength="150">
             </div><div class="field-group">
-              <label class="field-label">Staff / Student ID</label>
-              <input type="text" class="field-input" value="MSU-STF-20456">
+              <label class="field-label" for="instStaffId">Staff / Student ID</label>
+              <input type="text" class="field-input" id="instStaffId" name="staff_student_id" value="{{ request.user.staff_student_id }}" maxlength="100">
             </div>
             </div>
           <div class="field-row">
               <div class="field-group">
-              <label class="field-label">Head of Department</label>
-              <input type="text" class="field-input" value="Prof. Kojo Asante">
+              <label class="field-label" for="instHodName">Head of Department</label>
+              <input type="text" class="field-input" id="instHodName" name="hod_name" value="{{ request.user.hod_name }}" maxlength="200">
             </div><div class="field-group">
-              <label class="field-label">HOD Email</label>
-              <input type="email" class="field-input" value="kojo.asante@metascholar.edu">
+              <label class="field-label" for="instHodEmail">HOD Email</label>
+              <input type="email" class="field-input" id="instHodEmail" name="hod_email" value="{{ request.user.hod_email }}" maxlength="254">
             </div>
             </div>
         </div>
@@ -246,19 +247,20 @@
           <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/><path d="M9 12l2 2 4-4"/></svg> Institutional Ethics Affiliation</h3>
           <div class="field-row">
               <div class="field-group">
-              <label class="field-label">Institutional Review Board (if any)</label>
-              <input type="text" class="field-input" value="MetaScholar University IRB">
+              <label class="field-label" for="instIrbName">Institutional Review Board (if any)</label>
+              <input type="text" class="field-input" id="instIrbName" name="irb_name" value="{{ request.user.irb_name }}" maxlength="200">
             </div><div class="field-group">
-              <label class="field-label">IRB Reference No.</label>
-              <input type="text" class="field-input" value="MSU-IRB-2024-118">
+              <label class="field-label" for="instIrbRef">IRB Reference No.</label>
+              <input type="text" class="field-input" id="instIrbRef" name="irb_reference_no" value="{{ request.user.irb_reference_no }}" maxlength="100">
             </div>
             </div>
         </div>
 
         <div class="form-actions">
-          <button class="btn-secondary" type="button">Cancel</button>
-          <button class="btn-primary" type="button">Save Changes</button>
+          <button class="btn-secondary" type="reset">Cancel</button>
+          <button class="btn-primary" type="submit">Save Changes</button>
         </div>
+        </form>
       </section>
 
     

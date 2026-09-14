@@ -3,6 +3,23 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!form) return;
 
   /* ============================================================
+     Requested Review — the chip radios live above the <form> (in the
+     page intro, outside apply-shell/apply-main-col), so their value
+     wouldn't be part of the native form submission on its own. Mirror
+     the checked value into the hidden input the template renders
+     inside the form (id="requestedReviewHidden").
+  ============================================================ */
+  const requestedReviewHidden = document.getElementById("requestedReviewHidden");
+  if (requestedReviewHidden) {
+    document.querySelectorAll('input[name="requestedReview"]').forEach((radio) => {
+      if (radio === requestedReviewHidden) return;
+      radio.addEventListener("change", () => {
+        if (radio.checked) requestedReviewHidden.value = radio.value;
+      });
+    });
+  }
+
+  /* ============================================================
      Yes/No toggles
   ============================================================ */
   function initYesNoToggles(root) {
@@ -116,13 +133,17 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ============================================================
-     Document uploader (client-side only — demo)
+     Document uploader — files are kept in a real DataTransfer so the
+     native form submission (including drag-and-dropped files, which
+     browsers never let you assign to an <input> directly) actually
+     carries every file the applicant added, not just ones picked via
+     the file dialog.
   ============================================================ */
   const fileInput = document.getElementById("applyFileInput");
   const fileDrop = document.querySelector(".apply-file-drop");
   const fileList = document.getElementById("applyFileList");
   const FILE_ICON = '<svg class="file-icon" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>';
-  let uploadedFiles = [];
+  let fileStore = new DataTransfer();
 
   function formatSize(bytes) {
     if (bytes < 1024) return bytes + " B";
@@ -130,9 +151,13 @@ document.addEventListener("DOMContentLoaded", () => {
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
   }
 
+  function syncFileInput() {
+    if (fileInput) fileInput.files = fileStore.files;
+  }
+
   function renderFileList() {
     fileList.innerHTML = "";
-    uploadedFiles.forEach((file, i) => {
+    Array.from(fileStore.files).forEach((file, i) => {
       const item = document.createElement("div");
       item.className = "apply-file-item";
       item.innerHTML = `
@@ -142,7 +167,10 @@ document.addEventListener("DOMContentLoaded", () => {
         <button type="button" class="apply-file-remove" aria-label="Remove ${file.name}">${REMOVE_ICON}</button>
       `;
       item.querySelector(".apply-file-remove").addEventListener("click", () => {
-        uploadedFiles.splice(i, 1);
+        const next = new DataTransfer();
+        Array.from(fileStore.files).forEach((f, idx) => { if (idx !== i) next.items.add(f); });
+        fileStore = next;
+        syncFileInput();
         renderFileList();
       });
       fileList.appendChild(item);
@@ -150,7 +178,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function addFiles(fileArray) {
-    Array.from(fileArray).forEach((f) => uploadedFiles.push(f));
+    Array.from(fileArray).forEach((f) => fileStore.items.add(f));
+    syncFileInput();
     renderFileList();
     updateProgress();
   }
@@ -271,30 +300,28 @@ document.addEventListener("DOMContentLoaded", () => {
   updateProgress();
 
   /* ============================================================
-     Submit
+     Submit — a real (non-AJAX) POST to the server, which saves the
+     application to Supabase and uploads any attached documents to the
+     "application" Storage bucket, then re-renders this page showing
+     the confirmation view with the assigned reference number.
   ============================================================ */
   form.addEventListener("submit", (e) => {
-    e.preventDefault();
-
     if (!form.checkValidity()) {
+      e.preventDefault();
       form.reportValidity();
       return;
     }
 
+    const requestedReviewChecked = document.querySelector('input[name="requestedReview"]:checked:not(#requestedReviewHidden)');
+    if (requestedReviewChecked && requestedReviewHidden) {
+      requestedReviewHidden.value = requestedReviewChecked.value;
+    }
+
     const submitBtn = form.querySelector('button[type="submit"]');
-    const originalHtml = submitBtn.innerHTML;
     submitBtn.disabled = true;
     submitBtn.innerHTML = "Submitting application...";
-
-    setTimeout(() => {
-      const formView = document.getElementById("applyFormView");
-      const confirmView = document.getElementById("applyConfirmView");
-      formView.hidden = true;
-      confirmView.hidden = false;
-      confirmView.scrollIntoView({ behavior: "smooth", block: "start" });
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = originalHtml;
-    }, 700);
+    // No e.preventDefault() here — let the browser submit the form
+    // normally so the file uploads go with it.
   });
 
   /* ============================================================

@@ -368,6 +368,7 @@ body.verify-page {
 }
 .verify-btn:hover { background: color-mix(in srgb, var(--accent-color), black 10%); }
 .verify-btn:disabled { opacity: .55; cursor: not-allowed; }
+.verify-btn[hidden] { display: none; }
 
 .verify-btn-ghost {
   background: transparent;

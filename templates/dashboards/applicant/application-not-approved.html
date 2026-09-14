@@ -152,16 +152,15 @@
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-            <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
-            <span>Ama Owusu</span>
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
             <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="dropdown-menu profile-menu" id="profileMenu">
             <div class="profile-menu-head">
-              <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
               <div>
-                <strong>Ama Owusu</strong>
-                <span>ama.owusu@metascholar.edu</span>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
               </div>
             </div>
             <a href="#" class="dropdown-item">
@@ -202,32 +201,32 @@
                 <th>Study Title</th>
                 <th>Outcome</th>
                 <th>Date</th>
-                <th>Note</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
+              {% for application in applications %}
               <tr>
-                <td data-label="Ref No." class="ref-cell">MSREC/2025/0119</td>
-                <td data-label="Study Title">Efficacy of a Mobile Reminder App for Medication Adherence</td>
+                <td data-label="Ref No." class="ref-cell">{{ application.reference_no }}</td>
+                <td data-label="Study Title">{{ application.title }}</td>
                 <td data-label="Outcome"><span class="badge-tag red">Not Approved</span></td>
-                <td data-label="Date"><span class="due-main">14 Jan 2026</span></td>
-                <td data-label="Note" style="max-width:220px;">Risk-benefit ratio not adequately justified for the proposed population.</td>
-                <td data-label="Action"><button class="action-btn" aria-label="View decision letter"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></button></td>
+                <td data-label="Date"><span class="due-main">{{ application.decided_at|date:"d M Y" }}</span></td>
+                <td data-label="Action">
+                  <a class="action-btn" aria-label="View" href="{% url 'applicant_dashboard:application_detail' application.pk %}">
+                    <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </a>
+                </td>
               </tr>
+              {% empty %}
               <tr>
-                <td data-label="Ref No." class="ref-cell">MSREC/2024/0076</td>
-                <td data-label="Study Title">Workplace Stress Among Frontline Retail Employees</td>
-                <td data-label="Outcome"><span class="badge-tag gray">Closed</span></td>
-                <td data-label="Date"><span class="due-main">30 Mar 2026</span></td>
-                <td data-label="Note" style="max-width:220px;">Study completed; final report accepted, no further oversight required.</td>
-                <td data-label="Action"><button class="action-btn" aria-label="View decision letter"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></button></td>
+                <td colspan="5" style="text-align:center; color:var(--text-faint); padding:24px 0;">Nothing here &mdash; you have no closed or not-approved applications.</td>
               </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>
         <div class="panel-footer">
-          <span>Showing 1 to 2 of 2 entries</span>
+          <span>{% if applications %}Showing 1 to {{ applications|length }} of {{ applications|length }} entries{% else %}No applications to show{% endif %}</span>
         </div>
       </section>
 

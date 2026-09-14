@@ -152,16 +152,15 @@
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-            <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
-            <span>Ama Owusu</span>
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
             <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="dropdown-menu profile-menu" id="profileMenu">
             <div class="profile-menu-head">
-              <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
               <div>
-                <strong>Ama Owusu</strong>
-                <span>ama.owusu@metascholar.edu</span>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
               </div>
             </div>
             <a href="#" class="dropdown-item">
@@ -201,50 +200,33 @@
                 <th>Ref No.</th>
                 <th>Study Title</th>
                 <th>Approved</th>
-                <th>Valid Until</th>
                 <th>Status</th>
                 <th>Action</th>
               </tr>
             </thead>
             <tbody>
+              {% for application in applications %}
               <tr>
-                <td data-label="Ref No." class="ref-cell">MSREC/2026/0098</td>
-                <td data-label="Study Title">Digital Literacy and Remote Learning Outcomes in Rural Schools</td>
-                <td data-label="Approved"><span class="due-main">18 Apr 2026</span></td>
-                <td data-label="Valid Until"><span class="due-main">17 Apr 2028</span></td>
-                <td data-label="Status"><span class="badge-tag green">Approved</span> <span class="badge-tag orange">Conditions</span></td>
-                <td data-label="Action" style="gap:6px; display:flex;">
-                  <button class="action-btn" aria-label="View certificate"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="m9 12.5-1.5 7 4.5-2 4.5 2-1.5-7"/></svg></button>
-                  <button class="action-btn" aria-label="Download approval letter"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></button>
-                </td>
-              </tr>
-              <tr>
-                <td data-label="Ref No." class="ref-cell">MSREC/2026/0071</td>
-                <td data-label="Study Title">Community Perceptions of Mental Health Stigma</td>
-                <td data-label="Approved"><span class="due-main">22 Feb 2026</span></td>
-                <td data-label="Valid Until"><span class="due-main">21 Feb 2028</span></td>
+                <td data-label="Ref No." class="ref-cell">{{ application.reference_no }}</td>
+                <td data-label="Study Title">{{ application.title }}</td>
+                <td data-label="Approved"><span class="due-main">{{ application.decided_at|date:"d M Y" }}</span></td>
                 <td data-label="Status"><span class="badge-tag green">Approved</span></td>
-                <td data-label="Action" style="gap:6px; display:flex;">
-                  <button class="action-btn" aria-label="View certificate"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="m9 12.5-1.5 7 4.5-2 4.5 2-1.5-7"/></svg></button>
-                  <button class="action-btn" aria-label="Download approval letter"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></button>
+                <td data-label="Action">
+                  <a class="action-btn" aria-label="View" href="{% url 'applicant_dashboard:application_detail' application.pk %}">
+                    <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </a>
                 </td>
               </tr>
+              {% empty %}
               <tr>
-                <td data-label="Ref No." class="ref-cell">MSREC/2025/0142</td>
-                <td data-label="Study Title">Financial Literacy Interventions Among Market Traders</td>
-                <td data-label="Approved"><span class="due-main">10 Nov 2025</span></td>
-                <td data-label="Valid Until"><span class="due-main">09 Nov 2027</span></td>
-                <td data-label="Status"><span class="badge-tag green">Approved</span></td>
-                <td data-label="Action" style="gap:6px; display:flex;">
-                  <button class="action-btn" aria-label="View certificate"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="m9 12.5-1.5 7 4.5-2 4.5 2-1.5-7"/></svg></button>
-                  <button class="action-btn" aria-label="Download approval letter"><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></button>
-                </td>
+                <td colspan="5" style="text-align:center; color:var(--text-faint); padding:24px 0;">No approved studies yet.</td>
               </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>
         <div class="panel-footer">
-          <span>Showing 1 to 3 of 3 entries</span>
+          <span>{% if applications %}Showing 1 to {{ applications|length }} of {{ applications|length }} entries{% else %}No applications to show{% endif %}</span>
         </div>
       </section>
 

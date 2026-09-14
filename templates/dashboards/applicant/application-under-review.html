@@ -152,16 +152,15 @@
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-            <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
-            <span>Ama Owusu</span>
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
             <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="dropdown-menu profile-menu" id="profileMenu">
             <div class="profile-menu-head">
-              <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
               <div>
-                <strong>Ama Owusu</strong>
-                <span>ama.owusu@metascholar.edu</span>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
               </div>
             </div>
             <a href="#" class="dropdown-item">
@@ -190,16 +189,12 @@
 {% block main_content %}
 
 
+      {% for application in applications %}
       <div class="revision-card neutral">
         <div class="revision-top">
           <div class="revision-title">
-            <h3>Household Water Treatment Practices in Flood-Prone Districts</h3>
-            <span>MSREC/2026/0093 &nbsp;&bull;&nbsp; <span class="badge-tag purple">Full Committee Review</span></span>
-          </div>
-          <div class="revision-due">
-            <span class="due-label">Expected Decision</span>
-            <span class="due-date">12 Jun 2026</span>
-            <span class="due-days" style="color:var(--text-faint);">Next Committee meeting</span>
+            <h3>{{ application.title }}</h3>
+            <span>{{ application.reference_no }}{% if application.review_type %} &nbsp;&bull;&nbsp; <span class="badge-tag purple">{{ application.review_type }}</span>{% endif %}</span>
           </div>
         </div>
         <div class="pipeline-row">
@@ -225,49 +220,14 @@
             </div>
           </div>
           <div class="revision-actions">
-            <a href="#" class="btn-secondary"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg> View Submission</a>
+            <a href="{% url 'applicant_dashboard:application_detail' application.pk %}" class="btn-secondary"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg> View Submission</a>
           </div>
         </div>
       </div>
+      {% empty %}
+      <section class="panel" style="padding:40px 24px; text-align:center; color:var(--text-faint);">
+        Nothing under review right now.
+      </section>
+      {% endfor %}
 
-      <div class="revision-card neutral">
-        <div class="revision-top">
-          <div class="revision-title">
-            <h3>Perceptions of AI-Assisted Diagnostic Tools Among Nurses</h3>
-            <span>MSREC/2026/0102 &nbsp;&bull;&nbsp; <span class="badge-tag blue">Expedited Review</span></span>
-          </div>
-          <div class="revision-due">
-            <span class="due-label">Expected Decision</span>
-            <span class="due-date">05 Jun 2026</span>
-            <span class="due-days" style="color:var(--text-faint);">Rolling review</span>
-          </div>
-        </div>
-        <div class="pipeline-row">
-          <div class="pipeline">
-            <div class="pipeline-step done">
-              <div class="pipeline-dot"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/></svg></div>
-              <span class="pipeline-label">Submitted</span>
-              <div class="pipeline-line"></div>
-            </div>
-            <div class="pipeline-step done">
-              <div class="pipeline-dot"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/></svg></div>
-              <span class="pipeline-label">Screening</span>
-              <div class="pipeline-line"></div>
-            </div>
-            <div class="pipeline-step current">
-              <div class="pipeline-dot">3</div>
-              <span class="pipeline-label">Review</span>
-              <div class="pipeline-line"></div>
-            </div>
-            <div class="pipeline-step">
-              <div class="pipeline-dot">4</div>
-              <span class="pipeline-label">Decision</span>
-            </div>
-          </div>
-          <div class="revision-actions">
-            <a href="#" class="btn-secondary"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg> View Submission</a>
-          </div>
-        </div>
-      </div>
-    
 {% endblock %}

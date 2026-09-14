@@ -3,6 +3,8 @@ from django.views.generic import TemplateView
 
 from accounts import views as account_views
 
+from . import views
+
 app_name = "pages"
 
 urlpatterns = [
@@ -14,7 +16,7 @@ urlpatterns = [
     path("governance/", TemplateView.as_view(template_name="pages/governance.html"), name="governance"),
     path("board-committee/", TemplateView.as_view(template_name="pages/board_committee.html"), name="board_committee"),
     path("verify/", TemplateView.as_view(template_name="pages/verify.html"), name="verify"),
-    path("contact/", TemplateView.as_view(template_name="pages/contact.html"), name="contact"),
+    path("contact/", views.contact, name="contact"),
     path("apply/", TemplateView.as_view(template_name="pages/apply.html"), name="apply"),
     path("login/", account_views.login_view, name="login"),
     path("signup/", account_views.signup, name="signup"),

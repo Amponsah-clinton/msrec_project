@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.shortcuts import redirect, render
 from django.urls import reverse
+from django.utils import timezone
 
 from . import storage
 from .forms import LoginForm, SignupForm
@@ -127,6 +128,9 @@ def signup(request):
             user.save()
 
             auth_login(request, user)
+            request.session["ua"] = request.META.get("HTTP_USER_AGENT", "")[:300]
+            request.session["login_ip"] = request.META.get("REMOTE_ADDR", "")
+            request.session["login_at"] = timezone.now().isoformat()
 
             if user.has_pending_requests:
                 messages.success(
@@ -161,6 +165,13 @@ def login_view(request):
         if form.is_valid():
             user = form.get_user()
             auth_login(request, user)
+            # Stashed on the session itself (not a DB row) -- Profile &
+            # Security's Active Sessions panel (accounts/sessions.py) reads
+            # these back to describe/list every session belonging to this
+            # user without needing a dedicated login-history table.
+            request.session["ua"] = request.META.get("HTTP_USER_AGENT", "")[:300]
+            request.session["login_ip"] = request.META.get("REMOTE_ADDR", "")
+            request.session["login_at"] = timezone.now().isoformat()
             messages.success(request, f"Welcome back, {user.first_name}.")
             next_url = request.POST.get("next") or request.GET.get("next")
             return redirect(next_url or user.dashboard_url_name())

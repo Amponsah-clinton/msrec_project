@@ -43,6 +43,128 @@
 .acct-panel { padding: 18px 18px 8px; }
 .acct-tabs { margin-bottom: 6px; overflow-x: auto; flex-wrap: nowrap; }
 
+/* ---------------- Fee schedule editor ---------------- */
+.fee-schedule-panel { padding: 18px; margin-bottom: 18px; }
+.fee-schedule-panel .panel-head { margin-bottom: 14px; }
+.fee-schedule-panel .panel-head h2 { margin: 0 0 4px; font-size: 16px; }
+.fee-schedule-panel .panel-sub { margin: 0; font-size: 13px; color: var(--text-faint); }
+.fee-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.fee-schedule-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-subtle, var(--surface-2, #f8f9fb));
+}
+.fee-schedule-label { display: flex; flex-direction: column; gap: 2px; }
+.fee-schedule-label strong { font-size: 13.5px; }
+.fee-schedule-label span { font-size: 12px; color: var(--text-faint); }
+.fee-schedule-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--surface, #fff);
+}
+.fee-schedule-input .fee-currency { font-size: 12.5px; color: var(--text-faint); font-weight: 600; }
+.fee-schedule-input input[type="number"] {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 0;
+}
+.fee-schedule-save { align-self: flex-start; }
+
+/* ---------------- Application cards ---------------- */
+.app-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+  padding: 4px 4px 8px;
+}
+.app-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface, #fff);
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow .15s, border-color .15s, transform .15s;
+}
+.app-card:hover {
+  border-color: var(--teal);
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
+  transform: translateY(-1px);
+}
+.app-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.app-card-top .acct-avatar { margin-top: 1px; }
+.app-card-heading { min-width: 0; flex: 1; }
+.app-card-heading h4 {
+  margin: 0 0 3px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.app-card-heading p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-sub);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.app-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.app-card-body span { display: flex; align-items: center; gap: 6px; }
+.app-card-body svg { width: 13px; height: 13px; flex-shrink: 0; }
+.app-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.app-card-view {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--teal);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.app-card-view svg { width: 14px; height: 14px; transition: transform .15s; }
+.app-card:hover .app-card-view svg { transform: translateX(2px); }
+
 /* ---------------- Account rows ---------------- */
 .acct-list { display: flex; flex-direction: column; }
 .acct-row {
@@ -65,8 +187,12 @@
   justify-content: center;
   font-size: 13.5px;
   font-weight: 700;
+  letter-spacing: 0.02em;
   color: #fff;
   flex-shrink: 0;
+  box-shadow:
+    0 0 0 2px var(--white),
+    0 1px 2px rgba(16, 24, 40, 0.16);
 }
 .acct-avatar.cat-pending    { background: var(--orange); }
 .acct-avatar.cat-applicants { background: var(--blue); }
@@ -103,7 +229,7 @@
   min-width: 0;
 }
 
-.acct-actions { display: flex; justify-content: flex-end; }
+.acct-actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; align-items: center; }
 
 .acct-approval-form {
   display: flex;
@@ -147,6 +273,101 @@
   color: var(--green);
 }
 .acct-status-ok svg { width: 15px; height: 15px; }
+
+.acct-status-suspended {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--red);
+}
+.acct-status-suspended svg { width: 15px; height: 15px; }
+
+.acct-row-suspended { opacity: 0.7; }
+
+/* ---------------- Manage actions (edit / suspend / delete) ---------------- */
+.acct-manage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.acct-inline-form { display: inline-flex; }
+.acct-btn-edit { background: var(--bg); color: var(--text-main); border: 1px solid var(--border); }
+.acct-btn-edit:hover { background: var(--hover-bg); }
+.acct-btn-suspend { background: var(--orange-light); color: var(--orange); }
+.acct-btn-suspend:hover { background: color-mix(in srgb, var(--orange-light), var(--orange) 15%); }
+.acct-btn-activate { background: var(--green-light); color: var(--green); }
+.acct-btn-activate:hover { background: color-mix(in srgb, var(--green-light), var(--green) 15%); }
+.acct-btn-delete { background: var(--red-light); color: var(--red); }
+.acct-btn-delete:hover { background: color-mix(in srgb, var(--red-light), var(--red) 15%); }
+.acct-btn-cancel { background: var(--bg); color: var(--text-sub); border: 1px solid var(--border); }
+.acct-btn-cancel:hover { background: var(--hover-bg); }
+
+/* ---------------- Edit modal ---------------- */
+.acct-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 24, 40, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 200;
+}
+/* An author rule always beats the UA stylesheet's `[hidden]{display:none}`
+   when both apply to the same element, even at equal specificity -- so
+   without this, setting the `hidden` attribute (in the template, and by
+   accounts.js's closeEdit()) never actually hides the overlay. */
+.acct-modal-overlay[hidden] { display: none; }
+.acct-modal {
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+}
+.acct-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.acct-modal-head h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main); }
+.acct-modal-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+.acct-form-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.acct-form-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+.acct-form-row input,
+.acct-form-row select {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--text-main);
+  background: var(--white);
+}
+.acct-form-row input:focus,
+.acct-form-row select:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+.acct-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 20px;
+  border-top: 1px solid var(--border);
+}
 
 .acct-cv-link {
   display: inline-flex;

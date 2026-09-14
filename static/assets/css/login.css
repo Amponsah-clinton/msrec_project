@@ -94,7 +94,9 @@ body.login-page {
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   border-radius: 6px;
+  line-height: 0;
 }
+.toggle-password i { line-height: 1; }
 .toggle-password:hover { color: var(--accent-color); background: #f2f9f9; }
 
 .field-row {

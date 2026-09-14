@@ -263,6 +263,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const pct = total ? Math.round((answered / total) * 100) : 0;
     if (progressFill) progressFill.style.width = pct + "%";
     if (progressPct) progressPct.textContent = pct + "%";
+    const pctField = document.getElementById("applyCompletionPctField");
+    if (pctField) pctField.value = String(pct);
+    return pct;
   }
 
   form.addEventListener("input", updateProgress);
@@ -270,30 +273,337 @@ document.addEventListener("DOMContentLoaded", () => {
   updateProgress();
 
   /* ============================================================
-     Submit
+     Requested Review — the chip-radios live in .apply-review-request,
+     outside <form> (they sit in the intro block above it), so they never
+     post on their own. Keep the in-form hidden mirror ("requestedReview")
+     in sync so both a real submit and autosave actually carry the value.
   ============================================================ */
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
+  const requestedReviewHidden = document.getElementById("requestedReviewHidden");
+  document.querySelectorAll('.apply-review-request input[name="requestedReview"]').forEach((radio) => {
+    radio.addEventListener("change", () => {
+      if (requestedReviewHidden) requestedReviewHidden.value = radio.checked ? radio.value : "";
+      updateProgress();
+    });
+  });
 
-    if (!form.checkValidity()) {
+  /* ============================================================
+     Restore a draft's saved answers (see application_form view /
+     initial_data|json_script). Reuses the exact same input/change events
+     the rest of this file already listens on, so every reveal-on-value
+     gate (yes/no toggles, "Other" text boxes, conditional detail panels)
+     ends up in the right state without duplicating that logic here.
+  ============================================================ */
+  function cssEscapeName(value) {
+    return window.CSS && CSS.escape ? CSS.escape(value) : String(value).replace(/["\\]/g, "\\$&");
+  }
+
+  function populateTeamRows(rows) {
+    if (!Array.isArray(rows) || !rows.length) return;
+    teamTable.querySelectorAll(".apply-team-row:not(.apply-team-head)").forEach((row) => row.remove());
+    rows.forEach((member) => {
+      addTeamRowBtn.click();
+      const row = teamTable.querySelector(".apply-team-row:last-child");
+      if (!row) return;
+      const nameField = row.querySelector('[name="teamName[]"]');
+      const roleField = row.querySelector('[name="teamRole[]"]');
+      const institutionField = row.querySelector('[name="teamInstitution[]"]');
+      if (nameField) nameField.value = member.name || "";
+      if (roleField) roleField.value = member.role || "";
+      if (institutionField) institutionField.value = member.institution || "";
+    });
+  }
+
+  function populateForm(data) {
+    if (!data || typeof data !== "object") return;
+
+    Object.keys(data).forEach((key) => {
+      if (key === "researchTeam") {
+        populateTeamRows(data[key]);
+        return;
+      }
+
+      const value = data[key];
+
+      const toggle = document.querySelector(`.yn-toggle[data-hidden-id="${cssEscapeName(key)}"]`);
+      if (toggle) {
+        const btn = toggle.querySelector(`.yn-btn[data-value="${cssEscapeName(String(value))}"]`);
+        if (btn) btn.click();
+        return;
+      }
+
+      const fields = Array.from(document.querySelectorAll(`[name="${cssEscapeName(key)}"]`));
+      if (!fields.length) return;
+
+      if (fields[0].type === "checkbox") {
+        if (Array.isArray(value)) {
+          fields.forEach((field) => { field.checked = value.includes(field.value); });
+        } else if (value) {
+          fields[0].checked = true;
+        }
+        fields[0].dispatchEvent(new Event("change", { bubbles: true }));
+        return;
+      }
+
+      if (fields[0].type === "radio") {
+        const match = fields.find((field) => field.value === value);
+        if (match) {
+          match.checked = true;
+          match.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        return;
+      }
+
+      fields[0].value = value == null ? "" : value;
+      fields[0].dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    updateProgress();
+  }
+
+  const initialDataEl = document.getElementById("applyInitialData");
+  if (initialDataEl) {
+    try {
+      const initialData = JSON.parse(initialDataEl.textContent);
+      if (initialData && Object.keys(initialData).length) populateForm(initialData);
+    } catch (err) {
+      /* Malformed/empty draft data shouldn't block a fresh form. */
+    }
+  }
+
+  /* ============================================================
+     Autosave — a couple of seconds after the applicant stops typing or
+     ticking boxes, quietly upsert a draft row so nothing is lost to a
+     closed tab or dead battery. Never sends files (see apply.js
+     "documents" delete below and the matching note server-side); the
+     real Submit / Save-as-Draft buttons are normal form posts and do
+     carry files.
+  ============================================================ */
+  const autosaveUrl = form.dataset.autosaveUrl;
+  const applicationIdField = document.getElementById("applyApplicationId");
+  const autosaveStatus = document.getElementById("applyAutosaveStatus");
+  const AUTOSAVE_DEBOUNCE_MS = 2500;
+  let autosaveTimer = null;
+  let autosaveInFlight = false;
+  let dirtySinceSave = false;
+  let formLocked = false; // true once a real submit/draft-save navigation is underway
+
+  function setAutosaveStatus(text, mode) {
+    if (!autosaveStatus) return;
+    autosaveStatus.textContent = text;
+    autosaveStatus.classList.remove("is-saving", "is-error");
+    if (mode) autosaveStatus.classList.add(mode);
+  }
+
+  function runAutosave() {
+    if (!autosaveUrl || formLocked || autosaveInFlight || !dirtySinceSave) return;
+    const keyBeforeSave = draftStorageKey();
+    autosaveInFlight = true;
+    dirtySinceSave = false;
+    setAutosaveStatus("Saving draft…", "is-saving");
+
+    const payload = new FormData(form);
+    payload.delete("documents");
+
+    fetch(autosaveUrl, {
+      method: "POST",
+      body: payload,
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+    })
+      .then((res) => {
+        if (res.status === 409) { applicationIdField.value = ""; throw new Error("stale_draft"); }
+        if (!res.ok) throw new Error("autosave_failed");
+        return res.json();
+      })
+      .then((data) => {
+        if (applicationIdField && data.application_id) applicationIdField.value = data.application_id;
+        // The server now has this data -- the local safety-net copy (see
+        // below) is redundant. Clear both the key it was saved under
+        // ("new") and the key it lives under now (the real id it was
+        // just assigned), so a later visit never "restores" stale data
+        // over what the server already has.
+        clearLocalSnapshot(keyBeforeSave);
+        clearLocalSnapshot();
+        const savedTime = new Date(data.saved_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+        setAutosaveStatus(`Draft saved automatically at ${savedTime}`);
+      })
+      .catch(() => {
+        dirtySinceSave = true; // retry on the next debounce/interval tick
+        setAutosaveStatus("Couldn't autosave — check your connection. Your answers are saved on this device.", "is-error");
+      })
+      .finally(() => { autosaveInFlight = false; });
+  }
+
+  function scheduleAutosave() {
+    dirtySinceSave = true;
+    if (autosaveTimer) clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(runAutosave, AUTOSAVE_DEBOUNCE_MS);
+  }
+
+  form.addEventListener("input", scheduleAutosave);
+  form.addEventListener("change", scheduleAutosave);
+
+  // Belt-and-braces periodic save, in case debounced typing never pauses
+  // long enough (e.g. someone dictating a long study description).
+  setInterval(runAutosave, 30000);
+
+  /* ============================================================
+     Instant local safety net -- guarantees "leave the page and it's
+     saved" even in the up-to-2.5s gap before the debounced server
+     autosave above would have fired, and even if that network call
+     never lands at all (offline, or the tab is killed outright).
+
+     A network "send this on the way out" call (sendBeacon / fetch
+     keepalive) alone isn't enough for a form this size: both are
+     capped at ~64KB by the browser, and this form's ~90 fields (long
+     textareas, many checkbox groups, an unbounded research-team list)
+     can exceed that -- the call would just silently fail with no
+     error surfaced anywhere. localStorage has no such practical limit
+     and writing to it is synchronous, so it can't lose a race with
+     the page unloading the way an in-flight network request can.
+  ============================================================ */
+  function draftStorageKey() {
+    return "msrecDraftSnapshot:" + (applicationIdField.value || "new");
+  }
+
+  function collectFormSnapshot() {
+    const data = {};
+    const skip = new Set(["csrfmiddlewaretoken", "requestedReview", "formAction", "application_id", "completionPct"]);
+    const teamFields = new Set(["teamName[]", "teamRole[]", "teamInstitution[]"]);
+    const seen = new Set();
+
+    Array.from(form.elements).forEach((el) => {
+      const name = el.name;
+      if (!name || skip.has(name) || teamFields.has(name) || seen.has(name)) return;
+      seen.add(name);
+
+      if (el.type === "checkbox") {
+        const group = Array.from(form.querySelectorAll(`input[type="checkbox"][name="${cssEscapeName(name)}"]`));
+        data[name] = group.filter((c) => c.checked).map((c) => c.value);
+        return;
+      }
+      if (el.type === "radio") {
+        const group = Array.from(form.querySelectorAll(`input[type="radio"][name="${cssEscapeName(name)}"]`));
+        const checked = group.find((r) => r.checked);
+        if (checked) data[name] = checked.value;
+        return;
+      }
+      data[name] = el.value;
+    });
+
+    const names = Array.from(form.querySelectorAll('[name="teamName[]"]')).map((el) => el.value.trim());
+    const roles = Array.from(form.querySelectorAll('[name="teamRole[]"]')).map((el) => el.value.trim());
+    const institutions = Array.from(form.querySelectorAll('[name="teamInstitution[]"]')).map((el) => el.value.trim());
+    data.researchTeam = names
+      .map((name, i) => ({ name, role: roles[i] || "", institution: institutions[i] || "" }))
+      .filter((member) => member.name || member.role || member.institution);
+
+    return data;
+  }
+
+  function saveSnapshotLocally() {
+    try {
+      localStorage.setItem(draftStorageKey(), JSON.stringify({ data: collectFormSnapshot(), savedAt: Date.now() }));
+    } catch (e) {
+      // Storage full/disabled (private browsing, quota) -- the debounced
+      // and periodic server autosaves above are still running regardless.
+    }
+  }
+
+  function clearLocalSnapshot(key) {
+    try { localStorage.removeItem(key || draftStorageKey()); } catch (e) { /* see above */ }
+  }
+
+  // Restore anything left over from a session that ended before a save
+  // confirmed with the server (this key is only ever written when dirty
+  // and only ever cleared once a save succeeds -- see below -- so its
+  // mere presence means "these edits never made it to the server").
+  // Runs after the server's own initial_data restore further up this
+  // file, so unsaved local edits correctly take precedence over it.
+  (function restoreLocalSnapshotIfAny() {
+    let raw;
+    try { raw = localStorage.getItem(draftStorageKey()); } catch (e) { return; }
+    if (!raw) return;
+    try {
+      const snapshot = JSON.parse(raw);
+      if (snapshot && snapshot.data) {
+        populateForm(snapshot.data);
+        dirtySinceSave = true;
+        setAutosaveStatus("Restored unsaved changes from your last visit — saving now…", "is-saving");
+        runAutosave();
+      }
+    } catch (e) {
+      clearLocalSnapshot();
+    }
+  })();
+
+  // Best-effort last save if they close the tab, switch away, or navigate
+  // mid-edit. The localStorage write is the actual guarantee (instant,
+  // no size limit that matters here); sendBeacon is a bonus best-effort
+  // attempt to get the server up to date too, for whatever fits in it.
+  function saveOnLeave() {
+    if (!dirtySinceSave) return;
+    saveSnapshotLocally();
+    if (autosaveUrl && !formLocked) {
+      const payload = new FormData(form);
+      payload.delete("documents");
+      navigator.sendBeacon(autosaveUrl, payload);
+    }
+  }
+  window.addEventListener("beforeunload", saveOnLeave);
+  window.addEventListener("pagehide", saveOnLeave);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") saveOnLeave();
+  });
+
+  /* ============================================================
+     Submit / Save as Draft — real form posts (Django renders the
+     confirmation view / redirects to Drafts server-side); we only add
+     client-side validation before a real Submit, and stop autosave from
+     racing the navigation that's about to happen either way.
+  ============================================================ */
+  const submitBtn = document.getElementById("applySubmitBtn");
+  const saveDraftBtn = document.getElementById("applySaveDraftBtn");
+  const formActionField = document.getElementById("applyFormActionField");
+
+  form.addEventListener("submit", (e) => {
+    // e.submitter (which button triggered this) is well-supported, but
+    // fall back to activeElement for older engines. Default to "treat as
+    // a real Submit" unless we're sure it was the Save-as-Draft button —
+    // an ambiguous case (e.g. implicit Enter-key submit) should still get
+    // validated rather than silently skip the PI declaration checkbox.
+    const submitter = e.submitter || document.activeElement;
+    const clickedSubmit = submitter !== saveDraftBtn;
+
+    if (clickedSubmit && !form.checkValidity()) {
+      e.preventDefault();
       form.reportValidity();
       return;
     }
 
-    const submitBtn = form.querySelector(".btn-create-account");
-    const originalHtml = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = "Submitting application...";
+    // Record which button this was BEFORE disabling anything below: a
+    // disabled form control is never included when the browser serializes
+    // the form, so setting this after disabling submitBtn/saveDraftBtn
+    // would silently drop formAction from the POST body every time
+    // (that's what was breaking Save as Draft -- the button's own
+    // name="formAction" vanished the instant this handler disabled it).
+    if (formActionField) formActionField.value = clickedSubmit ? "submit" : "draft";
 
-    setTimeout(() => {
-      const formView = document.getElementById("applyFormView");
-      const confirmView = document.getElementById("applyConfirmView");
-      formView.hidden = true;
-      confirmView.hidden = false;
-      confirmView.scrollIntoView({ behavior: "smooth", block: "start" });
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = originalHtml;
-    }, 700);
+    // This real POST is about to save everything server-side, so the
+    // local safety-net copy (see the autosave section above) would just
+    // be stale leftovers on a future visit -- clear it now rather than
+    // waiting on an autosave success handler that this request bypasses.
+    clearLocalSnapshot();
+
+    formLocked = true;
+    if (autosaveTimer) clearTimeout(autosaveTimer);
+
+    if (clickedSubmit && submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = "Submitting application...";
+    } else if (saveDraftBtn) {
+      saveDraftBtn.disabled = true;
+      saveDraftBtn.innerHTML = "Saving...";
+    }
   });
 
   /* ============================================================

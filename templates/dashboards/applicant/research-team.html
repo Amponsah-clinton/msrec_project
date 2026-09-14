@@ -152,16 +152,15 @@
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-            <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
-            <span>Ama Owusu</span>
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
             <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="dropdown-menu profile-menu" id="profileMenu">
             <div class="profile-menu-head">
-              <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
               <div>
-                <strong>Ama Owusu</strong>
-                <span>ama.owusu@metascholar.edu</span>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
               </div>
             </div>
             <a href="#" class="dropdown-item">
@@ -228,14 +227,18 @@
         </div>
         <div class="team-list">
           <div class="team-row">
-            <img class="team-avatar" src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
+            {% if profile_photo_url %}
+              <img class="team-avatar" src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">
+            {% else %}
+              <span class="team-avatar initials" style="background:var(--navy);">{{ request.user.initials }}</span>
+            {% endif %}
             <div class="team-info">
-              <h4>Ama Owusu <span class="badge-tag navy">Principal Investigator</span></h4>
+              <h4>{{ request.user.full_name }} <span class="badge-tag navy">Principal Investigator</span></h4>
               <p>MSREC/2026/0104 &middot; Barriers to Antenatal Care Uptake Among Adolescent Mothers</p>
             </div>
             <div class="team-contact">
-              <a href="mailto:ama.owusu@metascholar.edu">ama.owusu@metascholar.edu</a>
-              <span>Department of Public Health</span>
+              <a href="mailto:{{ request.user.email }}">{{ request.user.email }}</a>
+              <span>{{ request.user.department|default:request.user.institution }}</span>
             </div>
             <div class="team-actions">
               <span class="badge-tag green">You</span>

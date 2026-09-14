@@ -93,13 +93,27 @@ class LoginForm(forms.Form):
         email = cleaned.get("email")
         password = cleaned.get("password")
         if email and password:
-            self.user_cache = authenticate(
-                self.request, email=email.strip().lower(), password=password
-            )
+            email = email.strip().lower()
+
+            # ModelBackend.authenticate() silently rejects inactive users
+            # (returns None) before we'd ever see them, which would surface
+            # the generic "incorrect email or password" message below for a
+            # suspended account too. Check the password against the account
+            # directly first so a suspended user gets told why, instead of
+            # being left to think they mistyped their password.
+            try:
+                candidate = User.objects.get(email=email)
+            except User.DoesNotExist:
+                candidate = None
+
+            if candidate is not None and candidate.check_password(password) and not candidate.is_active:
+                raise forms.ValidationError(
+                    "This account has been suspended. Contact an administrator to have it reactivated."
+                )
+
+            self.user_cache = authenticate(self.request, email=email, password=password)
             if self.user_cache is None:
                 raise forms.ValidationError("Incorrect email or password.")
-            if not self.user_cache.is_active:
-                raise forms.ValidationError("This account has been deactivated.")
         return cleaned
 
     def get_user(self):

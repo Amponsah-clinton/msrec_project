@@ -1,0 +1,75 @@
+/* ==========================================================
+   MSREC Admin — Inquiries (public Contact-page messages)
+   Reuses the same messages-shell / message-row / thread-panel /
+   msg-bubble language as the applicant Messages page (style.css) so this
+   reads as the same inbox pattern, not a new one, plus the acct-summary /
+   acct-btn tokens from accounts.css for the summary strip and buttons.
+========================================================== */
+
+.inq-summary { grid-template-columns: repeat(3, 1fr); }
+
+.inq-shell { margin-top: 4px; }
+
+/* ---------------- List rows: reason-colored avatar ---------------- */
+.message-avatar.initials.cat-secretariat          { background: var(--navy); }
+.message-avatar.initials.cat-application-support  { background: var(--blue); }
+.message-avatar.initials.cat-complaints            { background: var(--red); }
+.message-avatar.initials.cat-ethics-concerns       { background: var(--purple); }
+.message-avatar.initials.cat-technical-support     { background: var(--teal); }
+
+.thread-header-avatar.initials.cat-secretariat         { background: var(--navy); }
+.thread-header-avatar.initials.cat-application-support { background: var(--blue); }
+.thread-header-avatar.initials.cat-complaints           { background: var(--red); }
+.thread-header-avatar.initials.cat-ethics-concerns      { background: var(--purple); }
+.thread-header-avatar.initials.cat-technical-support    { background: var(--teal); }
+
+/* ---------------- Reason badges ---------------- */
+.badge-tag.inq-reason-secretariat          { background: var(--navy); color: #fff; border-color: var(--navy); }
+.badge-tag.inq-reason-application-support  { background: var(--blue-light); color: var(--blue); border-color: color-mix(in srgb, var(--blue) 22%, transparent); }
+.badge-tag.inq-reason-complaints           { background: var(--red-light); color: var(--red); border-color: color-mix(in srgb, var(--red) 22%, transparent); }
+.badge-tag.inq-reason-ethics-concerns      { background: var(--purple-light); color: var(--purple); border-color: color-mix(in srgb, var(--purple) 22%, transparent); }
+.badge-tag.inq-reason-technical-support    { background: var(--teal-light); color: var(--teal); border-color: color-mix(in srgb, var(--teal) 22%, transparent); }
+
+/* ---------------- Thread header: status pill + actions ---------------- */
+.inq-status-pill {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.inq-status-new      { background: var(--orange-light); color: var(--orange); }
+.inq-status-resolved { background: var(--green-light);  color: var(--green); }
+
+.inq-header-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; margin-left: 4px; }
+.inq-inline-form { display: inline-flex; }
+.inq-header-actions .icon-btn { width: 34px; height: 34px; }
+.icon-btn-danger:hover { background: var(--red-light); color: var(--red); }
+
+/* ---------------- Message bubbles ---------------- */
+.msg-bubble .msg-time { display: block; margin-top: 6px; font-size: 10.5px; opacity: 0.75; }
+.msg-bubble.in .msg-time { color: var(--text-faint); opacity: 1; }
+
+/* ---------------- Composer: textarea grows a little, stays capped ---------------- */
+.inq-composer textarea { min-height: 40px; }
+
+/* ---------------- Empty thread state (no inquiries at all) ---------------- */
+.inq-thread-empty { align-items: center; justify-content: center; }
+.inq-thread-empty .empty-state { border: none; padding: 40px; }
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 1100px) {
+  .inq-summary { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 480px) {
+  .inq-summary { grid-template-columns: 1fr; }
+  .inq-summary .acct-summary-cell { border-right: none; border-bottom: 1px solid var(--border); }
+  .inq-summary .acct-summary-cell:last-child { border-bottom: none; }
+
+  .thread-header { flex-wrap: wrap; row-gap: 8px; }
+  .inq-status-pill { order: 1; }
+  .inq-header-actions { order: 2; margin-left: auto; }
+}

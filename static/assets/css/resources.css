@@ -141,6 +141,7 @@ body.resources-page { margin: 0; font-family: var(--default-font); }
   flex-shrink: 0;
 }
 .res-search-clear:hover { background: #dfe8e5; }
+.res-search-clear[hidden] { display: none; }
 
 .res-cat-nav {
   display: flex;
@@ -185,6 +186,7 @@ body.resources-page { margin: 0; font-family: var(--default-font); }
 }
 .res-no-results i { color: var(--accent-color); }
 .res-no-results a { color: var(--accent-color); font-weight: 600; }
+.res-no-results[hidden] { display: none; }
 
 /* ---------------- Section shell ---------------- */
 .res-section {

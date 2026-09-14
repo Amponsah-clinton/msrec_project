@@ -157,7 +157,9 @@ body.signup-page { margin: 0; font-family: var(--default-font); }
   display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   border-radius: 6px;
+  line-height: 0;
 }
+.toggle-password i { line-height: 1; }
 .toggle-password:hover { color: var(--accent-color); background: #f2f9f9; }
 
 .field-hint { color: #8a9492; font-size: 12.5px; margin: 6px 0 0; }

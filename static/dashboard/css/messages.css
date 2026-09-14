@@ -1,0 +1,51 @@
+/* ==========================================================
+   MSREC — Messages (applicant <-> Secretariat, near-real-time)
+   Builds on the existing .messages-shell / .message-row / .thread-panel /
+   .msg-bubble language from style.css -- nothing here introduces a new
+   visual system, just what's needed for the "live" indicator and the
+   single-conversation layout.
+========================================================== */
+
+.messages-list-head { display: flex; align-items: center; justify-content: flex-end; }
+
+.msg-live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--green);
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--green-light);
+}
+.msg-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  flex-shrink: 0;
+}
+.msg-live-indicator.is-pulsing .msg-live-dot { animation: msgLivePulse 0.6s ease-out; }
+
+@keyframes msgLivePulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--green), transparent 40%); }
+  100% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--green), transparent 100%); }
+}
+
+.msg-thread-empty {
+  margin: auto;
+  max-width: 40ch;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-sub);
+  line-height: 1.6;
+}
+
+.thread-composer textarea { max-height: 110px; overflow-y: auto; }
+
+.msg-thread-panel-empty { align-items: center; justify-content: center; }
+.msg-thread-panel-empty .empty-state { padding: 40px; }
+
+/* ---------------- Admin/secretariat inbox: unassigned live indicator lives in the thread header, not the list head ---------------- */
+.thread-header .msg-live-indicator { margin-left: auto; flex-shrink: 0; }

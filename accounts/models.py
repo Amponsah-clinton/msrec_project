@@ -75,6 +75,27 @@ class User(AbstractBaseUser, PermissionsMixin):
     institution_address = models.CharField(max_length=255, blank=True)
     profile_url = models.URLField(blank=True)
     no_institution = models.BooleanField(default=False)
+    orcid = models.CharField(max_length=40, blank=True)
+
+    # Institution / Affiliation page (dashboards/applicant/institution-
+    # affiliation.html) -- everything above this point is captured at
+    # signup; these are the extra fields that page lets an applicant fill
+    # in/edit afterwards, once they know more detail than they did when
+    # they first registered.
+    faculty = models.CharField(max_length=200, blank=True)
+    staff_student_id = models.CharField(max_length=100, blank=True)
+    hod_name = models.CharField(max_length=200, blank=True)
+    hod_email = models.EmailField(blank=True)
+    irb_name = models.CharField(max_length=200, blank=True)
+    irb_reference_no = models.CharField(max_length=100, blank=True)
+
+    # Profile & Security page toggles (dashboards/applicant/profile-security.html).
+    # These persist the switch state; there is no OTP/SMS provider wired up
+    # yet, so they record the applicant's preference without (currently)
+    # being enforced as an extra step at login.
+    two_factor_app = models.BooleanField(default=False)
+    two_factor_sms = models.BooleanField(default=False)
+    notify_new_signin = models.BooleanField(default=True)
 
     # Object path inside the Supabase Storage "signup" bucket (see
     # accounts/storage.py) -- not a public URL, since that bucket is

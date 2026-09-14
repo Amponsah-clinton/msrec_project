@@ -9,29 +9,64 @@
 
 .apply-wrap { max-width: 1180px; margin: 0 auto; }
 
-/* ---------------- Intro card ---------------- */
+/* ---------------- Intro card ----------------
+   The very first thing an applicant sees on a 15-section, "huge project"
+   form -- it needs to read as confident and considered, not a plain
+   heading with an unstyled label sitting on top of it (the old
+   .section-label span had no rule anywhere on this page and rendered as
+   bare, unstyled text). A teal kicker pill plus tighter type rhythm, no
+   gradients or extra shadows -- matches this file's own "flat surfaces,
+   one accent" design rule at the top. */
 .apply-intro {
+  position: relative;
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  padding: 28px 30px;
+  padding: 30px 32px 28px;
   margin-bottom: 20px;
 }
 
-.apply-intro h1 {
-  font-size: 20px;
+.apply-intro-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
   font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--teal);
+  background: var(--teal-light);
+  border: 1px solid color-mix(in srgb, var(--teal), transparent 75%);
+  border-radius: 50px;
+  padding: 6px 14px 6px 11px;
+  margin-bottom: 16px;
+}
+.apply-intro-kicker svg {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.apply-intro h1 {
+  font-size: 25px;
+  font-weight: 800;
   color: var(--text-main);
-  margin: 0 0 6px;
-  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
 }
 .apply-intro > p {
   color: var(--text-sub);
   font-size: 13.5px;
-  line-height: 1.65;
+  line-height: 1.7;
   max-width: 72ch;
-  margin: 0 0 20px;
+  margin: 0 0 22px;
 }
 
 .apply-meta-row {
@@ -43,29 +78,31 @@
 .apply-meta-item {
   flex: 1;
   min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 11px 15px;
+  padding: 12px 16px;
+  transition: border-color .15s;
 }
 .apply-meta-item span {
-  display: block;
   font-size: 10.5px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-weight: 700;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-faint);
-  margin-bottom: 3px;
 }
-.apply-meta-item strong { font-size: 13px; color: var(--text-main); font-weight: 600; font-family: "JetBrains Mono", ui-monospace, monospace; letter-spacing: -0.01em; }
+.apply-meta-item strong { font-size: 13.5px; color: var(--text-main); font-weight: 600; font-family: "JetBrains Mono", ui-monospace, monospace; letter-spacing: -0.01em; }
 
-.apply-review-request { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border); }
+.apply-review-request { margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--border); }
 .apply-review-request > label {
   display: block;
   font-size: 12.5px;
   font-weight: 700;
   color: var(--text-main);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
 }
 .apply-review-request .chip-checkbox-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 
@@ -539,15 +576,60 @@
 .apply-declaration-quote {
   margin: 0 0 20px;
   padding: 16px 18px;
-  border-left: 3px solid var(--teal);
   background: var(--bg);
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   line-height: 1.75;
   color: var(--text-sub);
   font-style: italic;
 }
-.apply-signature-input { font-family: "Caveat", cursive; font-size: 21px !important; color: var(--text-main); }
+/* Signature: an underlined "sign here" line rather than a boxed input,
+   with the Caveat handwriting font (loaded in application-form.html's
+   extra_css) reserved for what's actually typed -- the placeholder keeps
+   the normal UI font so it reads as an instruction, not a broken signature. */
+.apply-signature-field { position: relative; }
+.apply-signature-input {
+  font-family: "Caveat", cursive !important;
+  font-size: 27px !important;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--text-main);
+  background: var(--bg) !important;
+  border: none !important;
+  border-bottom: 2px solid var(--border) !important;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0 !important;
+  padding: 10px 40px 8px 14px !important;
+  transition: background-color .15s, border-color .15s;
+}
+.apply-signature-input::placeholder {
+  font-family: "Inter", "Poppins", sans-serif;
+  font-size: 13.5px;
+  font-weight: 400;
+  color: var(--text-faint);
+}
+.apply-signature-input:focus {
+  background: var(--white) !important;
+  border-bottom-color: var(--teal) !important;
+  outline: none !important;
+}
+.apply-signature-icon {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: 16px;
+  height: 16px;
+  color: var(--text-faint);
+  pointer-events: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.apply-signature-input:focus ~ .apply-signature-icon { color: var(--teal); }
+.apply-signature-input:not(:placeholder-shown) {
+  font-size: 30px !important;
+}
 
 .agree-row {
   display: flex;
@@ -565,15 +647,25 @@
   flex-shrink: 0;
 }
 
-/* ---------------- Locked official-use panel ---------------- */
+/* ---------------- Locked official-use panel ----------------
+   A plain read-only label/value list, not a grayed-out copy of the real
+   (chip-checkbox-grid) form controls above it -- applicants can't act on
+   any of this, so it shouldn't visually compete with the ~30 real,
+   clickable fields in the rest of the form for their attention. */
 .apply-official {
   background: var(--bg);
   border: 1.5px dashed var(--border);
   border-radius: var(--radius);
-  padding: 24px 26px;
+  padding: 22px 24px;
   margin-top: 4px;
   margin-bottom: 16px;
   scroll-margin-top: 20px;
+}
+.apply-official-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
 }
 .apply-official-badge {
   display: inline-flex;
@@ -588,32 +680,45 @@
   letter-spacing: 0.04em;
   padding: 5px 11px;
   border-radius: 50px;
-  margin-bottom: 14px;
+  flex-shrink: 0;
+  margin-top: 2px;
+  white-space: nowrap;
 }
-.apply-official h2 {
-  margin: 0 0 6px;
+.apply-official-head h2 {
+  margin: 0 0 4px;
   font-size: 15px;
   font-weight: 700;
   color: var(--text-main);
 }
-.apply-official .section-note { margin: 0 0 18px; }
-.apply-official label { color: var(--text-sub); }
-.apply-official input:disabled,
-.apply-official textarea:disabled,
-.apply-official select:disabled {
-  background: var(--hover-bg);
+.apply-official-head .section-note { margin: 0; }
+
+.apply-official-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 32px;
+  margin: 0;
+  border-top: 1px solid var(--border);
+}
+.apply-official-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+}
+.apply-official-row dt { font-size: 12.5px; color: var(--text-sub); margin: 0; }
+.apply-official-row dd {
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--text-faint);
-  cursor: not-allowed;
-  border-color: var(--border);
+  text-align: right;
+  margin: 0;
+  white-space: nowrap;
 }
-.apply-official .chip-checkbox {
-  cursor: not-allowed;
-  opacity: 0.7;
-}
-.apply-official .chip-checkbox:has(input:checked) {
-  border-color: var(--border);
-  background: var(--hover-bg);
-  color: var(--text-sub);
+
+@media (max-width: 640px) {
+  .apply-official-grid { grid-template-columns: 1fr; }
 }
 
 /* ---------------- Submit ---------------- */
@@ -636,6 +741,42 @@
 }
 .btn-create-account:hover { background: #128581; }
 .btn-create-account:disabled { opacity: .7; cursor: not-allowed; }
+
+.apply-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 6px;
+}
+.apply-form-actions .btn-create-account { margin-top: 0; flex: 1; }
+
+.btn-save-draft {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text-main);
+  padding: 13px 18px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: .15s;
+}
+.btn-save-draft:hover { background: var(--hover-bg); }
+.btn-save-draft:disabled { opacity: .7; cursor: not-allowed; }
+
+.apply-autosave-status {
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-faint);
+  margin: 10px 0 0;
+  min-height: 16px;
+}
+.apply-autosave-status.is-saving { color: var(--text-sub); }
+.apply-autosave-status.is-error { color: var(--red); }
 
 .signin-instead {
   text-align: center;

@@ -152,16 +152,15 @@
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-            <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
-            <span>Ama Owusu</span>
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
             <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="dropdown-menu profile-menu" id="profileMenu">
             <div class="profile-menu-head">
-              <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
               <div>
-                <strong>Ama Owusu</strong>
-                <span>ama.owusu@metascholar.edu</span>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
               </div>
             </div>
             <a href="#" class="dropdown-item">
@@ -190,56 +189,29 @@
 {% block main_content %}
 
 
+      {% for application in applications %}
       <div class="revision-card">
         <div class="revision-top">
           <div class="revision-title">
-            <h3>Barriers to Antenatal Care Uptake Among Adolescent Mothers in Peri-Urban Communities</h3>
-            <span>MSREC/2026/0104</span>
-          </div>
-          <div class="revision-due">
-            <span class="due-label">Respond By</span>
-            <span class="due-date">30 May 2026</span>
-            <span class="due-days" style="color:var(--red); font-weight:600; font-size:11.5px;">10 days remaining</span>
+            <h3>{{ application.title }}</h3>
+            <span>{{ application.reference_no }}</span>
           </div>
         </div>
         <div class="comment-list">
           <div class="comment-item">
             <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
-            <p>Please clarify how informed consent will be obtained from adolescent participants under 18.<span>Reviewer comment &mdash; Section 11, Informed Consent</span></p>
-          </div>
-          <div class="comment-item">
-            <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
-            <p>The data management plan does not specify the retention period for audio recordings.<span>Reviewer comment &mdash; Section 13, Data Management &amp; Security</span></p>
+            <p>MSREC has requested changes to this application.<span>Message the Secretariat to see the full feedback and what's needed.</span></p>
           </div>
         </div>
         <div class="revision-actions">
-          <a href="#" class="btn-primary"><svg viewBox="0 0 24 24"><path d="m3 3 18 9-18 9 4-9-4-9Z"/></svg> Respond Now</a>
-          <a href="#" class="btn-secondary">Download Reviewer Comments</a>
+          <a href="{% url 'applicant_dashboard:messages' %}" class="btn-primary"><svg viewBox="0 0 24 24"><path d="m3 3 18 9-18 9 4-9-4-9Z"/></svg> Message Secretariat</a>
+          <a href="{% url 'applicant_dashboard:application_detail' application.pk %}" class="btn-secondary">View Submission</a>
         </div>
       </div>
+      {% empty %}
+      <section class="panel" style="padding:40px 24px; text-align:center; color:var(--text-faint);">
+        Nothing needs your attention right now.
+      </section>
+      {% endfor %}
 
-      <div class="revision-card">
-        <div class="revision-top">
-          <div class="revision-title">
-            <h3>Employer Attitudes Toward Flexible Work Arrangements Post-Pandemic</h3>
-            <span>MSREC/2026/0087</span>
-          </div>
-          <div class="revision-due">
-            <span class="due-label">Respond By</span>
-            <span class="due-date">02 Jun 2026</span>
-            <span class="due-days" style="color:var(--orange); font-weight:600; font-size:11.5px;">13 days remaining</span>
-          </div>
-        </div>
-        <div class="comment-list">
-          <div class="comment-item">
-            <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
-            <p>Please provide a debriefing statement for participants in the deception-based vignette task.<span>Reviewer comment &mdash; Section 11, Informed Consent</span></p>
-          </div>
-        </div>
-        <div class="revision-actions">
-          <a href="#" class="btn-primary"><svg viewBox="0 0 24 24"><path d="m3 3 18 9-18 9 4-9-4-9Z"/></svg> Respond Now</a>
-          <a href="#" class="btn-secondary">Download Reviewer Comments</a>
-        </div>
-      </div>
-    
 {% endblock %}

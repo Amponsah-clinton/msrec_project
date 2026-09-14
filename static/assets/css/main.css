@@ -316,6 +316,7 @@ h6 {
 }
 
 .topbar-btn-ghost:hover {
+  color: #ffffff;
   border-color: #ffffff;
   background: rgba(255, 255, 255, 0.1);
 }
@@ -327,6 +328,7 @@ h6 {
 }
 
 .topbar-btn-solid:hover {
+  color: #ffffff;
   background: color-mix(in srgb, var(--accent-color), white 12%);
 }
 

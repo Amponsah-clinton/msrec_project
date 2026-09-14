@@ -190,17 +190,17 @@ svg {
 }
 
 .brand-icon {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
-  border-radius: 9px;
-  background: var(--navy);
-  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.brand-icon svg { width: 22px; height: 22px; }
+/* logo1.png is a full-color crest (navy/teal) on a transparent ground --
+   no chip background behind it (a solid color box would clash with its
+   own navy/teal palette the way the old flat SVG icon needed one). */
+.brand-icon img { width: 100%; height: 100%; object-fit: contain; }
 
 .brand-text { display: flex; flex-direction: column; line-height: 1.25; }
 .brand-name { font-size: 17px; font-weight: 700; color: var(--navy); letter-spacing: 0.3px; }
@@ -410,6 +410,43 @@ svg {
   object-fit: cover;
 }
 .profile-btn span { font-size: 13.5px; font-weight: 600; white-space: nowrap; }
+
+/* Initials avatar -- shown instead of a photo when the account has none
+   on file (see accounts.context_processors.profile_avatar). A crisp ring
+   in the surface color (var(--white), which itself flips to the dark
+   card color in dark mode) separates the circle from whatever sits
+   behind it -- sidebar, topbar, a table row -- instead of the flat
+   color bleeding straight into the page. Small lift shadow underneath
+   for depth without breaking the app's flat, non-gradient language. */
+.avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+  box-shadow:
+    0 0 0 2px var(--white),
+    0 1px 2px rgba(16, 24, 40, 0.16);
+  transition: box-shadow .15s ease;
+}
+.profile-btn .avatar-initials { width: 36px; height: 36px; font-size: 13px; }
+.profile-menu-head .avatar-initials { width: 40px; height: 40px; font-size: 15px; }
+.avatar-initials-lg { width: 72px; height: 72px; font-size: 25px; letter-spacing: 0.03em; }
+
+/* The button/menu wrapping these are themselves interactive -- ring
+   picks up a soft teal halo on hover/open so the avatar visibly
+   responds along with the rest of the control, not just its label. */
+.profile-btn:hover .avatar-initials,
+.profile-btn.open .avatar-initials {
+  box-shadow:
+    0 0 0 2px var(--white),
+    0 0 0 4px color-mix(in srgb, var(--teal), transparent 65%),
+    0 1px 2px rgba(16, 24, 40, 0.16);
+}
 .chev { width: 14px; height: 14px; color: var(--text-faint); transition: transform 0.15s ease; }
 
 /* ---------------- Dropdowns ---------------- */
@@ -682,6 +719,20 @@ svg {
   background: var(--green-light);
   color: var(--text-main);
   border: 1px solid color-mix(in srgb, var(--green) 25%, transparent);
+  /* Auto-dismissed by script.js 5s after the page loads -- fades and
+     collapses on the way out (removed from the DOM once the transition
+     ends), so the next alert slides up instead of leaving a gap. */
+  overflow: hidden;
+  max-height: 60px;
+  transition: opacity .25s ease, transform .25s ease, max-height .25s ease .1s, padding .25s ease .1s;
+}
+.flash-message.is-dismissing {
+  opacity: 0;
+  transform: translateY(-6px);
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-width: 0;
 }
 .flash-message svg { width: 17px; height: 17px; color: var(--green); flex-shrink: 0; }
 .flash-message.error {
@@ -1491,6 +1542,39 @@ svg {
 .field-row { display: flex; gap: 12px; }
 .field-row .field-group { flex: 1; }
 
+/* ---------------- Password field: lock icon + show/hide toggle ---------------- */
+.field-password-wrap { position: relative; }
+.field-password-wrap .field-input { padding-left: 38px; padding-right: 40px; }
+.field-password-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-faint);
+  font-size: 13px;
+  pointer-events: none;
+}
+.field-password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  color: var(--text-faint);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.field-password-toggle:hover { color: var(--text-main); background: var(--hover-bg); }
+.field-password-toggle:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+
 .static-detail-box {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -1564,6 +1648,7 @@ svg {
 
 .form-section { margin-bottom: 28px; }
 .form-section:last-child { margin-bottom: 0; }
+.field-hint { color: var(--text-faint); font-size: 12px; margin: 6px 0 0; }
 .form-section-title {
   display: flex;
   align-items: center;
@@ -1740,7 +1825,11 @@ svg {
   justify-content: center;
   font-weight: 700;
   font-size: 14px;
+  letter-spacing: 0.02em;
   color: #fff;
+  box-shadow:
+    0 0 0 2px var(--white),
+    0 1px 2px rgba(16, 24, 40, 0.16);
 }
 .team-info { min-width: 0; }
 .team-info h4 { margin: 0 0 3px; display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 700; color: var(--text-main); flex-wrap: wrap; }
@@ -1906,8 +1995,8 @@ svg {
 .thread-scroll { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; background: var(--bg); }
 .msg-bubble { max-width: 72%; padding: 10px 14px; border-radius: 14px; font-size: 13px; line-height: 1.55; }
 .msg-bubble p { margin: 0; }
-.msg-bubble.in { align-self: flex-start; background: var(--white); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
-.msg-bubble.out { align-self: flex-end; background: var(--teal); color: #fff; border-bottom-right-radius: 4px; }
+.msg-bubble.in { align-self: flex-start; background: var(--white); border: 1px solid var(--border); }
+.msg-bubble.out { align-self: flex-end; background: var(--teal); color: #fff; }
 .msg-time { display: block; margin-top: 5px; font-size: 10.5px; opacity: 0.7; }
 .thread-composer { display: flex; align-items: flex-end; gap: 10px; padding: 14px 18px; border-top: 1px solid var(--border); background: var(--white); flex-shrink: 0; }
 .thread-composer textarea {
@@ -2080,3 +2169,68 @@ svg {
   .footer { flex-direction: column; align-items: flex-start; }
   .review-type-grid { grid-template-columns: 1fr; }
 }
+
+/* ---------------------------------------------------------------------
+   Generic confirm modal — replaces window.confirm() for any form marked
+   data-confirm="..." (suspend/reactivate/delete rows, etc). Built once by
+   script.js and shared across every dashboard page, so any page can opt a
+   form into it just by adding the attribute -- no per-page wiring needed.
+--------------------------------------------------------------------- */
+.confirm-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 24, 40, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 300;
+}
+.confirm-modal-overlay[hidden] { display: none; }
+.confirm-modal {
+  width: 100%;
+  max-width: 400px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 26px 24px 22px;
+  text-align: center;
+}
+.confirm-modal-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: var(--orange-light);
+  color: var(--orange);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+}
+.confirm-modal-icon svg { width: 22px; height: 22px; }
+.confirm-modal-overlay.is-danger .confirm-modal-icon { background: var(--red-light); color: var(--red); }
+.confirm-modal p {
+  margin: 0 0 22px;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--text-main);
+}
+.confirm-modal-actions { display: flex; gap: 10px; }
+.confirm-modal-actions button {
+  flex: 1;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+  font-family: inherit;
+}
+.confirm-modal-cancel { background: var(--bg); color: var(--text-sub); border-color: var(--border); }
+.confirm-modal-cancel:hover { background: var(--hover-bg); }
+.confirm-modal-ok { background: var(--orange); color: #fff; }
+.confirm-modal-ok:hover { background: color-mix(in srgb, var(--orange), black 10%); }
+.confirm-modal-overlay.is-danger .confirm-modal-ok { background: var(--red); }
+.confirm-modal-overlay.is-danger .confirm-modal-ok:hover { background: color-mix(in srgb, var(--red), black 10%); }

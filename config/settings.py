@@ -46,6 +46,9 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "accounts",
     "pages",
+    "messaging",
+    "notifications",
+    "payments",
     "reviewer_dashboard",
     "applicant_dashboard",
     "committee_dashboard",
@@ -81,6 +84,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "accounts.context_processors.profile_avatar",
             ],
         },
     },
@@ -113,6 +117,22 @@ else:
         }
     }
 
+# ── Email (admin_dashboard replying to Contact-page inquiries) ────────────
+# SMTP when EMAIL_HOST is configured in .env; otherwise falls back to the
+# console backend (prints the message to the runserver log instead of
+# sending it) so replying never crashes just because SMTP isn't set up yet.
+_email_host = os.getenv("EMAIL_HOST", "").strip()
+if _email_host:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_HOST = _email_host
+    EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+    EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").strip().lower() in {"1", "true", "yes", "on"}
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "MSREC Secretariat <no-reply@msrec.org>")
+
 # ── Supabase (available for future use: storage, auth, etc.) ──────────────
 # Not wired into any view yet -- these are just read from the environment
 # so the project is ready to use them when needed.
@@ -120,6 +140,14 @@ SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 SUPABASE_PUBLISHABLE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
+
+# ── Paystack (application review-fee payments) ─────────────────────────────
+# Test-mode keys by default so the payment gate on the application form
+# (applicant_dashboard/views.py + the payments app) works out of the box in
+# dev; override with live keys via .env for production. See payments/fees.py
+# for the fee schedule and payments/paystack.py for the API calls.
+PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "sk_test_185fc53d96addab7232060c86f4221918ab59d1c")
+PAYSTACK_PUBLIC_KEY = os.getenv("PAYSTACK_PUBLIC_KEY", "pk_test_af37d26c0fa360522c4e66495f3877e498c18850")
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [

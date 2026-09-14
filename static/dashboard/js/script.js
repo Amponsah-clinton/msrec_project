@@ -297,3 +297,89 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 });
+
+// ---------------------------------------------------------------------
+// Generic confirm modal — any `<form data-confirm="...">` on any dashboard
+// page gets its submit intercepted and re-asked through this modal instead
+// of the browser's native window.confirm(). Add data-confirm-variant="danger"
+// on a form for the red/destructive styling (delete); anything else gets the
+// neutral orange styling (suspend, reopen, etc). Registered as its own
+// top-level listener (not inside the block above) so it still wires up even
+// on pages that don't load the rest of that block's markup.
+document.addEventListener("DOMContentLoaded", () => {
+  const forms = Array.from(document.querySelectorAll("form[data-confirm]"));
+  if (!forms.length) return;
+
+  const overlay = document.createElement("div");
+  overlay.className = "confirm-modal-overlay";
+  overlay.hidden = true;
+  overlay.innerHTML = `
+    <div class="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmModalMsg">
+      <div class="confirm-modal-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+      </div>
+      <p id="confirmModalMsg"></p>
+      <div class="confirm-modal-actions">
+        <button type="button" class="confirm-modal-cancel">Cancel</button>
+        <button type="button" class="confirm-modal-ok">Confirm</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const msgEl = overlay.querySelector("#confirmModalMsg");
+  const okBtn = overlay.querySelector(".confirm-modal-ok");
+  const cancelBtn = overlay.querySelector(".confirm-modal-cancel");
+  let pendingForm = null;
+
+  function close() {
+    overlay.hidden = true;
+    overlay.classList.remove("is-danger");
+    pendingForm = null;
+  }
+
+  forms.forEach((form) => {
+    form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      pendingForm = form;
+      msgEl.textContent = form.dataset.confirm;
+      okBtn.textContent = form.dataset.confirmLabel || "Confirm";
+      overlay.classList.toggle("is-danger", form.dataset.confirmVariant === "danger");
+      overlay.hidden = false;
+      okBtn.focus();
+    });
+  });
+
+  okBtn.addEventListener("click", () => {
+    if (!pendingForm) return;
+    const form = pendingForm;
+    close();
+    form.submit();
+  });
+  cancelBtn.addEventListener("click", close);
+  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !overlay.hidden) close();
+  });
+});
+
+// ---------------------------------------------------------------------
+// Flash messages (django.contrib.messages, rendered once in base.html so
+// every dashboard page gets it) -- auto-dismiss each alert 5s after the
+// page loads instead of leaving success/error banners on screen forever.
+// Timer starts at page load, not per-message stagger, so several messages
+// from the same request all disappear together.
+document.addEventListener("DOMContentLoaded", () => {
+  const FLASH_AUTO_DISMISS_MS = 5000;
+
+  document.querySelectorAll(".flash-messages .flash-message").forEach((el) => {
+    setTimeout(() => {
+      el.classList.add("is-dismissing");
+      // Transition end removes it cleanly; the fallback timeout covers
+      // reduced-motion / no-transition environments where that event
+      // never fires, so the (by-then invisible) element doesn't linger.
+      el.addEventListener("transitionend", () => el.remove(), { once: true });
+      setTimeout(() => el.remove(), 500);
+    }, FLASH_AUTO_DISMISS_MS);
+  });
+});

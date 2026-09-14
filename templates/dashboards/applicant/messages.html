@@ -1,6 +1,11 @@
 {% extends "dashboards/base.html" %}
+{% load static %}
 
 {% block title %}Messages | MSREC{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'dashboard/css/messages.css' %}" rel="stylesheet">
+{% endblock %}
 
 {% block nav_content %}
 
@@ -101,7 +106,7 @@
 
       <div class="topbar-title">
         <h1>Messages</h1>
-        <p>Direct conversations with the Secretariat, reviewers and the Committee</p>
+        <p>Message the MSREC Secretariat directly &mdash; real-time, right here</p>
       </div>
       <div class="topbar-actions">
         <div class="search-box">
@@ -152,16 +157,15 @@
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-            <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
-            <span>Ama Owusu</span>
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
             <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="dropdown-menu profile-menu" id="profileMenu">
             <div class="profile-menu-head">
-              <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
               <div>
-                <strong>Ama Owusu</strong>
-                <span>ama.owusu@metascholar.edu</span>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
               </div>
             </div>
             <a href="#" class="dropdown-item">
@@ -193,51 +197,21 @@
       <div class="page-head">
         <div class="page-head-text">
           <h2>Messages</h2>
-          <p>Direct conversations with the Secretariat, your assigned reviewer and the Committee Chair.</p>
+          <p>Message the MSREC Secretariat about your application, payments or account. Replies arrive here in real time.</p>
         </div>
       </div>
 
-      <div class="messages-shell">
+      <div class="messages-shell" id="msgShell" data-poll-url="{% url 'applicant_dashboard:messages_poll' %}" data-send-url="{% url 'applicant_dashboard:messages_send' %}" data-last-id="{{ last_message_id }}">
         <section class="panel messages-list-panel">
           <div class="messages-list-head">
-            <div class="search-box">
-              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-              <input type="text" placeholder="Search conversations...">
-            </div>
+            <span class="msg-live-indicator" id="msgLiveIndicator" title="Live"><span class="msg-live-dot"></span> Live</span>
           </div>
           <div class="messages-list">
             <button type="button" class="message-row active" data-thread="secretariat">
               <span class="message-avatar initials" style="background:var(--navy);">MS</span>
               <span class="message-row-body">
-                <span class="message-row-top"><strong>MSREC Secretariat</strong><span class="message-row-time">9:12 AM</span></span>
-                <span class="message-snippet">Your revised protocol for MSREC/2026/0104 has been logged and forwarded&hellip;</span>
-                <span class="message-row-meta"><span class="badge-tag blue">MSREC/2026/0104</span></span>
-              </span>
-            </button>
-            <button type="button" class="message-row unread" data-thread="reviewer">
-              <img class="message-avatar" src="https://i.pravatar.cc/80?img=12" alt="Dr. Kwame Boateng">
-              <span class="message-row-body">
-                <span class="message-row-top"><strong>Dr. Kwame Boateng</strong><span class="message-row-time">Yesterday</span></span>
-                <span class="message-snippet">Perfect, thanks for the quick clarification &mdash; one more thing&hellip;</span>
-                <span class="message-row-meta"><span class="badge-tag orange">Reviewer</span></span>
-              </span>
-              <span class="message-dot"></span>
-            </button>
-            <button type="button" class="message-row unread" data-thread="chair">
-              <span class="message-avatar initials" style="background:var(--purple);">EC</span>
-              <span class="message-row-body">
-                <span class="message-row-top"><strong>Prof. Esi Coleman</strong><span class="message-row-time">Mon</span></span>
-                <span class="message-snippet">The Committee has scheduled your full review for 02 June 2026.</span>
-                <span class="message-row-meta"><span class="badge-tag purple">Committee Chair</span></span>
-              </span>
-              <span class="message-dot"></span>
-            </button>
-            <button type="button" class="message-row" data-thread="finance">
-              <span class="message-avatar initials" style="background:var(--teal);">FO</span>
-              <span class="message-row-body">
-                <span class="message-row-top"><strong>Finance Office</strong><span class="message-row-time">18 May</span></span>
-                <span class="message-snippet">Receipt for your review fee payment (GHS 450) is attached.</span>
-                <span class="message-row-meta"><span class="badge-tag teal">Payments</span></span>
+                <span class="message-row-top"><strong>MSREC Secretariat</strong><span class="message-row-time" id="msgListTime">&nbsp;</span></span>
+                <span class="message-snippet" id="msgListSnippet">Ask us anything about your application.</span>
               </span>
             </button>
           </div>
@@ -251,83 +225,34 @@
             <span class="thread-header-avatar initials" style="background:var(--navy);">MS</span>
             <div class="thread-header-info">
               <strong>MSREC Secretariat</strong>
-              <span>Ref: MSREC/2026/0104 &middot; usually replies within a day</span>
+              <span>Questions about your application, payments or account</span>
             </div>
           </div>
-          <div class="thread-scroll">
-            <div class="msg-bubble in"><p>Hello Ama, your revised protocol for MSREC/2026/0104 has been logged and forwarded to the assigned reviewer.</p><span class="msg-time">9:02 AM</span></div>
-            <div class="msg-bubble out"><p>Thank you for confirming. Please let me know if anything else is needed from my side.</p><span class="msg-time">9:08 AM</span></div>
-            <div class="msg-bubble in"><p>Will do &mdash; we'll notify you as soon as the reviewer responds, typically within 5 working days.</p><span class="msg-time">9:12 AM</span></div>
-          </div>
-          <form class="thread-composer">
-            <textarea rows="1" placeholder="Write a reply&hellip;"></textarea>
-            <button type="submit" class="thread-send-btn" aria-label="Send message"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
-          </form>
-        </section>
-
-        <section class="panel thread-panel" data-thread="reviewer">
-          <div class="thread-header">
-            <button type="button" class="thread-back-btn icon-btn" aria-label="Back to conversations">
-              <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
-            </button>
-            <img class="thread-header-avatar" src="https://i.pravatar.cc/80?img=12" alt="Dr. Kwame Boateng">
-            <div class="thread-header-info">
-              <strong>Dr. Kwame Boateng</strong>
-              <span>Assigned Reviewer &middot; MSREC/2026/0104</span>
+          <div class="thread-scroll" id="msgThreadScroll">
+            {% for message in thread_messages %}
+            <div class="msg-bubble {% if message.is_mine %}out{% else %}in{% endif %}" data-message-id="{{ message.id }}">
+              <p>{{ message.body|linebreaksbr }}</p>
+              <span class="msg-time">{% if not message.is_mine %}{{ message.sender_name }} &middot; {% endif %}{{ message.time_display }}</span>
             </div>
-          </div>
-          <div class="thread-scroll">
-            <div class="msg-bubble in"><p>I've gone through your revised consent form &mdash; much clearer now. One thing: could you add a withdrawal clause in section 4?</p><span class="msg-time">Yesterday, 3:40 PM</span></div>
-            <div class="msg-bubble out"><p>Absolutely, I'll add a clear right-to-withdraw statement and re-upload today.</p><span class="msg-time">Yesterday, 4:02 PM</span></div>
-            <div class="msg-bubble in"><p>Perfect, thanks for the quick clarification &mdash; one more thing, could you also confirm the sample size calculation?</p><span class="msg-time">Yesterday, 4:15 PM</span></div>
-          </div>
-          <form class="thread-composer">
-            <textarea rows="1" placeholder="Write a reply&hellip;"></textarea>
-            <button type="submit" class="thread-send-btn" aria-label="Send message"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
-          </form>
-        </section>
-
-        <section class="panel thread-panel" data-thread="chair">
-          <div class="thread-header">
-            <button type="button" class="thread-back-btn icon-btn" aria-label="Back to conversations">
-              <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
-            </button>
-            <span class="thread-header-avatar initials" style="background:var(--purple);">EC</span>
-            <div class="thread-header-info">
-              <strong>Prof. Esi Coleman</strong>
-              <span>Committee Chair</span>
+            {% empty %}
+            <div class="msg-thread-empty">
+              <p>No messages yet. Send the Secretariat a message and they'll reply here &mdash; usually within a day.</p>
             </div>
+            {% endfor %}
           </div>
-          <div class="thread-scroll">
-            <div class="msg-bubble in"><p>The Committee has scheduled your full review for 02 June 2026 at 10:00 AM. You're welcome to join virtually to answer questions.</p><span class="msg-time">Monday, 11:20 AM</span></div>
-          </div>
-          <form class="thread-composer">
-            <textarea rows="1" placeholder="Write a reply&hellip;"></textarea>
-            <button type="submit" class="thread-send-btn" aria-label="Send message"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
-          </form>
-        </section>
-
-        <section class="panel thread-panel" data-thread="finance">
-          <div class="thread-header">
-            <button type="button" class="thread-back-btn icon-btn" aria-label="Back to conversations">
-              <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
-            </button>
-            <span class="thread-header-avatar initials" style="background:var(--teal);">FO</span>
-            <div class="thread-header-info">
-              <strong>Finance Office</strong>
-              <span>Payments &amp; Receipts</span>
-            </div>
-          </div>
-          <div class="thread-scroll">
-            <div class="msg-bubble in"><p>Receipt for your review fee payment (GHS 450) is attached to your Payments &gt; Receipts page.</p><span class="msg-time">18 May, 2:00 PM</span></div>
-          </div>
-          <form class="thread-composer">
-            <textarea rows="1" placeholder="Write a reply&hellip;"></textarea>
+          <form class="thread-composer" id="msgComposer">
+            {% csrf_token %}
+            <textarea name="body" id="msgComposerInput" rows="1" placeholder="Write a message&hellip;" maxlength="4000" required></textarea>
             <button type="submit" class="thread-send-btn" aria-label="Send message"><svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
           </form>
         </section>
       </div>
 
 
-    
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/live-chat.js' %}"></script>
+<script src="{% static 'dashboard/js/messages.js' %}"></script>
 {% endblock %}

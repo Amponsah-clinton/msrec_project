@@ -1,0 +1,73 @@
+/* ==========================================================
+   MSREC — Application review-fee checkout (Paystack)
+========================================================== */
+
+.apply-pay-shell {
+  max-width: 560px;
+  margin: 24px auto 0;
+}
+
+.apply-pay-card { padding: 34px 36px; text-align: center; }
+
+.apply-pay-head { margin-bottom: 26px; }
+.apply-pay-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--teal-light);
+  color: var(--teal);
+  font-size: 22px;
+  margin-bottom: 16px;
+}
+.apply-pay-head h2 { margin: 0 0 8px; font-size: 18px; font-weight: 800; color: var(--text-main); }
+.apply-pay-head p { margin: 0; font-size: 13px; line-height: 1.65; color: var(--text-sub); }
+
+.apply-pay-summary {
+  text-align: left;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 22px;
+}
+.apply-pay-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.apply-pay-row:last-child { border-bottom: none; }
+.apply-pay-row span { color: var(--text-sub); flex-shrink: 0; }
+.apply-pay-row strong { color: var(--text-main); font-weight: 600; text-align: right; }
+.apply-pay-total { padding-top: 13px; }
+.apply-pay-total span { color: var(--text-main); font-weight: 700; }
+.apply-pay-total strong {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--teal);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+.apply-pay-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  margin: 14px 0 20px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-faint);
+  text-align: left;
+}
+.apply-pay-note i { margin-top: 2px; flex-shrink: 0; }
+
+.apply-pay-card .back-link { display: inline-flex; margin-top: 4px; }
+
+@media (max-width: 600px) {
+  .apply-pay-card { padding: 26px 20px; }
+}

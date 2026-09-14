@@ -28,12 +28,25 @@
 
       <div class="nav-group">
         <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+          <span>Inquiries</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'admin_dashboard:inquiries' %}" class="nav-sublink">All Messages</a>
+          <a href="{% url 'admin_dashboard:inquiries' %}?tab=new" class="nav-sublink">New</a>
+          <a href="{% url 'admin_dashboard:inquiries' %}?tab=resolved" class="nav-sublink">Resolved</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
           <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
           <span>Applications</span>
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">All Applications</a>
+          <a href="{% url 'admin_dashboard:applications' %}" class="nav-sublink">All Applications</a>
           <a href="#" class="nav-sublink">By Review Pathway</a>
           <a href="#" class="nav-sublink">By Institution</a>
           <a href="#" class="nav-sublink">Flagged / Escalated</a>
@@ -60,10 +73,10 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">All Payments</a>
-          <a href="#" class="nav-sublink">Fee Configuration</a>
-          <a href="#" class="nav-sublink">Outstanding Payments</a>
-          <a href="#" class="nav-sublink">Financial Reports</a>
+          <a href="{% url 'admin_dashboard:finance' %}" class="nav-sublink">All Payments</a>
+          <a href="{% url 'admin_dashboard:finance' %}?tab=success" class="nav-sublink">Successful</a>
+          <a href="{% url 'admin_dashboard:finance' %}?tab=pending" class="nav-sublink">Pending</a>
+          <a href="{% url 'admin_dashboard:finance' %}?tab=failed" class="nav-sublink">Failed</a>
         </div>
       </div>
 
@@ -94,6 +107,10 @@
         </div>
       </div>
 
+      <a href="{% url 'admin_dashboard:messages' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+        <span>Messages</span>
+      </a>
       <a href="#" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span>
         <span>Reports &amp; Analytics</span>
@@ -117,7 +134,7 @@
 
       <div class="topbar-title">
         <h1>Admin Dashboard</h1>
-        <p>Welcome back, Kojo Antwi</p>
+        <p>Welcome back, {{ request.user.first_name }}</p>
       </div>
       <div class="topbar-actions">
         <div class="search-box">
@@ -175,16 +192,15 @@
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-            <img src="https://i.pravatar.cc/80?img=13" alt="Kojo Antwi">
-            <span>Kojo Antwi</span>
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
             <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="dropdown-menu profile-menu" id="profileMenu">
             <div class="profile-menu-head">
-              <img src="https://i.pravatar.cc/80?img=13" alt="Kojo Antwi">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
               <div>
-                <strong>Kojo Antwi</strong>
-                <span>kojo.antwi@metascholar.edu</span>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
               </div>
             </div>
             <a href="#" class="dropdown-item">
@@ -220,7 +236,7 @@
             <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           </div>
           <p class="stat-label">Total Users</p>
-          <p class="stat-value">1,284</p>
+          <p class="stat-value">{{ user_counts.total }}</p>
           <a href="{% url 'admin_dashboard:accounts' %}" class="stat-link">View all users <span>&rsaquo;</span></a>
         </div>
 
@@ -229,8 +245,8 @@
             <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
           </div>
           <p class="stat-label">Active Applications</p>
-          <p class="stat-value">312</p>
-          <a href="#" class="stat-link">View applications <span>&rsaquo;</span></a>
+          <p class="stat-value">{{ application_counts.all }}</p>
+          <a href="{% url 'admin_dashboard:applications' %}" class="stat-link">View applications <span>&rsaquo;</span></a>
         </div>
 
         <div class="stat-card">
@@ -238,7 +254,7 @@
             <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M19 8v6M22 11h-6"/></svg>
           </div>
           <p class="stat-label">Pending Role Requests</p>
-          <p class="stat-value">7</p>
+          <p class="stat-value">{{ user_counts.pending }}</p>
           <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="stat-link">Review requests <span>&rsaquo;</span></a>
         </div>
 
@@ -262,6 +278,7 @@
       </section>
 
       <!-- URGENT BANNER -->
+      {% if user_counts.pending %}
       <section class="urgent-banner">
         <div class="urgent-icon">
           <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
@@ -269,19 +286,20 @@
         <div class="urgent-body">
           <h3>Role Requests Awaiting Approval</h3>
           <p>
-            <span class="ref-no">7 requests waiting</span>
+            <span class="ref-no">{{ user_counts.pending }} request{{ user_counts.pending|pluralize }} waiting</span>
             <span class="sep">|</span>
             Verify each requester's credentials before granting reviewer, committee or secretariat access.
           </p>
-          <p class="urgent-note">The oldest request has been waiting 3 days.</p>
         </div>
+        {% if oldest_pending %}
         <div class="urgent-due">
           <span class="due-label">Oldest Request</span>
-          <span class="due-date">18 May 2026</span>
-          <span class="due-days">(3 days waiting)</span>
+          <span class="due-date">{{ oldest_pending.date_joined|date:"d M Y" }}</span>
         </div>
+        {% endif %}
         <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="btn btn-danger">Review Now</a>
       </section>
+      {% endif %}
 
       <!-- BODY GRID -->
       <div class="body-grid">
@@ -290,7 +308,7 @@
         <section class="panel reviews-panel">
           <div class="panel-header">
             <h2>Platform-Wide Applications</h2>
-            <a href="#" class="panel-link">View all applications</a>
+            <a href="{% url 'admin_dashboard:applications' %}" class="panel-link">View all applications</a>
           </div>
 
           <div class="table-wrap">
@@ -306,53 +324,36 @@
                 </tr>
               </thead>
               <tbody>
+                {% for application in recent_applications %}
                 <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0109</td>
-                  <td data-label="Study Title">Cold Chain Integrity for Vaccine Distribution in Remote Clinics</td>
-                  <td data-label="Applicant">Dr. Yaw Boadi</td>
-                  <td data-label="Status"><span class="badge-tag blue">Under Review</span></td>
-                  <td data-label="Submitted"><span class="due-main">21 May 2026</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
+                  <td data-label="Ref No." class="ref-cell">{{ application.reference_no }}</td>
+                  <td data-label="Study Title">{{ application.title }}</td>
+                  <td data-label="Applicant">{{ application.applicant.full_name }}</td>
+                  <td data-label="Status">
+                    {% if application.status == 'submitted' %}<span class="badge-tag orange">New</span>
+                    {% elif application.status == 'under_review' %}<span class="badge-tag blue">Under Review</span>
+                    {% elif application.status == 'revisions_required' %}<span class="badge-tag orange">Revisions Required</span>
+                    {% elif application.status == 'approved' %}<span class="badge-tag green">Approved</span>
+                    {% elif application.status == 'not_approved' %}<span class="badge-tag red">Not Approved</span>
+                    {% endif %}
+                  </td>
+                  <td data-label="Submitted"><span class="due-main">{{ application.submitted_at|date:"d M Y" }}</span></td>
+                  <td data-label="Action">
+                    <a class="action-btn" aria-label="View" href="{% url 'admin_dashboard:application_detail' application.pk %}">
+                      <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </a>
+                  </td>
                 </tr>
-                <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0108</td>
-                  <td data-label="Study Title">Adolescent Social Media Use and Sleep Quality</td>
-                  <td data-label="Applicant">Grace Adjei</td>
-                  <td data-label="Status"><span class="badge-tag purple">Full Committee</span></td>
-                  <td data-label="Submitted"><span class="due-main">20 May 2026</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
-                </tr>
-                <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0104</td>
-                  <td data-label="Study Title">Barriers to Antenatal Care Uptake Among Adolescent Mothers</td>
-                  <td data-label="Applicant">Ama Owusu</td>
-                  <td data-label="Status"><span class="badge-tag orange">Revisions Required</span></td>
-                  <td data-label="Submitted"><span class="due-main">18 May 2026</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
-                </tr>
-                <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0098</td>
-                  <td data-label="Study Title">Curriculum and Learning Outcomes in Rural Basic Schools</td>
-                  <td data-label="Applicant">Dr. Sarah Mensah</td>
-                  <td data-label="Status"><span class="badge-tag green">Approved</span></td>
-                  <td data-label="Submitted"><span class="due-main">12 May 2026</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
-                </tr>
-                <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0071</td>
-                  <td data-label="Study Title">Transcription and Qualitative Coding for Oral Health Study</td>
-                  <td data-label="Applicant">James Owusu-Ansah</td>
-                  <td data-label="Status"><span class="badge-tag red">Not Approved</span></td>
-                  <td data-label="Submitted"><span class="due-main">2 May 2026</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
-                </tr>
+                {% empty %}
+                <tr><td colspan="6" style="text-align:center; color:var(--text-faint); padding:24px 0;">No applications submitted yet.</td></tr>
+                {% endfor %}
               </tbody>
             </table>
           </div>
 
           <div class="panel-footer">
-            <span>Showing 1 to 5 of 312 entries</span>
-            <a href="#" class="panel-link">View all applications</a>
+            <span>Showing {{ recent_applications|length }} of {{ application_counts.all }} entries</span>
+            <a href="{% url 'admin_dashboard:applications' %}" class="panel-link">View all applications</a>
           </div>
         </section>
 

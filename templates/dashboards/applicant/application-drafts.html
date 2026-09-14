@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load static %}
 
 {% block title %}Draft Applications | MSREC{% endblock %}
 
@@ -152,16 +153,15 @@
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-            <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
-            <span>Ama Owusu</span>
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
             <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="dropdown-menu profile-menu" id="profileMenu">
             <div class="profile-menu-head">
-              <img src="https://i.pravatar.cc/80?img=47" alt="Ama Owusu">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
               <div>
-                <strong>Ama Owusu</strong>
-                <span>ama.owusu@metascholar.edu</span>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
               </div>
             </div>
             <a href="#" class="dropdown-item">
@@ -209,45 +209,34 @@
               </tr>
             </thead>
             <tbody>
+              {% for draft in drafts %}
               <tr>
-                <td data-label="Study Title">Nutrition Education Preferences Among Urban Caregivers</td>
-                <td data-label="Last Edited"><span class="due-main">14 May 2026</span></td>
+                <td data-label="Study Title">{{ draft.title }}</td>
+                <td data-label="Last Edited"><span class="due-main">{{ draft.updated_at|date:"d M Y" }}</span></td>
                 <td data-label="Completion">
-                  <div class="completion-wrap"><div class="completion-track"><div class="completion-fill" style="width:80%;"></div></div><span class="completion-pct">80%</span></div>
+                  <div class="completion-wrap"><div class="completion-track"><div class="completion-fill" style="width:{{ draft.completion_pct }}%;"></div></div><span class="completion-pct">{{ draft.completion_pct }}%</span></div>
                 </td>
                 <td data-label="Action" style="gap:6px; display:flex;">
-                  <button class="action-btn" aria-label="Continue editing"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></button>
-                  <button class="action-btn" aria-label="Delete draft"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+                  <a href="{% url 'applicant_dashboard:application_form' %}?draft={{ draft.pk }}" class="action-btn" aria-label="Continue editing"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></a>
+                  <form method="post" action="{% url 'applicant_dashboard:application_draft_delete' draft.pk %}" data-confirm="Delete the draft “{{ draft.title }}”? This cannot be undone." data-confirm-variant="danger" data-confirm-label="Delete" style="display:contents;">
+                    {% csrf_token %}
+                    <button type="submit" class="action-btn" aria-label="Delete draft"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+                  </form>
                 </td>
               </tr>
+              {% empty %}
               <tr>
-                <td data-label="Study Title">Perceptions of Telemedicine Adoption Among Rural Clinicians</td>
-                <td data-label="Last Edited"><span class="due-main">02 May 2026</span></td>
-                <td data-label="Completion">
-                  <div class="completion-wrap"><div class="completion-track"><div class="completion-fill" style="width:45%;"></div></div><span class="completion-pct">45%</span></div>
-                </td>
-                <td data-label="Action" style="gap:6px; display:flex;">
-                  <button class="action-btn" aria-label="Continue editing"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></button>
-                  <button class="action-btn" aria-label="Delete draft"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+                <td colspan="4" style="text-align:center; padding:32px 0; color:var(--text-sub);">
+                  No drafts yet — anything you start and don't finish is saved here automatically as you type.
                 </td>
               </tr>
-              <tr>
-                <td data-label="Study Title">Barriers to HPV Vaccine Uptake in Peri-Urban Secondary Schools</td>
-                <td data-label="Last Edited"><span class="due-main">20 Apr 2026</span></td>
-                <td data-label="Completion">
-                  <div class="completion-wrap"><div class="completion-track"><div class="completion-fill" style="width:15%;"></div></div><span class="completion-pct">15%</span></div>
-                </td>
-                <td data-label="Action" style="gap:6px; display:flex;">
-                  <button class="action-btn" aria-label="Continue editing"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></button>
-                  <button class="action-btn" aria-label="Delete draft"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
-                </td>
-              </tr>
+              {% endfor %}
             </tbody>
           </table>
         </div>
         <div class="panel-footer">
-          <span>Showing 1 to 3 of 3 entries</span>
+          <span>{% if drafts %}Showing 1 to {{ drafts|length }} of {{ drafts|length }} entries{% else %}No drafts to show{% endif %}</span>
         </div>
       </section>
-    
+
 {% endblock %}

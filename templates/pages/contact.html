@@ -70,7 +70,8 @@
           </div>
 
           <div class="col-lg-8">
-            <form action="#" method="post" class="php-email-form" id="contactPageForm" novalidate>
+            <form action="{% url 'pages:contact' %}" method="post" class="php-email-form" id="contactPageForm" novalidate>
+              {% csrf_token %}
               <div class="row gy-4">
 
                 <div class="col-md-6">
