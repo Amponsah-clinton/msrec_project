@@ -104,7 +104,7 @@ def render_email_html(*, heading, paragraphs, cta_text=None, cta_url=None,
                   </td>
                   <td style="vertical-align:middle;">
                     <div style="font-size:15px;font-weight:700;color:{NAVY};letter-spacing:.01em;line-height:1.3;">MSREC</div>
-                    <div style="font-size:11px;color:{TEXT_FAINT};line-height:1.3;">MetaScholar Research Ethics Committee</div>
+                    <div style="font-size:11px;color:{TEXT_FAINT};line-height:1.3;">Metascholar Research Ethics Committee</div>
                   </td>
                 </tr>
               </table>
@@ -124,7 +124,7 @@ def render_email_html(*, heading, paragraphs, cta_text=None, cta_url=None,
           <!-- Footer -->
           <tr>
             <td style="padding:20px 32px 28px;border-top:1px solid {BORDER};">
-              <p style="margin:0 0 4px;font-size:12.5px;color:{TEXT_SUB};">MetaScholar Research Ethics Committee (MSREC)</p>
+              <p style="margin:0 0 4px;font-size:12.5px;color:{TEXT_SUB};">Metascholar Research Ethics Committee (MSREC)</p>
               <p style="margin:0;font-size:12px;color:{TEXT_FAINT};">This is an automated message &mdash; please don't reply directly to this email. For help, contact <a href="mailto:msrec@metascholar.edu" style="color:{TEAL_DARK};text-decoration:none;">msrec@metascholar.edu</a>.</p>
             </td>
           </tr>

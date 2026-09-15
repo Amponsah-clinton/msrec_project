@@ -14,7 +14,7 @@ urlpatterns = [
     path("ethics-review/", TemplateView.as_view(template_name="pages/ethics_review.html"), name="ethics_review"),
     path("resources/", TemplateView.as_view(template_name="pages/resources.html"), name="resources"),
     path("governance/", TemplateView.as_view(template_name="pages/governance.html"), name="governance"),
-    path("board-committee/", TemplateView.as_view(template_name="pages/board_committee.html"), name="board_committee"),
+    path("board-committee/", views.board_committee, name="board_committee"),
     path("verify/", TemplateView.as_view(template_name="pages/verify.html"), name="verify"),
     path("contact/", views.contact, name="contact"),
     path("apply/", TemplateView.as_view(template_name="pages/apply.html"), name="apply"),

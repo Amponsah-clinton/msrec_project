@@ -1,0 +1,45 @@
+/* ==========================================================
+   MSREC Admin — Board & Committee
+   Same flat, token-driven language as the rest of the dashboard.
+========================================================== */
+
+.bc-admin-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.bc-edit-current-photo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+}
+.bc-edit-current-photo img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.bc-edit-current-photo span { font-size: 12px; color: var(--text-sub); }
+
+.bc-edit-active-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+.bc-edit-active-toggle input { width: 16px; height: 16px; accent-color: var(--teal); cursor: pointer; }
+
+@media (max-width: 640px) {
+  .bc-admin-toolbar { flex-direction: column; align-items: stretch; }
+}

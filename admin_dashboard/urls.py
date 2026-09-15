@@ -21,4 +21,10 @@ urlpatterns = [
     path("messages/", messaging_views.admin_messages, name="messages"),
     path("messages/<int:conversation_id>/poll/", messaging_views.admin_messages_poll, name="messages_poll"),
     path("messages/<int:conversation_id>/send/", messaging_views.admin_messages_send, name="messages_send"),
+    path("reports/", views.reports_analytics, name="reports_analytics"),
+    path("reports/export/", views.reports_analytics_export, name="reports_analytics_export"),
+    path("access-security/", views.access_security, name="access_security"),
+    path("profile-security/", views.profile_security, name="profile_security"),
+    path("help-support/", views.help_support, name="help_support"),
+    path("board-committee/", views.board_committee, name="board_committee"),
 ]

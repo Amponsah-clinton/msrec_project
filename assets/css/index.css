@@ -145,3 +145,21 @@
   .about-simple-facts li { font-size: 12px; padding: 8px 13px; }
   .about-simple-badge { position: static; margin-top: 16px; display: inline-flex; }
 }
+
+/* ---------------- Hero image ----------------
+   Bigger than its column on large screens (a deliberate "breakout" past
+   the col-lg-5 edge), hidden entirely below lg -- on a small screen the
+   text/CTA matter more than a large decorative photo pushed above them
+   by order-1. */
+@media (min-width: 992px) {
+  .hero-img.img-fluid {
+    max-width: 140%;
+    width: 140%;
+  }
+}
+
+@media (max-width: 991.98px) {
+  .hero-img.img-fluid {
+    display: none;
+  }
+}

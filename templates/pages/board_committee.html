@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Board &amp; Committee - MSREC | MetaScholar Research Ethics Committee{% endblock %}
+{% block title %}Board &amp; Committee - MSREC | Metascholar Research Ethics Committee{% endblock %}
 {% block description %}MSREC's Board structure and responsibilities, Committee composition, member profiles, the Secretariat, and meeting arrangements.{% endblock %}
 {% block body_class %}bc-page{% endblock %}
 {% block fonts %}<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">{% endblock %}
@@ -22,8 +22,8 @@
           <p>MSREC separates institutional governance from protocol-specific ethical decision-making, so no single person or body can direct an outcome. Here's exactly how the Board, Committee and Secretariat are composed, what each is responsible for, and how they meet.</p>
 
           <dl class="bc-stats-row">
-            <div class="bc-stat"><dt>3</dt><dd>Board members</dd></div>
-            <div class="bc-stat"><dt>7</dt><dd>Committee reviewers</dd></div>
+            <div class="bc-stat"><dt>{{ counts.board }}</dt><dd>Board members</dd></div>
+            <div class="bc-stat"><dt>{{ counts.committee }}</dt><dd>Committee reviewers</dd></div>
             <div class="bc-stat"><dt>7</dt><dd>Disciplines represented</dd></div>
             <div class="bc-stat"><dt>12</dt><dd>Meetings a year</dd></div>
           </dl>
@@ -60,10 +60,10 @@
 
         <div class="bc-structure-grid">
           <div class="bc-structure-copy">
-            <p>MetaScholar Limited's Board provides institutional governance for MSREC &mdash; legal standing, financial stewardship, appointments and resourcing. It has no authority to direct, review or reverse a protocol-specific ethics decision; that authority sits entirely with the Committee.</p>
+            <p>Metascholar Limited's Board provides institutional governance for MSREC &mdash; legal standing, financial stewardship, appointments and resourcing. It has no authority to direct, review or reverse a protocol-specific ethics decision; that authority sits entirely with the Committee.</p>
             <dl class="bc-fact-list">
               <div><dt>Chairperson</dt><dd>Elected by the Board from among its independent members</dd></div>
-              <div><dt>Composition</dt><dd>3 members, a majority of whom are independent of MetaScholar management</dd></div>
+              <div><dt>Composition</dt><dd>3 members, a majority of whom are independent of Metascholar management</dd></div>
               <div><dt>Term length</dt><dd>3 years, renewable once</dd></div>
               <div><dt>Appointment</dt><dd>Board appoints and reappoints Committee members and the Committee Chairperson</dd></div>
             </dl>
@@ -100,7 +100,7 @@
           <div class="bc-resp-card">
             <span class="bc-resp-icon"><i class="bi bi-shield-check"></i></span>
             <h4>Institutional Governance</h4>
-            <p>Holds legal, financial and reputational responsibility for MSREC's operation within MetaScholar Limited.</p>
+            <p>Holds legal, financial and reputational responsibility for MSREC's operation within Metascholar Limited.</p>
           </div>
           <div class="bc-resp-card">
             <span class="bc-resp-icon"><i class="bi bi-person-plus"></i></span>
@@ -183,98 +183,27 @@
         </div>
 
         <div class="bc-people-filter" id="bcPeopleFilter">
-          <button type="button" class="bc-filter-btn is-active" data-group="all">All <span>13</span></button>
-          <button type="button" class="bc-filter-btn" data-group="board">Board <span>3</span></button>
-          <button type="button" class="bc-filter-btn" data-group="committee">Committee <span>7</span></button>
-          <button type="button" class="bc-filter-btn" data-group="secretariat">Secretariat <span>3</span></button>
+          <button type="button" class="bc-filter-btn is-active" data-group="all">All <span>{{ counts.all }}</span></button>
+          <button type="button" class="bc-filter-btn" data-group="board">Board <span>{{ counts.board }}</span></button>
+          <button type="button" class="bc-filter-btn" data-group="committee">Committee <span>{{ counts.committee }}</span></button>
+          <button type="button" class="bc-filter-btn" data-group="secretariat">Secretariat <span>{{ counts.secretariat }}</span></button>
         </div>
 
         <div class="bc-people-grid" id="bcPeopleGrid">
-
-          <!-- Board -->
-          <div class="bc-person" data-group="board">
-            <span class="bc-avatar" style="--av-bg:#2a4747;">KA</span>
-            <h4>Prof. Kojo Antwi-Boateng</h4>
-            <span class="bc-person-role">Board Chairperson</span>
-            <span class="bc-person-tag">Governance &amp; Higher Education</span>
+          {% for member in members %}
+          <div class="bc-person" data-group="{{ member.group }}">
+            {% if member.photo_url %}
+            <span class="bc-avatar bc-avatar-photo"><img src="{{ member.photo_url }}" alt="{{ member.full_name }}" loading="lazy"></span>
+            {% else %}
+            <span class="bc-avatar" style="--av-bg:{{ member.avatar_color }};">{{ member.initials }}</span>
+            {% endif %}
+            <h4>{{ member.full_name }}</h4>
+            <span class="bc-person-role">{{ member.role_title }}</span>
+            {% if member.tag %}<span class="bc-person-tag">{{ member.tag }}</span>{% endif %}
           </div>
-          <div class="bc-person" data-group="board">
-            <span class="bc-avatar" style="--av-bg:#7a4fb5;">ED</span>
-            <h4>Mrs. Efua Darko-Mensah</h4>
-            <span class="bc-person-role">Board Vice-Chair</span>
-            <span class="bc-person-tag">Finance &amp; Administration</span>
-          </div>
-          <div class="bc-person" data-group="board">
-            <span class="bc-avatar" style="--av-bg:#2f5fa8;">YS</span>
-            <h4>Mr. Yaw Sarpong</h4>
-            <span class="bc-person-role">Independent Board Member</span>
-            <span class="bc-person-tag">Legal &amp; Compliance</span>
-          </div>
-
-          <!-- Committee -->
-          <div class="bc-person" data-group="committee">
-            <span class="bc-avatar" style="--av-bg:#1f7a5c;">MO</span>
-            <h4>Prof. Michael Osei-Frimpong</h4>
-            <span class="bc-person-role">Committee Chairperson</span>
-            <span class="bc-person-tag">Health &amp; Biomedical Science</span>
-          </div>
-          <div class="bc-person" data-group="committee">
-            <span class="bc-avatar" style="--av-bg:#d97b29;">AF</span>
-            <h4>Dr. Abena Fosu-Ackah</h4>
-            <span class="bc-person-role">Committee Vice-Chairperson</span>
-            <span class="bc-person-tag">Social &amp; Behavioral Science</span>
-          </div>
-          <div class="bc-person" data-group="committee">
-            <span class="bc-avatar" style="--av-bg:#2f5fa8;">SN</span>
-            <h4>Dr. Samuel Nkrumah-Boateng</h4>
-            <span class="bc-person-role">Committee Member</span>
-            <span class="bc-person-tag">Methodology &amp; Biostatistics</span>
-          </div>
-          <div class="bc-person" data-group="committee">
-            <span class="bc-avatar" style="--av-bg:#7a4fb5;">CA</span>
-            <h4>Barr. Comfort Aidoo</h4>
-            <span class="bc-person-role">Committee Member</span>
-            <span class="bc-person-tag">Law, Data Protection &amp; Privacy</span>
-          </div>
-          <div class="bc-person" data-group="committee">
-            <span class="bc-avatar" style="--av-bg:#c0392b;">IA</span>
-            <h4>Rev. Dr. Isaac Amponsah</h4>
-            <span class="bc-person-role">Committee Member</span>
-            <span class="bc-person-tag">Ethics &amp; Bioethics</span>
-          </div>
-          <div class="bc-person" data-group="committee">
-            <span class="bc-avatar" style="--av-bg:#196D8A;">GT</span>
-            <h4>Madam Grace Tetteh</h4>
-            <span class="bc-person-role">Committee Member</span>
-            <span class="bc-person-tag">Lay / Community Representative</span>
-          </div>
-          <div class="bc-person" data-group="committee">
-            <span class="bc-avatar" style="--av-bg:#1f7a5c;">EK</span>
-            <h4>Dr. Elorm Kudjordji</h4>
-            <span class="bc-person-role">Independent External Member</span>
-            <span class="bc-person-tag">Data Science &amp; AI</span>
-          </div>
-
-          <!-- Secretariat -->
-          <div class="bc-person" data-group="secretariat">
-            <span class="bc-avatar" style="--av-bg:#2a4747;">AB</span>
-            <h4>Ms. Adjoa Boakye</h4>
-            <span class="bc-person-role">Head of Secretariat / Ethics Officer</span>
-            <span class="bc-person-tag">Secretariat</span>
-          </div>
-          <div class="bc-person" data-group="secretariat">
-            <span class="bc-avatar" style="--av-bg:#d97b29;">NQ</span>
-            <h4>Mr. Nathaniel Quarshie</h4>
-            <span class="bc-person-role">Administrative &amp; Records Coordinator</span>
-            <span class="bc-person-tag">Secretariat</span>
-          </div>
-          <div class="bc-person" data-group="secretariat">
-            <span class="bc-avatar" style="--av-bg:#2f5fa8;">PO</span>
-            <h4>Ms. Priscilla Owusu-Ansah</h4>
-            <span class="bc-person-role">Applicant Support Officer</span>
-            <span class="bc-person-tag">Secretariat</span>
-          </div>
-
+          {% empty %}
+          <p class="bc-people-empty">Member profiles will appear here once the Secretariat adds them.</p>
+          {% endfor %}
         </div>
       </section>
 

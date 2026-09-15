@@ -1,0 +1,317 @@
+/* ---------------------------------------------------
+   MSREC Admin Settings
+   Reports & Analytics / Access & Security / Profile & Security / Help & Support
+   Flat design only -- no gradients anywhere in this file, matching
+   style.css's own "no gradients, no colored card edges" house rule.
+   Scoped under .ad-scope so nothing here leaks into other dashboards.
+--------------------------------------------------- */
+
+.ad-scope {
+  --ad-font: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.ad-scope h1, .ad-scope h2, .ad-scope h3, .ad-scope h4,
+.ad-scope .page-head-text h2,
+.ad-scope .ad-kpi-value,
+.ad-scope .ad-meter-value {
+  font-family: var(--ad-font);
+  letter-spacing: -0.01em;
+}
+
+/* ---------------- Segmented settings tabs (flat, solid active state) ---------------- */
+
+.ad-subnav {
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  margin: 0 0 22px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  box-shadow: var(--shadow);
+}
+
+.ad-subnav a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-sub);
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.ad-subnav a svg { width: 16px; height: 16px; flex-shrink: 0; }
+.ad-subnav a:hover { color: var(--text-main); background: var(--hover-bg); }
+.ad-subnav a.active { color: #fff; background: var(--navy); }
+
+@media (max-width: 560px) {
+  .ad-subnav { width: 100%; }
+  .ad-subnav a { flex: 1; justify-content: center; padding: 9px 8px; }
+  .ad-subnav a span.ad-tab-label { display: none; }
+}
+
+/* ---------------- Card stack: one topic per card ---------------- */
+
+.ad-card-stack { display: flex; flex-direction: column; gap: 22px; }
+
+.ad-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.ad-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.ad-card-header .ad-ico {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ad-card-header .ad-ico svg { width: 18px; height: 18px; }
+.ad-card-header-text { padding-top: 2px; }
+.ad-card-header-text h3 {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.ad-card-header-text p { margin: 3px 0 0; font-size: 12.5px; color: var(--text-sub); line-height: 1.5; }
+
+.ad-card-header-action { margin-left: auto; flex-shrink: 0; }
+
+.ad-card-body { padding: 24px; }
+
+.ad-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 24px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.ad-ico.blue   { background: var(--blue-light);   color: var(--blue); }
+.ad-ico.green  { background: var(--green-light);  color: var(--green); }
+.ad-ico.purple { background: var(--purple-light); color: var(--purple); }
+.ad-ico.teal   { background: var(--teal-light);   color: var(--teal); }
+.ad-ico.orange { background: var(--orange-light); color: var(--orange); }
+.ad-ico.red    { background: var(--red-light);    color: var(--red); }
+.ad-ico.navy   { background: var(--navy);         color: #fff; }
+.ad-ico.gray   { background: var(--gray-light);   color: var(--gray); }
+
+@media (max-width: 480px) {
+  .ad-card-header { padding: 18px; flex-wrap: wrap; }
+  .ad-card-body { padding: 18px; }
+  .ad-card-actions { padding: 14px 18px; }
+}
+
+/* ---------------- KPI strip ---------------- */
+
+.ad-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.ad-kpi {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px 18px;
+  text-align: center;
+}
+.ad-kpi-top { display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+.ad-kpi-top .ad-ico { width: 52px; height: 52px; border-radius: 15px; }
+.ad-kpi-top .ad-ico svg { width: 24px; height: 24px; }
+.ad-kpi-value { font-size: 25px; font-weight: 800; margin: 0; color: var(--text-main); }
+.ad-kpi-label { margin: 3px 0 0; font-size: 12.5px; color: var(--text-sub); font-weight: 500; }
+
+@media (max-width: 900px) { .ad-kpi-strip { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 420px) { .ad-kpi-strip { grid-template-columns: 1fr; } }
+
+/* ---------------- Flat bar breakdown (replaces a pie/donut chart) ---------------- */
+
+.ad-bar-list { display: flex; flex-direction: column; gap: 16px; }
+.ad-bar-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+}
+.ad-bar-row-head .ad-bar-label { font-weight: 600; color: var(--text-main); }
+.ad-bar-row-head .ad-bar-meta { color: var(--text-sub); font-family: "JetBrains Mono", monospace; font-size: 11.5px; }
+.ad-bar-track {
+  height: 9px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.ad-bar-fill { height: 100%; border-radius: 999px; background: var(--teal); }
+.ad-bar-fill.blue   { background: var(--blue); }
+.ad-bar-fill.green  { background: var(--green); }
+.ad-bar-fill.purple { background: var(--purple); }
+.ad-bar-fill.orange { background: var(--orange); }
+.ad-bar-fill.red    { background: var(--red); }
+.ad-bar-fill.navy   { background: var(--navy); }
+.ad-bar-fill.gray   { background: var(--gray); }
+
+/* ---------------- Flat capsule meter (replaces a donut/ring chart) ---------------- */
+
+.ad-meter-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.ad-meter-row:last-child { border-bottom: none; padding-bottom: 0; }
+.ad-meter-row:first-child { padding-top: 0; }
+.ad-meter-text { flex: 1; min-width: 0; }
+.ad-meter-text strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+.ad-meter-text span { font-size: 12px; color: var(--text-sub); }
+.ad-meter-figure { flex-shrink: 0; width: 160px; }
+.ad-meter-figure .ad-bar-track { height: 8px; margin-bottom: 6px; }
+.ad-meter-value { font-size: 13px; font-weight: 700; text-align: right; color: var(--text-main); }
+
+@media (max-width: 560px) {
+  .ad-meter-row { flex-wrap: wrap; }
+  .ad-meter-figure { width: 100%; }
+}
+
+/* ---------------- Month-by-month flat column chart ---------------- */
+
+.ad-cols {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 140px;
+  padding-top: 10px;
+}
+.ad-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8px; height: 100%; justify-content: flex-end; }
+.ad-col-bar {
+  width: 100%;
+  max-width: 34px;
+  border-radius: 6px 6px 0 0;
+  background: var(--teal-light);
+  position: relative;
+  min-height: 3px;
+}
+.ad-col-bar::before {
+  content: attr(data-value);
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-sub);
+  font-family: "JetBrains Mono", monospace;
+  white-space: nowrap;
+}
+.ad-col-fill { position: absolute; inset: 0; border-radius: 6px 6px 0 0; background: var(--teal); }
+.ad-col-label { font-size: 11px; color: var(--text-faint); font-weight: 600; }
+
+/* ---------------- 2FA / method cards (flat) ---------------- */
+
+.ad-method-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.ad-method-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--white);
+}
+.ad-method-card.is-on { border-color: color-mix(in srgb, var(--teal) 40%, transparent); background: var(--teal-light); }
+.ad-method-top { display: flex; align-items: center; justify-content: space-between; }
+.ad-method-card h4 { margin: 0; font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+.ad-method-card p { margin: 0; font-size: 12px; color: var(--text-sub); line-height: 1.5; flex: 1; }
+.ad-method-status { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+.ad-method-status.on  { background: var(--green); color: #fff; }
+.ad-method-status.off { background: var(--gray-light); color: var(--text-sub); }
+
+@media (max-width: 900px) { .ad-method-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .ad-method-grid { grid-template-columns: 1fr; } }
+
+/* ---------------- Role / access pill grid ---------------- */
+
+.ad-role-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+.ad-role-card {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: center;
+}
+.ad-role-card strong { display: block; font-size: 22px; font-weight: 800; color: var(--text-main); }
+.ad-role-card span { font-size: 11.5px; font-weight: 600; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.03em; }
+
+/* ---------------- Session rows use the shared .session-row / .session-icon
+   classes from style.css directly -- no new component needed. Only the
+   icon tint varies per device type via inline style, same as elsewhere. */
+
+/* ---------------- Activity timeline (flat) ---------------- */
+
+.ad-timeline { position: relative; padding-left: 6px; }
+.ad-tl-item {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  padding: 0 0 20px 22px;
+  border-left: 2px solid var(--border);
+}
+.ad-tl-item:last-child { border-color: transparent; padding-bottom: 0; }
+.ad-tl-dot {
+  position: absolute;
+  left: -7px;
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--white);
+  background: var(--green);
+}
+.ad-tl-item.warn .ad-tl-dot { background: var(--orange); }
+.ad-tl-body { flex: 1; }
+.ad-tl-body strong { display: block; font-size: 13px; font-weight: 700; color: var(--text-main); }
+.ad-tl-body span.ad-tl-meta { display: block; font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+.ad-tl-time { font-size: 11.5px; color: var(--text-faint); white-space: nowrap; flex-shrink: 0; }
+
+/* ---------------- Empty state within a card body ---------------- */
+
+.ad-empty {
+  text-align: center;
+  padding: 32px 16px;
+  color: var(--text-sub);
+}
+.ad-empty svg { width: 32px; height: 32px; color: var(--text-faint); margin-bottom: 10px; }
+.ad-empty p { margin: 0; font-size: 12.5px; line-height: 1.6; max-width: 40ch; margin-inline: auto; }

@@ -99,19 +99,10 @@
         </div>
       </div>
 
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
-          <span>Finance</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="{% url 'secretariat_dashboard:finance' %}" class="nav-sublink">All Payments</a>
-          <a href="{% url 'secretariat_dashboard:finance' %}?tab=success" class="nav-sublink">Successful</a>
-          <a href="{% url 'secretariat_dashboard:finance' %}?tab=pending" class="nav-sublink">Pending</a>
-          <a href="{% url 'secretariat_dashboard:finance' %}?tab=failed" class="nav-sublink">Failed</a>
-        </div>
-      </div>
+      <a href="{% url 'secretariat_dashboard:finance' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+        <span>Finance</span>
+      </a>
 
       <div class="nav-group">
         <button type="button" class="nav-group-toggle" aria-expanded="false">
