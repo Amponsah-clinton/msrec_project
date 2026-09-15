@@ -5,11 +5,15 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
 from django.http import JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import User
 from accounts.sessions import active_sessions_for
+from applicant_dashboard import storage as application_storage
+from notifications.models import Notification
+from notifications.services import notify
 
 from . import storage
 from .models import ReviewAssignment
@@ -137,6 +141,82 @@ def my_reviews_counts(request):
     without a page reload -- e.g. the Secretariat assigns a new review
     while this page is already open."""
     return JsonResponse(_counts(_assignments_for(request.user)))
+
+
+@login_required
+@reviewer_required
+def respond_to_assignment(request):
+    """A reviewer's Accept/Decline on a brand-new assignment. Declining
+    doesn't get silently absorbed anywhere: it flips the row to
+    Status.DECLINED (which drops it out of _assignments_for and this
+    reviewer's tabs for good), and that same status change is exactly
+    what secretariat_dashboard._open_assignments()/_needs_assignment_qs()
+    read to put the application back on the Assign Reviewer tab as
+    needing a (new) reviewer -- plus an explicit in-app Notification so
+    the Secretariat isn't left to infer "declined" from an application
+    quietly reappearing in the unassigned list."""
+    tab = request.POST.get("tab", "new") if request.method == "POST" else "new"
+    redirect_url = f"{reverse('reviewer_dashboard:my_reviews')}?tab={tab}"
+    if request.method != "POST":
+        return redirect(redirect_url)
+
+    action = request.POST.get("action")
+    assignment_id = request.POST.get("assignment_id", "")
+    if action not in {"accept", "decline"} or not assignment_id.isdigit():
+        messages.error(request, "That request could not be processed.")
+        return redirect(redirect_url)
+
+    assignment = get_object_or_404(
+        ReviewAssignment.objects.select_related("application", "reviewer"),
+        pk=assignment_id, reviewer=request.user, status=ReviewAssignment.Status.NEW,
+    )
+    ref = assignment.application.reference_no or assignment.application.title
+
+    if action == "accept":
+        assignment.status = ReviewAssignment.Status.ACCEPTED
+        assignment.accepted_at = timezone.now()
+        assignment.save(update_fields=["status", "accepted_at"])
+        messages.success(request, f"You've accepted the review for {ref}. It's now in your Accepted tab.")
+    else:
+        assignment.status = ReviewAssignment.Status.DECLINED
+        assignment.declined_at = timezone.now()
+        assignment.save(update_fields=["status", "declined_at"])
+        notify(
+            Notification.Audience.SECRETARIAT,
+            f"{request.user.full_name} declined the review for {ref} -- it needs a new reviewer.",
+            icon=Notification.Icon.WARN,
+            link_url_name="secretariat_dashboard:reviewer_assignment",
+        )
+        messages.success(request, f"You've declined the review for {ref}. The Secretariat has been notified.")
+
+    return redirect(redirect_url)
+
+
+@login_required
+@reviewer_required
+def review_application(request, assignment_id):
+    """Read-only view of the application's own text (Research Information,
+    PI details, documents, every submitted answer) for a reviewer who has
+    accepted the assignment -- the "Review" button only appears once
+    accepted, and this checks that server-side too rather than trusting
+    the button was actually hidden: a still-New or already-Declined
+    assignment 404s here, same as pk-scoping to `reviewer=request.user`
+    keeps one reviewer from opening another's assignment by guessing an id."""
+    assignment = get_object_or_404(
+        ReviewAssignment.objects.select_related("application", "application__applicant"),
+        pk=assignment_id, reviewer=request.user,
+        status__in=[ReviewAssignment.Status.ACCEPTED, ReviewAssignment.Status.COMPLETED],
+    )
+    application = assignment.application
+    documents = [
+        {**doc, "url": application_storage.public_url(doc.get("path"))}
+        for doc in (application.documents or [])
+    ]
+    return render(request, "dashboards/reviewer/review-application.html", {
+        "assignment": assignment,
+        "application": application,
+        "documents": documents,
+    })
 
 
 # ---------------------------------------------------------------------

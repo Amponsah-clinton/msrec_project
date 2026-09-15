@@ -43,6 +43,7 @@ class ReviewAssignment(models.Model):
 
     assigned_at = models.DateTimeField(auto_now_add=True)
     accepted_at = models.DateTimeField(null=True, blank=True)
+    declined_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
     recommendation = models.CharField(max_length=30, choices=Recommendation.choices, blank=True)

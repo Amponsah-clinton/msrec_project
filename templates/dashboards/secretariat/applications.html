@@ -250,8 +250,8 @@
 
         <div class="app-card-grid" id="secAppsList">
           {% for application in all_applications %}
-          <a href="{% url 'secretariat_dashboard:application_detail' application.pk %}"
-             class="app-card" data-filter-item data-filter="{{ application.tab }}"
+          <div class="app-card" data-card-href="{% url 'secretariat_dashboard:application_detail' application.pk %}"
+             data-filter-item data-filter="{{ application.tab }}"
              data-search="{{ application.reference_no|lower }} {{ application.title|lower }} {{ application.applicant.full_name|lower }}"
              {% if active_tab != 'all' and application.tab != active_tab %}hidden{% endif %}>
             <div class="app-card-top">
@@ -274,9 +274,65 @@
               <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12"/><circle cx="6" cy="18" r="3"/><circle cx="6" cy="3" r="3"/><path d="M6 9a9 9 0 0 0 9 9"/></svg>{{ application.review_type|default:"No pathway requested" }}</span>
             </div>
             <div class="app-card-foot">
-              <span class="app-card-view">View Application <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+              <button type="button" class="reviewer-stage-btn" data-open-modal="reviewerStage-{{ application.pk }}" title="Reviewer &amp; stage details">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M19 8v6M22 11h-6"/></svg>
+                Reviewer &amp; Stage
+              </button>
+              <a href="{% url 'secretariat_dashboard:application_detail' application.pk %}" class="app-card-view">View Application <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
             </div>
-          </a>
+          </div>
+
+          <!-- REVIEWER & STAGE MODAL -->
+          <div class="acct-modal-overlay reviewer-stage-overlay" id="reviewerStage-{{ application.pk }}" hidden data-modal-overlay>
+            <div class="acct-modal">
+              <div class="acct-modal-head">
+                <h3>{{ application.reference_no|default:application.title }}</h3>
+                <button type="button" class="icon-btn" data-modal-close aria-label="Close">
+                  <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <div class="acct-modal-body">
+                <div class="stage-row">
+                  <span class="field-hint">Exact stage</span>
+                  <span class="badge-tag {% if application.tab == 'submitted' %}orange{% elif application.tab == 'under_review' %}blue{% elif application.tab == 'revisions' %}red{% elif application.tab == 'approved' %}green{% elif application.tab == 'not_approved' %}red{% endif %}">{{ application.get_status_display }}</span>
+                </div>
+
+                {% for a in application.assignments %}
+                <div class="reviewer-stage-row">
+                  <div class="reviewer-stage-who">
+                    <span class="acct-avatar cat-reviewers">{{ a.reviewer.initials }}</span>
+                    <div>
+                      <strong>{{ a.reviewer.full_name }}</strong>
+                      {% if a.status == 'new' %}<span class="badge-tag orange">New</span>
+                      {% elif a.status == 'accepted' %}<span class="badge-tag blue">Accepted</span>
+                      {% elif a.status == 'declined' %}<span class="badge-tag red">Declined</span>
+                      {% elif a.status == 'completed' %}<span class="badge-tag green">Completed</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                  {% if a.status == 'declined' %}
+                  <p class="field-hint" style="margin:0;">Declined -- assign a different reviewer from Reviewer Assignment.</p>
+                  {% else %}
+                  <form method="post" action="{% url 'secretariat_dashboard:set_reviewer_deadline' %}" class="reviewer-stage-deadline">
+                    {% csrf_token %}
+                    <input type="hidden" name="assignment_id" value="{{ a.pk }}">
+                    <input type="hidden" name="tab" value="{{ active_tab }}">
+                    <label>
+                      <span class="field-hint">Deadline</span>
+                      <input type="date" name="due_date" value="{{ a.due_date|date:'Y-m-d' }}">
+                    </label>
+                    <button type="submit" class="acct-btn acct-btn-edit">Save</button>
+                  </form>
+                  {% endif %}
+                </div>
+                {% empty %}
+                <p class="field-hint" style="margin:0;">
+                  No reviewer assigned yet. <a href="{% url 'secretariat_dashboard:reviewer_assignment' %}">Assign one from Reviewer Assignment &rarr;</a>
+                </p>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
           {% empty %}
           <div class="empty-state">
             <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span>

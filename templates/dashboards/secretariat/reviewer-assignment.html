@@ -260,6 +260,12 @@
                     <span>&middot;</span>
                     <span>Submitted {{ application.submitted_at|date:"d M Y" }}</span>
                   </div>
+                  {% if application.recent_declines %}
+                  <div class="declined-note">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+                    Declined by {% for d in application.recent_declines %}{{ d.reviewer.full_name }}{% if not forloop.last %}, {% endif %}{% endfor %} &mdash; needs a new reviewer
+                  </div>
+                  {% endif %}
                 </div>
                 <form method="post" class="assign-card-form" data-assign-form>
                   {% csrf_token %}
@@ -305,7 +311,7 @@
                   {% elif assignment.tab_value == 'accepted' %}<span class="badge-tag blue">Accepted</span>
                   {% elif assignment.tab_value == 'due_overdue' %}<span class="badge-tag red">Due / Overdue</span>
                   {% endif %}
-                  {% if assignment.due_date %}<span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Due {{ assignment.due_date|date:"d M Y" }}</span>{% endif %}
+                  {% if assignment.due_date %}<span class="due-meta"><svg class="due-meta-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Due {{ assignment.due_date|date:"d M Y" }}</span>{% endif %}
                   <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Assigned {{ assignment.assigned_at|date:"d M Y" }}</span>
                 </div>
                 {% if assignment.status == 'new' %}

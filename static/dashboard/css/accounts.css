@@ -172,6 +172,7 @@
   background: var(--surface, #fff);
   text-decoration: none;
   color: inherit;
+  cursor: pointer;
   transition: box-shadow .15s, border-color .15s, transform .15s;
 }
 .app-card:hover {
@@ -226,12 +227,86 @@
   font-size: 12px;
   font-weight: 600;
   color: var(--teal);
+  text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 4px;
 }
 .app-card-view svg { width: 14px; height: 14px; transition: transform .15s; }
 .app-card:hover .app-card-view svg { transform: translateX(2px); }
+
+.reviewer-stage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text-sub);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .15s, color .15s, background-color .15s;
+}
+.reviewer-stage-btn:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-light); }
+.reviewer-stage-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+/* ---------------- Reviewer & Stage modal (Applications list) ---------------- */
+.stage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.reviewer-stage-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+.reviewer-stage-who { display: flex; align-items: center; gap: 10px; }
+.reviewer-stage-who strong { display: block; font-size: 13px; font-weight: 700; color: var(--text-main); margin-bottom: 3px; }
+.reviewer-stage-deadline { display: flex; align-items: flex-end; gap: 8px; }
+.reviewer-stage-deadline label { display: flex; flex-direction: column; gap: 4px; }
+.reviewer-stage-deadline input[type="date"] {
+  padding: 7px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: var(--white);
+}
+.reviewer-stage-deadline input[type="date"]:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+
+/* ---------------- New-assignment Accept/Decline ---------------- */
+.assignment-response { gap: 8px; }
+.assignment-response form { flex: 1; display: flex; }
+.decline-btn, .accept-btn {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color .15s, background-color .15s, color .15s;
+}
+.decline-btn { background: var(--white, #fff); color: var(--text-sub); }
+.decline-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+.accept-btn { background: var(--teal); border-color: var(--teal); color: #fff; }
+.accept-btn:hover { background: #128581; }
+.accept-btn svg { width: 14px; height: 14px; }
 
 /* ---------------- Account rows ---------------- */
 .acct-list { display: flex; flex-direction: column; }

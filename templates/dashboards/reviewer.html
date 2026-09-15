@@ -246,10 +246,10 @@
         </div>
         <div class="urgent-due">
           <span class="due-label">Due Date</span>
-          <span class="due-date">{{ urgent_assignment.due_date|date:"d M Y" }}</span>
+          <span class="due-date due-meta"><svg class="due-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>{{ urgent_assignment.due_date|date:"d M Y" }}</span>
           <span class="due-days">{% if urgent_assignment.days_remaining < 0 %}({{ urgent_assignment.days_overdue }} day{{ urgent_assignment.days_overdue|pluralize }} overdue){% else %}({{ urgent_assignment.days_remaining }} day{{ urgent_assignment.days_remaining|pluralize }} remaining){% endif %}</span>
         </div>
-        <a href="{% url 'reviewer_dashboard:my_reviews' %}" class="btn btn-danger">Start Review</a>
+        <a href="{% url 'reviewer_dashboard:review_application' urgent_assignment.pk %}" class="btn btn-danger">Start Review</a>
       </section>
       {% endif %}
 
@@ -282,13 +282,36 @@
                   <td data-label="Category"><span class="badge-tag blue">{{ assignment.application.review_type|default:"General Review" }}</span></td>
                   <td data-label="Due Date">
                     {% if assignment.due_date %}
-                    <span class="due-main">{{ assignment.due_date|date:"d M Y" }}</span>
+                    <span class="due-main due-meta"><svg class="due-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>{{ assignment.due_date|date:"d M Y" }}</span>
                     <span class="due-sub {{ assignment.due_urgency }}">{% if assignment.days_remaining < 0 %}({{ assignment.days_overdue }} day{{ assignment.days_overdue|pluralize }} overdue){% else %}({{ assignment.days_remaining }} day{{ assignment.days_remaining|pluralize }}){% endif %}</span>
                     {% else %}
                     <span class="due-sub muted">No due date yet</span>
                     {% endif %}
                   </td>
-                  <td data-label="Action"><a href="{% url 'reviewer_dashboard:my_reviews' %}" class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></a></td>
+                  <td data-label="Action">
+                    {% if assignment.tab_value == 'new' %}
+                    <div class="action-btn-group">
+                      <form method="post" action="{% url 'reviewer_dashboard:respond_to_assignment' %}" onsubmit="return confirm('Decline this review? It will go back to the Secretariat to reassign.');">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="decline">
+                        <input type="hidden" name="assignment_id" value="{{ assignment.pk }}">
+                        <input type="hidden" name="tab" value="new">
+                        <button type="submit" class="action-btn danger" aria-label="Decline"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                      </form>
+                      <form method="post" action="{% url 'reviewer_dashboard:respond_to_assignment' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="accept">
+                        <input type="hidden" name="assignment_id" value="{{ assignment.pk }}">
+                        <input type="hidden" name="tab" value="new">
+                        <button type="submit" class="action-btn success" aria-label="Accept"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m5 13 4 4L19 7"/></svg></button>
+                      </form>
+                    </div>
+                    {% elif assignment.tab_value == 'accepted' or assignment.tab_value == 'due_overdue' %}
+                    <a href="{% url 'reviewer_dashboard:review_application' assignment.pk %}" class="action-btn" aria-label="Review"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                    {% else %}
+                    <a href="{% url 'reviewer_dashboard:my_reviews' %}" class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                    {% endif %}
+                  </td>
                 </tr>
                 {% empty %}
                 <tr>

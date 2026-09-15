@@ -1,10 +1,11 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.db.models import Count, Q
+from django.db.models import Count, Prefetch, Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.dateparse import parse_date
 
 from accounts import storage as accounts_storage
 from accounts.models import RoleApprovalLog, User
@@ -54,12 +55,21 @@ def applications(request):
     if active_tab not in oversight.STATUS_TABS:
         active_tab = "all"
 
-    base_qs = oversight.staff_queryset().order_by("-submitted_at")
+    base_qs = oversight.staff_queryset().order_by("-submitted_at").prefetch_related(
+        Prefetch(
+            "review_assignments",
+            queryset=ReviewAssignment.objects.select_related("reviewer").order_by("-assigned_at"),
+        )
+    )
     counts = oversight.status_counts(base_qs)
 
     all_applications = list(base_qs)
     for application in all_applications:
         application.tab = oversight.STATUS_TO_TAB.get(application.status, "all")
+        # .all() reads the Prefetch above instead of re-querying per card --
+        # this is what keeps the "reviewer, deadline & stage" modal button
+        # on every card from turning into an N+1.
+        application.assignments = list(application.review_assignments.all())
 
     return render(request, "dashboards/secretariat/applications.html", {
         "all_applications": all_applications,
@@ -75,6 +85,62 @@ def applications_counts(request):
     summary strip current without a page reload -- e.g. a second staff
     member moves something to Under Review while this page is still open."""
     return JsonResponse(oversight.status_counts(oversight.staff_queryset()))
+
+
+def _send_deadline_updated_email(request, assignment):
+    login_url = request.build_absolute_uri(reverse("pages:login"))
+    ref = f"\"{assignment.application.title}\" ({assignment.application.reference_no or 'reference pending'})"
+    if assignment.due_date:
+        change_line = f"The MSREC Secretariat has updated the due date for your review of {ref} to {assignment.due_date:%d %b %Y}."
+    else:
+        change_line = f"The MSREC Secretariat has removed the due date for your review of {ref} -- no deadline is set right now."
+    return send_branded_email(
+        subject=f"Review deadline updated — {assignment.application.reference_no or assignment.application.title}",
+        to=assignment.reviewer.email,
+        heading="Your review deadline has changed",
+        paragraphs=[f"Hi {assignment.reviewer.full_name},", change_line],
+        cta_text="Log in to MSREC",
+        cta_url=login_url,
+        preheader="Your review deadline has been updated.",
+    )
+
+
+@login_required
+@staff_required
+def set_reviewer_deadline(request):
+    """Sets/changes/clears the due date on one existing ReviewAssignment --
+    the "set a deadline for him" half of the Applications list's small
+    Reviewer & Stage modal button. Deliberately its own tiny endpoint
+    rather than reusing reviewer_assignment()'s POST branch: that view's
+    "assign"/"withdraw" actions redirect back to the Reviewer Assignment
+    page, but this modal lives on the Applications page and needs to
+    redirect back there instead."""
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:applications")
+
+    tab = request.POST.get("tab", "all")
+    redirect_url = f"{reverse('secretariat_dashboard:applications')}?tab={tab}"
+
+    assignment_id = request.POST.get("assignment_id", "")
+    if not assignment_id.isdigit():
+        messages.error(request, "That request could not be processed.")
+        return redirect(redirect_url)
+
+    assignment = get_object_or_404(
+        ReviewAssignment.objects.select_related("application", "reviewer"), pk=assignment_id,
+    )
+    assignment.due_date = parse_date(request.POST.get("due_date") or "") or None
+    assignment.save(update_fields=["due_date"])
+
+    emailed = _send_deadline_updated_email(request, assignment)
+    ref = assignment.application.reference_no or assignment.application.title
+    if assignment.due_date:
+        note = f"Deadline for {assignment.reviewer.full_name} on {ref} set to {assignment.due_date:%d %b %Y}"
+    else:
+        note = f"Deadline for {assignment.reviewer.full_name} on {ref} cleared"
+    note += " and they've been notified by email." if emailed else " (the notification email couldn't be sent)."
+    messages.success(request, note)
+    return redirect(redirect_url)
 
 
 @login_required
@@ -284,7 +350,11 @@ def reviewer_assignment(request):
                 User, pk=reviewer_id,
                 role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED,
             )
-            due_date = request.POST.get("due_date") or None
+            # ReviewAssignment.objects.create() only coerces the DB column;
+            # the in-memory instance keeps whatever type was passed in, so a
+            # raw string here would later crash _send_assignment_email's
+            # strftime-style formatting. Parse to a real date up front.
+            due_date = parse_date(request.POST.get("due_date") or "") or None
             assignment = ReviewAssignment.objects.create(
                 application=application, reviewer=reviewer, assigned_by=request.user, due_date=due_date,
             )
@@ -314,6 +384,24 @@ def reviewer_assignment(request):
 
     reviewers = list(_approved_reviewers())
     needs_assignment = list(_needs_assignment_qs())
+
+    # A reviewer's decline doesn't just drop the application back into this
+    # list looking freshly unassigned -- it's surfaced right on the card so
+    # the Secretariat can see *why* it needs a reviewer again, not just that
+    # it does.
+    declined_by_application = {}
+    declines = (
+        ReviewAssignment.objects.filter(
+            application_id__in=[a.pk for a in needs_assignment],
+            status=ReviewAssignment.Status.DECLINED,
+        )
+        .select_related("reviewer")
+        .order_by("-declined_at")
+    )
+    for decline in declines:
+        declined_by_application.setdefault(decline.application_id, []).append(decline)
+    for application in needs_assignment:
+        application.recent_declines = declined_by_application.get(application.pk, [])
 
     pending = list(
         _open_assignments()

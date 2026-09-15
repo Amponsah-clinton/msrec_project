@@ -9,35 +9,15 @@
         <span>Dashboard</span>
       </a>
 
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-          <span>Users &amp; Roles</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="{% url 'admin_dashboard:accounts' %}" class="nav-sublink">All Users</a>
-          <a href="{% url 'admin_dashboard:accounts' %}?tab=applicants" class="nav-sublink">Applicants</a>
-          <a href="{% url 'admin_dashboard:accounts' %}?tab=reviewers" class="nav-sublink">Reviewers</a>
-          <a href="{% url 'admin_dashboard:accounts' %}?tab=committee" class="nav-sublink">Committee Members</a>
-          <a href="{% url 'admin_dashboard:accounts' %}?tab=admins" class="nav-sublink">Chair &amp; Secretariat</a>
-          <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="nav-sublink">Role Requests</a>
-          <a href="#" class="nav-sublink">Permissions</a>
-        </div>
-      </div>
+      <a href="{% url 'admin_dashboard:accounts' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+        <span>Users &amp; Roles</span>
+      </a>
 
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
-          <span>Inquiries</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="{% url 'admin_dashboard:inquiries' %}" class="nav-sublink">All Messages</a>
-          <a href="{% url 'admin_dashboard:inquiries' %}?tab=new" class="nav-sublink">New</a>
-          <a href="{% url 'admin_dashboard:inquiries' %}?tab=resolved" class="nav-sublink">Resolved</a>
-        </div>
-      </div>
+      <a href="{% url 'admin_dashboard:inquiries' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+        <span>Inquiries</span>
+      </a>
 
       <div class="nav-group">
         <button type="button" class="nav-group-toggle" aria-expanded="false">

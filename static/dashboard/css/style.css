@@ -903,6 +903,33 @@ svg {
 .due-date { font-size: 14.5px; font-weight: 700; color: var(--text-main); }
 .due-days { font-size: 11.5px; color: var(--red); font-weight: 600; }
 
+/* A real review-assignment due date is always shown in red with a red
+   calendar icon, everywhere it appears -- urgent banner, tables, and
+   card meta lines. Compound selectors (e.g. .due-main.due-meta) so this
+   wins over the plain .due-main/.due-date rules (here and further down
+   the sheet) without !important, and without recolouring unrelated
+   dates (like "Submitted"/"Oldest Request") that happen to reuse those
+   shared classes elsewhere in the app. */
+.due-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--red);
+}
+.due-main.due-meta,
+.due-date.due-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--red);
+}
+.due-meta-icon {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  color: var(--red);
+}
+
 .btn {
   display: inline-flex;
   align-items: center;
@@ -1352,6 +1379,10 @@ svg {
 }
 .action-btn:hover { background: var(--blue-light); color: var(--blue); border-color: var(--blue-light); }
 .action-btn svg { width: 16px; height: 16px; }
+.action-btn-group { display: flex; align-items: center; gap: 6px; }
+.action-btn-group form { display: contents; }
+.action-btn.success:hover { background: var(--green-light); color: var(--green); border-color: var(--green-light); }
+.action-btn.danger:hover { background: var(--red-light); color: var(--red); border-color: var(--red-light); }
 
 /* ---------------- Document list (Documents section) ----------------
    A file, letter, certificate or receipt is a single visual "thing" a
