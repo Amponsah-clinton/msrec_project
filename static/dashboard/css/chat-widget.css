@@ -1,0 +1,193 @@
+/* ==========================================================
+   MSREC — Floating support-chat widget (applicant side)
+   Reuses the dashboard's existing chat vocabulary (.msg-bubble,
+   .thread-composer, .thread-send-btn, .msg-live-indicator from
+   style.css/messages.css) inside a small fixed-position launcher +
+   panel, so it reads as the same product as the full Messages page --
+   just a second, lighter surface onto the identical conversation.
+========================================================== */
+
+.chat-widget {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 14px;
+  font-family: inherit;
+}
+
+/* ---------------- Launcher ---------------- */
+.chat-widget-launcher {
+  position: relative;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  border: none;
+  background: var(--teal);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 26px color-mix(in srgb, var(--teal), transparent 55%), var(--shadow);
+  transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.15s;
+}
+.chat-widget-launcher:hover {
+  background: #128581;
+  transform: translateY(-2px);
+  box-shadow: 0 14px 32px color-mix(in srgb, var(--teal), transparent 45%), var(--shadow);
+}
+.chat-widget-launcher-icon {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  transition: transform 0.2s ease, opacity 0.15s ease;
+}
+.chat-widget-launcher .icon-close { opacity: 0; transform: rotate(-45deg) scale(0.6); }
+.chat-widget-launcher .icon-chat { opacity: 1; transform: rotate(0) scale(1); }
+.chat-widget.is-open .chat-widget-launcher .icon-close { opacity: 1; transform: rotate(0) scale(1); }
+.chat-widget.is-open .chat-widget-launcher .icon-chat { opacity: 0; transform: rotate(45deg) scale(0.6); }
+
+.chat-widget-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--bg);
+}
+
+/* Whole-launcher ring pulse, triggered from chat-widget.js watching the
+   badge for the same kind of value change nav-badges.js pulses on --
+   so a new message is noticeable even when you're not looking directly
+   at the corner, not just via the small badge number itself. */
+.chat-widget-launcher.chat-widget-pulse {
+  animation: chatLauncherPulse 0.7s ease-out;
+}
+@keyframes chatLauncherPulse {
+  0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal), transparent 30%), var(--shadow); }
+  100% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--teal), transparent 100%), var(--shadow); }
+}
+
+/* ---------------- Panel ---------------- */
+.chat-widget-panel {
+  width: 380px;
+  max-width: calc(100vw - 32px);
+  height: 560px;
+  max-height: calc(100vh - 120px);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22), var(--shadow);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform-origin: bottom right;
+  transition: transform 0.2s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.16s ease;
+}
+.chat-widget-panel[hidden] {
+  display: flex; /* keep laid out for the transition */
+  pointer-events: none;
+  opacity: 0;
+  transform: scale(0.92) translateY(10px);
+}
+.chat-widget.is-open .chat-widget-panel {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.chat-widget-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--white);
+}
+.chat-widget-header-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 12px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.chat-widget-header-info { flex: 1; min-width: 0; }
+.chat-widget-header-info strong { display: block; font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+.chat-widget-header-info .msg-live-indicator { margin-top: 2px; }
+.chat-widget-expand {
+  width: 30px; height: 30px;
+  flex-shrink: 0;
+  color: var(--text-faint);
+}
+.chat-widget-expand svg { width: 15px; height: 15px; }
+.chat-widget-expand:hover { color: var(--teal); background: var(--hover-bg); }
+
+.chat-widget-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: var(--bg);
+}
+.chat-widget-scroll .msg-bubble { max-width: 84%; font-size: 12.5px; }
+
+.chat-widget-loading {
+  margin: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-sub);
+}
+.chat-widget-spinner {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  border-top-color: var(--teal);
+  animation: chatWidgetSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes chatWidgetSpin { to { transform: rotate(360deg); } }
+
+.chat-widget-composer {
+  padding: 12px 14px;
+  border-top: 1px solid var(--border);
+}
+.chat-widget-composer textarea { font-size: 12.5px; max-height: 84px; }
+.chat-widget-composer .thread-send-btn { width: 34px; height: 34px; }
+.chat-widget-composer .thread-send-btn svg { width: 15px; height: 15px; }
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 480px) {
+  .chat-widget { right: 14px; bottom: 14px; gap: 10px; }
+  .chat-widget-launcher { width: 52px; height: 52px; }
+  .chat-widget-panel {
+    position: fixed;
+    inset: auto 10px 78px 10px;
+    width: auto;
+    max-width: none;
+    height: auto;
+    max-height: calc(100vh - 110px);
+  }
+}

@@ -163,3 +163,116 @@
     display: none;
   }
 }
+
+/* ---------------- Stats section ----------------
+   Replaces the original template's icon-list + stock SVG illustration
+   with one bordered panel: a short editorial head, then four figures in
+   a row with hairline dividers between them instead of icons -- the
+   same "big number, quiet label" language used by Stripe/Linear stat
+   bands, kept in this site's own warm/serif-adjacent voice (Montserrat
+   numerals, the single #2a4747 accent, no gradients or icon chips). */
+.stats .container { padding-left: 0; padding-right: 0; }
+
+.stats-panel {
+  background: #ffffff;
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 92%);
+  border-radius: 22px;
+  box-shadow: 0 30px 60px rgba(23, 42, 40, 0.07);
+  padding: 52px 56px 48px;
+}
+
+.stats-panel-head {
+  max-width: 640px;
+  margin-bottom: 44px;
+}
+
+.stats-panel-label {
+  display: inline-block;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  margin-bottom: 12px;
+}
+
+.stats-panel-head h3 {
+  font-family: var(--heading-font);
+  font-size: clamp(21px, 2.4vw, 25px);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--heading-color);
+  margin: 0 0 10px;
+}
+
+.stats-panel-head p {
+  font-size: 14px;
+  line-height: 1.75;
+  color: color-mix(in srgb, var(--default-color), transparent 30%);
+  margin: 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.stat-cell {
+  padding: 4px 32px;
+  border-left: 1px solid color-mix(in srgb, var(--default-color), transparent 90%);
+}
+.stat-cell:first-child { border-left: none; padding-left: 0; }
+.stat-cell:last-child { padding-right: 0; }
+
+.stat-index {
+  display: block;
+  font-family: var(--heading-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--accent-color);
+  opacity: 0.75;
+  margin-bottom: 14px;
+}
+
+.stat-number {
+  display: block;
+  font-family: var(--heading-font);
+  font-size: clamp(2.5rem, 3.6vw, 3.1rem);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--heading-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-label {
+  font-family: var(--heading-font);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--heading-color);
+  margin: 16px 0 5px;
+}
+
+.stat-caption {
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--default-color), transparent 42%);
+  margin: 0;
+}
+
+@media (max-width: 991.98px) {
+  .stats-panel { padding: 40px 28px; border-radius: 18px; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); row-gap: 32px; }
+  .stat-cell { border-left: none; padding: 0 24px; }
+  .stat-cell:nth-child(2n) { border-left: 1px solid color-mix(in srgb, var(--default-color), transparent 90%); }
+  .stat-cell:nth-child(2n+1) { padding-left: 0; }
+  .stat-cell:nth-child(n+3) { padding-top: 28px; border-top: 1px solid color-mix(in srgb, var(--default-color), transparent 90%); }
+}
+
+@media (max-width: 575.98px) {
+  .stats-panel { padding: 32px 22px; }
+  .stats-grid { grid-template-columns: 1fr; row-gap: 26px; }
+  .stat-cell { border-left: none !important; padding: 0 !important; }
+  .stat-cell:nth-child(n+2) { padding-top: 26px !important; border-top: 1px solid color-mix(in srgb, var(--default-color), transparent 90%); }
+}

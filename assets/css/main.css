@@ -697,6 +697,19 @@ h6 {
   font-size: 13px;
 }
 
+.footer .footer-legal-links {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.footer .footer-legal-links a {
+  color: color-mix(in srgb, var(--default-color), transparent 20%);
+}
+
+.footer .footer-legal-links a:hover {
+  color: var(--accent-color);
+}
+
 /*--------------------------------------------------------------
 # Preloader — a 36-spoke "metronome" sunburst behind the MSREC mark.
 # Every spoke's rotation and animation-delay is baked into its inline
@@ -995,6 +1008,12 @@ section,
 
 .hero h2 .accent {
   color: var(--conrast-color);
+}
+
+@media (min-width: 992px) {
+  .hero .hero-img {
+    margin-left: -40px;
+  }
 }
 
 .hero-rotator {

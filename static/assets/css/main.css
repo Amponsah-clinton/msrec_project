@@ -240,11 +240,10 @@ h6 {
 }
 
 .header .topbar {
-  background-color: #0a1120;
+  background-color: color-mix(in srgb, var(--accent-color) 90%, black 10%);
   height: 40px;
   padding: 0;
   font-size: 14px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   transition: all 0.5s;
 }
 
@@ -286,56 +285,6 @@ h6 {
 
 .header .topbar .social-links a:hover {
   color: var(--contrast-color);
-}
-
-.header .topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.topbar-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 50px;
-  font-size: 12.5px;
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
-  transition: 0.2s;
-}
-
-.topbar-btn i { font-size: 12px; line-height: 0; }
-
-.topbar-btn-ghost {
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  background: transparent;
-}
-
-.topbar-btn-ghost:hover {
-  color: #ffffff;
-  border-color: #ffffff;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.topbar-btn-solid {
-  color: #ffffff;
-  background: var(--accent-color);
-  border: 1px solid var(--accent-color);
-}
-
-.topbar-btn-solid:hover {
-  color: #ffffff;
-  background: color-mix(in srgb, var(--accent-color), white 12%);
-}
-
-@media (max-width: 575px) {
-  .topbar-btn span { display: none; }
-  .topbar-btn { padding: 7px 10px; }
-  .topbar-btn i { font-size: 14px; }
 }
 
 .header .branding {
@@ -748,6 +697,19 @@ h6 {
   font-size: 13px;
 }
 
+.footer .footer-legal-links {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.footer .footer-legal-links a {
+  color: color-mix(in srgb, var(--default-color), transparent 20%);
+}
+
+.footer .footer-legal-links a:hover {
+  color: var(--accent-color);
+}
+
 /*--------------------------------------------------------------
 # Preloader — a 36-spoke "metronome" sunburst behind the MSREC mark.
 # Every spoke's rotation and animation-delay is baked into its inline
@@ -1046,6 +1008,12 @@ section,
 
 .hero h2 .accent {
   color: var(--conrast-color);
+}
+
+@media (min-width: 992px) {
+  .hero .hero-img {
+    margin-left: -40px;
+  }
 }
 
 .hero-rotator {
@@ -2881,23 +2849,20 @@ section,
 }
 
 /* Give the full-width header some breathing room from the viewport edges */
-.header .branding .container-fluid,
-.header .topbar .container-fluid {
+.header .branding .container-fluid {
   padding-left: 90px;
   padding-right: 90px;
 }
 
 @media (max-width: 991px) {
-  .header .branding .container-fluid,
-  .header .topbar .container-fluid {
+  .header .branding .container-fluid {
     padding-left: 40px;
     padding-right: 40px;
   }
 }
 
 @media (max-width: 575px) {
-  .header .branding .container-fluid,
-  .header .topbar .container-fluid {
+  .header .branding .container-fluid {
     padding-left: 20px;
     padding-right: 20px;
   }

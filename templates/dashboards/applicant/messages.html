@@ -3,10 +3,6 @@
 
 {% block title %}Messages | MSREC{% endblock %}
 
-{% block extra_css %}
-<link href="{% static 'dashboard/css/messages.css' %}" rel="stylesheet">
-{% endblock %}
-
 {% block nav_content %}
 
       <a href="{% url 'applicant_dashboard:home' %}" class="nav-item">
@@ -232,7 +228,7 @@
             {% for message in thread_messages %}
             <div class="msg-bubble {% if message.is_mine %}out{% else %}in{% endif %}" data-message-id="{{ message.id }}">
               <p>{{ message.body|linebreaksbr }}</p>
-              <span class="msg-time">{% if not message.is_mine %}{{ message.sender_name }} &middot; {% endif %}{{ message.time_display }}</span>
+              <span class="msg-time">{% if not message.is_mine %}{{ message.sender_name }}{% if message.sender_role %} &middot; {{ message.sender_role }}{% endif %} &middot; {% endif %}{{ message.time_display }}</span>
             </div>
             {% empty %}
             <div class="msg-thread-empty">
@@ -253,6 +249,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'dashboard/js/live-chat.js' %}"></script>
 <script src="{% static 'dashboard/js/messages.js' %}"></script>
 {% endblock %}

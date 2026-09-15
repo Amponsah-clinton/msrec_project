@@ -28,7 +28,15 @@ function createMessageBubble(message) {
 
   const time = document.createElement("span");
   time.className = "msg-time";
-  time.textContent = message.is_mine ? message.time_display : `${message.sender_name} · ${message.time_display}`;
+  if (message.is_mine) {
+    time.textContent = message.time_display;
+  } else {
+    // sender_role ("Admin"/"Secretariat") lets an applicant tell the two
+    // staff roles apart in a thread either one can answer -- see
+    // messaging.access.staff_role_label.
+    const who = message.sender_role ? `${message.sender_name} · ${message.sender_role}` : message.sender_name;
+    time.textContent = `${who} · ${message.time_display}`;
+  }
   bubble.appendChild(time);
 
   return bubble;
@@ -122,7 +130,7 @@ function initLiveChat({ scroll, composer, pollUrl, sendUrl, getLastId, setLastId
     textarea.addEventListener("input", () => autoGrowTextarea(textarea));
   }
 
-  const timer = setInterval(poll, intervalMs);
+  let timer = setInterval(poll, intervalMs);
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) poll();
   });
@@ -132,5 +140,14 @@ function initLiveChat({ scroll, composer, pollUrl, sendUrl, getLastId, setLastId
   return {
     poll,
     stop: () => clearInterval(timer),
+    // pause/resume (distinct from stop) let a caller like the floating
+    // chat widget suspend polling while its panel is collapsed -- without
+    // re-running initLiveChat, which would re-bind the composer's submit
+    // listener a second time and send every message twice.
+    pause: () => clearInterval(timer),
+    resume: () => {
+      poll();
+      timer = setInterval(poll, intervalMs);
+    },
   };
 }

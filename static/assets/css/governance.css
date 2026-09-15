@@ -240,8 +240,6 @@ body.gov-page {
 }
 .gov-sop-card h4 { margin: 0 0 4px; font-size: 14px; font-weight: 700; color: var(--heading-color); }
 .gov-sop-card p { margin: 0; font-size: 12.5px; line-height: 1.6; color: #5c6b69; }
-.gov-sop-dl { margin-left: auto; align-self: center; color: #cbd6d3; font-size: 14px; transition: color .18s; }
-.gov-sop-card:hover .gov-sop-dl { color: var(--accent-color); }
 
 /* ---------------- Policy cards ---------------- */
 .gov-policy-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 16px; }

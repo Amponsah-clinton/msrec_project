@@ -14,6 +14,7 @@ from django.views.decorators.http import require_POST
 
 from accounts.models import User
 from accounts.sessions import active_sessions_for
+from messaging.services import unread_count_for_user
 from notifications.models import Notification
 from notifications.services import notify
 from payments import fees
@@ -548,6 +549,11 @@ def nav_counts(request):
         "revisions": all_applications.filter(status=Application.Status.REVISIONS_REQUIRED).count(),
         "approved": all_applications.filter(status=Application.Status.APPROVED).count(),
         "not_approved": all_applications.filter(status=Application.Status.NOT_APPROVED).count(),
+        # Piggybacks on the same 15s poll nav-badges.js already runs for
+        # the Applications sidebar badges -- the floating chat widget's
+        # launcher badge (dashboards/_chat_widget.html) reads this same
+        # key, so no separate polling loop is needed just for chat.
+        "unread_messages": unread_count_for_user(request.user),
     }
     return JsonResponse(counts)
 

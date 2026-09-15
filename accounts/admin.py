@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from .models import RoleApprovalLog, User
+from .models import PasswordResetCode, RoleApprovalLog, User
 
 
 @admin.register(User)
@@ -40,4 +40,12 @@ class UserAdmin(DjangoUserAdmin):
 class RoleApprovalLogAdmin(admin.ModelAdmin):
     list_display = ["user", "role", "action", "acted_by", "created_at"]
     list_filter = ["role", "action"]
+    readonly_fields = ["created_at"]
+
+
+@admin.register(PasswordResetCode)
+class PasswordResetCodeAdmin(admin.ModelAdmin):
+    list_display = ["user", "code", "created_at", "expires_at", "used_at"]
+    list_filter = ["used_at"]
+    search_fields = ["user__email", "code"]
     readonly_fields = ["created_at"]

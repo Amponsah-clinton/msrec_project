@@ -12,6 +12,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/style.css' %}">
+{% comment %}
+messages.css (the .msg-live-indicator "Live" pill, .msg-thread-empty,
+etc.) and chat-widget.css load globally, not per-page, because the
+floating chat widget below uses that same vocabulary on every
+dashboard page, not just the three full Messages pages.
+{% endcomment %}
+<link rel="stylesheet" href="{% static 'dashboard/css/messages.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/chat-widget.css' %}">
 {% block extra_css %}{% endblock %}
 <script>
   (function () {
@@ -92,9 +100,13 @@
   </div>
 </div>
 
+{% include "dashboards/_chat_widget.html" %}
+
 <script src="{% static 'dashboard/js/script.js' %}"></script>
 <script src="{% static 'dashboard/js/nav-badges.js' %}"></script>
 <script src="{% static 'dashboard/js/live-counts.js' %}"></script>
+<script src="{% static 'dashboard/js/live-chat.js' %}"></script>
+<script src="{% static 'dashboard/js/chat-widget.js' %}"></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

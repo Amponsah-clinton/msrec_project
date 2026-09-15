@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Privacy Notice - MSREC | Metascholar Research Ethics Committee{% endblock %}
+{% block description %}What MSREC collects when you apply, review, or serve on the Committee -- and how it's used, stored, shared and protected.{% endblock %}
+{% block body_class %}legal-page{% endblock %}
+{% block fonts %}<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/legal.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <div class="legal-progress" id="legalProgress"></div>
+
+  <main class="main legal-main">
+    <div class="legal-wrap">
+
+      <!-- ============ HERO ============ -->
+      <section class="legal-hero">
+        <div class="legal-hero-copy">
+          <span class="legal-hero-icon"><i class="bi bi-shield-lock"></i></span>
+          <span class="legal-eyebrow">Legal &middot; Privacy</span>
+          <h1>What we collect to run an ethics review, and nothing beyond that.</h1>
+          <p>An ethics application involves real personal and professional detail &mdash; yours, and sometimes your research participants'. This notice explains exactly what MSREC collects at each step, who inside (and outside) the Committee can see it, how long we keep it, and how to ask us for a copy, a correction, or a deletion.</p>
+          <div class="legal-meta-row">
+            <span class="legal-meta-chip"><i class="bi bi-calendar3"></i> Last updated Jan 2026</span>
+            <span class="legal-meta-chip"><i class="bi bi-tag"></i> Version 1.0</span>
+            <span class="legal-meta-chip"><i class="bi bi-clock-history"></i> ~10 min read</span>
+            <span class="legal-meta-chip"><i class="bi bi-geo-alt"></i> Data controller: Metascholar Limited, Ghana</span>
+          </div>
+        </div>
+        <div class="legal-hero-side">
+          <p>This notice works alongside our Terms of Use and the Data Protection &amp; Records policies published on the Governance page.</p>
+          <a href="{% url 'pages:terms' %}" class="legal-side-btn"><span><i class="bi bi-file-earmark-text"></i>&nbsp; Read the Terms of Use</span><i class="bi bi-arrow-right"></i></a>
+          <a href="{% url 'pages:governance' %}#gov-policies" class="legal-side-btn"><span><i class="bi bi-journal-bookmark"></i>&nbsp; See governing policies</span><i class="bi bi-arrow-right"></i></a>
+          <a href="#" class="legal-side-btn legal-side-btn-primary" data-legal-print><span><i class="bi bi-printer"></i>&nbsp; Save / print this page</span><i class="bi bi-download"></i></a>
+        </div>
+      </section>
+
+      <!-- ============ MOBILE TOC ============ -->
+      <nav class="legal-toolbar" id="legalToolbarMobile" aria-label="Privacy Notice sections">
+        <a href="#scope">Who we are</a>
+        <a href="#collect">What we collect</a>
+        <a href="#use">How we use it</a>
+        <a href="#share">Who we share it with</a>
+        <a href="#confidentiality">Confidentiality</a>
+        <a href="#cookies">Cookies</a>
+        <a href="#retention">Retention</a>
+        <a href="#transfers">Transfers</a>
+        <a href="#security">Security</a>
+        <a href="#rights">Your rights</a>
+        <a href="#children">Children</a>
+        <a href="#changes">Changes</a>
+        <a href="#contact">Contact</a>
+      </nav>
+
+      <div class="legal-layout">
+
+        <!-- ============ SIDEBAR TOC ============ -->
+        <nav class="legal-toc" aria-label="Privacy Notice sections">
+          <span class="legal-toc-label">On this page</span>
+          <ul class="legal-toc-list">
+            <li><a href="#scope"><span class="legal-toc-num">01</span> Who we are</a></li>
+            <li><a href="#collect"><span class="legal-toc-num">02</span> Information we collect</a></li>
+            <li><a href="#use"><span class="legal-toc-num">03</span> How we use it</a></li>
+            <li><a href="#share"><span class="legal-toc-num">04</span> Who we share it with</a></li>
+            <li><a href="#confidentiality"><span class="legal-toc-num">05</span> Confidentiality of reviews</a></li>
+            <li><a href="#cookies"><span class="legal-toc-num">06</span> Cookies</a></li>
+            <li><a href="#retention"><span class="legal-toc-num">07</span> Data retention</a></li>
+            <li><a href="#transfers"><span class="legal-toc-num">08</span> International transfers</a></li>
+            <li><a href="#security"><span class="legal-toc-num">09</span> Data security</a></li>
+            <li><a href="#rights"><span class="legal-toc-num">10</span> Your rights &amp; choices</a></li>
+            <li><a href="#children"><span class="legal-toc-num">11</span> Children's privacy</a></li>
+            <li><a href="#changes"><span class="legal-toc-num">12</span> Changes to this notice</a></li>
+            <li><a href="#contact"><span class="legal-toc-num">13</span> Contact &amp; complaints</a></li>
+          </ul>
+          <div class="legal-toc-foot">
+            <a href="{% url 'pages:terms' %}"><i class="bi bi-file-earmark-text"></i> Terms of Use</a>
+            <a href="{% url 'pages:contact' %}"><i class="bi bi-headset"></i> Talk to the Secretariat</a>
+          </div>
+        </nav>
+
+        <!-- ============ ARTICLE ============ -->
+        <article class="legal-article">
+
+          <section class="legal-section" id="scope">
+            <div class="legal-section-head">
+              <span class="legal-section-num">01</span>
+              <h2>Who we are <a href="#scope" class="legal-anchor-btn" data-section="scope"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>MSREC, run under Metascholar Limited (Ghana),</strong> is the controller for the data described here.</p></div>
+            <div class="legal-body">
+              <p>The Metascholar Research Ethics Committee ("MSREC", "we", "us") is established under Metascholar Limited, based in Ghana. This notice applies to the MSREC platform &mdash; the public website, applicant and reviewer dashboards, and Secretariat/Committee/admin tools &mdash; and covers everyone who uses it: applicants, reviewers, committee members, and visitors to the public pages.</p>
+              <p>It should be read alongside our <a href="{% url 'pages:terms' %}">Terms of Use</a> and the Data Protection and Records policies published on our <a href="{% url 'pages:governance' %}#gov-policies">Governance page</a>, which govern retention and access in more procedural detail.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="collect">
+            <div class="legal-section-head">
+              <span class="legal-section-num">02</span>
+              <h2>Information we collect <a href="#collect" class="legal-anchor-btn" data-section="collect"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Only what a step actually requires</strong> &mdash; a fuller profile if you're asking to review, application content if you're applying.</p></div>
+            <div class="legal-body">
+              <h4>At signup, from everyone</h4>
+              <ul>
+                <li>Name, title, email, phone, country of residence, and highest qualification;</li>
+                <li>Institution, department, position, and institutional address (where applicable);</li>
+                <li>A password, stored only as a salted, one-way hash &mdash; we never see or store it in plain text.</li>
+              </ul>
+              <h4>If you request Reviewer or Committee access</h4>
+              <ul>
+                <li>Professional background: position, institution, years of experience, prior review/committee experience, areas of expertise, ORCID and professional registration numbers;</li>
+                <li>A short professional bio and CV;</li>
+                <li>Declarations of confidentiality and conflict-of-interest agreement, required before either request is considered.</li>
+              </ul>
+              <h4>When you apply for ethics review</h4>
+              <ul>
+                <li>Your study protocol, consent materials, and any supporting documents you upload;</li>
+                <li>Institutional/IRB details, supervisor name and contact (for student applicants);</li>
+                <li>Payment confirmation for any applicable review fee &mdash; processed by Paystack; we do not receive or store your card details.</li>
+              </ul>
+              <h4>Automatically, to keep your account secure</h4>
+              <ul>
+                <li>Session information: your browser/device string, approximate IP address, and sign-in time, shown back to you in your dashboard's Active Sessions panel;</li>
+                <li>Basic technical logs needed to operate and secure the Platform.</li>
+              </ul>
+              <h4>When you contact us</h4>
+              <ul>
+                <li>Whatever you include in a message through our <a href="{% url 'pages:contact' %}">Contact page</a>, so we can reply to it.</li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="legal-section" id="use">
+            <div class="legal-section-head">
+              <span class="legal-section-num">03</span>
+              <h2>How we use it <a href="#use" class="legal-anchor-btn" data-section="use"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>To run the review, keep the record, and email you when something changes.</strong> Never to build an ad profile.</p></div>
+            <div class="legal-body">
+              <ul>
+                <li><strong>Operating the review process</strong> &mdash; routing applications to the right reviewers and Committee agenda, tracking status, recording decisions.</li>
+                <li><strong>Account &amp; role administration</strong> &mdash; verifying eligibility for Reviewer/Committee access, and letting an admin approve, reject, or (if needed) suspend an account.</li>
+                <li><strong>Communications</strong> &mdash; sending status updates, decision letters, role-request confirmations, and, where you've opted in, new-sign-in notifications, by email via our transactional email provider.</li>
+                <li><strong>The verification service</strong> &mdash; confirming approval status for a given reference number when someone uses our public <a href="{% url 'pages:verify' %}">Verify Approval</a> tool.</li>
+                <li><strong>Payments</strong> &mdash; reconciling review fees against your application, through Paystack.</li>
+                <li><strong>Security &amp; abuse prevention</strong> &mdash; detecting suspicious sign-ins and enforcing our <a href="{% url 'pages:terms' %}#acceptable-use">Acceptable Use</a> terms.</li>
+                <li><strong>Legal &amp; governance obligations</strong> &mdash; keeping the records our Records Policy and applicable research-governance rules require.</li>
+              </ul>
+              <p>We do not sell your data, and we do not use it for advertising or profiling.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="share">
+            <div class="legal-section-head">
+              <span class="legal-section-num">04</span>
+              <h2>Who we share it with <a href="#share" class="legal-anchor-btn" data-section="share"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>People who need it to do the review, and the handful of processors that keep MSREC running.</strong> Nobody else.</p></div>
+            <div class="legal-body">
+              <ul>
+                <li><strong>Assigned Reviewers &amp; Committee Members</strong> see the application content needed to assess your study &mdash; nothing from other applicants, and nothing outside their assignment.</li>
+                <li><strong>The Chair and Secretariat</strong> can access applications and account records to administer the review process.</li>
+                <li><strong>Your named supervisor</strong> may be contacted directly where your application identifies one and their input is part of the review.</li>
+              </ul>
+              <p>We also rely on a small number of processors to run the Platform, each bound to use your data only to provide their service to us:</p>
+              <div class="legal-table-wrap">
+                <table class="legal-table">
+                  <thead><tr><th>Processor</th><th>What they handle</th></tr></thead>
+                  <tbody>
+                    <tr><td><strong>Supabase</strong></td><td>Hosts our database and the private file storage for uploaded documents (CVs, profile photos, supporting files).</td></tr>
+                    <tr><td><strong>Paystack</strong></td><td>Processes review-fee payments. Card details go directly to Paystack, not to MSREC.</td></tr>
+                    <tr><td><strong>Resend</strong></td><td>Delivers transactional email &mdash; decision letters, confirmations, notifications.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>Outside of these, we disclose personal data only where required by law, to protect the rights or safety of MSREC or others, or with your explicit consent.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="confidentiality">
+            <div class="legal-section-head">
+              <span class="legal-section-num">05</span>
+              <h2>Confidentiality of applications &amp; reviews <a href="#confidentiality" class="legal-anchor-btn" data-section="confidentiality"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Review content is need-to-know, always.</strong> Reviewers and Committee members are bound to keep it that way.</p></div>
+            <div class="legal-body">
+              <p>Every Reviewer and Committee Member agrees to our Confidentiality Policy before their access is approved: protocol content, applicant data, and Committee deliberations may be used only to complete the review they've been assigned, and may not be discussed, published, or reused outside that purpose. Conflicts of interest are declared and recused before a review begins, under our Conflict of Interest Policy. Both policies are published in full on our <a href="{% url 'pages:governance' %}#gov-policies">Governance page</a>.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="cookies">
+            <div class="legal-section-head">
+              <span class="legal-section-num">06</span>
+              <h2>Cookies &amp; similar technologies <a href="#cookies" class="legal-anchor-btn" data-section="cookies"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>One cookie, to keep you signed in.</strong> No ad trackers, no cross-site profiling.</p></div>
+            <div class="legal-body">
+              <p>MSREC sets a single essential session cookie so the Platform can recognize you as signed in as you move between pages; without it, dashboards simply wouldn't work. We don't use third-party advertising or analytics cookies. Pages do load webfonts from Google Fonts, which involves your browser requesting font files directly from Google's servers &mdash; standard for most modern websites, and unrelated to your MSREC account.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="retention">
+            <div class="legal-section-head">
+              <span class="legal-section-num">07</span>
+              <h2>Data retention <a href="#retention" class="legal-anchor-btn" data-section="retention"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Decided applications become part of the permanent research record</strong> and are kept accordingly, even after you close your account.</p></div>
+            <div class="legal-body">
+              <p>How long we keep information depends on what it is, set out in full in our Records Policy on the <a href="{% url 'pages:governance' %}#gov-policies">Governance page</a>. As a general rule: application files, review reports, and Committee decisions are retained for the period our research-governance obligations require, since a decided ethics review needs to remain verifiable years later &mdash; including through our public <a href="{% url 'pages:verify' %}">Verify Approval</a> tool. Account profile information is kept for as long as your account is active, and for a limited period afterward to satisfy legal and audit requirements, after which it is deleted or anonymized.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="transfers">
+            <div class="legal-section-head">
+              <span class="legal-section-num">08</span>
+              <h2>International data transfers <a href="#transfers" class="legal-anchor-btn" data-section="transfers"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Our processors operate internationally.</strong> We only use ones contractually bound to protect your data wherever it sits.</p></div>
+            <div class="legal-body">
+              <p>MSREC is based in Ghana, but the infrastructure providers described in <a href="#share">Section 4</a> &mdash; Supabase, Paystack, and Resend &mdash; may process or store data in other countries. Where that happens, we rely on their contractual and technical safeguards to protect your data to a standard consistent with this notice, regardless of where it's processed.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="security">
+            <div class="legal-section-head">
+              <span class="legal-section-num">09</span>
+              <h2>Data security <a href="#security" class="legal-anchor-btn" data-section="security"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Passwords are hashed, connections are encrypted, access is role-gated.</strong> No system is unbreachable, but this is how we reduce the risk.</p></div>
+            <div class="legal-body">
+              <p>Passwords are never stored in plain text &mdash; only as a salted, one-way hash that can't be reversed even by us. Traffic to the Platform is encrypted in transit, and application content is only reachable by accounts with a role-based reason to see it. Your dashboard's Profile &amp; Security page also lets you review active sessions and set sign-in notification preferences; two-factor authentication toggles are available there as a stated preference, though this is not yet enforced as a mandatory sign-in step. No online service can guarantee absolute security, but we design deliberately to limit what's exposed and to whom.</p>
+            </div>
+            <div class="legal-note"><i class="bi bi-info-circle"></i><p>If we ever become aware of a data breach affecting your personal information, we'll notify affected account holders and relevant authorities as required by law.</p></div>
+          </section>
+
+          <section class="legal-section" id="rights">
+            <div class="legal-section-head">
+              <span class="legal-section-num">10</span>
+              <h2>Your rights &amp; choices <a href="#rights" class="legal-anchor-btn" data-section="rights"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Access, correct, download, or ask us to delete</strong> what we hold on you, subject to our record-keeping obligations.</p></div>
+            <div class="legal-body">
+              <ul>
+                <li><strong>Access &amp; correction.</strong> Most of your profile is editable directly from your dashboard's Profile &amp; Security page; for anything else, ask the Secretariat.</li>
+                <li><strong>Portability.</strong> You can request an export of the personal data we hold on your account.</li>
+                <li><strong>Deletion.</strong> You can ask us to close your account and delete your personal data, subject to the retention obligations in <a href="#retention">Section 7</a> &mdash; a decided application's record can't be erased on request, since it's part of the research-governance record, not just your personal profile.</li>
+                <li><strong>Communication preferences.</strong> The new-sign-in notification toggle on your Profile &amp; Security page is yours to switch off; transactional emails tied to an active application (decisions, requests for revision) can't be disabled, since they're how we tell you what's happening with your review.</li>
+                <li><strong>Objection.</strong> Where our use of your data relies on legitimate interest rather than a contractual necessity, you may object to that specific use.</li>
+              </ul>
+              <p>To exercise any of these, email <a href="mailto:secretariat@msrec.org">secretariat@msrec.org</a> or use our <a href="{% url 'pages:contact' %}">Contact page</a>. We'll respond within a reasonable time, and may need to verify your identity first.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="children">
+            <div class="legal-section-head">
+              <span class="legal-section-num">11</span>
+              <h2>Children's privacy <a href="#children" class="legal-anchor-btn" data-section="children"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-body">
+              <p>MSREC is intended for researchers, institutions, and professionals aged 18 and over, and we do not knowingly collect personal data from anyone under that age. If a study protocol itself involves research participants who are minors, that data is handled under the study's own consent and safeguarding protocols, reviewed by the Committee as part of the application &mdash; not as account data covered by this notice.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="changes">
+            <div class="legal-section-head">
+              <span class="legal-section-num">12</span>
+              <h2>Changes to this notice <a href="#changes" class="legal-anchor-btn" data-section="changes"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-body">
+              <p>We may update this notice as our practices evolve. The "Last updated" date at the top always reflects the current version, and we'll email active account holders ahead of any change that materially affects how your data is handled.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="contact">
+            <div class="legal-section-head">
+              <span class="legal-section-num">13</span>
+              <h2>Contact &amp; complaints <a href="#contact" class="legal-anchor-btn" data-section="contact"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-body">
+              <p>For any question about this notice or how your data is handled, contact the MSREC Secretariat at <a href="mailto:secretariat@msrec.org">secretariat@msrec.org</a> or through our <a href="{% url 'pages:contact' %}">Contact page</a>. If you believe we haven't resolved your concern, you may also lodge a complaint with your local data protection authority.</p>
+            </div>
+          </section>
+
+        </article>
+      </div>
+
+      <!-- ============ CLOSING CTA ============ -->
+      <section class="legal-cta">
+        <div>
+          <h4>Want the rules the Committee itself follows?</h4>
+          <p>The Governance page has the full Charter, SOPs, and policies this notice points back to.</p>
+        </div>
+        <div class="legal-cta-actions">
+          <a href="{% url 'pages:governance' %}" class="legal-cta-btn legal-cta-btn-primary">Visit Governance <i class="bi bi-arrow-right"></i></a>
+          <a href="{% url 'pages:contact' %}" class="legal-cta-btn legal-cta-btn-ghost">Contact the Secretariat</a>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div class="legal-toast" id="legalToast"><i class="bi bi-check-circle-fill"></i> Link copied</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/legal.js' %}"></script>
+{% endblock %}

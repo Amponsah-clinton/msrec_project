@@ -3,6 +3,8 @@ import uuid
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -11,7 +13,15 @@ from notifications.emails import send_branded_email
 
 from . import storage
 from .forms import LoginForm, SignupForm
-from .models import User
+from .models import PasswordResetCode, User
+
+# Session key holding the email address a Forgot Password flow is in
+# progress for -- set by forgot_password(), read (and cleared) by
+# reset_password(). Keeping it server-side in the session rather than in
+# the URL/a hidden form field means the email is never something a
+# person could edit client-side to target a different account.
+PASSWORD_RESET_SESSION_KEY = "pwreset_email"
+PASSWORD_RESET_ATTEMPTS_KEY = "pwreset_attempts"
 
 # Extra, role-specific fields collected on the signup form. These aren't
 # validated as strict Django fields (see forms.SignupForm's docstring) --
@@ -81,6 +91,133 @@ def _send_role_pending_email(user):
         ],
         preheader=f"Your {roles_text} request is pending admin review.",
     )
+
+
+def _send_reset_code(user):
+    """Issues a fresh PasswordResetCode and emails it. Returns the code
+    row so callers (forgot_password / the resend action in
+    reset_password) can reset the session's attempt counter against it."""
+    code_obj = PasswordResetCode.issue_for(user)
+    minutes = int(PasswordResetCode.TTL.total_seconds() // 60)
+    send_branded_email(
+        subject="MSREC — your password reset code",
+        to=user.email,
+        heading="Reset your password",
+        paragraphs=[
+            f"Hi {user.first_name},",
+            f"Use the code below to reset your MSREC account password. "
+            f"It expires in {minutes} minutes and can only be used once.",
+            "If you didn't request this, you can safely ignore this email — your password won't change.",
+        ],
+        quote_label="Your reset code",
+        quote_text=code_obj.code,
+        preheader="Your MSREC password reset code",
+    )
+    return code_obj
+
+
+def forgot_password(request):
+    if request.user.is_authenticated:
+        return redirect(request.user.dashboard_url_name())
+
+    if request.method == "POST":
+        email = request.POST.get("email", "").strip().lower()
+        if not email:
+            messages.error(request, "Enter your email address.")
+            return render(request, "pages/forgot-password.html", {"email": email}, status=400)
+
+        user = User.objects.filter(email=email).first()
+        request.session[PASSWORD_RESET_SESSION_KEY] = email
+
+        if user is not None:
+            last_code = user.password_reset_codes.first()
+            if last_code and last_code.is_valid and timezone.now() - last_code.created_at < PasswordResetCode.RESEND_COOLDOWN:
+                # They still have a live, unexpired code from moments ago --
+                # send them straight to enter it rather than bouncing them
+                # with an error just because we won't issue a second one yet.
+                messages.success(request, f"You already have a code on its way to {email} — enter it below.")
+                return redirect("pages:reset_password")
+            request.session[PASSWORD_RESET_ATTEMPTS_KEY] = 0
+            _send_reset_code(user)
+        else:
+            request.session[PASSWORD_RESET_ATTEMPTS_KEY] = 0
+
+        # Same message whether or not the account exists -- doesn't
+        # confirm/deny a given email is registered with MSREC.
+        messages.success(request, f"If an account exists for {email}, a 6-digit reset code has been sent.")
+        return redirect("pages:reset_password")
+
+    return render(request, "pages/forgot-password.html")
+
+
+def reset_password(request):
+    email = request.session.get(PASSWORD_RESET_SESSION_KEY, "")
+    if not email:
+        messages.error(request, "Start by entering the email address on your account.")
+        return redirect("pages:forgot_password")
+
+    if request.method == "POST":
+        action = request.POST.get("action", "reset")
+        user = User.objects.filter(email=email).first()
+
+        if action == "resend":
+            if user is not None:
+                last_code = user.password_reset_codes.first()
+                if last_code and last_code.is_valid and timezone.now() - last_code.created_at < PasswordResetCode.RESEND_COOLDOWN:
+                    messages.error(request, "Please wait a minute before requesting another code.")
+                    return redirect("pages:reset_password")
+                _send_reset_code(user)
+            request.session[PASSWORD_RESET_ATTEMPTS_KEY] = 0
+            messages.success(request, f"A new code has been sent to {email}.")
+            return redirect("pages:reset_password")
+
+        attempts = request.session.get(PASSWORD_RESET_ATTEMPTS_KEY, 0)
+        if attempts >= PasswordResetCode.MAX_ATTEMPTS:
+            messages.error(request, "Too many incorrect attempts. Request a new code to keep trying.")
+            return render(request, "pages/reset-password.html", {"email": email, "locked": True}, status=429)
+
+        code = request.POST.get("code", "").strip()
+        new_password = request.POST.get("new_password", "")
+        confirm_password = request.POST.get("confirm_password", "")
+
+        code_obj = None
+        if user is not None and code:
+            code_obj = user.password_reset_codes.filter(code=code, used_at__isnull=True).first()
+
+        if user is None or code_obj is None or not code_obj.is_valid:
+            request.session[PASSWORD_RESET_ATTEMPTS_KEY] = attempts + 1
+            messages.error(request, "That code is incorrect or has expired.")
+            return render(request, "pages/reset-password.html", {"email": email}, status=400)
+
+        if not new_password or new_password != confirm_password:
+            messages.error(request, "New password and confirmation don't match.")
+            return render(request, "pages/reset-password.html", {"email": email}, status=400)
+
+        try:
+            validate_password(new_password, user=user)
+        except DjangoValidationError as exc:
+            for msg in exc.messages:
+                messages.error(request, msg)
+            return render(request, "pages/reset-password.html", {"email": email}, status=400)
+
+        user.set_password(new_password)
+        user.save(update_fields=["password"])
+        # This code, and any other still-open code for this user, are
+        # spent the moment one of them succeeds -- an old code from an
+        # earlier request must never remain usable after a reset.
+        user.password_reset_codes.filter(used_at__isnull=True).update(used_at=timezone.now())
+
+        del request.session[PASSWORD_RESET_SESSION_KEY]
+        request.session.pop(PASSWORD_RESET_ATTEMPTS_KEY, None)
+
+        auth_login(request, user)
+        request.session["ua"] = request.META.get("HTTP_USER_AGENT", "")[:300]
+        request.session["login_ip"] = request.META.get("REMOTE_ADDR", "")
+        request.session["login_at"] = timezone.now().isoformat()
+        messages.success(request, "Your password has been reset. You're now signed in.")
+        return redirect(user.dashboard_url_name())
+
+    return render(request, "pages/reset-password.html", {"email": email})
 
 
 def signup(request):

@@ -451,7 +451,7 @@
               </label>
               <label class="agree-row">
                 <input type="checkbox" name="confirmTerms" id="confirmTerms" required>
-                <span>I agree to the MSREC <a href="#">Terms of Use</a> and <a href="#">Privacy Notice</a>. <span class="req">*</span></span>
+                <span>I agree to the MSREC <a href="{% url 'pages:terms' %}" target="_blank" rel="noopener">Terms of Use</a> and <a href="{% url 'pages:privacy' %}" target="_blank" rel="noopener">Privacy Notice</a>. <span class="req">*</span></span>
               </label>
 
               <div class="reviewer-committee-declarations" id="rcDeclarations" hidden>

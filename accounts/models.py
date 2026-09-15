@@ -1,3 +1,6 @@
+import secrets
+from datetime import timedelta
+
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
@@ -298,3 +301,48 @@ class RoleApprovalLog(models.Model):
 
     def __str__(self):
         return f"{self.user.email} · {self.role} · {self.action}"
+
+
+class PasswordResetCode(models.Model):
+    """A 6-digit code emailed to a user for the Forgot Password flow
+    (accounts.views.forgot_password / reset_password). One row per code
+    issued -- never reused, never edited in place -- so there's always an
+    audit trail of every reset attempt against an account, the same
+    "one row per attempt" idea as RoleApprovalLog above.
+
+    Deliberately code-in-the-body rather than a tokenised reset link:
+    matches how this project's other one-time-use flows (COI/2FA-style
+    confirmations) already read as forms a person types into, not links
+    they click, and it means the code can be read off an email on a
+    second device (e.g. checking phone email while resetting on a
+    laptop) without needing to copy a long URL.
+    """
+
+    TTL = timedelta(minutes=15)
+    RESEND_COOLDOWN = timedelta(seconds=60)
+    MAX_ATTEMPTS = 5
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="password_reset_codes")
+    code = models.CharField(max_length=6)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "password_reset_codes"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.email} · {self.code} · {'used' if self.used_at else 'active'}"
+
+    @property
+    def is_valid(self):
+        return self.used_at is None and timezone.now() < self.expires_at
+
+    @classmethod
+    def issue_for(cls, user):
+        """Creates and returns a new code, without emailing it -- callers
+        send the email themselves (see accounts.views._send_reset_code),
+        keeping "generate a code" and "notify the user" separate concerns."""
+        code = "".join(secrets.choice("0123456789") for _ in range(6))
+        return cls.objects.create(user=user, code=code, expires_at=timezone.now() + cls.TTL)

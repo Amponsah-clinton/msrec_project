@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Terms of Use - MSREC | Metascholar Research Ethics Committee{% endblock %}
+{% block description %}The terms that govern using MSREC to submit, review or oversee research ethics applications -- accounts, fees, confidentiality, and what happens when things go wrong.{% endblock %}
+{% block body_class %}legal-page{% endblock %}
+{% block fonts %}<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/legal.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <div class="legal-progress" id="legalProgress"></div>
+
+  <main class="main legal-main">
+    <div class="legal-wrap">
+
+      <!-- ============ HERO ============ -->
+      <section class="legal-hero">
+        <div class="legal-hero-copy">
+          <span class="legal-hero-icon"><i class="bi bi-file-earmark-text"></i></span>
+          <span class="legal-eyebrow">Legal &middot; Terms</span>
+          <h1>The terms for using MSREC &mdash; as an applicant, a reviewer, or anyone else with an account.</h1>
+          <p>MSREC is where a study becomes a reviewed, decided, and verifiable ethics application. This page sets out what we ask of you to use it, and what you can expect from us in return. It applies the moment you create an account, and again every time you submit, review, or approve something through the platform.</p>
+          <div class="legal-meta-row">
+            <span class="legal-meta-chip"><i class="bi bi-calendar3"></i> Last updated Jan 2026</span>
+            <span class="legal-meta-chip"><i class="bi bi-tag"></i> Version 1.0</span>
+            <span class="legal-meta-chip"><i class="bi bi-clock-history"></i> ~9 min read</span>
+            <span class="legal-meta-chip"><i class="bi bi-geo-alt"></i> Governed by the laws of Ghana</span>
+          </div>
+        </div>
+        <div class="legal-hero-side">
+          <p>This document works alongside our Privacy Notice and the policies published on the Governance page &mdash; together they're the full picture of how MSREC operates.</p>
+          <a href="{% url 'pages:privacy' %}" class="legal-side-btn"><span><i class="bi bi-shield-lock"></i>&nbsp; Read the Privacy Notice</span><i class="bi bi-arrow-right"></i></a>
+          <a href="{% url 'pages:governance' %}#gov-policies" class="legal-side-btn"><span><i class="bi bi-journal-bookmark"></i>&nbsp; See governing policies</span><i class="bi bi-arrow-right"></i></a>
+          <a href="#" class="legal-side-btn legal-side-btn-primary" data-legal-print><span><i class="bi bi-printer"></i>&nbsp; Save / print this page</span><i class="bi bi-download"></i></a>
+        </div>
+      </section>
+
+      <!-- ============ MOBILE TOC ============ -->
+      <nav class="legal-toolbar" id="legalToolbarMobile" aria-label="Terms of Use sections">
+        <a href="#acceptance">Acceptance</a>
+        <a href="#accounts">Accounts</a>
+        <a href="#roles">Roles</a>
+        <a href="#applications">Applications</a>
+        <a href="#fees">Fees</a>
+        <a href="#reviewers">Reviewers &amp; Committee</a>
+        <a href="#acceptable-use">Acceptable Use</a>
+        <a href="#content">Your Content</a>
+        <a href="#verification">Verification Tool</a>
+        <a href="#suspension">Suspension</a>
+        <a href="#disclaimers">Disclaimers</a>
+        <a href="#liability">Liability</a>
+        <a href="#indemnification">Indemnification</a>
+        <a href="#law">Governing Law</a>
+        <a href="#changes">Changes</a>
+        <a href="#contact">Contact</a>
+      </nav>
+
+      <div class="legal-layout">
+
+        <!-- ============ SIDEBAR TOC ============ -->
+        <nav class="legal-toc" aria-label="Terms of Use sections">
+          <span class="legal-toc-label">On this page</span>
+          <ul class="legal-toc-list">
+            <li><a href="#acceptance"><span class="legal-toc-num">01</span> Acceptance of these Terms</a></li>
+            <li><a href="#accounts"><span class="legal-toc-num">02</span> Accounts &amp; eligibility</a></li>
+            <li><a href="#roles"><span class="legal-toc-num">03</span> Roles on MSREC</a></li>
+            <li><a href="#applications"><span class="legal-toc-num">04</span> Submitting an application</a></li>
+            <li><a href="#fees"><span class="legal-toc-num">05</span> Review fees &amp; payment</a></li>
+            <li><a href="#reviewers"><span class="legal-toc-num">06</span> Reviewers &amp; Committee members</a></li>
+            <li><a href="#acceptable-use"><span class="legal-toc-num">07</span> Acceptable use</a></li>
+            <li><a href="#content"><span class="legal-toc-num">08</span> Content you submit</a></li>
+            <li><a href="#verification"><span class="legal-toc-num">09</span> The verification tool</a></li>
+            <li><a href="#suspension"><span class="legal-toc-num">10</span> Suspension &amp; termination</a></li>
+            <li><a href="#disclaimers"><span class="legal-toc-num">11</span> Disclaimers</a></li>
+            <li><a href="#liability"><span class="legal-toc-num">12</span> Limitation of liability</a></li>
+            <li><a href="#indemnification"><span class="legal-toc-num">13</span> Indemnification</a></li>
+            <li><a href="#law"><span class="legal-toc-num">14</span> Governing law &amp; disputes</a></li>
+            <li><a href="#changes"><span class="legal-toc-num">15</span> Changes to these Terms</a></li>
+            <li><a href="#contact"><span class="legal-toc-num">16</span> Contact</a></li>
+          </ul>
+          <div class="legal-toc-foot">
+            <a href="{% url 'pages:privacy' %}"><i class="bi bi-shield-lock"></i> Privacy Notice</a>
+            <a href="{% url 'pages:contact' %}"><i class="bi bi-headset"></i> Talk to the Secretariat</a>
+          </div>
+        </nav>
+
+        <!-- ============ ARTICLE ============ -->
+        <article class="legal-article">
+
+          <section class="legal-section" id="acceptance">
+            <div class="legal-section-head">
+              <span class="legal-section-num">01</span>
+              <h2>Acceptance of these Terms <a href="#acceptance" class="legal-anchor-btn" data-section="acceptance"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Creating an account means you agree to this page.</strong> If you're acting for an institution, you're confirming you're allowed to.</p></div>
+            <div class="legal-body">
+              <p>These Terms of Use ("Terms") govern your access to and use of the MSREC platform &mdash; the website, applicant and reviewer dashboards, the Secretariat and Committee tools, and the public verification service (together, the "Platform") operated by the Metascholar Research Ethics Committee ("MSREC", "we", "us"), established under Metascholar Limited.</p>
+              <p>By creating an account, submitting an application, accepting an invitation to review, or otherwise using the Platform, you agree to be bound by these Terms and by our <a href="{% url 'pages:privacy' %}">Privacy Notice</a>. If you're using the Platform on behalf of a university, hospital, research unit or other institution, you're representing that you have the authority to accept these Terms for that institution, and "you" below covers both you personally and the institution you represent.</p>
+              <p>If you do not agree to these Terms, don't create an account and don't use the Platform.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="accounts">
+            <div class="legal-section-head">
+              <span class="legal-section-num">02</span>
+              <h2>Accounts &amp; eligibility <a href="#accounts" class="legal-anchor-btn" data-section="accounts"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>One real account per person, kept accurate, kept secure.</strong> You're responsible for what happens under your login.</p></div>
+            <div class="legal-body">
+              <ul>
+                <li><strong>Eligibility.</strong> You must be at least 18 years old and able to enter into a binding agreement to create an account.</li>
+                <li><strong>One account, accurately described.</strong> Each account belongs to one named individual &mdash; not a shared inbox or a department alias. The name, email, phone, institution and qualification details you give at signup must be accurate and kept up to date from your dashboard's Profile &amp; Security page.</li>
+                <li><strong>Your login is yours to protect.</strong> You're responsible for keeping your password confidential and for all activity that happens under your account. Tell us immediately at <a href="mailto:secretariat@msrec.org">secretariat@msrec.org</a> if you believe your account has been accessed without your permission.</li>
+                <li><strong>We keep a record of sign-ins.</strong> For your own security, each session records the device/browser, approximate origin and time of sign-in, viewable from your dashboard's Active Sessions panel &mdash; see our <a href="{% url 'pages:privacy' %}#security">Privacy Notice</a> for detail.</li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="legal-section" id="roles">
+            <div class="legal-section-head">
+              <span class="legal-section-num">03</span>
+              <h2>Roles on MSREC <a href="#roles" class="legal-anchor-btn" data-section="roles"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Everyone starts as an Applicant.</strong> Reviewer and Committee access is granted, not assumed &mdash; an admin has to approve it first.</p></div>
+            <div class="legal-body">
+              <p>Every account that requests it gets Applicant access immediately, since opening and tracking an application is the baseline thing MSREC exists to let you do. Two roles are different: requesting to become a <strong>Reviewer</strong> or a <strong>Committee Member</strong> puts your request into a pending state that only an MSREC administrator can approve, decline, or later revoke. <strong>Chair</strong> and <strong>Secretariat</strong> access is assigned directly by MSREC and isn't self-requestable.</p>
+              <div class="legal-table-wrap">
+                <table class="legal-table">
+                  <thead><tr><th>Role</th><th>What it can do</th></tr></thead>
+                  <tbody>
+                    <tr><td><strong>Applicant</strong></td><td>Prepare, submit and track ethics applications; respond to Committee requests for revision; make payments.</td></tr>
+                    <tr><td><strong>Reviewer</strong></td><td>Assess assigned applications and submit independent review reports. Requires approval.</td></tr>
+                    <tr><td><strong>Committee Member</strong></td><td>Deliberate and vote on applications at Committee meetings. Requires approval.</td></tr>
+                    <tr><td><strong>Chair</strong></td><td>Convene meetings, sign off Committee decisions, oversee the review process.</td></tr>
+                    <tr><td><strong>Secretariat</strong></td><td>Administrative screening, scheduling, applicant correspondence and record-keeping.</td></tr>
+                    <tr><td><strong>Administrator</strong></td><td>Platform administration, including approving or rejecting Reviewer/Committee requests.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>Holding a role is a privilege tied to the judgment it requires, not a permanent entitlement &mdash; MSREC may decline a request, or later revoke Reviewer or Committee access, where conduct, conflicts of interest, or sustained inactivity make that necessary.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="applications">
+            <div class="legal-section-head">
+              <span class="legal-section-num">04</span>
+              <h2>Submitting an application <a href="#applications" class="legal-anchor-btn" data-section="applications"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>What you submit has to be true and complete</strong> &mdash; the Committee's decision is only as good as the file it's reading.</p></div>
+            <div class="legal-body">
+              <p>When you submit a protocol, consent materials, supporting documents or any other part of an application, you're certifying that the information is accurate, complete, and that you have the authority (including any required supervisor or institutional sign-off) to submit it. Knowingly submitting false, misleading or plagiarized material is a breach of these Terms and may be reported to your institution.</p>
+              <p>Applications move through administrative screening, then expedited or full Committee review, following the Standard Operating Procedures published on our <a href="{% url 'pages:governance' %}#gov-sops">Governance page</a>. The Committee may request revisions before reaching a decision, and reserves full discretion over review pathway, timeline, and outcome. Submitting an application, and paying any associated fee, does not guarantee approval and does not entitle you to a particular reviewer, timeline, or decision.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="fees">
+            <div class="legal-section-head">
+              <span class="legal-section-num">05</span>
+              <h2>Review fees &amp; payment <a href="#fees" class="legal-anchor-btn" data-section="fees"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Fees pay for the review process, not the outcome.</strong> Paystack handles your card details &mdash; we never see or store them.</p></div>
+            <div class="legal-body">
+              <p>Certain review types carry a fee, billed in Ghanaian Cedis (GHS) per the schedule published on our <a href="{% url 'pages:governance' %}#gov-fees">Governance page</a>. Fees are processed by Paystack; MSREC does not collect or store your card number, and payment confirmation is all that reaches our records. Fees fund administrative screening and reviewer coordination.</p>
+              <p><strong>Payment of a review fee does not guarantee ethical approval, and cannot expedite or influence a Committee decision.</strong> Fees already paid for a review that has commenced are generally non-refundable; where a fee was charged in error, or a review is withdrawn before screening begins, contact the Secretariat to request a refund, which is assessed case by case.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="reviewers">
+            <div class="legal-section-head">
+              <span class="legal-section-num">06</span>
+              <h2>Reviewers &amp; Committee members <a href="#reviewers" class="legal-anchor-btn" data-section="reviewers"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Independent judgment, disclosed conflicts, and confidentiality</strong> &mdash; that's the deal if you review for MSREC.</p></div>
+            <div class="legal-body">
+              <ul>
+                <li><strong>Confidentiality is a condition of access, not a suggestion.</strong> Protocol content, applicant data, and deliberations you see as a Reviewer or Committee Member may only be used to complete your assigned review, per the Confidentiality Policy on our <a href="{% url 'pages:governance' %}#gov-policies">Governance page</a>.</li>
+                <li><strong>Disclose conflicts before you review.</strong> Any actual, potential or perceived conflict of interest with an application must be declared; you'll be recused from that review, per our Conflict of Interest Policy.</li>
+                <li><strong>Your assessment is yours.</strong> Reviews and votes must reflect your own independent, good-faith judgment of the study's merits &mdash; not outside pressure from the applicant, their institution, or anyone else.</li>
+                <li><strong>Availability is self-reported.</strong> The "available for new assignments" toggle on your Profile &amp; Expertise page reflects your own honest capacity; the Secretariat may additionally mark you Limited when operationally necessary.</li>
+                <li><strong>No fee is implied.</strong> Serving as a Reviewer or Committee Member does not, by itself, entitle you to compensation unless a separate written agreement says otherwise.</li>
+              </ul>
+            </div>
+          </section>
+
+          <section class="legal-section" id="acceptable-use">
+            <div class="legal-section-head">
+              <span class="legal-section-num">07</span>
+              <h2>Acceptable use <a href="#acceptable-use" class="legal-anchor-btn" data-section="acceptable-use"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Use the Platform the way it was built to be used.</strong> Don't impersonate, don't scrape, don't share access.</p></div>
+            <div class="legal-body">
+              <p>You agree not to:</p>
+              <ul>
+                <li>Impersonate another person, or misrepresent your affiliation, qualifications, or authority to submit or review a study;</li>
+                <li>Share your login credentials with, or act on the Platform on behalf of, anyone else without our written permission;</li>
+                <li>Attempt to access another user's account, application, or review materials you have not been granted access to;</li>
+                <li>Systematically scrape, crawl, or bulk-query the Platform or the public <a href="{% url 'pages:verify' %}">verification tool</a> outside normal interactive use;</li>
+                <li>Upload material that is unlawful, infringes another party's rights, or contains malicious code; or</li>
+                <li>Interfere with, probe, or attempt to circumvent the Platform's security, rate limits, or review workflow.</li>
+              </ul>
+              <p>We may investigate suspected violations and take action including content removal, role revocation, or account suspension under <a href="#suspension">Section 10</a>.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="content">
+            <div class="legal-section-head">
+              <span class="legal-section-num">08</span>
+              <h2>Content you submit <a href="#content" class="legal-anchor-btn" data-section="content"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>You keep ownership.</strong> You're just letting us store it and show it to the people reviewing it.</p></div>
+            <div class="legal-body">
+              <p>You retain all rights to the protocols, consent forms, CVs, review reports, and other material you upload ("Your Content"). By submitting it, you grant MSREC a limited license to store, reproduce, and share Your Content internally &mdash; with assigned Reviewers, Committee Members, the Chair, and the Secretariat &mdash; solely to carry out the review, oversight, and record-keeping functions described in these Terms and our Governance policies. We don't use Your Content for any other purpose, and we don't sell it.</p>
+              <p>Uploaded files (CVs, profile photos, supporting documents) are stored in our private storage infrastructure and are not publicly accessible; see our <a href="{% url 'pages:privacy' %}">Privacy Notice</a> for how that storage works.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="verification">
+            <div class="legal-section-head">
+              <span class="legal-section-num">09</span>
+              <h2>The verification tool <a href="#verification" class="legal-anchor-btn" data-section="verification"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Verify Approval is a convenience check</strong>, not a substitute for an official approval letter.</p></div>
+            <div class="legal-body">
+              <p>Our public <a href="{% url 'pages:verify' %}">Verify Approval</a> page lets anyone confirm whether a study holds current MSREC approval, using a reference number. It's provided as a good-faith convenience for journals, funders, and institutions and reflects our records at the time of the check &mdash; it is not itself a legal certificate of approval. Where formal documentation is required, request the original approval letter through your applicant dashboard or the Secretariat.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="suspension">
+            <div class="legal-section-head">
+              <span class="legal-section-num">10</span>
+              <h2>Suspension &amp; termination <a href="#suspension" class="legal-anchor-btn" data-section="suspension"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>We can suspend an account for cause.</strong> You can close yours whenever you like.</p></div>
+            <div class="legal-body">
+              <p>We may suspend or deactivate an account that violates these Terms, submits fraudulent information, or misuses reviewer or Committee access. A suspended account will see the message <em>"This account has been suspended. Contact an administrator to have it reactivated"</em> at sign-in &mdash; if that happens to you and you believe it's a mistake, reach the Secretariat through our <a href="{% url 'pages:contact' %}">Contact page</a>.</p>
+              <p>You may stop using the Platform, or ask us to close your account, at any time via <a href="mailto:secretariat@msrec.org">secretariat@msrec.org</a>. Closing your account doesn't erase the record of applications already submitted, reviewed, or decided &mdash; those are retained under the Records Policy referenced in our <a href="{% url 'pages:privacy' %}#retention">Privacy Notice</a>, since a decided ethics review is part of the permanent research record, not just your personal data.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="disclaimers">
+            <div class="legal-section-head">
+              <span class="legal-section-num">11</span>
+              <h2>Disclaimers <a href="#disclaimers" class="legal-anchor-btn" data-section="disclaimers"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>The Platform is provided as-is.</strong> We work to keep it available and accurate, but can't promise uninterrupted service.</p></div>
+            <div class="legal-body">
+              <p>The Platform is provided "as is" and "as available." We don't guarantee that it will be uninterrupted, error-free, or secure against every possible threat, or that any review will be completed within a particular timeframe. Ethical review decisions reflect the independent professional judgment of Reviewers and the Committee at the time they're made; MSREC makes no warranty about the outcome of any application.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="liability">
+            <div class="legal-section-head">
+              <span class="legal-section-num">12</span>
+              <h2>Limitation of liability <a href="#liability" class="legal-anchor-btn" data-section="liability"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Our liability to you is capped</strong> at what you've actually paid us, where the law allows that.</p></div>
+            <div class="legal-body">
+              <p>To the fullest extent permitted by law, MSREC and Metascholar Limited will not be liable for any indirect, incidental, or consequential loss arising from your use of the Platform, including delayed reviews, lost research time, or third-party decisions made in reliance on a verification result. Where liability cannot be excluded, it is limited to the total review fees you paid to MSREC in the twelve months before the claim arose.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="indemnification">
+            <div class="legal-section-head">
+              <span class="legal-section-num">13</span>
+              <h2>Indemnification <a href="#indemnification" class="legal-anchor-btn" data-section="indemnification"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>If your submission causes a claim against us,</strong> that's on you to cover.</p></div>
+            <div class="legal-body">
+              <p>You agree to indemnify and hold MSREC and Metascholar Limited harmless from any claim, loss, or expense (including reasonable legal fees) arising from Your Content, your breach of these Terms, or your violation of any law or third party's rights in connection with your use of the Platform.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="law">
+            <div class="legal-section-head">
+              <span class="legal-section-num">14</span>
+              <h2>Governing law &amp; disputes <a href="#law" class="legal-anchor-btn" data-section="law"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>Ghanaian law applies.</strong> We'd rather resolve a disagreement directly than in court.</p></div>
+            <div class="legal-body">
+              <p>These Terms are governed by the laws of Ghana, without regard to conflict-of-laws principles. Before pursuing formal proceedings, please raise the issue with the Secretariat &mdash; most disagreements about a review, fee, or account decision can be resolved directly. Where that isn't possible, disputes are subject to the exclusive jurisdiction of the courts of Ghana.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="changes">
+            <div class="legal-section-head">
+              <span class="legal-section-num">15</span>
+              <h2>Changes to these Terms <a href="#changes" class="legal-anchor-btn" data-section="changes"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-tldr"><i class="bi bi-chat-square-text"></i><p><strong>We'll update the date at the top</strong> when something material changes, and flag it if it affects you directly.</p></div>
+            <div class="legal-body">
+              <p>We may update these Terms as MSREC's processes evolve. The "Last updated" date at the top of this page always reflects the current version. Where a change materially affects your rights &mdash; for example, to fees or confidentiality obligations &mdash; we'll also notify active account holders by email before it takes effect. Continuing to use the Platform after a change takes effect means you accept the updated Terms.</p>
+            </div>
+          </section>
+
+          <section class="legal-section" id="contact">
+            <div class="legal-section-head">
+              <span class="legal-section-num">16</span>
+              <h2>Contact <a href="#contact" class="legal-anchor-btn" data-section="contact"><i class="bi bi-link-45deg"></i></a></h2>
+            </div>
+            <div class="legal-body">
+              <p>Questions about these Terms, an application, or your account can go to the MSREC Secretariat at <a href="mailto:secretariat@msrec.org">secretariat@msrec.org</a> or through our <a href="{% url 'pages:contact' %}">Contact page</a>.</p>
+            </div>
+          </section>
+
+        </article>
+      </div>
+
+      <!-- ============ CLOSING CTA ============ -->
+      <section class="legal-cta">
+        <div>
+          <h4>Ready to see how your data is handled?</h4>
+          <p>The Privacy Notice covers what we collect, why, and how you can access or delete it.</p>
+        </div>
+        <div class="legal-cta-actions">
+          <a href="{% url 'pages:privacy' %}" class="legal-cta-btn legal-cta-btn-primary">Read the Privacy Notice <i class="bi bi-arrow-right"></i></a>
+          <a href="{% url 'pages:contact' %}" class="legal-cta-btn legal-cta-btn-ghost">Contact the Secretariat</a>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <div class="legal-toast" id="legalToast"><i class="bi bi-check-circle-fill"></i> Link copied</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/legal.js' %}"></script>
+{% endblock %}

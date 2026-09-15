@@ -1,0 +1,46 @@
+{% load static %}
+{% comment %}
+Floating support-chat widget -- applicant side only. Same conversation,
+same poll/send endpoints as the full Messages page
+(dashboards/applicant/messages.html); this is just a second, lighter
+surface onto it so an applicant never has to leave whatever page
+they're on (e.g. mid-application-form) to ask Admin or the Secretariat
+a question. See static/dashboard/js/chat-widget.js.
+{% endcomment %}
+{% if request.user.is_authenticated and request.user.role == "applicant" %}
+<div class="chat-widget" id="chatWidget"
+     data-poll-url="{% url 'applicant_dashboard:messages_poll' %}"
+     data-send-url="{% url 'applicant_dashboard:messages_send' %}">
+
+  <button type="button" class="chat-widget-launcher" id="chatWidgetLauncher" aria-label="Open messages" aria-expanded="false" aria-controls="chatWidgetPanel">
+    <svg class="chat-widget-launcher-icon icon-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+    <svg class="chat-widget-launcher-icon icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    <span class="nav-badge chat-widget-badge" data-nav-badge="unread_messages" hidden>0</span>
+  </button>
+
+  <div class="chat-widget-panel" id="chatWidgetPanel" hidden>
+    <div class="chat-widget-header">
+      <span class="chat-widget-header-avatar initials" style="background:var(--navy);">MS</span>
+      <div class="chat-widget-header-info">
+        <strong>MSREC Support</strong>
+        <span class="msg-live-indicator" id="chatWidgetLive" title="Live"><span class="msg-live-dot"></span> Live</span>
+      </div>
+      <a href="{% url 'applicant_dashboard:messages' %}" class="icon-btn chat-widget-expand" aria-label="Open full Messages page" title="Open full Messages page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/></svg>
+      </a>
+    </div>
+
+    <div class="chat-widget-scroll" id="chatWidgetScroll">
+      <div class="chat-widget-loading" id="chatWidgetLoading">
+        <span class="chat-widget-spinner" aria-hidden="true"></span> Loading your conversation&hellip;
+      </div>
+    </div>
+
+    <form class="thread-composer chat-widget-composer" id="chatWidgetComposer">
+      {% csrf_token %}
+      <textarea name="body" rows="1" placeholder="Ask Admin or the Secretariat&hellip;" maxlength="4000" required></textarea>
+      <button type="submit" class="thread-send-btn" aria-label="Send message"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+    </form>
+  </div>
+</div>
+{% endif %}

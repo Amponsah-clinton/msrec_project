@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from .access import is_staff_side
+from .access import is_staff_side, staff_role_label
 from .models import Conversation, ConversationRead, Message
 
 staff_required = user_passes_test(is_staff_side, login_url="pages:login")
@@ -18,6 +18,8 @@ def _serialize_message(message, viewer):
         "body": message.body,
         "sender_id": message.sender_id,
         "sender_name": message.sender.full_name,
+        # '' for the applicant's own messages -- see staff_role_label().
+        "sender_role": staff_role_label(message.sender),
         "is_mine": message.sender_id == viewer.pk,
         "created_at": message.created_at.isoformat(),
         "created_at_display": local.strftime("%b %d, %Y · %I:%M %p"),
@@ -86,12 +88,16 @@ def applicant_messages_send(request):
 
 # ---------------------------------------------------------------------
 # Staff side -- every applicant's conversation, inbox-style: pick one,
-# read/reply, same poll/send machinery keyed by conversation id.
+# read/reply, same poll/send machinery keyed by conversation id. Shared
+# by admin_dashboard AND secretariat_dashboard (see their urls.py) --
+# is_staff_side already treats Admin and Secretariat as the same "staff
+# side" of a conversation, so one view pair serves both, each passing
+# its own dashboard's template_name so the sidebar/topbar stay branded.
 # ---------------------------------------------------------------------
 
 @login_required
 @staff_required
-def admin_messages(request):
+def staff_messages(request, template_name="dashboards/admin/messages.html"):
     conversations = list(
         Conversation.objects.select_related("applicant")
         .annotate(last_message_at=Max("messages__created_at"), message_count=Count("messages"))
@@ -115,7 +121,7 @@ def admin_messages(request):
         _mark_read(selected, request.user)
         selected.unread_for_staff = 0
 
-    return render(request, "dashboards/admin/messages.html", {
+    return render(request, template_name, {
         "conversations": conversations,
         "selected": selected,
         "thread_messages": thread_messages,
@@ -125,7 +131,7 @@ def admin_messages(request):
 
 @login_required
 @staff_required
-def admin_messages_poll(request, conversation_id):
+def staff_messages_poll(request, conversation_id):
     conversation = get_object_or_404(Conversation, pk=conversation_id)
     return _poll_response(request, conversation)
 
@@ -133,7 +139,7 @@ def admin_messages_poll(request, conversation_id):
 @login_required
 @staff_required
 @require_POST
-def admin_messages_send(request, conversation_id):
+def staff_messages_send(request, conversation_id):
     conversation = get_object_or_404(Conversation, pk=conversation_id)
     return _send_response(request, conversation)
 
