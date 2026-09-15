@@ -1,4 +1,3 @@
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
@@ -7,6 +6,7 @@ from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from applicant_dashboard.models import Application
+from pages.models import SiteSettings
 
 from . import fees, services
 from .models import Payment
@@ -29,7 +29,7 @@ def pay(request, pk):
     return render(request, "dashboards/applicant/application-pay.html", {
         "application": application,
         "payment": payment,
-        "paystack_public_key": settings.PAYSTACK_PUBLIC_KEY,
+        "paystack_public_key": SiteSettings.get_solo().effective_paystack_public_key,
         "verify_url": reverse("applicant_dashboard:application_pay_verify", kwargs={"pk": application.pk}),
     })
 

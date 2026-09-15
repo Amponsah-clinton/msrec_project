@@ -50,8 +50,8 @@
     <div class="branding d-flex align-items-cente">
       <div class="container-fluid position-relative d-flex align-items-center justify-content-between">
         <a href="{% url 'pages:index' %}" class="logo d-flex align-items-center">
-          <img src="{% static 'assets/img/logo1.png' %}" alt="MSREC logo">
-          <h1 class="sitename">MSREC</h1>
+          <img src="{% if site_settings.logo_url %}{{ site_settings.logo_url }}{% else %}{% static 'assets/img/logo1.png' %}{% endif %}" alt="{{ site_settings.site_name|default:'MSREC' }} logo">
+          <h1 class="sitename">{{ site_settings.site_name|default:"MSREC" }}</h1>
         </a>
         <nav id="navmenu" class="navmenu">
           <ul>
@@ -79,14 +79,14 @@
       <div class="row gy-4">
         <div class="col-lg-5 col-md-12 footer-about">
           <a href="{% url 'pages:index' %}" class="logo d-flex align-items-center">
-            <span class="sitename">MSREC</span>
+            <span class="sitename">{{ site_settings.site_name|default:"MSREC" }}</span>
           </a>
-          <p>Metascholar Research Ethics Committee provides structured ethical review, post-approval oversight and verifiable decisions for researchers and institutions across multiple disciplines.</p>
+          <p>{{ site_settings.footer_about }}</p>
           <div class="social-links d-flex mt-4">
-            <a href=""><i class="bi bi-twitter-x"></i></a>
-            <a href=""><i class="bi bi-facebook"></i></a>
-            <a href=""><i class="bi bi-instagram"></i></a>
-            <a href=""><i class="bi bi-linkedin"></i></a>
+            {% if site_settings.social_twitter_url %}<a href="{{ site_settings.social_twitter_url }}" target="_blank" rel="noopener"><i class="bi bi-twitter-x"></i></a>{% endif %}
+            {% if site_settings.social_facebook_url %}<a href="{{ site_settings.social_facebook_url }}" target="_blank" rel="noopener"><i class="bi bi-facebook"></i></a>{% endif %}
+            {% if site_settings.social_instagram_url %}<a href="{{ site_settings.social_instagram_url }}" target="_blank" rel="noopener"><i class="bi bi-instagram"></i></a>{% endif %}
+            {% if site_settings.social_linkedin_url %}<a href="{{ site_settings.social_linkedin_url }}" target="_blank" rel="noopener"><i class="bi bi-linkedin"></i></a>{% endif %}
           </div>
         </div>
 
@@ -114,17 +114,15 @@
 
         <div class="col-lg-3 col-md-12 footer-contact text-center text-md-start">
           <h4>Contact Us</h4>
-          <p>Metascholar Research Ethics Committee</p>
-          <p>Established under Metascholar Limited</p>
-          <p>Ghana</p>
-          <p class="mt-4"><strong>Phone:</strong> <span>+1 5589 55488 55</span></p>
-          <p><strong>Email:</strong> <span>secretariat@msrec.org</span></p>
+          {% for line in site_settings.footer_address.splitlines %}<p>{{ line }}</p>{% endfor %}
+          {% if site_settings.footer_phone %}<p class="mt-4"><strong>Phone:</strong> <span>{{ site_settings.footer_phone }}</span></p>{% endif %}
+          {% if site_settings.footer_email %}<p><strong>Email:</strong> <span>{{ site_settings.footer_email }}</span></p>{% endif %}
         </div>
       </div>
     </div>
 
     <div class="container copyright text-center mt-4">
-      <p>© <span id="copyYear">2026</span> <span>Copyright</span> <strong class="px-1 sitename">MSREC</strong> <span>All Rights Reserved</span></p>
+      <p>© <span id="copyYear">2026</span> <span>Copyright</span> <strong class="px-1 sitename">{{ site_settings.site_name|default:"MSREC" }}</strong> <span>All Rights Reserved</span></p>
       <p class="footer-legal-links"><a href="{% url 'pages:terms' %}">Terms of Use</a> &middot; <a href="{% url 'pages:privacy' %}">Privacy Notice</a></p>
       <div class="credits">
         Powered by <a href="https://metascholar.academicdigital.space/">Metascholar Consult Limited</a>
@@ -174,7 +172,7 @@
         <div class="pl-baton-wrap" style="transform: rotate(340deg);"><div class="pl-metronome" style="animation-delay: -4.76s;"><div class="pl-baton" style="animation-delay: -4.76s;"></div></div></div>
         <div class="pl-baton-wrap" style="transform: rotate(350deg);"><div class="pl-metronome" style="animation-delay: -4.9s;"><div class="pl-baton" style="animation-delay: -4.9s;"></div></div></div>
       </div>
-      <div class="pl-center"><img src="{% static 'assets/img/logo1.png' %}" alt="MSREC" class="pl-logo"></div>
+      <div class="pl-center"><img src="{% if site_settings.logo_url %}{{ site_settings.logo_url }}{% else %}{% static 'assets/img/logo1.png' %}{% endif %}" alt="{{ site_settings.site_name|default:'MSREC' }}" class="pl-logo"></div>
     </div>
     <span class="pl-label">Loading</span>
   </div>

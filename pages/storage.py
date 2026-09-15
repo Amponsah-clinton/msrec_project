@@ -74,6 +74,48 @@ def upload_member_photo(uploaded_file, *, member_id):
     return object_path
 
 
+def upload_site_logo(uploaded_file):
+    """Upload/replace the site's logo (SiteSettings.logo_path).
+
+    Fixed "site/logo.<ext>" path -- there's only ever one, so re-uploading
+    always overwrites the previous logo (via x-upsert) instead of
+    accumulating old copies, the same "fixed filename, singleton" idea as
+    upload_member_photo() above but with no id to key on. Returns the
+    object path on success, or None if Storage isn't configured or the
+    upload failed.
+    """
+    if not uploaded_file or not _configured():
+        return None
+
+    ext = ""
+    if "." in uploaded_file.name:
+        ext = "." + uploaded_file.name.rsplit(".", 1)[-1].lower()
+    object_path = f"site/logo{ext}"
+
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{object_path}"
+    req = urllib.request.Request(
+        url,
+        data=uploaded_file.read(),
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+            "apikey": settings.SUPABASE_SERVICE_KEY,
+            "Content-Type": _content_type_for(uploaded_file),
+            "x-upsert": "true",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            if resp.status not in (200, 201):
+                logger.warning("Supabase Storage upload of %s returned status %s", object_path, resp.status)
+                return None
+    except urllib.error.URLError:
+        logger.exception("Supabase Storage upload failed for %s", object_path)
+        return None
+
+    return object_path
+
+
 def delete_object(object_path):
     """Delete one object from the "profile" bucket (used when a member's
     photo is replaced with a different extension, or the member is

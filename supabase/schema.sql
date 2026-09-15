@@ -824,3 +824,75 @@ create policy "service_role full access to governance_members"
     on public.governance_members for all
     to service_role
     using (true) with check (true);
+
+
+-- ---------------------------------------------------------------------
+-- site_settings
+-- Mirrors pages.models.SiteSettings. The one site-wide configuration
+-- row -- logo, public-footer content, Contact page routing addresses,
+-- and the Paystack keys actually charged against -- edited from
+-- admin_dashboard's Settings page (dashboards/admin/settings.html,
+-- admin-only). A true singleton: application code always reads/writes
+-- it through SiteSettings.get_solo(), which get-or-creates the row at
+-- id = 1; the check constraint below is a belt-and-braces guarantee
+-- that a second row can never exist even if something bypasses the ORM.
+-- ---------------------------------------------------------------------
+create table if not exists public.site_settings (
+    id                          bigint primary key default 1 check (id = 1),
+
+    -- Identity / logo
+    site_name                  varchar(150) not null default 'MSREC',
+    -- Object path inside Supabase Storage's public "profile" bucket
+    -- (site/logo.<ext>, see pages/storage.py upload_site_logo()) --
+    -- blank means "no custom logo", every template falls back to the
+    -- bundled static/assets/img/logo1.png.
+    logo_path                  varchar(255) not null default '',
+
+    -- Public-site footer (templates/base.html)
+    footer_about                text not null default '',
+    footer_address              text not null default '',
+    footer_phone                varchar(40)  not null default '',
+    footer_email                varchar(254) not null default '',
+    social_twitter_url          varchar(200) not null default '',
+    social_facebook_url         varchar(200) not null default '',
+    social_instagram_url        varchar(200) not null default '',
+    social_linkedin_url         varchar(200) not null default '',
+
+    -- Contact page (templates/pages/contact.html) -- one routing
+    -- address per pages.models.Inquiry.Reason choice.
+    contact_secretariat_email   varchar(254) not null default '',
+    contact_applications_email  varchar(254) not null default '',
+    contact_complaints_email    varchar(254) not null default '',
+    contact_ethics_email        varchar(254) not null default '',
+    contact_techsupport_email   varchar(254) not null default '',
+    contact_phone               varchar(40)  not null default '',
+
+    -- Payment gateway -- blank means "not overridden here"; the app
+    -- falls back to the PAYSTACK_SECRET_KEY/PAYSTACK_PUBLIC_KEY env
+    -- vars whenever these are empty (see payments/paystack.py
+    -- secret_key() and payments/views.py's pay()).
+    paystack_public_key         varchar(150) not null default '',
+    paystack_secret_key         varchar(150) not null default '',
+
+    updated_at                  timestamptz not null default now(),
+    updated_by_id                bigint references public.users (id) on delete set null
+);
+
+comment on table public.site_settings is 'The one site-wide configuration row (logo, footer, Contact page addresses, Paystack keys). pages.models.SiteSettings maps onto this table 1:1 -- always exactly one row, id = 1.';
+comment on column public.site_settings.logo_path is 'Object path in the "profile" Storage bucket -- blank falls back to the bundled static logo.';
+comment on column public.site_settings.footer_address is 'Free text, one address line per row (org name / parent body / country, or whatever an admin wants) -- rendered with linebreaksbr, not fixed name/line1/line2/country fields.';
+comment on column public.site_settings.paystack_secret_key is 'Never sent to any template -- only ever used server-side in payments/paystack.py''s Authorization header. Blank = fall back to the PAYSTACK_SECRET_KEY env var.';
+
+alter table public.site_settings enable row level security;
+
+drop policy if exists "service_role full access to site_settings" on public.site_settings;
+create policy "service_role full access to site_settings"
+    on public.site_settings for all
+    to service_role
+    using (true) with check (true);
+
+-- Seeds the one settings row so the app's first SiteSettings.get_solo()
+-- call finds it already there instead of racing to create it. Also
+-- fine to skip this -- get_solo() creates it on first access either way.
+insert into public.site_settings (id) values (1)
+on conflict (id) do nothing;

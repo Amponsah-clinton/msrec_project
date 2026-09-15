@@ -46,10 +46,10 @@ dashboard page, not just the three full Messages pages.
   <aside class="sidebar" id="sidebar">
     <div class="brand">
       <div class="brand-icon">
-        <img src="{% static 'assets/img/logo1.png' %}" alt="MSREC logo">
+        <img src="{% if site_settings.logo_url %}{{ site_settings.logo_url }}{% else %}{% static 'assets/img/logo1.png' %}{% endif %}" alt="{{ site_settings.site_name|default:'MSREC' }} logo">
       </div>
       <div class="brand-text">
-        <span class="brand-name">MSREC</span>
+        <span class="brand-name">{{ site_settings.site_name|default:"MSREC" }}</span>
         <span class="brand-sub">Metascholar Research<br>Ethics Committee</span>
       </div>
     </div>

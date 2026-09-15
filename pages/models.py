@@ -2,6 +2,104 @@ from django.conf import settings
 from django.db import models
 
 
+class SiteSettings(models.Model):
+    """The one site-wide configuration row -- logo, footer content,
+    Contact page routing addresses, and the Paystack keys actually
+    charged against. Edited from admin_dashboard's Settings page
+    (admin-only, see admin_dashboard.views.site_settings).
+
+    A true singleton: always read/written through get_solo(), which
+    get-or-creates the one row at pk=1. Nothing else ever creates a
+    second row or looks one up by a different id -- there's no "add
+    another settings" anywhere in the UI, unlike GovernanceMember/
+    Inquiry above, which are genuinely one-row-per-record.
+    """
+
+    # ---- Identity / logo -------------------------------------------------
+    site_name = models.CharField(max_length=150, default="MSREC", blank=True)
+    # Object path inside Supabase Storage's public "profile" bucket (see
+    # pages/storage.py's upload_site_logo()) -- fixed "site/logo.<ext>"
+    # path, not per-id like governance photos, since this is a singleton.
+    # Blank means "no custom logo yet", and every template that shows the
+    # logo falls back to the bundled static/assets/img/logo1.png.
+    logo_path = models.CharField(max_length=255, blank=True)
+
+    # ---- Public-site footer (templates/base.html) -------------------------
+    footer_about = models.TextField(blank=True, default=(
+        "Metascholar Research Ethics Committee provides structured ethical review, "
+        "post-approval oversight and verifiable decisions for researchers and "
+        "institutions across multiple disciplines."
+    ))
+    # Free text, one line per address component (org name / parent body /
+    # country, or whatever an admin wants) -- rendered with linebreaksbr
+    # rather than forcing a rigid name/line1/line2/country field shape.
+    footer_address = models.TextField(blank=True, default=(
+        "Metascholar Research Ethics Committee\nEstablished under Metascholar Limited\nGhana"
+    ))
+    footer_phone = models.CharField(max_length=40, blank=True, default="+1 5589 55488 55")
+    footer_email = models.EmailField(blank=True, default="secretariat@msrec.org")
+    social_twitter_url = models.URLField(blank=True)
+    social_facebook_url = models.URLField(blank=True)
+    social_instagram_url = models.URLField(blank=True)
+    social_linkedin_url = models.URLField(blank=True)
+
+    # ---- Contact page (templates/pages/contact.html) ----------------------
+    # One routing address per Inquiry.Reason -- these are what a submitter
+    # sees as "who this goes to", shown as plain text on the Contact page
+    # (the actual submission always goes through pages.views.contact into
+    # the Inquiry table regardless of which address is displayed here).
+    contact_secretariat_email = models.EmailField(blank=True, default="secretariat@msrec.org")
+    contact_applications_email = models.EmailField(blank=True, default="applications@msrec.org")
+    contact_complaints_email = models.EmailField(blank=True, default="complaints@msrec.org")
+    contact_ethics_email = models.EmailField(blank=True, default="ethics@msrec.org")
+    contact_techsupport_email = models.EmailField(blank=True, default="techsupport@msrec.org")
+    contact_phone = models.CharField(max_length=40, blank=True, default="+1 5589 55488 55")
+
+    # ---- Payment gateway ---------------------------------------------------
+    # Blank means "not overridden here" -- payments/paystack.py and
+    # payments/views.py fall back to settings.PAYSTACK_SECRET_KEY/
+    # PAYSTACK_PUBLIC_KEY (the env-configured ones) whenever these are
+    # empty, so an install works out of the box before anyone visits this
+    # page, and switching keys live never requires touching .env or
+    # redeploying. See effective_paystack_public_key/_secret_key below.
+    paystack_public_key = models.CharField(max_length=150, blank=True)
+    paystack_secret_key = models.CharField(max_length=150, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="site_settings_edits",
+    )
+
+    class Meta:
+        db_table = "site_settings"
+
+    def __str__(self):
+        return "Site Settings"
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    @property
+    def logo_url(self):
+        if not self.logo_path:
+            return None
+        from . import storage
+        return storage.public_url(self.logo_path)
+
+    @property
+    def effective_paystack_public_key(self):
+        from django.conf import settings as django_settings
+        return self.paystack_public_key or django_settings.PAYSTACK_PUBLIC_KEY
+
+    @property
+    def effective_paystack_secret_key(self):
+        from django.conf import settings as django_settings
+        return self.paystack_secret_key or django_settings.PAYSTACK_SECRET_KEY
+
+
 class Inquiry(models.Model):
     """One submission of the public Contact page
     (templates/pages/contact.html). Saved straight to Supabase Postgres via

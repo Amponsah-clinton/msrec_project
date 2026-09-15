@@ -30,7 +30,7 @@
                 <i class="bi bi-envelope-paper flex-shrink-0"></i>
                 <div>
                   <h3>Secretariat</h3>
-                  <p>secretariat@msrec.org<br>+1 5589 55488 55</p>
+                  <p>{{ site_settings.contact_secretariat_email }}{% if site_settings.contact_phone %}<br>{{ site_settings.contact_phone }}{% endif %}</p>
                 </div>
               </div><!-- End Info Item -->
 
@@ -38,7 +38,7 @@
                 <i class="bi bi-life-preserver flex-shrink-0"></i>
                 <div>
                   <h3>Application Support</h3>
-                  <p>applications@msrec.org</p>
+                  <p>{{ site_settings.contact_applications_email }}</p>
                 </div>
               </div><!-- End Info Item -->
 
@@ -46,7 +46,7 @@
                 <i class="bi bi-exclamation-triangle flex-shrink-0"></i>
                 <div>
                   <h3>Complaints</h3>
-                  <p>complaints@msrec.org</p>
+                  <p>{{ site_settings.contact_complaints_email }}</p>
                 </div>
               </div><!-- End Info Item -->
 
@@ -54,7 +54,7 @@
                 <i class="bi bi-shield-exclamation flex-shrink-0"></i>
                 <div>
                   <h3>Ethics Concerns</h3>
-                  <p>ethics@msrec.org</p>
+                  <p>{{ site_settings.contact_ethics_email }}</p>
                 </div>
               </div><!-- End Info Item -->
 
@@ -62,7 +62,7 @@
                 <i class="bi bi-headset flex-shrink-0"></i>
                 <div>
                   <h3>Technical Support</h3>
-                  <p>techsupport@msrec.org</p>
+                  <p>{{ site_settings.contact_techsupport_email }}</p>
                 </div>
               </div><!-- End Info Item -->
 

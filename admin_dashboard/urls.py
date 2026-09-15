@@ -30,4 +30,5 @@ urlpatterns = [
     path("profile-security/", views.profile_security, name="profile_security"),
     path("help-support/", views.help_support, name="help_support"),
     path("board-committee/", views.board_committee, name="board_committee"),
+    path("settings/", views.site_settings, name="settings"),
 ]

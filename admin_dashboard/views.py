@@ -1,12 +1,14 @@
 import csv
 from datetime import timedelta
 
+from django.conf import settings as django_settings
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.http import HttpResponse, JsonResponse
@@ -23,7 +25,7 @@ from applicant_dashboard import storage as application_storage
 from applicant_dashboard.models import Application
 from notifications.emails import send_branded_email
 from pages import storage as pages_storage
-from pages.models import GovernanceMember, Inquiry
+from pages.models import GovernanceMember, Inquiry, SiteSettings
 from payments import fees
 from payments import services as payment_services
 from reviewer_dashboard import storage as reviewer_storage
@@ -927,4 +929,139 @@ def board_committee(request):
         "counts": counts,
         "active_tab": active_tab,
         "groups": GovernanceMember.Group.choices,
+    })
+
+
+# ---------------------------------------------------------------------
+# Site Settings -- the one SiteSettings row (pages.models.SiteSettings.
+# get_solo()). Four independent forms on one page, each its own POST
+# `action`, the same "several small forms on one page" shape as
+# finance()'s Fee Schedule editor above.
+# ---------------------------------------------------------------------
+
+def _mask_secret(key):
+    """Never echo a saved secret back in full -- last 4 characters only,
+    so an admin can confirm which key is active without the real value
+    ever round-tripping into rendered HTML (view-source, browser
+    autofill, a shoulder-surfed screen share, etc.)."""
+    if not key:
+        return ""
+    return f"{'•' * 10}{key[-4:]}" if len(key) > 4 else "••••"
+
+
+def _handle_settings_identity(request, site):
+    site_name = request.POST.get("site_name", "").strip()
+    if not site_name:
+        messages.error(request, "Site name is required.")
+        return
+    site.site_name = site_name
+
+    logo = request.FILES.get("logo")
+    if logo:
+        if not (logo.content_type or "").startswith("image/"):
+            messages.error(request, "Logo must be an image file.")
+            return
+        old_path = site.logo_path
+        object_path = pages_storage.upload_site_logo(logo)
+        if object_path:
+            site.logo_path = object_path
+            if old_path and old_path != object_path:
+                pages_storage.delete_object(old_path)
+        else:
+            messages.warning(request, "Site name saved, but the new logo couldn't be uploaded right now.")
+
+    site.updated_by = request.user
+    site.save()
+    messages.success(request, "Site identity updated.")
+
+
+def _handle_settings_footer(request, site):
+    footer_email = request.POST.get("footer_email", "").strip()
+    if footer_email:
+        try:
+            validate_email(footer_email)
+        except ValidationError:
+            messages.error(request, "Enter a valid footer contact email.")
+            return
+
+    site.footer_about = request.POST.get("footer_about", "").strip()
+    site.footer_address = request.POST.get("footer_address", "").strip()
+    site.footer_phone = request.POST.get("footer_phone", "").strip()
+    site.footer_email = footer_email
+    site.social_twitter_url = request.POST.get("social_twitter_url", "").strip()
+    site.social_facebook_url = request.POST.get("social_facebook_url", "").strip()
+    site.social_instagram_url = request.POST.get("social_instagram_url", "").strip()
+    site.social_linkedin_url = request.POST.get("social_linkedin_url", "").strip()
+    site.updated_by = request.user
+    site.save()
+    messages.success(request, "Footer updated.")
+
+
+def _handle_settings_contact(request, site):
+    email_fields = {
+        "contact_secretariat_email": "Secretariat",
+        "contact_applications_email": "Application Support",
+        "contact_complaints_email": "Complaints",
+        "contact_ethics_email": "Ethics Concerns",
+        "contact_techsupport_email": "Technical Support",
+    }
+    cleaned = {}
+    for field, label in email_fields.items():
+        value = request.POST.get(field, "").strip()
+        if value:
+            try:
+                validate_email(value)
+            except ValidationError:
+                messages.error(request, f"Enter a valid {label} email address.")
+                return
+        cleaned[field] = value
+
+    for field, value in cleaned.items():
+        setattr(site, field, value)
+    site.contact_phone = request.POST.get("contact_phone", "").strip()
+    site.updated_by = request.user
+    site.save()
+    messages.success(request, "Contact page details updated.")
+
+
+def _handle_settings_paystack(request, site):
+    site.paystack_public_key = request.POST.get("paystack_public_key", "").strip()
+    # A blank secret-key input means "keep the saved one" -- the field is
+    # never pre-filled with the real value (see _mask_secret / the view
+    # below), so treating an empty submit as "clear it" would silently
+    # break checkout the next time someone saves this form without also
+    # retyping a secret they were never shown.
+    secret_key = request.POST.get("paystack_secret_key", "").strip()
+    if secret_key:
+        site.paystack_secret_key = secret_key
+    site.updated_by = request.user
+    site.save()
+    messages.success(request, "Payment gateway settings updated.")
+
+
+@login_required
+@admin_required
+def site_settings(request):
+    site = SiteSettings.get_solo()
+
+    if request.method == "POST":
+        handler = {
+            "update_identity": _handle_settings_identity,
+            "update_footer": _handle_settings_footer,
+            "update_contact": _handle_settings_contact,
+            "update_paystack": _handle_settings_paystack,
+        }.get(request.POST.get("action"))
+        if handler:
+            handler(request, site)
+        else:
+            messages.error(request, "That request could not be processed.")
+        return redirect("admin_dashboard:settings")
+
+    return render(request, "dashboards/admin/settings.html", {
+        "site": site,
+        "logo_url": pages_storage.public_url(site.logo_path),
+        "paystack_secret_key_masked": _mask_secret(site.paystack_secret_key),
+        "using_env_public_key": not site.paystack_public_key,
+        "using_env_secret_key": not site.paystack_secret_key,
+        "env_paystack_public_key": django_settings.PAYSTACK_PUBLIC_KEY,
     })

@@ -27,6 +27,17 @@ class PaystackError(Exception):
     pass
 
 
+def secret_key():
+    """The secret key actually used for server-side Paystack calls --
+    SiteSettings' DB-editable override (admin_dashboard's Settings page)
+    when set, otherwise the env-configured settings.PAYSTACK_SECRET_KEY.
+    A local import avoids a pages<->payments import-time circular
+    dependency (pages.models doesn't import payments, but keeping this
+    lazy costs nothing and rules it out for good)."""
+    from pages.models import SiteSettings
+    return SiteSettings.get_solo().effective_paystack_secret_key
+
+
 def _request(method, path, *, data=None):
     url = f"{API_BASE}{path}"
     body = json.dumps(data).encode() if data is not None else None
@@ -35,7 +46,7 @@ def _request(method, path, *, data=None):
         data=body,
         method=method,
         headers={
-            "Authorization": f"Bearer {settings.PAYSTACK_SECRET_KEY}",
+            "Authorization": f"Bearer {secret_key()}",
             "Content-Type": "application/json",
             # Paystack's API sits behind Cloudflare, which blocks Python's
             # default urllib User-Agent ("Python-urllib/3.x") as a bot
