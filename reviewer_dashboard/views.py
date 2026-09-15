@@ -192,21 +192,91 @@ def respond_to_assignment(request):
     return redirect(redirect_url)
 
 
+def _handle_submit_assessment(request, assignment):
+    """Validate and save a reviewer's Ethical Review Assessment Form
+    (Reviewer Declaration, the 10-row checklist, comments and
+    recommendation) and close the assignment out as Completed. Mirrors
+    the paper METASCHOLAR reviewer assessment form section-for-section."""
+    coi_choice = request.POST.get("coi_choice", "")
+    coi_details = request.POST.get("coi_details", "").strip()
+    confidentiality_confirmed = bool(request.POST.get("confidentiality_confirmed"))
+    recommendation = request.POST.get("recommendation", "")
+
+    if coi_choice not in {"none", "conflict"}:
+        messages.error(request, "Please declare whether you have a conflict of interest.")
+        return False
+    if coi_choice == "conflict" and not coi_details:
+        messages.error(request, "Please describe the conflict of interest you declared.")
+        return False
+    if not confidentiality_confirmed:
+        messages.error(request, "You must confirm confidentiality to submit this assessment.")
+        return False
+
+    checklist = {}
+    for key, _label in ReviewAssignment.CHECKLIST_ITEMS:
+        value = request.POST.get(f"checklist_{key}", "")
+        if value not in ReviewAssignment.CHECKLIST_CHOICES:
+            messages.error(request, "Please complete every row of the Ethical Review checklist.")
+            return False
+        checklist[key] = value
+
+    if recommendation not in ReviewAssignment.Recommendation.values:
+        messages.error(request, "Please select a recommendation.")
+        return False
+
+    assignment.coi_has_conflict = coi_choice == "conflict"
+    assignment.coi_details = coi_details if assignment.coi_has_conflict else ""
+    assignment.coi_declared = True
+    assignment.confidentiality_confirmed = True
+    assignment.checklist = checklist
+    assignment.key_concerns = request.POST.get("key_concerns", "").strip()
+    assignment.documents_comment = request.POST.get("documents_comment", "").strip()
+    assignment.recommendation = recommendation
+    assignment.recommendation_reason = request.POST.get("recommendation_reason", "").strip()
+    assignment.review_notes = request.POST.get("review_notes", "").strip()
+    assignment.status = ReviewAssignment.Status.COMPLETED
+    assignment.completed_at = timezone.now()
+    assignment.save(update_fields=[
+        "coi_has_conflict", "coi_details", "coi_declared", "confidentiality_confirmed",
+        "checklist", "key_concerns", "documents_comment", "recommendation",
+        "recommendation_reason", "review_notes", "status", "completed_at",
+    ])
+
+    ref = assignment.application.reference_no or assignment.application.title
+    notify(
+        Notification.Audience.SECRETARIAT,
+        f"{request.user.full_name} submitted their assessment for {ref}: "
+        f"{assignment.get_recommendation_display()}.",
+        icon=Notification.Icon.SUCCESS,
+        link_url_name="secretariat_dashboard:reviewer_assignment",
+    )
+    messages.success(request, f"Your assessment for {ref} has been submitted. Thank you.")
+    return True
+
+
 @login_required
 @reviewer_required
 def review_application(request, assignment_id):
-    """Read-only view of the application's own text (Research Information,
-    PI details, documents, every submitted answer) for a reviewer who has
-    accepted the assignment -- the "Review" button only appears once
-    accepted, and this checks that server-side too rather than trusting
-    the button was actually hidden: a still-New or already-Declined
-    assignment 404s here, same as pk-scoping to `reviewer=request.user`
-    keeps one reviewer from opening another's assignment by guessing an id."""
+    """Ethical Review Assessment Form for a reviewer who has accepted the
+    assignment: the application's own text (Research Information, PI
+    details, documents, every submitted answer) for reference, plus the
+    Reviewer Declaration / checklist / recommendation form itself on
+    POST. A still-New or already-Declined assignment 404s here, same as
+    pk-scoping to `reviewer=request.user` keeps one reviewer from opening
+    another's assignment by guessing an id. Once Completed, the same
+    template renders the submitted answers read-only instead of the form."""
     assignment = get_object_or_404(
         ReviewAssignment.objects.select_related("application", "application__applicant"),
         pk=assignment_id, reviewer=request.user,
         status__in=[ReviewAssignment.Status.ACCEPTED, ReviewAssignment.Status.COMPLETED],
     )
+
+    if request.method == "POST":
+        if assignment.status != ReviewAssignment.Status.ACCEPTED:
+            messages.error(request, "This assessment has already been submitted.")
+        elif _handle_submit_assessment(request, assignment):
+            return redirect("reviewer_dashboard:review_application", assignment_id=assignment.pk)
+
     application = assignment.application
     documents = [
         {**doc, "url": application_storage.public_url(doc.get("path"))}
@@ -216,6 +286,13 @@ def review_application(request, assignment_id):
         "assignment": assignment,
         "application": application,
         "documents": documents,
+        "checklist_items": ReviewAssignment.CHECKLIST_ITEMS,
+        "recommendation_choices": ReviewAssignment.Recommendation.choices,
+        # Sticky re-population after a failed validation -- empty (falsy)
+        # on GET and once the assessment is Completed, so template lookups
+        # like `posted.checklist_rationale` harmlessly fall through to
+        # `assignment.checklist.rationale` via the `default` filter.
+        "posted": request.POST if request.method == "POST" else None,
     })
 
 

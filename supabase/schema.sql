@@ -362,13 +362,27 @@ create table if not exists public.review_assignments (
     completed_at    timestamptz,
 
     recommendation  varchar(30) not null default ''
-                    check (recommendation in ('', 'approve', 'minor_revisions', 'major_revisions', 'reject')),
+                    check (recommendation in ('', 'approve', 'minor_revisions', 'major_revisions', 'refer_committee', 'not_approved')),
     review_notes    text not null default '',
 
     -- Whether the reviewer has submitted their conflict-of-interest
     -- declaration for this assignment (drives the "Pending COI
-    -- Declarations" stat on the Reviewer dashboard).
-    coi_declared    boolean not null default false
+    -- Declarations" stat on the Reviewer dashboard). Set true the moment
+    -- the Reviewer Assessment Form below is submitted.
+    coi_declared    boolean not null default false,
+
+    -- Reviewer Assessment Form (dashboards/reviewer/review-application.html)
+    -- -- one row per assignment, submitted once, then read-only. Mirrors
+    -- METASCHOLAR's paper reviewer assessment form section-for-section:
+    -- Reviewer Declaration, the 10-row Ethical Review checklist, Reviewer
+    -- Comments, and Recommendation.
+    coi_has_conflict        boolean not null default false,
+    coi_details              text not null default '',
+    confidentiality_confirmed boolean not null default false,
+    checklist                jsonb not null default '{}'::jsonb,
+    key_concerns              text not null default '',
+    documents_comment         text not null default '',
+    recommendation_reason     text not null default ''
 );
 
 comment on table public.review_assignments is 'One application assigned to one reviewer. reviewer_dashboard.models.ReviewAssignment maps onto this table 1:1.';
@@ -698,6 +712,39 @@ alter table public.review_assignments
     add column if not exists declined_at timestamptz;
 
 comment on column public.review_assignments.declined_at is 'Set when the reviewer declines a New assignment -- the Secretariat is notified and the application goes back on the Assign Reviewer tab.';
+
+
+-- ==========================================================================
+-- Incremental migration -- reviewer_dashboard.0004_reviewassignment_checklist_and_more
+-- Run this block on its own in the Supabase SQL editor if
+-- `public.review_assignments` already exists. Adds the Reviewer
+-- Assessment Form's fields and widens the recommendation check
+-- constraint (drops 'reject', adds 'refer_committee' / 'not_approved').
+-- Safe to re-run.
+-- ==========================================================================
+alter table public.review_assignments
+    add column if not exists coi_has_conflict boolean not null default false;
+alter table public.review_assignments
+    add column if not exists coi_details text not null default '';
+alter table public.review_assignments
+    add column if not exists confidentiality_confirmed boolean not null default false;
+alter table public.review_assignments
+    add column if not exists checklist jsonb not null default '{}'::jsonb;
+alter table public.review_assignments
+    add column if not exists key_concerns text not null default '';
+alter table public.review_assignments
+    add column if not exists documents_comment text not null default '';
+alter table public.review_assignments
+    add column if not exists recommendation_reason text not null default '';
+
+alter table public.review_assignments
+    drop constraint if exists review_assignments_recommendation_check;
+alter table public.review_assignments
+    add constraint review_assignments_recommendation_check
+    check (recommendation in ('', 'approve', 'minor_revisions', 'major_revisions', 'refer_committee', 'not_approved'));
+
+comment on column public.review_assignments.checklist is 'The 10-row Ethical Review checklist, keyed by ReviewAssignment.CHECKLIST_ITEMS -- each value is satisfactory | needs_revision | na.';
+comment on column public.review_assignments.coi_has_conflict is 'Reviewer Declaration section: whether a conflict of interest was declared for this specific assignment -- see coi_details for the description.';
 
 
 -- ---------------------------------------------------------------------

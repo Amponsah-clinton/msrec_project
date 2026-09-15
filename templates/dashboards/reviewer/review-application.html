@@ -7,6 +7,7 @@
 <link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
 <link href="{% static 'assets/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
 <link href="{% static 'dashboard/css/application-form.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/reviewer-assessment.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block nav_content %}
@@ -163,4 +164,175 @@
         </section>
       </div>
 
+      {% if assignment.status == 'completed' %}
+      <div class="body-grid">
+        <section class="panel" style="padding:24px 26px;">
+
+          <div class="assess-summary-banner">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 5-5"/></svg>
+            <div>
+              <strong>Assessment submitted</strong>
+              <span>Recorded {{ assignment.completed_at|date:"j M Y, g:i A" }} &middot; the Secretariat has been notified.</span>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/></svg> Reviewer Declaration</h3>
+            <div class="assess-summary-row">
+              <span class="assess-checklist-label">Conflict of interest</span>
+              {% if assignment.coi_has_conflict %}<span class="badge-tag orange">Potential conflict declared</span>{% else %}<span class="badge-tag green">None declared</span>{% endif %}
+            </div>
+            {% if assignment.coi_has_conflict %}
+            <div class="assess-summary-row"><span class="assess-checklist-label">Conflict details</span></div>
+            <p style="margin:-6px 0 0; font-size:13px; color:var(--text-main); line-height:1.6;">{{ assignment.coi_details|linebreaksbr }}</p>
+            {% endif %}
+            <div class="assess-summary-row">
+              <span class="assess-checklist-label">Confidentiality</span>
+              <span class="badge-tag green">Confirmed</span>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> Ethical Review</h3>
+            <div class="assess-checklist">
+              {% for row in assignment.checklist_rows %}
+              <div class="assess-summary-row">
+                <span class="assess-checklist-label">{{ row.label }}</span>
+                <span class="badge-tag {{ row.badge }}">{{ row.value_label }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg> Reviewer Comments</h3>
+            <div class="field-grid">
+              <div class="field field-wide"><label>Key ethical concerns or required revisions</label><p style="margin:0; font-size:13px; color:var(--text-main); line-height:1.6;">{{ assignment.key_concerns|default:"None recorded."|linebreaksbr }}</p></div>
+              <div class="field field-wide"><label>Additional comments / recommendations</label><p style="margin:0; font-size:13px; color:var(--text-main); line-height:1.6;">{{ assignment.review_notes|default:"None recorded."|linebreaksbr }}</p></div>
+              {% if assignment.documents_comment %}
+              <div class="field field-wide"><label>Comments on additional documents</label><p style="margin:0; font-size:13px; color:var(--text-main); line-height:1.6;">{{ assignment.documents_comment|linebreaksbr }}</p></div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Recommendation</h3>
+            <div class="assess-summary-row">
+              <span class="assess-checklist-label">Decision</span>
+              <span class="badge-tag {{ assignment.recommendation_badge }}">{{ assignment.get_recommendation_display }}</span>
+            </div>
+            {% if assignment.recommendation_reason %}
+            <div class="assess-summary-row"><span class="assess-checklist-label">Reason</span></div>
+            <p style="margin:-6px 0 0; font-size:13px; color:var(--text-main); line-height:1.6;">{{ assignment.recommendation_reason|linebreaksbr }}</p>
+            {% endif %}
+          </div>
+
+        </section>
+      </div>
+      {% elif assignment.status == 'accepted' %}
+      <div class="body-grid">
+        <section class="panel" style="padding:24px 26px;">
+
+          <div class="assess-intro">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+            <span>Complete the Ethical Review Assessment Form below. It mirrors MSREC's paper reviewer form, is submitted once, and the Secretariat is notified the moment you send it.</span>
+          </div>
+
+          <form method="post" id="assessmentForm">
+            {% csrf_token %}
+
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/></svg> Reviewer Declaration</h3>
+              <p class="section-note">Confirm your conflict-of-interest status and confidentiality obligations before reviewing the application below.</p>
+
+              <label style="display:block; font-weight:600; color:var(--text-main); font-size:12.5px; margin-bottom:8px;">Conflict of interest <span class="req">*</span></label>
+              <div class="assess-coi-options">
+                <label class="chip-checkbox"><input type="radio" name="coi_choice" value="none" {% if posted.coi_choice == "none" %}checked{% endif %} required><span>None &mdash; I have no conflict of interest with this application or its investigators.</span></label>
+                <label class="chip-checkbox"><input type="radio" name="coi_choice" value="conflict" {% if posted.coi_choice == "conflict" %}checked{% endif %}><span>Potential conflict identified &mdash; details below.</span></label>
+              </div>
+              <div class="field assess-coi-details" id="coiDetailsWrap" hidden>
+                <label for="coiDetails">Describe the conflict</label>
+                <textarea id="coiDetails" name="coi_details" rows="2" placeholder="e.g. I have previously supervised the Principal Investigator...">{{ posted.coi_details|default:"" }}</textarea>
+              </div>
+
+              <div class="assess-confidentiality">
+                <label class="chip-checkbox">
+                  <input type="checkbox" name="confidentiality_confirmed" value="1" {% if posted.confidentiality_confirmed %}checked{% endif %} required>
+                  <span>I confirm that I will treat this application and all related information as confidential. <span class="req">*</span></span>
+                </label>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> Ethical Review</h3>
+              <p class="section-note">Assess each area below. Every row is required.</p>
+
+              <div class="assess-progress">
+                <span class="assess-progress-count" id="assessProgressCount">0 of {{ checklist_items|length }} answered</span>
+                <div class="assess-progress-track"><div class="assess-progress-fill" id="assessProgressFill"></div></div>
+              </div>
+
+              <div class="assess-checklist">
+                {% for key, label in checklist_items %}
+                <div class="assess-checklist-row">
+                  <span class="assess-checklist-label"><span class="assess-checklist-num">{{ forloop.counter }}</span>{{ label }}</span>
+                  <div class="assess-checklist-options">
+                    <label class="chip-checkbox"><input type="radio" name="checklist_{{ key }}" value="satisfactory" required><span>Satisfactory</span></label>
+                    <label class="chip-checkbox"><input type="radio" name="checklist_{{ key }}" value="needs_revision"><span>Needs Revision</span></label>
+                    <label class="chip-checkbox"><input type="radio" name="checklist_{{ key }}" value="na"><span>N/A</span></label>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg> Reviewer Comments</h3>
+              <div class="field-grid">
+                <div class="field field-wide">
+                  <label for="keyConcerns">Key ethical concerns or required revisions</label>
+                  <textarea id="keyConcerns" name="key_concerns" rows="3" placeholder="Note anything that must be addressed before this application can proceed...">{{ posted.key_concerns|default:"" }}</textarea>
+                </div>
+                <div class="field field-wide">
+                  <label for="reviewNotes">Additional comments / recommendations</label>
+                  <textarea id="reviewNotes" name="review_notes" rows="3" placeholder="Any further observations for the Secretariat or applicant...">{{ posted.review_notes|default:"" }}</textarea>
+                </div>
+                <div class="field field-wide">
+                  <label for="documentsComment">Comments on additional documents, if any</label>
+                  <textarea id="documentsComment" name="documents_comment" rows="2" placeholder="Optional &mdash; note anything about the {{ documents|length }} document(s) attached above">{{ posted.documents_comment|default:"" }}</textarea>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Recommendation</h3>
+              <p class="section-note">Select the outcome you're recommending to the Secretariat. <span class="req">*</span></p>
+              <div class="assess-recommendation-options">
+                {% for value, display in recommendation_choices %}
+                <label class="chip-checkbox"><input type="radio" name="recommendation" value="{{ value }}" {% if posted.recommendation == value %}checked{% endif %} required><span>{{ display }}</span></label>
+                {% endfor %}
+              </div>
+              <div class="field field-wide">
+                <label for="recommendationReason">Reason for recommendation</label>
+                <textarea id="recommendationReason" name="recommendation_reason" rows="3" placeholder="Briefly explain the recommendation above...">{{ posted.recommendation_reason|default:"" }}</textarea>
+              </div>
+            </div>
+
+            <div class="assess-submit-bar">
+              <p class="assess-submit-note">Submitting is final &mdash; this assessment can't be edited afterwards, and it moves this review to your Completed tab.</p>
+              <button type="submit" class="btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 13 4 4L19 7"/></svg>
+                Submit Assessment
+              </button>
+            </div>
+          </form>
+
+        </section>
+      </div>
+      {% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/reviewer-assessment.js' %}"></script>
 {% endblock %}

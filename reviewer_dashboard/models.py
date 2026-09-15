@@ -23,9 +23,35 @@ class ReviewAssignment(models.Model):
 
     class Recommendation(models.TextChoices):
         APPROVE = "approve", "Approve"
-        MINOR_REVISIONS = "minor_revisions", "Minor Revisions"
-        MAJOR_REVISIONS = "major_revisions", "Major Revisions"
-        REJECT = "reject", "Reject"
+        MINOR_REVISIONS = "minor_revisions", "Approve Subject to Minor Revisions"
+        MAJOR_REVISIONS = "major_revisions", "Major Revisions Required / Resubmission Required"
+        REFER_COMMITTEE = "refer_committee", "Refer for Full Committee Review"
+        NOT_APPROVED = "not_approved", "Not Approved"
+
+    # The 10 rows of the Reviewer Assessment Form's "Ethical Review" table
+    # (see templates/dashboards/reviewer/review-application.html) -- each
+    # key is answered 'satisfactory' | 'needs_revision' | 'na' and stored
+    # in `checklist` below, keyed by this list rather than one column per
+    # row so the form's questions can be re-worded without a migration.
+    CHECKLIST_ITEMS = [
+        ("rationale", "Scientific/research rationale is clear"),
+        ("risks", "Risks to participants are appropriately identified and minimized"),
+        ("benefits", "Potential benefits justify the risks"),
+        ("selection", "Participant selection is fair and appropriate"),
+        ("consent", "Informed consent process is adequate"),
+        ("privacy", "Privacy and confidentiality are adequately protected"),
+        ("data_handling", "Data collection, storage, access, and disposal are appropriate"),
+        ("vulnerable", "Protection of vulnerable participants is adequate"),
+        ("recruitment", "Recruitment methods and materials are appropriate"),
+        ("overall", "Overall ethical requirements are satisfactorily addressed"),
+    ]
+    CHECKLIST_CHOICES = {"satisfactory", "needs_revision", "na"}
+    CHECKLIST_BADGE = {"satisfactory": "green", "needs_revision": "orange", "na": "gray"}
+    CHECKLIST_LABEL = {"satisfactory": "Satisfactory", "needs_revision": "Needs Revision", "na": "N/A"}
+    RECOMMENDATION_BADGE = {
+        "approve": "green", "minor_revisions": "teal", "major_revisions": "orange",
+        "refer_committee": "purple", "not_approved": "red",
+    }
 
     application = models.ForeignKey(
         "applicant_dashboard.Application", on_delete=models.CASCADE, related_name="review_assignments"
@@ -51,10 +77,21 @@ class ReviewAssignment(models.Model):
 
     # Whether the reviewer has submitted their conflict-of-interest
     # declaration for this assignment. Drives the dashboard's "Pending COI
-    # Declarations" stat -- there's no separate COI model yet (the
-    # Conflict of Interest nav links are still stubs), so this is the
-    # simplest honest source of truth until that flow gets built out.
+    # Declarations" stat -- set True the moment the Reviewer Assessment
+    # Form (below) is submitted, since that form's Reviewer Declaration
+    # section *is* the COI declaration.
     coi_declared = models.BooleanField(default=False)
+    coi_has_conflict = models.BooleanField(default=False)
+    coi_details = models.TextField(blank=True)
+    confidentiality_confirmed = models.BooleanField(default=False)
+
+    # {checklist_key: 'satisfactory' | 'needs_revision' | 'na', ...} for
+    # every row in CHECKLIST_ITEMS -- see review_application() in views.py
+    # for how a POST is validated and packed into this shape.
+    checklist = models.JSONField(default=dict, blank=True)
+    key_concerns = models.TextField(blank=True)
+    documents_comment = models.TextField(blank=True)
+    recommendation_reason = models.TextField(blank=True)
 
     class Meta:
         db_table = "review_assignments"
@@ -62,6 +99,25 @@ class ReviewAssignment(models.Model):
 
     def __str__(self):
         return f"{self.reviewer.email} · {self.application_id} · {self.status}"
+
+    @property
+    def checklist_rows(self):
+        """CHECKLIST_ITEMS joined with this assignment's saved answers, for
+        the Ethical Review table on both the form and its read-only
+        submitted-assessment view."""
+        return [
+            {
+                "key": key, "label": label, "value": value,
+                "value_label": self.CHECKLIST_LABEL.get(value, "Not answered"),
+                "badge": self.CHECKLIST_BADGE.get(value, "gray"),
+            }
+            for key, label in self.CHECKLIST_ITEMS
+            for value in [self.checklist.get(key, "")]
+        ]
+
+    @property
+    def recommendation_badge(self):
+        return self.RECOMMENDATION_BADGE.get(self.recommendation, "gray")
 
     @property
     def tab(self):
