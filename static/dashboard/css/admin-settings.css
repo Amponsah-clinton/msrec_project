@@ -61,6 +61,39 @@
 
 .ad-card-stack { display: flex; flex-direction: column; gap: 22px; }
 
+/* ---------------- Two-column settings layout ----------------
+   A wider main column (the working form) next to a narrower side column
+   (glanceable info -- Active Sessions) -- the same "primary content +
+   sidebar" shape as most account-settings pages, not a naive 50/50 split.
+   Collapses to one column below 992px, side column moving below main. */
+.ad-settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.ad-settings-main, .ad-settings-side { min-width: 0; }
+.ad-settings-side { position: sticky; top: 20px; }
+
+@media (max-width: 991px) {
+  .ad-settings-grid { grid-template-columns: 1fr; }
+  .ad-settings-side { position: static; }
+}
+
+/* ---------------- Sub-section divider inside a multi-topic card ----------------
+   Replaces the old trick of reusing .ad-card-header with inline
+   `style="padding:0;border:none"` overrides -- a real, dedicated class
+   for "new topic, same card, same form". */
+.ad-subsection {
+  padding-top: 26px;
+  margin-top: 26px;
+  margin-bottom: 18px;
+  border-top: 1px solid var(--border);
+}
+.ad-subsection:first-child { padding-top: 0; margin-top: 0; border-top: none; }
+.ad-subsection h4 { margin: 0; font-size: 14px; font-weight: 700; color: var(--text-main); }
+.ad-subsection p { margin: 3px 0 0; font-size: 12.5px; color: var(--text-sub); line-height: 1.5; }
+
 .ad-card {
   background: var(--white);
   border: 1px solid var(--border);
