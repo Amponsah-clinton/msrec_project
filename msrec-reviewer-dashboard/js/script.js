@@ -19,12 +19,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   overlay.addEventListener("click", closeSidebar);
 
-  // Close mobile sidebar automatically when a nav link is clicked
+  // Close mobile sidebar automatically when a nav link is clicked. Links that
+  // point at a real page (anything other than the "#" placeholder used by
+  // stubs not yet built) are left alone so they navigate normally -- the
+  // destination page marks its own sidebar entry "active" in its markup.
   document.querySelectorAll(".nav-item, .nav-sublink").forEach((item) => {
     item.addEventListener("click", (e) => {
-      e.preventDefault();
-      document.querySelectorAll(".nav-item, .nav-sublink").forEach((n) => n.classList.remove("active"));
-      item.classList.add("active");
+      const href = item.getAttribute("href") || "";
+      if (href === "#") {
+        e.preventDefault();
+        document.querySelectorAll(".nav-item, .nav-sublink").forEach((n) => n.classList.remove("active"));
+        item.classList.add("active");
+      }
       closeSidebar();
     });
   });
@@ -44,10 +50,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.innerWidth > 900) closeSidebar();
   });
 
-  // Quick action buttons — simple visual feedback
+  // Quick action buttons — only swallow the click for still-unwired demo
+  // links (href="#"); anything pointing at a real URL should navigate.
   document.querySelectorAll(".qa-btn, .btn-danger, .action-btn, .stat-link, .panel-link").forEach((el) => {
     el.addEventListener("click", (e) => {
-      if (el.tagName === "A") e.preventDefault();
+      if (el.tagName === "A" && el.getAttribute("href") === "#") e.preventDefault();
     });
   });
 

@@ -11,6 +11,7 @@ urlpatterns = [
     path("accounts/", views.accounts, name="accounts"),
     path("inquiries/", views.inquiries, name="inquiries"),
     path("applications/", views.applications, name="applications"),
+    path("applications/counts/", views.applications_counts, name="applications_counts"),
     path("applications/<int:pk>/", views.application_detail, name="application_detail"),
     path("finance/", views.finance, name="finance"),
     # Broader than admin_required (secretariat included, not just

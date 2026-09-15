@@ -102,8 +102,13 @@ create table if not exists public.users (
     two_factor_sms          boolean not null default false,
     notify_new_signin       boolean not null default true,
 
-    -- Object path inside Supabase Storage. Two possible shapes, told apart
-    -- by prefix (see accounts/context_processors.py profile_avatar()):
+    -- Object path inside Supabase Storage. Three possible shapes, told
+    -- apart by prefix (see accounts/context_processors.py profile_avatar()):
+    --   "reviewers/<id>/..." -> public "profile" bucket (photo changed
+    --     from a reviewer's Profile & Expertise page --
+    --     reviewer_dashboard/storage.py). Create this bucket in the
+    --     Supabase dashboard (Storage > New bucket, public) if it
+    --     doesn't exist yet -- nothing here provisions it automatically.
     --   "avatars/<id>/..." -> public "application" bucket (photo changed
     --     from Profile & Security -- applicant_dashboard/storage.py).
     --   anything else      -> private "signup" bucket (photo attached at
@@ -120,6 +125,10 @@ create table if not exists public.users (
     reviewer_status         varchar(20) not null default 'not_requested'
                             check (reviewer_status in ('not_requested', 'pending', 'approved', 'rejected')),
     reviewer_profile        jsonb not null default '{}'::jsonb,
+    -- Secretariat-managed (Reviewer Directory), not applicant-set -- see
+    -- User.Availability / accounts/models.py.
+    reviewer_availability   varchar(20) not null default 'available'
+                            check (reviewer_availability in ('available', 'limited', 'unavailable')),
 
     -- Committee role request + its extra signup-form answers
     wants_committee         boolean not null default false,
@@ -127,15 +136,22 @@ create table if not exists public.users (
                             check (committee_status in ('not_requested', 'pending', 'approved', 'rejected')),
     committee_profile       jsonb not null default '{}'::jsonb,
 
-    -- Applicant-specific signup-form answers (always collected; applicant
-    -- access itself never needs approval)
+    -- Applicant-specific signup-form answers, and whether this account
+    -- actually ticked "Applicant / Researcher" at signup at all --
+    -- Reviewer/Committee can be requested on their own, without
+    -- Applicant, and someone who did that shouldn't be told they have
+    -- Applicant access while their request is pending (see
+    -- User.dashboard_url_name() / awaiting_role_only in accounts/models.py).
+    wants_applicant         boolean not null default true,
     applicant_profile       jsonb not null default '{}'::jsonb
 );
 
 comment on table public.users is 'MSREC accounts. Django''s AUTH_USER_MODEL (accounts.User) maps onto this table 1:1.';
 comment on column public.users.role is 'Primary/active role — decides which dashboard a login lands on.';
+comment on column public.users.wants_applicant is 'Whether Applicant/Researcher was actually ticked at signup — false means this account requested Reviewer/Committee only and gets no Applicant dashboard access while pending.';
 comment on column public.users.reviewer_status is 'not_requested | pending | approved | rejected — set to pending at signup when wants_reviewer is checked, flipped by an admin in Accounts > Pending Approval.';
 comment on column public.users.committee_status is 'Same lifecycle as reviewer_status, for the Committee Member role.';
+comment on column public.users.reviewer_availability is 'available | limited | unavailable — shown and changed on secretariat_dashboard''s Reviewer Directory, independent of reviewer_status.';
 
 -- Case-insensitive login lookups and the accounts-page tab counts both
 -- filter on these constantly.
@@ -287,6 +303,19 @@ create table if not exists public.applications (
     -- shown on Approved Studies / Not Approved (not updated_at, which also
     -- moves on every other status change).
     decided_at     timestamptz,
+
+    -- Revisions round-trip -- set by applicant_dashboard.oversight.apply_transition()
+    -- when the Secretariat requests revisions (revision_comment is their
+    -- optional note on what to fix), and by application_form when the
+    -- applicant fixes and resends. resubmitted_at is the "revision was
+    -- done on this application" indicator shown across every applications
+    -- list/detail page; revision_count keeps incrementing across rounds
+    -- and is never reset, even once the application is later decided.
+    revision_comment       text not null default '',
+    revision_requested_at  timestamptz,
+    revision_count         smallint not null default 0,
+    resubmitted_at         timestamptz,
+
     created_at     timestamptz not null default now(),
     updated_at     timestamptz not null default now()
 );
@@ -294,6 +323,7 @@ create table if not exists public.applications (
 comment on table public.applications is 'MSREC ethics application submissions. applicant_dashboard.models.Application maps onto this table 1:1.';
 comment on column public.applications.form_data is 'Every named field from the application form, as posted -- see applicant_dashboard.views._collect_form_data.';
 comment on column public.applications.documents is 'Uploaded documents: object paths inside the "application" Storage bucket, plus display metadata.';
+comment on column public.applications.resubmitted_at is 'Set only when the applicant actually fixes and resends after a revision request -- NULL means never resubmitted. This is the "revision was done" indicator.';
 
 create index if not exists applications_applicant_id_idx on public.applications (applicant_id);
 create index if not exists applications_status_idx on public.applications (status);
@@ -303,6 +333,50 @@ alter table public.applications enable row level security;
 drop policy if exists "service_role full access to applications" on public.applications;
 create policy "service_role full access to applications"
     on public.applications for all
+    to service_role
+    using (true) with check (true);
+
+
+-- ---------------------------------------------------------------------
+-- review_assignments
+-- Mirrors reviewer_dashboard.models.ReviewAssignment. One row per
+-- application handed to one reviewer. Nothing in this project creates
+-- these yet (the Secretariat's "Assign Reviewer" flow is still an
+-- unbuilt stub link) -- this is the real, empty-until-populated table
+-- the Reviewer dashboard's My Reviews page (New / Accepted / Due &
+-- Overdue / Completed tabs) reads from and live-polls counts against.
+-- ---------------------------------------------------------------------
+create table if not exists public.review_assignments (
+    id              bigint generated by default as identity primary key,
+    application_id  bigint not null references public.applications (id) on delete cascade,
+    reviewer_id     bigint not null references public.users (id) on delete cascade,
+    assigned_by_id  bigint references public.users (id) on delete set null,
+
+    status          varchar(20) not null default 'new'
+                    check (status in ('new', 'accepted', 'declined', 'completed')),
+    due_date        date,
+
+    assigned_at     timestamptz not null default now(),
+    accepted_at     timestamptz,
+    completed_at    timestamptz,
+
+    recommendation  varchar(30) not null default ''
+                    check (recommendation in ('', 'approve', 'minor_revisions', 'major_revisions', 'reject')),
+    review_notes    text not null default ''
+);
+
+comment on table public.review_assignments is 'One application assigned to one reviewer. reviewer_dashboard.models.ReviewAssignment maps onto this table 1:1.';
+comment on column public.review_assignments.status is 'new | accepted | declined | completed — an accepted assignment moves itself into the Due & Overdue tab once due_date arrives, without a separate status (see ReviewAssignment.tab).';
+
+create index if not exists review_assignments_reviewer_id_idx on public.review_assignments (reviewer_id);
+create index if not exists review_assignments_application_id_idx on public.review_assignments (application_id);
+create index if not exists review_assignments_status_idx on public.review_assignments (status);
+
+alter table public.review_assignments enable row level security;
+
+drop policy if exists "service_role full access to review_assignments" on public.review_assignments;
+create policy "service_role full access to review_assignments"
+    on public.review_assignments for all
     to service_role
     using (true) with check (true);
 
@@ -545,3 +619,54 @@ create policy "service_role full access to fee_settings"
     on public.fee_settings for all
     to service_role
     using (true) with check (true);
+
+
+-- ==========================================================================
+-- Incremental migration -- accounts.0005_user_reviewer_availability
+-- Run this block on its own in the Supabase SQL editor if `public.users`
+-- already exists from an earlier run of this file (the `create table if
+-- not exists public.users` above is a no-op on an existing table, so it
+-- won't add this column for you). Safe to re-run.
+-- ==========================================================================
+alter table public.users
+    add column if not exists reviewer_availability varchar(20) not null default 'available';
+
+alter table public.users
+    drop constraint if exists users_reviewer_availability_check;
+alter table public.users
+    add constraint users_reviewer_availability_check
+    check (reviewer_availability in ('available', 'limited', 'unavailable'));
+
+comment on column public.users.reviewer_availability is 'available | limited | unavailable — shown and changed on secretariat_dashboard''s Reviewer Directory, independent of reviewer_status.';
+
+
+-- ==========================================================================
+-- Incremental migration -- accounts.0006_user_wants_applicant
+-- Same as above: run this block on its own if `public.users` already
+-- exists. `default true` backfills every existing row so accounts
+-- created before this column existed keep landing on the Applicant
+-- dashboard exactly as before -- only new signups that skip the
+-- Applicant checkbox get false. Safe to re-run.
+-- ==========================================================================
+alter table public.users
+    add column if not exists wants_applicant boolean not null default true;
+
+comment on column public.users.wants_applicant is 'Whether Applicant/Researcher was actually ticked at signup — false means this account requested Reviewer/Committee only and gets no Applicant dashboard access while pending.';
+
+
+-- ==========================================================================
+-- Incremental migration -- applicant_dashboard.0005_application_resubmitted_at_and_more
+-- Run this block on its own in the Supabase SQL editor if `public.applications`
+-- already exists. Safe to re-run.
+-- ==========================================================================
+alter table public.applications
+    add column if not exists revision_comment text not null default '';
+alter table public.applications
+    add column if not exists revision_requested_at timestamptz;
+alter table public.applications
+    add column if not exists revision_count smallint not null default 0;
+alter table public.applications
+    add column if not exists resubmitted_at timestamptz;
+
+comment on column public.applications.resubmitted_at is 'Set only when the applicant actually fixes and resends after a revision request -- NULL means never resubmitted. This is the "revision was done" indicator.';
+comment on column public.applications.revision_comment is 'The Secretariat''s optional note on what needs fixing -- set each time request_revisions runs, shown on the applicant''s Revisions Required page and in their notification email.';

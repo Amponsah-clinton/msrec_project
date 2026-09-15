@@ -1,0 +1,147 @@
+/* ==========================================================
+   MSREC Secretariat — Reviewer Directory
+   Same flat, token-driven language as the rest of the dashboard.
+========================================================== */
+
+.reviewer-dir-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+  padding: 4px 4px 8px;
+}
+
+.reviewer-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--white);
+  transition: box-shadow .15s, border-color .15s;
+}
+.reviewer-card:hover {
+  border-color: var(--teal);
+  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
+}
+
+.reviewer-card-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.reviewer-card-heading { min-width: 0; flex: 1; }
+.reviewer-card-heading h4 {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.35;
+}
+.reviewer-card-heading p {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.availability-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 4px 9px 4px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.availability-badge i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.availability-available   { background: var(--green-light); color: var(--green); }
+.availability-limited     { background: var(--orange-light); color: var(--orange); }
+.availability-unavailable { background: var(--red-light); color: var(--red); }
+
+.reviewer-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.reviewer-card-meta span { display: flex; align-items: center; gap: 6px; }
+.reviewer-card-meta svg { width: 13px; height: 13px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 1.8; }
+
+.reviewer-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 20px;
+  background: var(--teal-light);
+  color: var(--teal);
+  white-space: nowrap;
+}
+.tag-pill.alt { background: var(--purple-light); color: var(--purple); }
+
+.reviewer-card-bio {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--text-sub);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.reviewer-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.reviewer-card-links { display: flex; flex-wrap: wrap; gap: 12px; }
+.reviewer-card-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+}
+.reviewer-card-link svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.reviewer-card-link:hover { text-decoration: underline; }
+
+.availability-form { display: flex; }
+.availability-select {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: var(--bg);
+  cursor: pointer;
+}
+.availability-select:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+
+@media (max-width: 480px) {
+  .reviewer-card-foot { flex-direction: column; align-items: stretch; }
+  .availability-form { width: 100%; }
+  .availability-select { width: 100%; }
+}

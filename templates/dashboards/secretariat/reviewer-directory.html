@@ -1,0 +1,351 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Reviewer Directory | MSREC Secretariat{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/reviewer-directory.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}
+
+      <a href="{% url 'secretariat_dashboard:home' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg></span>
+        <span>Dashboard</span>
+      </a>
+
+      <a href="{% url 'secretariat_dashboard:applications' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
+        <span>Applications</span>
+      </a>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M6 3v12"/><circle cx="6" cy="18" r="3"/><circle cx="6" cy="3" r="3"/><path d="M6 9a9 9 0 0 0 9 9"/></svg></span>
+          <span>Review Pathways</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Determination / Exemption</a>
+          <a href="#" class="nav-sublink">Expedited</a>
+          <a href="#" class="nav-sublink">Full Committee</a>
+        </div>
+      </div>
+
+      <a href="{% url 'secretariat_dashboard:reviewer_assignment' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M19 8v6M22 11h-6"/></svg></span>
+        <span>Reviewer Assignment</span>
+      </a>
+
+      <div class="nav-group open">
+        <button type="button" class="nav-group-toggle" aria-expanded="true">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M16 3.5a4 4 0 0 1 0 7.6"/><path d="M20.5 21v-2a5 5 0 0 0-3.5-4.8"/></svg></span>
+          <span>Reviewers</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'secretariat_dashboard:reviewer_directory' %}" class="nav-sublink active">Reviewer Directory</a>
+          <a href="{% url 'secretariat_dashboard:reviewer_assignment_history' %}" class="nav-sublink">Assignment History</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M16 3.5a4 4 0 0 1 0 7.6"/><path d="M20.5 21v-2a5 5 0 0 0-3.5-4.8"/></svg></span>
+          <span>Committee</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Committee Members</a>
+          <a href="#" class="nav-sublink">Membership / Appointments</a>
+          <a href="#" class="nav-sublink">Terms &amp; Expiry</a>
+          <a href="#" class="nav-sublink">Training</a>
+          <a href="#" class="nav-sublink">Conflict Records</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+          <span>Meetings</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Schedule Meeting</a>
+          <a href="#" class="nav-sublink">Meetings Calendar</a>
+          <a href="#" class="nav-sublink">Agenda</a>
+          <a href="#" class="nav-sublink">Attendance</a>
+          <a href="#" class="nav-sublink">Quorum</a>
+          <a href="#" class="nav-sublink">Minutes</a>
+          <a href="#" class="nav-sublink">Decisions</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></span>
+          <span>Post-Approval Management</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Amendments</a>
+          <a href="#" class="nav-sublink">Continuing Reviews</a>
+          <a href="#" class="nav-sublink">Progress Reports</a>
+          <a href="#" class="nav-sublink">Deviations</a>
+          <a href="#" class="nav-sublink">Adverse Events</a>
+          <a href="#" class="nav-sublink">Complaints / Ethics Concerns</a>
+          <a href="#" class="nav-sublink">Closures</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+          <span>Finance</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'secretariat_dashboard:finance' %}" class="nav-sublink">All Payments</a>
+          <a href="{% url 'secretariat_dashboard:finance' %}?tab=success" class="nav-sublink">Successful</a>
+          <a href="{% url 'secretariat_dashboard:finance' %}?tab=pending" class="nav-sublink">Pending</a>
+          <a href="{% url 'secretariat_dashboard:finance' %}?tab=failed" class="nav-sublink">Failed</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+          <span>Communications</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Applicant Messages</a>
+          <a href="#" class="nav-sublink">Reviewer Messages</a>
+          <a href="#" class="nav-sublink">Email Templates</a>
+          <a href="#" class="nav-sublink">Notifications</a>
+          <a href="#" class="nav-sublink">Announcements</a>
+          <a href="#" class="nav-sublink">Reminders</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></span>
+          <span>Document Templates</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Decision Letters</a>
+          <a href="#" class="nav-sublink">Approval Letters</a>
+          <a href="#" class="nav-sublink">Amendment Letters</a>
+          <a href="#" class="nav-sublink">Continuing Review Letters</a>
+          <a href="#" class="nav-sublink">Closure Letters</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span>
+          <span>Reports &amp; Analytics</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Application Statistics</a>
+          <a href="#" class="nav-sublink">Status Reports</a>
+          <a href="#" class="nav-sublink">Turnaround Times</a>
+          <a href="#" class="nav-sublink">Reviewer Workload</a>
+          <a href="#" class="nav-sublink">Committee Activity</a>
+          <a href="#" class="nav-sublink">Post-Approval Compliance</a>
+          <a href="#" class="nav-sublink">Financial Reports</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+          <span>Users &amp; Access</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Users</a>
+          <a href="#" class="nav-sublink">Role Requests</a>
+          <a href="#" class="nav-sublink">Approve Reviewer Role</a>
+          <a href="#" class="nav-sublink">Approve Committee Role</a>
+          <a href="#" class="nav-sublink">Roles</a>
+          <a href="#" class="nav-sublink">Permissions</a>
+        </div>
+      </div>
+
+      <a href="#" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M9 3 7 21M17 3l-2 18"/></svg></span>
+        <span>Reference Numbers</span>
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span>
+        <span>Audit Logs</span>
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
+        <span>System Settings</span>
+      </a>
+      <a href="#" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
+        <span>Profile &amp; Security</span>
+      </a>
+
+{% endblock %}
+
+{% block topbar %}
+
+      <div class="topbar-title">
+        <h1>Reviewer Directory</h1>
+        <p>Every approved reviewer, with their expertise and current availability in one place</p>
+      </div>
+      <div class="topbar-actions">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="reviewerDirSearch" placeholder="Search by name, institution, expertise...">
+        </div>
+        <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false">
+          <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+        </button>
+
+        <div class="dropdown" id="profileDropdown">
+          <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
+            <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="dropdown-menu profile-menu" id="profileMenu">
+            <div class="profile-menu-head">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
+              <div>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <a href="{% url 'pages:logout' %}" class="dropdown-item logout">
+              <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+              Log Out
+            </a>
+          </div>
+        </div>
+      </div>
+
+{% endblock %}
+
+{% block main_content %}
+
+      <div data-counts-url="{% url 'secretariat_dashboard:reviewer_directory_counts' %}">
+
+      <!-- SUMMARY STRIP -->
+      <section class="stats-grid compact">
+        <div class="stat-card">
+          <div class="stat-icon purple">
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M16 3.5a4 4 0 0 1 0 7.6"/><path d="M20.5 21v-2a5 5 0 0 0-3.5-4.8"/></svg>
+          </div>
+          <p class="stat-label">Approved Reviewers</p>
+          <p class="stat-value" data-count-key="all">{{ counts.all }}</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">
+            <svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>
+          </div>
+          <p class="stat-label">Available</p>
+          <p class="stat-value" data-count-key="available">{{ counts.available }}</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+          </div>
+          <p class="stat-label">Limited Availability</p>
+          <p class="stat-value" data-count-key="limited">{{ counts.limited }}</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5 14.5 14.5M14.5 9.5 9.5 14.5"/></svg>
+          </div>
+          <p class="stat-label">Unavailable</p>
+          <p class="stat-value" data-count-key="unavailable">{{ counts.unavailable }}</p>
+        </div>
+      </section>
+
+      <!-- TABS + DIRECTORY -->
+      <section class="panel acct-panel">
+        <div class="filter-tabs acct-tabs" data-filters-target="#reviewerDirList">
+          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count" data-count-key="all">{{ counts.all }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'available' %} active{% endif %}" data-filter="available">Available <span class="count" data-count-key="available">{{ counts.available }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'limited' %} active{% endif %}" data-filter="limited">Limited <span class="count" data-count-key="limited">{{ counts.limited }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'unavailable' %} active{% endif %}" data-filter="unavailable">Unavailable <span class="count" data-count-key="unavailable">{{ counts.unavailable }}</span></button>
+        </div>
+
+        <div class="reviewer-dir-grid" id="reviewerDirList">
+          {% for reviewer in reviewers %}
+          <article class="reviewer-card" data-filter-item data-filter="{{ reviewer.reviewer_availability }}"
+                    data-search="{{ reviewer.full_name|lower }} {{ reviewer.institution|lower }} {{ reviewer.reviewer_profile.reviewerDiscipline|default:''|lower }} {{ reviewer.reviewer_profile.reviewerInstitution|default:''|lower }} {{ reviewer.reviewer_expertise_tags|join:' '|lower }} {{ reviewer.reviewer_research_area_tags|join:' '|lower }}"
+                    {% if active_tab != 'all' and reviewer.reviewer_availability != active_tab %}hidden{% endif %}>
+            <div class="reviewer-card-top">
+              <span class="acct-avatar cat-reviewers">{{ reviewer.initials }}</span>
+              <div class="reviewer-card-heading">
+                <h4>{{ reviewer.full_name }}</h4>
+                <p>{{ reviewer.reviewer_profile.reviewerPosition|default:"Reviewer" }}{% if reviewer.reviewer_profile.reviewerInstitution %} &middot; {{ reviewer.reviewer_profile.reviewerInstitution }}{% elif reviewer.institution %} &middot; {{ reviewer.institution }}{% endif %}</p>
+              </div>
+              <span class="availability-badge availability-{{ reviewer.reviewer_availability }}">
+                <i></i>{{ reviewer.get_reviewer_availability_display }}
+              </span>
+            </div>
+
+            <div class="reviewer-card-meta">
+              {% if reviewer.reviewer_profile.reviewerDiscipline %}<span><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/></svg>{{ reviewer.reviewer_profile.reviewerDiscipline }}</span>{% endif %}
+              {% if reviewer.reviewer_profile.reviewerYearsProfessional %}<span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>{{ reviewer.reviewer_profile.reviewerYearsProfessional }} yrs professional{% if reviewer.reviewer_profile.reviewerYearsResearch %} &middot; {{ reviewer.reviewer_profile.reviewerYearsResearch }} yrs research{% endif %}</span>{% endif %}
+              {% if reviewer.reviewer_profile.reviewerOrcid %}<span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 8h.01M8 12h8M8 16h5"/></svg>ORCID {{ reviewer.reviewer_profile.reviewerOrcid }}</span>{% endif %}
+            </div>
+
+            {% if reviewer.reviewer_expertise_tags or reviewer.reviewer_research_area_tags %}
+            <div class="reviewer-card-tags">
+              {% for tag in reviewer.reviewer_expertise_tags %}<span class="tag-pill">{{ tag }}</span>{% endfor %}
+              {% for tag in reviewer.reviewer_research_area_tags %}<span class="tag-pill alt">{{ tag }}</span>{% endfor %}
+            </div>
+            {% endif %}
+
+            {% if reviewer.reviewer_profile.reviewerBio %}
+            <p class="reviewer-card-bio">{{ reviewer.reviewer_profile.reviewerBio }}</p>
+            {% endif %}
+
+            <div class="reviewer-card-foot">
+              <div class="reviewer-card-links">
+                <a href="mailto:{{ reviewer.email }}" class="reviewer-card-link"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>Email</a>
+                {% if reviewer.phone %}<a href="tel:{{ reviewer.phone }}" class="reviewer-card-link"><svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.3 1.8.6 2.7a2 2 0 0 1-.4 2.1L8.1 9.7a16 16 0 0 0 6 6l1.2-1.2a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.7.6a2 2 0 0 1 1.7 2Z"/></svg>Call</a>{% endif %}
+                {% if reviewer.cv_url %}<a href="{{ reviewer.cv_url }}" target="_blank" rel="noopener" class="reviewer-card-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>CV</a>{% endif %}
+              </div>
+              <form method="post" action="{% url 'secretariat_dashboard:reviewer_directory' %}?tab={{ active_tab }}" class="availability-form">
+                {% csrf_token %}
+                <input type="hidden" name="user_id" value="{{ reviewer.pk }}">
+                <input type="hidden" name="tab" value="{{ active_tab }}">
+                <select name="availability" class="availability-select">
+                  {% for value, label in reviewer.Availability.choices %}
+                  <option value="{{ value }}"{% if reviewer.reviewer_availability == value %} selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </form>
+            </div>
+          </article>
+          {% empty %}
+          <div class="empty-state">
+            <span class="empty-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/></svg></span>
+            <h3>No approved reviewers yet</h3>
+            <p>Once an admin approves a Reviewer role request on the Accounts page, that reviewer's profile appears here automatically.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/reviewer-directory.js' %}"></script>
+{% endblock %}

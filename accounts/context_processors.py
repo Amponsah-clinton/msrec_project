@@ -13,7 +13,10 @@ def profile_avatar(request):
     that per-page here, once, keeps every dashboard template from having
     to know anything about Supabase Storage.
 
-    Two possible buckets, told apart by the path's prefix:
+    Three possible buckets, told apart by the path's prefix:
+      - "reviewers/<id>/..." -> the public "profile" bucket (photos
+        changed from a reviewer's Profile & Expertise page --
+        reviewer_dashboard/storage.py, a plain public URL, never expires).
       - "avatars/<id>/..."  -> the public "application" bucket (photos
         changed from Profile & Security -- applicant_dashboard/storage.py,
         a plain public URL, never expires).
@@ -26,6 +29,9 @@ def profile_avatar(request):
         return {"profile_photo_url": None}
 
     path = user.profile_photo_path
+    if path.startswith("reviewers/"):
+        from reviewer_dashboard import storage as reviewer_storage
+        return {"profile_photo_url": reviewer_storage.public_url(path)}
     if path.startswith("avatars/"):
         from applicant_dashboard import storage as application_storage
         return {"profile_photo_url": application_storage.public_url(path)}

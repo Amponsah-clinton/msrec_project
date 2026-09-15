@@ -25,7 +25,7 @@
   })();
 </script>
 </head>
-<body>
+<body data-nav-counts-url="{% url 'applicant_dashboard:application_nav_counts' %}">
 
 <button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
   <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
@@ -93,6 +93,8 @@
 </div>
 
 <script src="{% static 'dashboard/js/script.js' %}"></script>
+<script src="{% static 'dashboard/js/nav-badges.js' %}"></script>
+<script src="{% static 'dashboard/js/live-counts.js' %}"></script>
 {% block extra_js %}{% endblock %}
 </body>
 </html>

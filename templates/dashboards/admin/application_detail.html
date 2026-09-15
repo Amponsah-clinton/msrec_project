@@ -161,18 +161,29 @@
           <span class="badge-tag {% if application.tab == 'submitted' %}orange{% elif application.tab == 'under_review' %}blue{% elif application.tab == 'revisions' %}red{% elif application.tab == 'approved' %}green{% elif application.tab == 'not_approved' %}red{% endif %}" style="font-size:12px; padding:6px 14px;">
             {% if application.tab == 'submitted' %}New Submission{% elif application.tab == 'under_review' %}Under Review{% elif application.tab == 'revisions' %}Revisions Requested{% elif application.tab == 'approved' %}Approved{% elif application.tab == 'not_approved' %}Not Approved{% endif %}
           </span>
+          {% if application.resubmitted_at %}
+          <span class="badge-tag blue" style="font-size:12px; padding:6px 14px;" title="Resubmitted {{ application.resubmitted_at|date:'j M Y, g:i A' }}">
+            <svg viewBox="0 0 24 24" style="width:13px;height:13px;margin-right:4px;vertical-align:-2px;"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+            Revised &middot; {{ application.revision_count }} round{{ application.revision_count|pluralize }}
+          </span>
+          {% endif %}
         </div>
 
-        <div class="acct-actions" style="justify-content:flex-start; gap:10px; flex-wrap:wrap;">
+        {% if application.revision_comment %}
+        <div class="reuse-hint" style="margin-top:14px;">
+          <i class="bi bi-info-circle"></i>
+          <span><strong>Last revision request{% if application.revision_requested_at %} ({{ application.revision_requested_at|date:"j M Y" }}){% endif %}:</strong> {{ application.revision_comment|linebreaksbr }}</span>
+        </div>
+        {% endif %}
+
+        <div class="acct-actions" style="justify-content:flex-start; gap:10px; flex-wrap:wrap; margin-top:14px;">
           {% if application.status == 'submitted' %}
           <form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="start_review">
             <button type="submit" class="acct-btn acct-btn-approve"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Start Review</button>
           </form>
           {% endif %}
           {% if application.status == 'submitted' or application.status == 'under_review' %}
-          <form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="request_revisions">
-            <button type="submit" class="acct-btn acct-btn-suspend"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Request Revisions</button>
-          </form>
+          <button type="button" id="requestRevisionsOpen" class="acct-btn acct-btn-suspend"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Request Revisions</button>
           <form method="post" data-confirm="Approve {{ application.reference_no }}? The applicant will see this as an approved study." data-confirm-label="Approve"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="approve">
             <button type="submit" class="acct-btn acct-btn-activate"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Approve</button>
           </form>
@@ -192,6 +203,37 @@
           {% endif %}
         </div>
       </section>
+
+      <!-- REQUEST REVISIONS MODAL -->
+      <div class="acct-modal-overlay" id="requestRevisionsOverlay" hidden>
+        <div class="acct-modal">
+          <div class="acct-modal-head">
+            <h3>Request Revisions</h3>
+            <button type="button" class="icon-btn" id="requestRevisionsClose" aria-label="Close">
+              <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="request_revisions">
+            <div class="acct-modal-body">
+              <p class="field-hint" style="margin:0;">
+                Let {{ application.applicant.full_name }} know what needs fixing on {{ application.reference_no }}
+                &mdash; this is optional, but it's the only detail they'll see before you message them separately.
+                They'll get an email right away and can resubmit without paying again.
+              </p>
+              <label style="display:flex; flex-direction:column; gap:6px;">
+                <span style="font-size:12px; font-weight:600; color:var(--text-sub);">Comment (optional)</span>
+                <textarea name="revision_comment" rows="5" placeholder="e.g. Please attach the informed consent form in English, and clarify the sample size calculation in Section 5." style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:inherit; font-size:13px; color:var(--text-main); background:var(--white); resize:vertical;"></textarea>
+              </label>
+            </div>
+            <div class="acct-modal-actions">
+              <button type="button" class="acct-btn acct-btn-cancel" id="requestRevisionsCancel">Cancel</button>
+              <button type="submit" class="acct-btn acct-btn-suspend"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Send Request</button>
+            </div>
+          </form>
+        </div>
+      </div>
 
       <div class="body-grid">
         <section class="panel" style="padding:24px 26px;">
@@ -245,4 +287,8 @@
         </section>
       </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/request-revisions.js' %}"></script>
 {% endblock %}

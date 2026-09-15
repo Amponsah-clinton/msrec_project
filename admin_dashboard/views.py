@@ -1,16 +1,19 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.sessions.models import Session
-from django.core.mail import send_mail
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts import storage
 from accounts.models import RoleApprovalLog, User
 from applicant_dashboard import oversight
 from applicant_dashboard import storage as application_storage
+from notifications.emails import send_branded_email
 from pages.models import Inquiry
 from payments import services as payment_services
+from reviewer_dashboard import storage as reviewer_storage
 
 TABS = {"all", "pending", "applicants", "reviewers", "committee", "admins"}
 INQUIRY_TABS = {"all", "new", "resolved"}
@@ -36,6 +39,32 @@ def _categorize(user):
     return "applicants"
 
 
+def _send_role_approved_email(request, target, role):
+    """Tells an applicant their Reviewer/Committee Member request was
+    approved and that they can now log in to the matching dashboard.
+    Same fail_silently contract as the Contact-page reply email below --
+    a missing/misconfigured SMTP setup must never block the approval
+    itself, it just means this particular applicant doesn't get emailed
+    (they'll still see the unlocked dashboard next time they log in).
+    Returns True/False so the caller's flash message doesn't claim an
+    email went out when it actually didn't."""
+    role_label = User.Role(role).label
+    login_url = request.build_absolute_uri(reverse("pages:login"))
+    return send_branded_email(
+        subject=f"Your MSREC {role_label} request has been approved",
+        to=target.email,
+        heading="Your request has been approved",
+        paragraphs=[
+            f"Hi {target.full_name},",
+            f"Good news — your request to join MSREC as a {role_label} has been approved. "
+            f"You can now log in and access the {role_label} dashboard whenever you're ready.",
+        ],
+        cta_text="Log in to MSREC",
+        cta_url=login_url,
+        preheader=f"Your {role_label} request has been approved.",
+    )
+
+
 def _handle_role_decision(request, target, role, action):
     if role not in (User.Role.REVIEWER, User.Role.COMMITTEE) or action not in ("approve", "reject"):
         messages.error(request, "That request could not be processed.")
@@ -46,7 +75,9 @@ def _handle_role_decision(request, target, role, action):
         RoleApprovalLog.objects.create(
             user=target, role=role, action=RoleApprovalLog.Action.APPROVED, acted_by=request.user,
         )
-        messages.success(request, f"{target.full_name} approved as {target.get_role_display()}.")
+        emailed = _send_role_approved_email(request, target, role)
+        suffix = "and notified by email." if emailed else "(the approval email couldn't be sent -- check the email settings)."
+        messages.success(request, f"{target.full_name} approved as {target.get_role_display()} {suffix}")
     else:
         target.reject_role(role)
         RoleApprovalLog.objects.create(
@@ -79,6 +110,42 @@ def _handle_suspend(request, target, *, suspend):
         messages.success(request, f"{target.full_name}'s account has been reactivated.")
 
 
+def _cleanup_user_storage(target):
+    """Best-effort: delete every Storage object this account owns before
+    the row itself goes -- signup CVs/photo, and (since Application
+    cascade-deletes along with the user -- see Application.applicant's
+    on_delete=CASCADE) every document attached to their own applications.
+    A Storage failure never blocks the account deletion itself; it just
+    risks leaving an orphaned object behind, same fail-open contract as
+    every other Storage call in this project."""
+    photo = target.profile_photo_path
+    if photo:
+        # Three possible buckets depending on when the photo was (last)
+        # set -- see reviewer_dashboard.storage / applicant_dashboard.
+        # storage's upload_avatar_file docstrings: a "reviewers/<id>/..."
+        # prefix means it replaced the signup photo via a reviewer's
+        # Profile & Expertise page; "avatars/<id>/..." means Profile &
+        # Security (applicant); anything else is still the one uploaded
+        # at signup (accounts.storage, private bucket).
+        if photo.startswith("reviewers/"):
+            reviewer_storage.delete_object(photo)
+        elif photo.startswith("avatars/"):
+            application_storage.delete_object(photo)
+        else:
+            storage.delete_object(photo)
+
+    for profile_field in ("reviewer_profile", "committee_profile", "applicant_profile"):
+        cv_path = (getattr(target, profile_field) or {}).get("cv_path")
+        if cv_path:
+            storage.delete_object(cv_path)
+
+    for application in target.applications.all():
+        for document in application.documents or []:
+            doc_path = document.get("path")
+            if doc_path:
+                application_storage.delete_object(doc_path)
+
+
 def _handle_delete(request, target):
     if target.pk == request.user.pk:
         messages.error(request, "You can't delete your own account.")
@@ -87,14 +154,19 @@ def _handle_delete(request, target):
         messages.error(request, "Superuser accounts can't be deleted from here.")
         return
     name = target.full_name
+    _cleanup_user_storage(target)
     target.delete()
-    messages.success(request, f"{name}'s account has been deleted.")
+    messages.success(request, f"{name}'s account and files have been deleted.")
 
 
 def _handle_edit(request, target):
     email = request.POST.get("email", "").strip().lower()
+    confirm_email = request.POST.get("confirm_email", "").strip().lower()
     if not email:
         messages.error(request, "Email is required.")
+        return
+    if email != confirm_email:
+        messages.error(request, "Email and Confirm Email don't match.")
         return
     if User.objects.exclude(pk=target.pk).filter(email=email).exists():
         messages.error(request, "Another account already uses that email address.")
@@ -189,19 +261,19 @@ def _handle_inquiry_reply(request, inquiry):
     # dashboard -- fail_silently plus the console-backend fallback in
     # settings.py mean this only ever actually emails the sender when
     # EMAIL_HOST is configured.
-    send_mail(
+    emailed = send_branded_email(
         subject=f"Re: Your message to MSREC ({inquiry.get_reason_display()})",
-        message=(
-            f"Hi {inquiry.name},\n\n{reply_message}\n\n"
-            "— MSREC Secretariat\n\n"
-            "---\n"
-            f"Your original message ({inquiry.created_at:%d %b %Y}):\n{inquiry.message}"
-        ),
-        from_email=None,
-        recipient_list=[inquiry.email],
-        fail_silently=True,
+        to=inquiry.email,
+        heading=f"Hi {inquiry.name},",
+        paragraphs=[reply_message],
+        quote_label=f"Your original message ({inquiry.created_at:%d %b %Y})",
+        quote_text=inquiry.message,
+        preheader=reply_message[:120],
     )
-    messages.success(request, f"Reply sent to {inquiry.name} ({inquiry.email}).")
+    if emailed:
+        messages.success(request, f"Reply sent to {inquiry.name} ({inquiry.email}).")
+    else:
+        messages.error(request, f"Reply saved, but the email to {inquiry.email} couldn't be sent -- check the email settings.")
 
 
 @login_required
@@ -313,11 +385,24 @@ def applications(request):
 
 @login_required
 @admin_required
+def applications_counts(request):
+    """Polled by live-counts.js to keep the Applications tab badges and
+    summary strip current without a page reload."""
+    return JsonResponse(oversight.status_counts(oversight.staff_queryset()))
+
+
+@login_required
+@admin_required
 def application_detail(request, pk):
     application = get_object_or_404(oversight.staff_queryset(), pk=pk)
 
     if request.method == "POST":
-        ok, note = oversight.apply_transition(application, request.POST.get("action"))
+        action = request.POST.get("action")
+        comment = request.POST.get("revision_comment", "")
+        ok, note = oversight.apply_transition(application, action, comment=comment)
+        if ok and action == "request_revisions":
+            emailed = oversight.send_revisions_requested_email(request, application)
+            note += " Applicant notified by email." if emailed else " (the notification email couldn't be sent)."
         (messages.success if ok else messages.error)(request, note)
         return redirect("admin_dashboard:application_detail", pk=application.pk)
 

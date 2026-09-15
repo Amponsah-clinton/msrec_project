@@ -1,0 +1,439 @@
+/* Supplemental component styles for the Notifications / Profile & Expertise /
+   Security static pages -- this prototype's css/style.css predates these
+   components (forms, switches, notif/session rows, filter tabs), so rather
+   than touch that shared file (index.html depends on its current look, e.g.
+   .brand-icon), the missing pieces are lifted verbatim from the live app's
+   static/dashboard/css/style.css and loaded only on these three pages. */
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.page-head-text h2 { margin: 0; font-size: 17px; font-weight: 700; }
+.page-head-text p { margin: 4px 0 0; font-size: 12.5px; color: var(--text-sub); }
+
+.filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 4px;
+  flex-wrap: wrap;
+  scrollbar-width: none;
+}
+.filter-tabs::-webkit-scrollbar { display: none; }
+.filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  background: transparent;
+  color: var(--text-sub);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease;
+}
+.filter-tab:hover { color: var(--text-main); }
+.filter-tab.active {
+  background: var(--white);
+  color: var(--teal);
+  box-shadow: var(--shadow);
+}
+.filter-tab .count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--border);
+  color: var(--text-faint);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+  transition: background .18s ease, color .18s ease;
+}
+.filter-tab.active .count { background: var(--teal-light); color: var(--teal); }
+
+/* The "revisions" tab means "needs your action" -- keep it amber even
+   when it isn't the active tab, so it can't get lost among the rest. */
+.filter-tab[data-filter="revisions"] .count { background: var(--orange-light); color: var(--orange); }
+.filter-tab[data-filter="revisions"].active .count { background: var(--orange); color: #fff; }
+
+@keyframes countPulse {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+.count-pulse { animation: countPulse 0.45s cubic-bezier(.34,1.56,.64,1); }
+
+/* ---------------- Empty state ---------------- */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 56px 24px;
+  color: var(--text-sub);
+}
+.empty-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-faint);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 18px;
+}
+.empty-icon svg { width: 28px; height: 28px; }
+.empty-state h3 { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: var(--text-main); }
+.empty-state p { margin: 0 0 18px; font-size: 13px; max-width: 40ch; line-height: 1.6; }
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  border-radius: 8px;
+  padding: 11px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #fff;
+  background: var(--teal);
+}
+.btn-primary:hover { background: #128581; }
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: var(--white);
+}
+.btn-secondary:hover { background: var(--hover-bg); }
+
+.pay-option-amount .amt { display: block; font-size: 15px; font-weight: 700; }
+.pay-option-amount .due { display: block; font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+
+/* ---------------- Payment method fields (Make Payment) ---------------- */
+
+.method-detail { display: none; margin-top: 16px; }
+.pay-methods-wrap:has(#m-momo:checked) .method-detail[data-for="momo"] { display: block; }
+.pay-methods-wrap:has(#m-bank:checked) .method-detail[data-for="bank"] { display: block; }
+.pay-methods-wrap:has(#m-card:checked) .method-detail[data-for="card"] { display: block; }
+
+.field-group { margin-bottom: 14px; }
+.field-group:last-child { margin-bottom: 0; }
+.field-group label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 6px; color: var(--text-main); }
+.field-input {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13.5px;
+  font-family: inherit;
+  background: var(--white);
+  color: var(--text-main);
+}
+.field-input:focus { outline: 2px solid var(--teal); outline-offset: 1px; border-color: var(--teal); }
+
+.field-select-wrap { position: relative; }
+.field-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 36px;
+  cursor: pointer;
+}
+.field-select-chevron {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+.field-row { display: flex; gap: 12px; }
+.field-row .field-group { flex: 1; }
+
+/* ---------------- Password field: lock icon + show/hide toggle ---------------- */
+.field-password-wrap { position: relative; }
+.field-password-wrap .field-input { padding-left: 38px; padding-right: 40px; }
+.field-password-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-faint);
+  font-size: 13px;
+  pointer-events: none;
+}
+.field-password-toggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: 6px;
+  color: var(--text-faint);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color .15s, background .15s;
+}
+.field-password-toggle:hover { color: var(--text-main); background: var(--hover-bg); }
+.field-password-toggle:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+
+.static-detail-box {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  font-size: 12.5px;
+  color: var(--text-sub);
+  line-height: 1.8;
+}
+.static-detail-box strong { color: var(--text-main); }
+
+/* ---------------- Payment summary panel (Make Payment) ---------------- */
+
+.summary-panel { padding: 20px 22px; position: sticky; top: 22px; }
+.summary-list { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+.summary-row { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; color: var(--text-sub); }
+.summary-row strong { color: var(--text-main); font-weight: 600; text-align: right; }
+.summary-divider { height: 1px; background: var(--border); margin: 4px 0; }
+.summary-total { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; }
+.summary-total span:first-child { font-size: 13.5px; font-weight: 600; color: var(--text-main); }
+.summary-total span:last-child { font-size: 20px; font-weight: 700; color: var(--text-main); }
+.summary-secure { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 11.5px; color: var(--text-faint); }
+.summary-secure svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+/* ---------------- Receipts grid ---------------- */
+
+.receipt-grid { display: flex; flex-wrap: wrap; gap: 16px; }
+.receipt-card {
+  flex: 1 1 260px;
+  max-width: 320px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--white);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+.receipt-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 9px;
+  background: var(--teal-light);
+  color: var(--teal);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.receipt-card-icon svg { width: 20px; height: 20px; }
+.receipt-card h4 { margin: 0 0 4px; font-size: 13.5px; font-weight: 700; line-height: 1.4; }
+.receipt-card .receipt-ref { font-size: 11.5px; color: var(--text-faint); margin-bottom: 14px; }
+.receipt-card .receipt-amount { font-size: 20px; font-weight: 700; margin-top: auto; }
+.receipt-card .receipt-date { font-size: 12px; color: var(--text-sub); margin-top: 2px; margin-bottom: 16px; }
+.receipt-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------------- badge-tag: solid variant (role tags) ---------------- */
+
+.badge-tag.navy { background: var(--navy); color: #fff; border-color: var(--navy); }
+
+/* ---------------- Section heading inside a panel (form pages) ----------------
+   Groups a panel's fields under a small labeled heading -- Institution
+   Details / Ethics & Regulatory / Profile / Security etc. Pairs with the
+   existing .field-group / .field-input / .field-row from the payments
+   pages rather than a new form system. */
+
+.form-section { margin-bottom: 28px; }
+.form-section:last-child { margin-bottom: 0; }
+.field-hint { color: var(--text-faint); font-size: 12px; margin: 6px 0 0; }
+.field-error { color: var(--red); font-size: 12px; font-weight: 600; margin: 6px 0 0; }
+.form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.form-section-title svg { width: 17px; height: 17px; color: var(--teal); flex-shrink: 0; }
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* ---------------- Toggle switch ----------------
+   Flat, no gradient -- a plain track that fills solid teal when checked and
+   slides a plain white knob. Used for 2FA, notification channel prefs, etc. */
+
+.switch { position: relative; display: inline-flex; width: 40px; height: 23px; flex-shrink: 0; }
+.switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.switch-track {
+  position: absolute;
+  inset: 0;
+  background: var(--border);
+  border-radius: 999px;
+  transition: background-color 0.15s ease;
+  pointer-events: none;
+}
+.switch-track::before {
+  content: "";
+  position: absolute;
+  width: 17px;
+  height: 17px;
+  left: 3px;
+  top: 3px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.15s ease;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.25);
+}
+.switch input:checked + .switch-track { background: var(--teal); }
+.switch input:checked + .switch-track::before { transform: translateX(17px); }
+.switch input:focus-visible + .switch-track { outline: 2px solid var(--teal); outline-offset: 2px; }
+.switch input:disabled + .switch-track { opacity: 0.5; }
+
+/* ---------------- Settings row (label/description + a control) ----------------
+   Generic preference row: 2FA toggle, notification channels, anything that
+   pairs a short label + description on the left with one control on the
+   right. */
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child { border-bottom: none; padding-bottom: 0; }
+.settings-row:first-child { padding-top: 0; }
+.settings-row-text strong { display: block; font-size: 13px; font-weight: 700; color: var(--text-main); }
+.settings-row-text span { display: block; margin-top: 2px; font-size: 12px; color: var(--text-sub); line-height: 1.5; max-width: 46ch; }
+
+/* ---------------- Avatar edit row (Profile) ---------------- */
+
+.avatar-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+.avatar-edit-row img { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.avatar-edit-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.avatar-edit-hint { flex-basis: 100%; margin: 0; font-size: 11.5px; color: var(--text-faint); }
+
+/* ---------------- Session row (active sessions) ---------------- */
+
+.session-row { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.session-row:last-child { border-bottom: none; padding-bottom: 0; }
+.session-row:first-child { padding-top: 0; }
+.session-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text-sub);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.session-icon svg { width: 18px; height: 18px; }
+.session-info { flex: 1; min-width: 180px; }
+.session-info strong { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: var(--text-main); }
+.session-info span { display: block; margin-top: 2px; font-size: 12px; color: var(--text-sub); }
+.session-revoke { flex-shrink: 0; }
+
+/* ---------------- Notifications feed ---------------- */
+
+.notif-day-label {
+  margin: 22px 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+}
+.notif-day-label:first-child { margin-top: 0; }
+.notif-list { display: flex; flex-direction: column; }
+.notif-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+.notif-list .notif-row:last-child { border-bottom: none; }
+.notif-row:hover { background: var(--hover-bg); }
+.notif-row.unread { background: var(--hover-bg); }
+.notif-row.unread::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--text-faint); }
+/* Icon chips stay monochrome on purpose -- the row's own words carry the
+   meaning, and a feed of five different colored pills reads as decoration
+   rather than signal. Status colour is reserved for badge-tags. */
+.notif-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-sub);
+}
+.notif-icon svg { width: 17px; height: 17px; }
+.notif-body { flex: 1; min-width: 0; }
+.notif-body h4 { margin: 0 0 3px; font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+.notif-body p { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--text-sub); }
+.notif-time { display: block; margin-top: 6px; font-size: 11px; color: var(--text-faint); }
+.notif-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-sub); flex-shrink: 0; margin-top: 7px; }

@@ -20,6 +20,55 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ============================================================
+     Password strength meter -- same five rules the server actually
+     enforces (accounts.validators.StrongPasswordValidator + Django's
+     MinimumLengthValidator), so what's shown here never promises a
+     password will be accepted when the server would reject it.
+  ============================================================ */
+  (function () {
+    const passwordEl = document.getElementById("password");
+    const meter = document.getElementById("passwordStrength");
+    const fill = document.getElementById("passwordStrengthFill");
+    const label = document.getElementById("passwordStrengthLabel");
+    const requirementItems = document.querySelectorAll("#passwordRequirements li[data-rule]");
+    if (!passwordEl || !meter || !fill || !label || !requirementItems.length) return;
+
+    const RULES = {
+      length: (v) => v.length >= 8,
+      upper: (v) => /[A-Z]/.test(v),
+      lower: (v) => /[a-z]/.test(v),
+      number: (v) => /[0-9]/.test(v),
+      symbol: (v) => /[^A-Za-z0-9]/.test(v),
+    };
+    const STRENGTH_STYLES = [
+      { color: "#c0392b", label: "Weak" },
+      { color: "#c0392b", label: "Weak" },
+      { color: "#d68910", label: "Fair" },
+      { color: "#d68910", label: "Fair" },
+      { color: "#2a4747", label: "Strong" },
+      { color: "#1e7e4e", label: "Very strong" },
+    ];
+
+    passwordEl.addEventListener("input", () => {
+      const value = passwordEl.value;
+      meter.hidden = value.length === 0;
+
+      let met = 0;
+      requirementItems.forEach((item) => {
+        const passes = RULES[item.dataset.rule](value);
+        item.classList.toggle("met", passes);
+        if (passes) met += 1;
+      });
+
+      const style = STRENGTH_STYLES[met];
+      fill.style.width = `${(met / 5) * 100}%`;
+      fill.style.backgroundColor = style.color;
+      label.textContent = value ? style.label : "";
+      label.style.color = style.color;
+    });
+  })();
+
+  /* ============================================================
      Tag input (Primary Research Area / Areas of Expertise / etc.)
   ============================================================ */
   function initTagInput(container) {

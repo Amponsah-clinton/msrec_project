@@ -24,12 +24,12 @@
         </button>
         <div class="nav-subnav">
           <a href="{% url 'applicant_dashboard:application_new' %}" class="nav-sublink">New Application</a>
-          <a href="{% url 'applicant_dashboard:application_drafts' %}" class="nav-sublink">Draft Applications</a>
-          <a href="{% url 'applicant_dashboard:application_submitted' %}" class="nav-sublink">Submitted Applications</a>
-          <a href="{% url 'applicant_dashboard:application_under_review' %}" class="nav-sublink">Under Review</a>
-          <a href="{% url 'applicant_dashboard:application_revisions' %}" class="nav-sublink">Revisions Required</a>
-          <a href="{% url 'applicant_dashboard:application_approved' %}" class="nav-sublink">Approved Studies</a>
-          <a href="{% url 'applicant_dashboard:application_not_approved' %}" class="nav-sublink">Not Approved / Closed</a>
+          <a href="{% url 'applicant_dashboard:application_drafts' %}" class="nav-sublink">Draft Applications<span class="nav-badge" data-nav-badge="draft" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_submitted' %}" class="nav-sublink">Submitted Applications<span class="nav-badge" data-nav-badge="submitted" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_under_review' %}" class="nav-sublink">Under Review<span class="nav-badge" data-nav-badge="under_review" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_revisions' %}" class="nav-sublink">Revisions Required<span class="nav-badge" data-nav-badge="revisions" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_approved' %}" class="nav-sublink">Approved Studies<span class="nav-badge" data-nav-badge="approved" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_not_approved' %}" class="nav-sublink">Not Approved / Closed<span class="nav-badge" data-nav-badge="not_approved" hidden>0</span></a>
         </div>
       </div>
 
@@ -222,11 +222,10 @@
           <div id="applyPayError" class="field-error"></div>
 
           <button type="button" class="btn-create-account" id="applyPayBtn">
-            <i class="bi bi-lock-fill"></i> Pay {{ payment.currency }} {{ payment.amount }} with Paystack
+            <i class="bi bi-lock-fill"></i> Pay
           </button>
-          <p class="apply-pay-note"><i class="bi bi-info-circle"></i> You'll be asked for your card or mobile money details in Paystack's secure popup &mdash; MSREC never sees or stores your payment details.</p>
 
-          <a href="{% url 'applicant_dashboard:application_drafts' %}" class="back-link"><i class="bi bi-arrow-left"></i> Not now &mdash; keep this as a draft</a>
+          <a href="{% url 'applicant_dashboard:application_drafts' %}" class="btn-secondary apply-pay-draft-btn"><i class="bi bi-arrow-left"></i> Not now &mdash; keep this as a draft</a>
         </section>
       </div>
 

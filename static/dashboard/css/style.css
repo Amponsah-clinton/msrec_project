@@ -117,6 +117,18 @@ html, body, .sidebar, .topbar, .panel, .stat-card, .urgent-banner,
 
 * { box-sizing: border-box; }
 
+/* An author stylesheet always wins over the UA stylesheet's
+   `[hidden]{display:none}`, even at equal specificity -- so any element
+   whose class sets its own `display` (`.acct-row`, `.app-card`,
+   `.doc-row`, `.notif-row`, a `<tr>`, ...) stays visibly on screen when
+   JS or a template sets its `hidden` attribute, which is what silently
+   broke every tab/search filter built on toggling `hidden` (see
+   admin-applications.js, secretariat-applications.js, script.js's
+   generic filter-tabs handler, and the `{% if %}hidden{% endif %}`
+   template guards). One global rule beats them all, present and future,
+   instead of chasing a `.class[hidden]` override per component. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   padding: 0;
@@ -266,7 +278,10 @@ svg {
 .nav-group.open .nav-subnav { display: flex; }
 
 .nav-sublink {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   padding: 8px 10px;
   border-radius: var(--radius-sm);
   color: var(--text-sub);
@@ -286,6 +301,45 @@ svg {
 }
 .nav-sublink:hover { background: var(--hover-bg); color: var(--text-main); }
 .nav-sublink.active { background: var(--blue-light); color: var(--blue); font-weight: 600; }
+
+/* ---------------- Sidebar: live status badges ---------------- */
+.nav-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--teal-light);
+  color: var(--teal);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.nav-sublink.active .nav-badge { background: var(--blue); color: #fff; }
+
+/* Revisions Required is the one badge that means "you need to act" --
+   it stays amber even when the link isn't the active page, so it can't
+   get lost among the neutral teal counts. */
+.nav-badge[data-nav-badge="revisions"] {
+  background: var(--orange-light);
+  color: var(--orange);
+}
+.nav-sublink.active .nav-badge[data-nav-badge="revisions"] {
+  background: var(--orange);
+  color: #fff;
+}
+
+@keyframes navBadgePulse {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.nav-badge-pulse { animation: navBadgePulse 0.45s cubic-bezier(.34,1.56,.64,1); }
 
 .help-box {
   margin-top: 18px;
@@ -779,6 +833,7 @@ svg {
 .stat-icon.purple { background: var(--purple-light); color: var(--purple); }
 .stat-icon.teal   { background: var(--teal-light);   color: var(--teal); }
 .stat-icon.orange { background: var(--orange-light); color: var(--orange); }
+.stat-icon.red    { background: var(--red-light);    color: var(--red); }
 
 .stat-label { margin: 0; font-size: 13px; color: var(--text-sub); font-weight: 500; }
 .stat-value { margin: 6px 0 12px; font-size: 28px; font-weight: 700; color: var(--text-main); }
@@ -827,6 +882,14 @@ svg {
 .urgent-body p { margin: 0; font-size: 13px; color: var(--text-main); line-height: 1.5; }
 .ref-no { color: var(--red); font-weight: 600; }
 .sep { margin: 0 6px; color: var(--text-faint); }
+
+/* Informational banner -- same layout as .urgent-banner, calmer blue
+   palette for "nothing's wrong, just so you know" notices (e.g. a
+   Reviewer/Committee role request still awaiting admin approval) rather
+   than the red "you need to act" one above. */
+.info-banner { background: var(--blue-light); border: 1px solid color-mix(in srgb, var(--blue) 35%, transparent); }
+.info-banner .urgent-icon { color: var(--blue); }
+.info-banner .urgent-body h3 { color: var(--blue); }
 .urgent-note { margin-top: 6px !important; color: var(--text-sub) !important; }
 
 .urgent-due {
@@ -948,27 +1011,66 @@ svg {
 
 .filter-tabs {
   display: flex;
-  gap: 6px;
+  align-items: center;
+  gap: 4px;
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 11px;
   padding: 4px;
   flex-wrap: wrap;
+  scrollbar-width: none;
 }
+.filter-tabs::-webkit-scrollbar { display: none; }
 .filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   border: none;
   background: transparent;
   color: var(--text-sub);
   font-size: 12.5px;
   font-weight: 600;
   padding: 8px 14px;
-  border-radius: 7px;
+  border-radius: 8px;
   white-space: nowrap;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, box-shadow .18s ease;
 }
 .filter-tab:hover { color: var(--text-main); }
-.filter-tab.active { background: var(--white); color: var(--text-main); box-shadow: var(--shadow); }
-.filter-tab .count { color: var(--text-faint); font-weight: 600; margin-left: 4px; }
-.filter-tab.active .count { color: inherit; }
+.filter-tab.active {
+  background: var(--white);
+  color: var(--teal);
+  box-shadow: var(--shadow);
+}
+.filter-tab .count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--border);
+  color: var(--text-faint);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1;
+  transition: background .18s ease, color .18s ease;
+}
+.filter-tab.active .count { background: var(--teal-light); color: var(--teal); }
+
+/* The "revisions" tab means "needs your action" -- keep it amber even
+   when it isn't the active tab, so it can't get lost among the rest. */
+.filter-tab[data-filter="revisions"] .count { background: var(--orange-light); color: var(--orange); }
+.filter-tab[data-filter="revisions"].active .count { background: var(--orange); color: #fff; }
+
+@keyframes countPulse {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+.count-pulse { animation: countPulse 0.45s cubic-bezier(.34,1.56,.64,1); }
 
 /* ---------------- Empty state ---------------- */
 
@@ -1649,6 +1751,7 @@ svg {
 .form-section { margin-bottom: 28px; }
 .form-section:last-child { margin-bottom: 0; }
 .field-hint { color: var(--text-faint); font-size: 12px; margin: 6px 0 0; }
+.field-error { color: var(--red); font-size: 12px; font-weight: 600; margin: 6px 0 0; }
 .form-section-title {
   display: flex;
   align-items: center;

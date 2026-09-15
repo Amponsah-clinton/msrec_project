@@ -61,6 +61,23 @@ class Application(models.Model):
     # Studies / Not Approved show a real decision date instead of reusing
     # updated_at (which also moves on every other status change).
     decided_at = models.DateTimeField(null=True, blank=True)
+
+    # Revisions round-trip -- set by oversight.apply_transition() when the
+    # Secretariat requests revisions, read by the applicant's Revisions
+    # Required page/email, and by application_form when they fix and
+    # resend. revision_count going from 0 -> 1+ is what "this application
+    # has been through a revision cycle" means (see resubmitted_at below);
+    # it stays incremented forever, even after status moves on to approved/
+    # not_approved, so a later revision-history indicator has something to
+    # show for a study that's since been decided.
+    revision_comment = models.TextField(blank=True)
+    revision_requested_at = models.DateTimeField(null=True, blank=True)
+    revision_count = models.PositiveSmallIntegerField(default=0)
+    # Set only when the applicant actually fixes and resends (not on the
+    # original submission) -- the "revision was done on this application"
+    # indicator the Secretariat sees is exactly `resubmitted_at is not None`.
+    resubmitted_at = models.DateTimeField(null=True, blank=True)
+
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 

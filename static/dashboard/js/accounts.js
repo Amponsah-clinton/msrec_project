@@ -22,6 +22,8 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("editMiddleName").value = row.dataset.middleName;
         document.getElementById("editLastName").value = row.dataset.lastName;
         document.getElementById("editEmail").value = row.dataset.email;
+        document.getElementById("editConfirmEmail").value = row.dataset.email;
+        document.getElementById("editEmailMatchError").hidden = true;
         document.getElementById("editPhone").value = row.dataset.phone;
         document.getElementById("editInstitution").value = row.dataset.institution;
         document.getElementById("editDepartment").value = row.dataset.department;
@@ -37,6 +39,20 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("acctEditCancel").addEventListener("click", closeEdit);
     editOverlay.addEventListener("click", (event) => {
       if (event.target === editOverlay) closeEdit();
+    });
+
+    const editEmail = document.getElementById("editEmail");
+    const editConfirmEmail = document.getElementById("editConfirmEmail");
+    const editEmailMatchError = document.getElementById("editEmailMatchError");
+    [editEmail, editConfirmEmail].forEach((f) => {
+      f.addEventListener("input", () => { editEmailMatchError.hidden = true; });
+    });
+    editForm.addEventListener("submit", (event) => {
+      if (editEmail.value.trim().toLowerCase() !== editConfirmEmail.value.trim().toLowerCase()) {
+        event.preventDefault();
+        editEmailMatchError.hidden = false;
+        editConfirmEmail.focus();
+      }
     });
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && !editOverlay.hidden) closeEdit();

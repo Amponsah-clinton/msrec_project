@@ -121,6 +121,10 @@ else:
 # SMTP when EMAIL_HOST is configured in .env; otherwise falls back to the
 # console backend (prints the message to the runserver log instead of
 # sending it) so replying never crashes just because SMTP isn't set up yet.
+def _env_bool(name, default):
+    return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
+
+
 _email_host = os.getenv("EMAIL_HOST", "").strip()
 if _email_host:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -128,10 +132,16 @@ if _email_host:
     EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
     EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
     EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-    EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").strip().lower() in {"1", "true", "yes", "on"}
+    # Port 465 (SSL) and port 587 (STARTTLS) are mutually exclusive -- only
+    # one of these should ever be True. Defaults preserve the old TLS-only
+    # behavior for anyone with EMAIL_HOST set but neither flag specified.
+    EMAIL_USE_SSL = _env_bool("EMAIL_USE_SSL", False)
+    EMAIL_USE_TLS = _env_bool("EMAIL_USE_TLS", not EMAIL_USE_SSL)
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "MSREC Secretariat <no-reply@msrec.org>")
+DEFAULT_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "") or os.getenv(
+    "DEFAULT_FROM_EMAIL", "MSREC Secretariat <no-reply@msrec.org>"
+)
 
 # ── Supabase (available for future use: storage, auth, etc.) ──────────────
 # Not wired into any view yet -- these are just read from the environment
@@ -155,6 +165,7 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
+    {"NAME": "accounts.validators.StrongPasswordValidator"},
 ]
 
 # Internationalization

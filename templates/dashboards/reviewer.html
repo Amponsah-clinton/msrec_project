@@ -4,24 +4,15 @@
 
 {% block nav_content %}
 
-      <a href="#" class="nav-item active">
+      <a href="{% url 'reviewer_dashboard:home' %}" class="nav-item active">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg></span>
         <span>Dashboard</span>
       </a>
 
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span>
-          <span>Review Assignments</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="#" class="nav-sublink">New Assignments</a>
-          <a href="#" class="nav-sublink">Accepted Reviews</a>
-          <a href="#" class="nav-sublink">Due / Overdue Reviews</a>
-          <a href="#" class="nav-sublink">Completed Reviews</a>
-        </div>
-      </div>
+      <a href="{% url 'reviewer_dashboard:my_reviews' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span>
+        <span>My Reviews</span>
+      </a>
 
       <div class="nav-group">
         <button type="button" class="nav-group-toggle" aria-expanded="false">
@@ -75,15 +66,15 @@
         </div>
       </div>
 
-      <a href="#" class="nav-item">
+      <a href="{% url 'reviewer_dashboard:notifications' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
         <span>Notifications</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'reviewer_dashboard:profile_expertise' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
         <span>Profile &amp; Expertise</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'reviewer_dashboard:security' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/></svg></span>
         <span>Security</span>
       </a>
@@ -197,8 +188,8 @@
             <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
           </div>
           <p class="stat-label">New Assignments</p>
-          <p class="stat-value">4</p>
-          <a href="#" class="stat-link">View assignments <span>›</span></a>
+          <p class="stat-value">{{ stat_new }}</p>
+          <a href="{% url 'reviewer_dashboard:my_reviews' %}?tab=new" class="stat-link">View assignments <span>›</span></a>
         </div>
 
         <div class="stat-card">
@@ -206,8 +197,8 @@
             <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>
           </div>
           <p class="stat-label">Accepted Reviews</p>
-          <p class="stat-value">6</p>
-          <a href="#" class="stat-link">View accepted <span>›</span></a>
+          <p class="stat-value">{{ stat_accepted }}</p>
+          <a href="{% url 'reviewer_dashboard:my_reviews' %}?tab=accepted" class="stat-link">View accepted <span>›</span></a>
         </div>
 
         <div class="stat-card">
@@ -215,8 +206,8 @@
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
           </div>
           <p class="stat-label">In Progress</p>
-          <p class="stat-value">3</p>
-          <a href="#" class="stat-link">View in progress <span>›</span></a>
+          <p class="stat-value">{{ stat_in_progress }}</p>
+          <a href="{% url 'reviewer_dashboard:my_reviews' %}?tab=due_overdue" class="stat-link">View in progress <span>›</span></a>
         </div>
 
         <div class="stat-card">
@@ -224,8 +215,8 @@
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
           </div>
           <p class="stat-label">Completed Reviews</p>
-          <p class="stat-value">12</p>
-          <a href="#" class="stat-link">View completed <span>›</span></a>
+          <p class="stat-value">{{ stat_completed }}</p>
+          <a href="{% url 'reviewer_dashboard:my_reviews' %}?tab=completed" class="stat-link">View completed <span>›</span></a>
         </div>
 
         <div class="stat-card">
@@ -233,11 +224,12 @@
             <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
           </div>
           <p class="stat-label">Pending COI Declarations</p>
-          <p class="stat-value">2</p>
-          <a href="#" class="stat-link">View COI <span>›</span></a>
+          <p class="stat-value">{{ pending_coi_count }}</p>
+          <a href="{% url 'reviewer_dashboard:my_reviews' %}" class="stat-link">View COI <span>›</span></a>
         </div>
       </section>
 
+      {% if urgent_assignment %}
       <!-- URGENT BANNER -->
       <section class="urgent-banner">
         <div class="urgent-icon">
@@ -246,19 +238,20 @@
         <div class="urgent-body">
           <h3>Urgent Assignment &ndash; Due Soon</h3>
           <p>
-            <span class="ref-no">Ref No.: MSREC/2026/0039</span>
+            <span class="ref-no">Ref No.: {{ urgent_assignment.application.reference_no|default:"Pending" }}</span>
             <span class="sep">|</span>
-            Study Title: Effectiveness of a Mobile Health Intervention on Hypertension Control in Community Settings
+            Study Title: {{ urgent_assignment.application.title }}
           </p>
           <p class="urgent-note">Please begin your review and submit by the due date to avoid delays.</p>
         </div>
         <div class="urgent-due">
           <span class="due-label">Due Date</span>
-          <span class="due-date">22 May 2026</span>
-          <span class="due-days">(2 days remaining)</span>
+          <span class="due-date">{{ urgent_assignment.due_date|date:"d M Y" }}</span>
+          <span class="due-days">{% if urgent_assignment.days_remaining < 0 %}({{ urgent_assignment.days_overdue }} day{{ urgent_assignment.days_overdue|pluralize }} overdue){% else %}({{ urgent_assignment.days_remaining }} day{{ urgent_assignment.days_remaining|pluralize }} remaining){% endif %}</span>
         </div>
-        <button class="btn btn-danger">Start Review</button>
+        <a href="{% url 'reviewer_dashboard:my_reviews' %}" class="btn btn-danger">Start Review</a>
       </section>
+      {% endif %}
 
       <!-- BODY GRID -->
       <div class="body-grid">
@@ -267,7 +260,7 @@
         <section class="panel reviews-panel">
           <div class="panel-header">
             <h2>Assigned Reviews</h2>
-            <a href="#" class="panel-link">View all assignments</a>
+            <a href="{% url 'reviewer_dashboard:my_reviews' %}" class="panel-link">View all assignments</a>
           </div>
 
           <div class="table-wrap">
@@ -282,48 +275,33 @@
                 </tr>
               </thead>
               <tbody>
+                {% for assignment in open_assignments %}
                 <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0042</td>
-                  <td data-label="Study Title">Perceptions of Telemedicine Use Among Rural Patients in Kenya</td>
-                  <td data-label="Category"><span class="badge-tag blue">Social &amp; Behavioural</span></td>
-                  <td data-label="Due Date"><span class="due-main">27 May 2026</span><span class="due-sub warn">(7 days)</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
+                  <td data-label="Ref No." class="ref-cell">{{ assignment.application.reference_no|default:"Pending" }}</td>
+                  <td data-label="Study Title">{{ assignment.application.title }}</td>
+                  <td data-label="Category"><span class="badge-tag blue">{{ assignment.application.review_type|default:"General Review" }}</span></td>
+                  <td data-label="Due Date">
+                    {% if assignment.due_date %}
+                    <span class="due-main">{{ assignment.due_date|date:"d M Y" }}</span>
+                    <span class="due-sub {{ assignment.due_urgency }}">{% if assignment.days_remaining < 0 %}({{ assignment.days_overdue }} day{{ assignment.days_overdue|pluralize }} overdue){% else %}({{ assignment.days_remaining }} day{{ assignment.days_remaining|pluralize }}){% endif %}</span>
+                    {% else %}
+                    <span class="due-sub muted">No due date yet</span>
+                    {% endif %}
+                  </td>
+                  <td data-label="Action"><a href="{% url 'reviewer_dashboard:my_reviews' %}" class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></a></td>
                 </tr>
+                {% empty %}
                 <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0041</td>
-                  <td data-label="Study Title">Safety and Immunogenicity of a Novel Malaria Vaccine in Adults</td>
-                  <td data-label="Category"><span class="badge-tag green">Biomedical</span></td>
-                  <td data-label="Due Date"><span class="due-main">29 May 2026</span><span class="due-sub warn">(9 days)</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
+                  <td colspan="5" style="text-align:center; color:var(--text-sub); padding: 28px 0;">No open review assignments right now.</td>
                 </tr>
-                <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0039</td>
-                  <td data-label="Study Title">Effectiveness of a Mobile Health Intervention on Hypertension Control</td>
-                  <td data-label="Category"><span class="badge-tag purple">Public Health</span></td>
-                  <td data-label="Due Date"><span class="due-main">22 May 2026</span><span class="due-sub danger">(2 days)</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></button></td>
-                </tr>
-                <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0038</td>
-                  <td data-label="Study Title">Nutritional Status and Academic Performance in Secondary Schools</td>
-                  <td data-label="Category"><span class="badge-tag blue">Social &amp; Behavioural</span></td>
-                  <td data-label="Due Date"><span class="due-main">03 Jun 2026</span><span class="due-sub muted">(14 days)</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
-                </tr>
-                <tr>
-                  <td data-label="Ref No." class="ref-cell">MSREC/2026/0037</td>
-                  <td data-label="Study Title">Antimicrobial Stewardship Practices in County Referral Hospitals</td>
-                  <td data-label="Category"><span class="badge-tag green">Biomedical</span></td>
-                  <td data-label="Due Date"><span class="due-main">05 Jun 2026</span><span class="due-sub muted">(16 days)</span></td>
-                  <td data-label="Action"><button class="action-btn" aria-label="View"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></button></td>
-                </tr>
+                {% endfor %}
               </tbody>
             </table>
           </div>
 
           <div class="panel-footer">
-            <span>Showing 1 to 5 of 5 entries</span>
-            <a href="#" class="panel-link">View all assignments</a>
+            <span>Showing {{ open_assignments|length }} of {{ stat_new|add:stat_accepted|add:stat_in_progress }} open assignments</span>
+            <a href="{% url 'reviewer_dashboard:my_reviews' %}" class="panel-link">View all assignments</a>
           </div>
         </section>
 

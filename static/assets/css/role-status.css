@@ -1,0 +1,105 @@
+/* ==========================================================
+   MSREC — Account/Role status page (pending or rejected Reviewer /
+   Committee request, no Applicant access). Same card language as
+   login.css, single centered panel instead of a split layout.
+========================================================== */
+
+body.role-status-page {
+  margin: 0;
+  font-family: var(--default-font);
+}
+
+.role-status-main {
+  background: #faf6ee;
+  min-height: calc(100vh - 260px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 150px 20px 70px;
+}
+
+.role-status-card {
+  width: 100%;
+  max-width: 560px;
+  background: #ffffff;
+  border-radius: 24px;
+  box-shadow: 0 30px 70px rgba(23, 42, 40, 0.12);
+  padding: 48px 44px;
+  text-align: center;
+}
+
+.role-status-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #eef4f3;
+  color: var(--accent-color);
+  font-size: 28px;
+  margin-bottom: 22px;
+}
+
+.role-status-card h1 {
+  font-family: var(--heading-font);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--heading-color);
+  margin: 0 0 14px;
+  line-height: 1.35;
+}
+
+.role-status-sub {
+  color: #384745;
+  font-size: 14.5px;
+  line-height: 1.65;
+  margin: 0 0 14px;
+}
+
+.role-status-note {
+  color: #6b7674;
+  font-size: 13.5px;
+  line-height: 1.65;
+  margin: 0 0 30px;
+}
+
+.role-status-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-role-status-primary,
+.btn-role-status-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color .15s, color .15s, border-color .15s;
+}
+
+.btn-role-status-primary {
+  background: var(--accent-color);
+  color: #ffffff;
+  border: 1px solid var(--accent-color);
+}
+.btn-role-status-primary:hover { background: #1e3535; color: #ffffff; }
+
+.btn-role-status-secondary {
+  background: #ffffff;
+  color: var(--accent-color);
+  border: 1.5px solid #e1e8e6;
+}
+.btn-role-status-secondary:hover { border-color: var(--accent-color); }
+
+@media (max-width: 480px) {
+  .role-status-card { padding: 36px 24px; }
+  .role-status-actions { flex-direction: column; }
+  .btn-role-status-primary, .btn-role-status-secondary { justify-content: center; }
+}

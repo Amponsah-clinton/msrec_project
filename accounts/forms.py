@@ -1,5 +1,7 @@
 from django import forms
 from django.contrib.auth import authenticate
+from django.core.exceptions import ValidationError as DjangoValidationError
+from django.contrib.auth.password_validation import validate_password
 
 from .models import User
 
@@ -68,6 +70,25 @@ class SignupForm(forms.Form):
         confirm_password = cleaned.get("confirmPassword")
         if password and confirm_password and password != confirm_password:
             self.add_error("confirmPassword", "Passwords do not match.")
+
+        # CharField(min_length=8) above only checks length -- run the real
+        # strength rules (AUTH_PASSWORD_VALIDATORS: length, similarity to
+        # the applicant's own name/email, common-password list, not-all-
+        # digits, and character variety) the same way a password *change*
+        # already does in applicant_dashboard's _handle_update_profile.
+        # UserAttributeSimilarityValidator needs a user to compare
+        # against; nothing's been saved yet, so build an unsaved one from
+        # what's already been typed.
+        if password:
+            temp_user = User(
+                email=email or "", first_name=cleaned.get("firstName", ""),
+                last_name=cleaned.get("lastName", ""),
+            )
+            try:
+                validate_password(password, user=temp_user)
+            except DjangoValidationError as exc:
+                for message in exc.messages:
+                    self.add_error("password", message)
 
         roles = cleaned.get("role") or []
         if ("reviewer" in roles or "committee" in roles) and not (

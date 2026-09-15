@@ -58,6 +58,11 @@ class User(AbstractBaseUser, PermissionsMixin):
         APPROVED = "approved", "Approved"
         REJECTED = "rejected", "Rejected"
 
+    class Availability(models.TextChoices):
+        AVAILABLE = "available", "Available"
+        LIMITED = "limited", "Limited Availability"
+        UNAVAILABLE = "unavailable", "Unavailable"
+
     email = models.EmailField(unique=True)
 
     first_name = models.CharField(max_length=150)
@@ -112,6 +117,17 @@ class User(AbstractBaseUser, PermissionsMixin):
         max_length=20, choices=RequestStatus.choices, default=RequestStatus.NOT_REQUESTED
     )
     reviewer_profile = models.JSONField(blank=True, default=dict)
+    # Two places can change this: the reviewer's own "Available for new
+    # assignments" toggle on Profile & Expertise (reviewer_dashboard.views
+    # -- only ever flips between AVAILABLE and UNAVAILABLE, the two
+    # extremes a reviewer can self-report), and the Secretariat's Reviewer
+    # Directory, which can additionally set LIMITED as an operational
+    # override the Secretariat controls for finer capacity management.
+    # Starts "available" since that's the accurate default for a
+    # brand-new reviewer.
+    reviewer_availability = models.CharField(
+        max_length=20, choices=Availability.choices, default=Availability.AVAILABLE
+    )
 
     wants_committee = models.BooleanField(default=False)
     committee_status = models.CharField(
@@ -119,6 +135,16 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     committee_profile = models.JSONField(blank=True, default=dict)
 
+    # Whether this account actually ticked "Applicant / Researcher" at
+    # signup -- Applicant access was previously granted to EVERY account
+    # regardless of what was selected, which is exactly what put a
+    # Reviewer-only signup on the Applicant dashboard being told "you
+    # have full Applicant access" while their Reviewer request was still
+    # pending. Defaults True so every account created before this field
+    # existed keeps behaving exactly as before (see migration); only
+    # newly created accounts that skip the Applicant checkbox get False.
+    # See dashboard_url_name() below for where this actually matters.
+    wants_applicant = models.BooleanField(default=True)
     applicant_profile = models.JSONField(blank=True, default=dict)
 
     is_active = models.BooleanField(default=True)
@@ -154,6 +180,16 @@ class User(AbstractBaseUser, PermissionsMixin):
         return chars or self.email[:2].upper()
 
     @property
+    def reviewer_expertise_tags(self):
+        raw = (self.reviewer_profile or {}).get("reviewerExpertise", "")
+        return [tag.strip() for tag in raw.split(",") if tag.strip()]
+
+    @property
+    def reviewer_research_area_tags(self):
+        raw = (self.reviewer_profile or {}).get("reviewerResearchAreas", "")
+        return [tag.strip() for tag in raw.split(",") if tag.strip()]
+
+    @property
     def requested_roles(self):
         roles = []
         if self.wants_reviewer:
@@ -167,6 +203,40 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.reviewer_status == self.RequestStatus.PENDING or \
             self.committee_status == self.RequestStatus.PENDING
 
+    @property
+    def pending_role_labels(self):
+        """Human labels for whichever role request(s) are still awaiting
+        an admin's decision -- what the Applicant dashboard's pending-
+        request banner shows, so landing there after requesting Reviewer/
+        Committee never reads as the request having gone nowhere."""
+        labels = []
+        if self.reviewer_status == self.RequestStatus.PENDING:
+            labels.append(self.Role.REVIEWER.label)
+        if self.committee_status == self.RequestStatus.PENDING:
+            labels.append(self.Role.COMMITTEE.label)
+        return labels
+
+    @property
+    def rejected_role_labels(self):
+        labels = []
+        if self.reviewer_status == self.RequestStatus.REJECTED:
+            labels.append(self.Role.REVIEWER.label)
+        if self.committee_status == self.RequestStatus.REJECTED:
+            labels.append(self.Role.COMMITTEE.label)
+        return labels
+
+    @property
+    def awaiting_role_only(self):
+        """True for an account that requested Reviewer and/or Committee
+        but deliberately did NOT tick Applicant at signup, and hasn't
+        been promoted to either yet -- see wants_applicant. This is the
+        one case dashboard_url_name() must never fall through to the
+        Applicant dashboard for: nothing about their signup asked for
+        Applicant access, so they shouldn't be told they have it, or be
+        handed applicant-only features (starting an application) they
+        never opted into."""
+        return self.role == self.Role.APPLICANT and not self.wants_applicant
+
     def dashboard_url_name(self):
         """Which dashboard namespace this account should land on after login."""
         if self.is_superuser or self.role == self.Role.ADMIN:
@@ -179,6 +249,8 @@ class User(AbstractBaseUser, PermissionsMixin):
             return "committee_dashboard:home"
         if self.role == self.Role.REVIEWER and self.reviewer_status == self.RequestStatus.APPROVED:
             return "reviewer_dashboard:home"
+        if self.awaiting_role_only:
+            return "pages:role_status"
         return "applicant_dashboard:home"
 
     def approve_role(self, role, *, promote=True):

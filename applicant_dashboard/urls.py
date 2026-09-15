@@ -47,6 +47,11 @@ _urlpatterns = [
         name="application_pay_verify",
     ),
     path(
+        "applications/nav-counts/",
+        views.nav_counts,
+        name="application_nav_counts",
+    ),
+    path(
         "applications/submitted/",
         views.application_submitted,
         name="application_submitted",

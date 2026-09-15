@@ -1,0 +1,161 @@
+/* ==========================================================
+   MSREC Secretariat — Reviewer Assignment
+   Same flat, token-driven language as the rest of the dashboard; no
+   gradients anywhere, just solid colour + a thin border.
+========================================================== */
+
+/* ---------------- Assign tab: one card per application ---------------- */
+.assign-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.assign-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 16px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--white);
+  transition: border-color .15s, box-shadow .15s;
+}
+.assign-card:hover { border-color: var(--teal); box-shadow: 0 4px 14px rgba(16, 24, 40, 0.06); }
+
+.assign-card-info { min-width: 220px; flex: 1 1 260px; }
+.assign-card-info h4 {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+.assign-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.assign-card-meta .ref { color: var(--text-sub); font-weight: 600; font-family: "JetBrains Mono", ui-monospace, monospace; }
+
+.assign-card-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+.assign-card-form select,
+.assign-card-form input[type="date"] {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: var(--bg);
+  cursor: pointer;
+}
+.assign-card-form select { min-width: 210px; }
+.assign-card-form select:focus,
+.assign-card-form input[type="date"]:focus {
+  outline: 2px solid var(--teal);
+  outline-offset: 1px;
+  background: var(--white);
+}
+.assign-card-form input[type="date"] { min-width: 140px; cursor: text; }
+
+.assign-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: var(--teal);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color .15s;
+}
+.assign-btn:hover { background: #128581; }
+.assign-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.4; }
+
+/* ---------------- Pending tab: assignment cards ---------------- */
+.pending-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 15px 18px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--white);
+}
+
+.pending-card-left { display: flex; align-items: center; gap: 12px; min-width: 220px; flex: 1 1 300px; }
+.pending-card-info h4 { margin: 0 0 3px; font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+.pending-card-info p { margin: 0; font-size: 12px; color: var(--text-faint); }
+
+.pending-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--text-sub);
+}
+.pending-card-meta span { display: flex; align-items: center; gap: 5px; }
+.pending-card-meta svg { width: 13px; height: 13px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; }
+
+.withdraw-btn {
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--text-sub);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 7px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .15s, color .15s, background-color .15s;
+}
+.withdraw-btn:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+
+/* ---------------- Workload tab ---------------- */
+.workload-name { display: flex; align-items: center; gap: 10px; }
+.workload-name strong { font-size: 13px; color: var(--text-main); }
+.workload-name span { font-size: 11.5px; color: var(--text-faint); }
+
+.workload-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  background: var(--bg);
+  color: var(--text-sub);
+}
+.workload-count.zero { background: var(--bg); color: var(--text-faint); }
+.workload-count.light { background: var(--teal-light); color: var(--teal); }
+.workload-count.busy { background: var(--orange-light); color: var(--orange); }
+.workload-count.overdue { background: var(--red-light); color: var(--red); }
+
+@media (max-width: 640px) {
+  .assign-card, .pending-card { flex-direction: column; align-items: stretch; }
+  .assign-card-form { width: 100%; }
+  .assign-card-form select { flex: 1; min-width: 0; }
+  .assign-btn { justify-content: center; }
+}

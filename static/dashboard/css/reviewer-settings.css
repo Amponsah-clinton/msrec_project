@@ -1,0 +1,649 @@
+/* ---------------------------------------------------
+   MSREC Reviewer Settings
+   Notifications / Profile & Expertise / Security
+   Layers on top of style.css — scoped under .rv-scope so
+   nothing here leaks into the other dashboards.
+--------------------------------------------------- */
+
+.rv-scope {
+  --rv-font: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.rv-scope h1, .rv-scope h2, .rv-scope h3, .rv-scope h4,
+.rv-scope .page-head-text h2,
+.rv-scope .rv-hero-name,
+.rv-scope .rv-display,
+.rv-scope .stat-value,
+.rv-scope .rv-donut-value {
+  font-family: var(--rv-font);
+  letter-spacing: -0.01em;
+}
+
+/* ---------------- Segmented settings tabs ---------------- */
+
+.rv-subnav {
+  display: flex;
+  gap: 4px;
+  padding: 5px;
+  margin: 0 0 22px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+  box-shadow: var(--shadow);
+}
+
+.rv-subnav a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-sub);
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.rv-subnav a svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.rv-subnav a:hover { color: var(--text-main); background: var(--hover-bg); }
+
+.rv-subnav a.active {
+  color: #fff;
+  background: linear-gradient(135deg, var(--teal), color-mix(in srgb, var(--teal) 70%, var(--blue)));
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--teal) 35%, transparent);
+}
+
+@media (max-width: 480px) {
+  .rv-subnav { width: 100%; }
+  .rv-subnav a { flex: 1; justify-content: center; padding: 9px 10px; }
+  .rv-subnav a span.rv-tab-label { display: none; }
+}
+
+/* ---------------- Shared card polish ---------------- */
+
+.rv-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+.rv-card-pad { padding: 24px; }
+
+/* ---------------- Profile hero ---------------- */
+
+.rv-hero {
+  position: relative;
+  border-radius: 18px;
+  overflow: hidden;
+  background: var(--white);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  margin-bottom: 22px;
+}
+
+.rv-hero-band {
+  height: 84px;
+  background:
+    radial-gradient(120% 220% at 8% 0%, color-mix(in srgb, var(--teal) 30%, transparent), transparent 60%),
+    linear-gradient(120deg, var(--navy), color-mix(in srgb, var(--navy) 60%, var(--blue)));
+  position: relative;
+}
+
+.rv-hero-band::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.16) 1px, transparent 1px);
+  background-size: 14px 14px;
+  opacity: 0.5;
+}
+
+.rv-hero-body {
+  display: flex;
+  align-items: flex-end;
+  gap: 18px;
+  padding: 0 26px 22px;
+  margin-top: -40px;
+  flex-wrap: wrap;
+}
+
+.rv-hero-avatar-wrap { position: relative; flex-shrink: 0; }
+
+.rv-hero-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid var(--white);
+  box-shadow: var(--shadow-lg);
+  display: block;
+  background: var(--teal-light);
+}
+
+.rv-hero-avatar.avatar-initials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--teal);
+  font-family: var(--rv-font);
+}
+
+.rv-hero-status {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--green);
+  border: 3px solid var(--white);
+}
+
+.rv-hero-info { padding-top: 44px; flex: 1; min-width: 220px; }
+
+.rv-hero-name {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rv-hero-name .badge-tag { font-family: "Inter", sans-serif; }
+
+.rv-hero-role { margin: 4px 0 0; font-size: 13px; color: var(--text-sub); }
+
+.rv-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--text-sub);
+}
+
+.rv-hero-meta span { display: flex; align-items: center; gap: 6px; }
+.rv-hero-meta svg { width: 14px; height: 14px; color: var(--text-faint); }
+
+.rv-hero-stats {
+  display: flex;
+  gap: 10px;
+  padding-top: 44px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.rv-hero-stat {
+  text-align: center;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: var(--hover-bg);
+  min-width: 92px;
+}
+
+.rv-hero-stat strong {
+  display: block;
+  font-family: var(--rv-font);
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.rv-hero-stat span { font-size: 11px; color: var(--text-sub); font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; }
+
+@media (max-width: 600px) {
+  .rv-hero-body { margin-top: -34px; padding: 0 18px 18px; }
+  .rv-hero-avatar { width: 72px; height: 72px; }
+  .rv-hero-info, .rv-hero-stats { padding-top: 30px; }
+  .rv-hero-stats { width: 100%; justify-content: flex-start; }
+}
+
+/* ---------------- Section title with icon chip ---------------- */
+
+.rv-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 4px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  font-family: var(--rv-font);
+}
+
+.rv-section-title .rv-ico {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.rv-section-title .rv-ico svg { width: 16px; height: 16px; }
+.rv-section-title .rv-ico.teal   { background: var(--teal-light);   color: var(--teal); }
+.rv-section-title .rv-ico.blue   { background: var(--blue-light);   color: var(--blue); }
+.rv-section-title .rv-ico.purple { background: var(--purple-light); color: var(--purple); }
+.rv-section-title .rv-ico.orange { background: var(--orange-light); color: var(--orange); }
+.rv-section-title .rv-ico.red    { background: var(--red-light);    color: var(--red); }
+
+.rv-section-sub { margin: 0 0 18px 40px; font-size: 12px; color: var(--text-sub); }
+
+/* ---------------- Expertise chip picker ---------------- */
+
+.rv-chip-field { margin-bottom: 22px; }
+
+.rv-chosen-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+  min-height: 34px;
+}
+
+.rv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 8px 7px 13px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--teal-light), var(--blue-light));
+  color: var(--text-main);
+  border: 1px solid color-mix(in srgb, var(--teal) 25%, transparent);
+}
+
+.rv-chip button {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--text-main) 10%, transparent);
+  color: var(--text-sub);
+  flex-shrink: 0;
+}
+.rv-chip button svg { width: 10px; height: 10px; stroke-width: 3; }
+.rv-chip button:hover { background: var(--red-light); color: var(--red); }
+
+.rv-chip-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.rv-chip-suggest {
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px dashed var(--border);
+  color: var(--text-sub);
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.rv-chip-suggest:hover { border-color: var(--teal); color: var(--teal); background: var(--teal-light); }
+.rv-chip-suggest svg { width: 12px; height: 12px; }
+.rv-chip-suggest[hidden] { display: none; }
+
+.rv-chip-add {
+  display: flex;
+  gap: 8px;
+  max-width: 340px;
+}
+.rv-chip-add input { flex: 1; }
+
+/* ---------------- Availability ---------------- */
+
+.rv-avail-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--hover-bg);
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.rv-avail-row-text strong { display: block; font-size: 13px; font-weight: 700; }
+.rv-avail-row-text span { font-size: 12px; color: var(--text-sub); }
+
+.rv-stepper {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--white);
+  overflow: hidden;
+}
+.rv-stepper button {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-sub);
+  background: transparent;
+}
+.rv-stepper button:hover { background: var(--hover-bg); color: var(--text-main); }
+.rv-stepper output {
+  width: 34px;
+  text-align: center;
+  font-family: var(--rv-font);
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+.rv-pill-check {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rv-pill-check label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+.rv-pill-check input { position: absolute; opacity: 0; width: 0; height: 0; }
+.rv-pill-check input:checked + span { color: inherit; }
+.rv-pill-check label:has(input:checked) {
+  background: var(--teal-light);
+  border-color: color-mix(in srgb, var(--teal) 35%, transparent);
+  color: var(--teal);
+}
+.rv-pill-check label svg { width: 13px; height: 13px; }
+
+/* ---------------- KPI strip ---------------- */
+
+.rv-kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.rv-kpi {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+.rv-kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.rv-kpi-top .rv-ico { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.rv-kpi-top .rv-ico svg { width: 14px; height: 14px; }
+.rv-kpi-trend { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
+.rv-kpi-trend.up     { background: var(--green-light);  color: var(--green); }
+.rv-kpi-trend.flat   { background: var(--gray-light);   color: var(--text-sub); }
+.rv-kpi-trend.orange { background: var(--orange-light); color: var(--orange); }
+.rv-kpi-trend.purple { background: var(--purple-light); color: var(--purple); }
+.rv-kpi-trend.red    { background: var(--red-light);    color: var(--red); }
+.rv-kpi-value { font-family: var(--rv-font); font-size: 24px; font-weight: 800; margin: 0; }
+.rv-kpi-label { margin: 2px 0 0; font-size: 12px; color: var(--text-sub); font-weight: 500; }
+
+@media (max-width: 900px) { .rv-kpi-strip { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 420px) { .rv-kpi-strip { grid-template-columns: 1fr; } }
+
+/* ---------------- Notification feed toolbar ---------------- */
+
+.rv-notif-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 18px 20px 0;
+}
+
+.rv-unread-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+
+.notif-day-label {
+  font-family: var(--rv-font);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-faint);
+  margin: 18px 0 4px;
+}
+
+/* ---------------- Notification feed: real color, not flat grey ----------------
+   The shared style.css keeps .notif-icon monochrome on purpose for the
+   applicant feed; this page's icons already carry a semantic type
+   (info/warn/success/cal), so give each its own tint instead of the same
+   grey chip everywhere, and drop the flat grey unread bar for a soft teal
+   wash + accent dot that reads as "new" without looking like a UI glitch. */
+
+.rv-scope .notif-icon { border: none; background: var(--gray-light); color: var(--text-sub); }
+.rv-scope .notif-icon.info    { background: var(--blue-light);   color: var(--blue); }
+.rv-scope .notif-icon.warn    { background: var(--orange-light); color: var(--orange); }
+.rv-scope .notif-icon.success { background: var(--green-light);  color: var(--green); }
+.rv-scope .notif-icon.cal     { background: var(--purple-light); color: var(--purple); }
+
+.rv-scope .notif-row.unread { background: var(--teal-light); }
+.rv-scope .notif-row.unread::before { content: none; }
+.rv-scope .notif-row:hover { background: var(--hover-bg); }
+
+.rv-scope .notif-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--teal);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 18%, transparent);
+}
+
+.rv-scope .notif-row:not(.unread) .notif-body h4 { color: var(--text-sub); font-weight: 600; }
+
+/* Filter tab counts pick up their category's color instead of the shared
+   neutral pill -- only while inactive, so the active tab keeps the teal
+   highlight from style.css's .filter-tab.active .count. */
+.rv-scope .filter-tab[data-filter="assignment"]:not(.active) .count { background: var(--blue-light);   color: var(--blue); }
+.rv-scope .filter-tab[data-filter="coi"]:not(.active) .count        { background: var(--orange-light); color: var(--orange); }
+.rv-scope .filter-tab[data-filter="committee"]:not(.active) .count  { background: var(--purple-light); color: var(--purple); }
+.rv-scope .filter-tab[data-filter="system"]:not(.active) .count     { background: var(--gray-light);   color: var(--gray); }
+
+/* ---------------- Security score donut ---------------- */
+
+.rv-score-card {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 24px;
+  flex-wrap: wrap;
+}
+
+.rv-donut {
+  --pct: 70;
+  width: 116px;
+  height: 116px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(var(--teal) calc(var(--pct) * 1%), var(--border) 0);
+  position: relative;
+}
+.rv-donut::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border-radius: 50%;
+  background: var(--white);
+}
+.rv-donut-center { position: relative; text-align: center; }
+.rv-donut-value { font-size: 24px; font-weight: 800; display: block; line-height: 1; }
+.rv-donut-caption { font-size: 10.5px; color: var(--text-sub); font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+
+.rv-score-list { flex: 1; min-width: 220px; display: flex; flex-direction: column; gap: 10px; }
+.rv-score-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.rv-score-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+.rv-score-item.ok svg { color: var(--green); }
+.rv-score-item.warn svg { color: var(--orange); }
+.rv-score-item span.rv-hint { font-weight: 400; color: var(--text-sub); font-size: 12px; margin-left: auto; text-align: right; }
+
+@media (max-width: 560px) {
+  .rv-score-card { flex-direction: column; align-items: flex-start; }
+}
+
+/* ---------------- Password strength meter ---------------- */
+
+.rv-strength { margin-top: 10px; }
+.rv-strength-bars { display: flex; gap: 5px; margin-bottom: 6px; }
+.rv-strength-bars i {
+  flex: 1;
+  height: 4px;
+  border-radius: 3px;
+  background: var(--border);
+  display: block;
+}
+.rv-strength-label { font-size: 11.5px; font-weight: 700; color: var(--text-faint); }
+.rv-strength[data-score="1"] .rv-strength-bars i:nth-child(1) { background: var(--red); }
+.rv-strength[data-score="1"] .rv-strength-label { color: var(--red); }
+.rv-strength[data-score="2"] .rv-strength-bars i:nth-child(-n+2) { background: var(--orange); }
+.rv-strength[data-score="2"] .rv-strength-label { color: var(--orange); }
+.rv-strength[data-score="3"] .rv-strength-bars i:nth-child(-n+3) { background: #d4b106; }
+.rv-strength[data-score="3"] .rv-strength-label { color: #a68b00; }
+.rv-strength[data-score="4"] .rv-strength-bars i { background: var(--green); }
+.rv-strength[data-score="4"] .rv-strength-label { color: var(--green); }
+
+/* ---------------- 2FA method cards ---------------- */
+
+.rv-2fa-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+.rv-2fa-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--white);
+}
+.rv-2fa-card.is-on { border-color: color-mix(in srgb, var(--teal) 40%, transparent); background: var(--teal-light); }
+.rv-2fa-top { display: flex; align-items: center; justify-content: space-between; }
+.rv-2fa-ico {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--blue-light);
+  color: var(--blue);
+}
+.rv-2fa-ico svg { width: 18px; height: 18px; }
+.rv-2fa-card h4 { margin: 0; font-size: 13.5px; font-weight: 700; }
+.rv-2fa-card p { margin: 0; font-size: 12px; color: var(--text-sub); line-height: 1.5; flex: 1; }
+.rv-2fa-status { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+.rv-2fa-status.on { background: var(--green); color: #fff; }
+.rv-2fa-status.off { background: var(--gray-light); color: var(--text-sub); }
+
+@media (max-width: 900px) { .rv-2fa-grid { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 560px) { .rv-2fa-grid { grid-template-columns: 1fr; } }
+
+/* ---------------- Session / device rows ---------------- */
+
+.rv-session-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--purple-light);
+  color: var(--purple);
+  flex-shrink: 0;
+}
+.rv-session-ico svg { width: 19px; height: 19px; }
+
+/* ---------------- Login activity timeline ---------------- */
+
+.rv-timeline { position: relative; padding-left: 6px; }
+.rv-tl-item {
+  position: relative;
+  display: flex;
+  gap: 14px;
+  padding: 0 0 20px 22px;
+  border-left: 2px solid var(--border);
+}
+.rv-tl-item:last-child { border-color: transparent; padding-bottom: 0; }
+.rv-tl-dot {
+  position: absolute;
+  left: -7px;
+  top: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--white);
+  background: var(--green);
+}
+.rv-tl-item.fail .rv-tl-dot { background: var(--red); }
+.rv-tl-body { flex: 1; }
+.rv-tl-body strong { display: block; font-size: 13px; font-weight: 700; }
+.rv-tl-body span.rv-tl-meta { display: block; font-size: 12px; color: var(--text-sub); margin-top: 2px; }
+.rv-tl-time { font-size: 11.5px; color: var(--text-faint); white-space: nowrap; flex-shrink: 0; }
+
+/* ---------------- Toast (lightweight "Saved" feedback) ---------------- */
+
+.rv-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--navy);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  box-shadow: var(--shadow-lg);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  z-index: 500;
+}
+.rv-toast svg { width: 16px; height: 16px; color: var(--green); }
+.rv-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }

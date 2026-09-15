@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -16,6 +17,7 @@ from accounts.sessions import active_sessions_for
 from notifications.models import Notification
 from notifications.services import notify
 from payments import fees
+from payments.models import Payment
 
 from . import storage
 from .models import Application
@@ -123,22 +125,57 @@ def _get_draft_or_404(request, pk):
     )
 
 
+def _get_editable_or_404(request, pk):
+    """Like _get_draft_or_404, but also accepts a REVISIONS_REQUIRED
+    application -- the one other status an applicant is allowed to load
+    back into the form and edit (to fix what the Secretariat flagged and
+    resubmit). Used only by application_form()/autosave_application();
+    every other draft-only view (delete_draft, ...) keeps using
+    _get_draft_or_404 on purpose."""
+    return get_object_or_404(
+        Application, pk=pk, applicant=request.user,
+        status__in=[Application.Status.DRAFT, Application.Status.REVISIONS_REQUIRED],
+    )
+
+
 def finalize_submission(application, request):
     """The one place an application actually becomes SUBMITTED -- called
-    either directly (fee-exempt review types) or by payments.views.verify
-    once Paystack has genuinely confirmed a successful payment (paid review
-    types). Assigns the reference number, notifies the Secretariat, exactly
-    once either way."""
+    either directly (fee-exempt review types, or a resubmission that was
+    already paid for) or by payments.views.verify once Paystack has
+    genuinely confirmed a successful payment (paid review types, first
+    time). Assigns the reference number, notifies the Secretariat, exactly
+    once either way.
+
+    A resubmission is detected from revision_requested_at/resubmitted_at
+    rather than the application's current `status` -- status is DRAFT for
+    the whole time a paid resubmission is sitting at checkout waiting on
+    Paystack, so checking `status == REVISIONS_REQUIRED` here would miss
+    that case; these two timestamps are untouched by the payment detour."""
+    is_resubmission = application.revision_requested_at is not None and (
+        application.resubmitted_at is None
+        or application.revision_requested_at > application.resubmitted_at
+    )
+
     application.status = Application.Status.SUBMITTED
     application.completion_pct = 100
-    application.submitted_at = timezone.now()
+    if not application.submitted_at:
+        application.submitted_at = timezone.now()
+    if is_resubmission:
+        application.resubmitted_at = timezone.now()
     application.save()
     if not application.reference_no:
         application.assign_reference_no()
 
+    if is_resubmission:
+        notify_message = (
+            f"{application.applicant.full_name} resubmitted {application.reference_no} "
+            "after requested revisions."
+        )
+    else:
+        notify_message = f"New application {application.reference_no} submitted by {application.applicant.full_name}."
     notify(
         Notification.Audience.SECRETARIAT,
-        f"New application {application.reference_no} submitted by {application.applicant.full_name}.",
+        notify_message,
         icon=Notification.Icon.INFO,
         link_url_name="secretariat_dashboard:application_detail",
         link_kwargs={"pk": application.pk},
@@ -169,16 +206,26 @@ def application_form(request):
     draft = None
     draft_id = request.GET.get("draft") or request.POST.get("application_id")
     if draft_id:
-        draft = _get_draft_or_404(request, draft_id)
+        draft = _get_editable_or_404(request, draft_id)
 
     if request.method == "POST":
         application = draft or Application(applicant=request.user)
         form_action = request.POST.get("formAction", "submit")
+        is_revision_edit = application.status == Application.Status.REVISIONS_REQUIRED
 
         if form_action == "draft":
             _apply_posted_fields(application, request)
-            application.status = Application.Status.DRAFT
+            # A revision-in-progress edit stays REVISIONS_REQUIRED while
+            # they're still working on it -- downgrading it to a plain
+            # Draft here would drop it off the Secretariat's radar (and
+            # the applicant's own Revisions Required list) before they've
+            # actually resubmitted anything.
+            if not is_revision_edit:
+                application.status = Application.Status.DRAFT
             application.save()
+            if is_revision_edit:
+                messages.success(request, "Your changes have been saved. Resubmit whenever you're ready.")
+                return redirect(f"{reverse('applicant_dashboard:application_form')}?draft={application.pk}")
             messages.success(
                 request,
                 "Draft saved. Pick up where you left off anytime from Draft Applications.",
@@ -208,7 +255,13 @@ def application_form(request):
 
         _apply_posted_fields(application, request)
 
-        if fees.requires_payment(application.review_type):
+        # A resubmission after revisions never pays twice -- if this
+        # application already has one genuinely verified payment (any
+        # amount, any review type), that satisfied the review-fee
+        # requirement once and for all for this application.
+        already_paid = bool(application.pk) and application.payments.filter(status=Payment.Status.SUCCESS).exists()
+
+        if fees.requires_payment(application.review_type) and not already_paid:
             # Saved as a draft for now -- finalize_submission() only runs
             # once payments.views.verify has a genuine Paystack success for
             # this application, never from this request directly. That's
@@ -244,11 +297,16 @@ def autosave_application(request):
     draft_id = request.POST.get("application_id")
     application = None
     if draft_id:
+        # REVISIONS_REQUIRED included on purpose: autosave also fires
+        # while an applicant is fixing-and-resubmitting an application
+        # the Secretariat sent back, and must keep saving into that same
+        # row (see application_form) rather than treating it as gone.
         application = Application.objects.filter(
-            pk=draft_id, applicant=request.user, status=Application.Status.DRAFT
+            pk=draft_id, applicant=request.user,
+            status__in=[Application.Status.DRAFT, Application.Status.REVISIONS_REQUIRED],
         ).first()
         if application is None:
-            # Gone, or no longer a draft (submitted from another tab,
+            # Gone, or no longer editable (submitted from another tab,
             # deleted, ...) -- start a fresh draft row instead of erroring
             # the autosave loop out forever on a stale id.
             return JsonResponse({"error": "stale_draft"}, status=409)
@@ -256,7 +314,10 @@ def autosave_application(request):
         application = Application(applicant=request.user)
 
     _apply_posted_fields(application, request)
-    application.status = Application.Status.DRAFT
+    # Don't downgrade a revision-in-progress edit to a plain Draft mid-
+    # autosave -- same reasoning as the "Save as Draft" branch above.
+    if application.status != Application.Status.REVISIONS_REQUIRED:
+        application.status = Application.Status.DRAFT
     application.save()
 
     return JsonResponse({
@@ -317,12 +378,16 @@ def _handle_update_profile(request):
     phone = request.POST.get("phone", "").strip()
     orcid = request.POST.get("orcid", "").strip()
     email = request.POST.get("email", "").strip().lower()
+    confirm_email = request.POST.get("confirm_email", "").strip().lower()
 
     if not first_name or not last_name:
         messages.error(request, "First and last name are required.")
         return
     if not email:
         messages.error(request, "Email is required.")
+        return
+    if email != confirm_email:
+        messages.error(request, "Email and Confirm Email don't match.")
         return
     if User.objects.exclude(pk=user.pk).filter(email=email).exists():
         messages.error(request, "Another account already uses that email address.")
@@ -470,6 +535,23 @@ def home(request):
     })
 
 
+def nav_counts(request):
+    """Polled by nav-badges.js to keep the sidebar's Applications badges
+    current without a full page reload -- e.g. the Secretariat moves an
+    application to Under Review while the applicant already has a
+    dashboard page open in another tab."""
+    all_applications = Application.objects.filter(applicant=request.user)
+    counts = {
+        "draft": all_applications.filter(status=Application.Status.DRAFT).count(),
+        "submitted": all_applications.filter(status=Application.Status.SUBMITTED).count(),
+        "under_review": all_applications.filter(status=Application.Status.UNDER_REVIEW).count(),
+        "revisions": all_applications.filter(status=Application.Status.REVISIONS_REQUIRED).count(),
+        "approved": all_applications.filter(status=Application.Status.APPROVED).count(),
+        "not_approved": all_applications.filter(status=Application.Status.NOT_APPROVED).count(),
+    }
+    return JsonResponse(counts)
+
+
 def application_submitted(request):
     return render(request, "dashboards/applicant/application-submitted.html", {
         "applications": _my_applications(request, status=Application.Status.SUBMITTED),
@@ -500,6 +582,43 @@ def application_not_approved(request):
     })
 
 
+def _progress_steps(application):
+    """Drives the status tracker on the applicant's own application-detail
+    page -- a plain, honest read of what's actually happened to this
+    application so far, from the fields already on it (no separate
+    status-history table to keep in sync). A "Revisions Requested" step
+    only appears at all once one's actually been requested."""
+    decided = application.status in (Application.Status.APPROVED, Application.Status.NOT_APPROVED)
+    reached_review = (
+        application.status != Application.Status.SUBMITTED
+        or application.decided_at is not None
+        or application.revision_count > 0
+    )
+
+    steps = [
+        {"key": "submitted", "label": "Submitted", "done": True, "current": False, "date": application.submitted_at},
+        {
+            "key": "under_review", "label": "Under Review", "done": reached_review,
+            "current": application.status == Application.Status.UNDER_REVIEW, "date": None,
+        },
+    ]
+    if application.revision_count > 0:
+        steps.append({
+            "key": "revisions", "label": "Revisions Requested",
+            "done": application.resubmitted_at is not None,
+            "current": application.status == Application.Status.REVISIONS_REQUIRED,
+            "date": application.revision_requested_at,
+        })
+    steps.append({
+        "key": "decision",
+        "label": "Approved" if application.status == Application.Status.APPROVED
+            else "Not Approved" if application.status == Application.Status.NOT_APPROVED else "Decision",
+        "done": decided, "current": False, "date": application.decided_at,
+        "outcome": application.status if decided else "",
+    })
+    return steps
+
+
 def application_detail(request, pk):
     application = get_object_or_404(
         Application.objects.exclude(status=Application.Status.DRAFT), pk=pk, applicant=request.user
@@ -512,4 +631,5 @@ def application_detail(request, pk):
         "application": application,
         "documents": documents,
         "review_type_label": fees.label_for(application.review_type),
+        "progress_steps": _progress_steps(application),
     })

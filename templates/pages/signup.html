@@ -110,7 +110,9 @@
                 </div>
                 <div class="field">
                   <label for="countryResidence">Country of Residence <span class="req">*</span></label>
-                  <input type="text" id="countryResidence" name="countryResidence" required>
+                  <select id="countryResidence" name="countryResidence" required data-country-select>
+                    <option value="">Loading countries…</option>
+                  </select>
                 </div>
                 <div class="field">
                   <label for="profilePhoto">Profile Photo</label>
@@ -138,6 +140,17 @@
                       <i class="bi bi-eye"></i>
                     </button>
                   </div>
+                  <div class="password-strength" id="passwordStrength" hidden>
+                    <div class="password-strength-track"><div class="password-strength-fill" id="passwordStrengthFill"></div></div>
+                    <span class="password-strength-label" id="passwordStrengthLabel"></span>
+                  </div>
+                  <ul class="password-requirements" id="passwordRequirements">
+                    <li data-rule="length">At least 8 characters</li>
+                    <li data-rule="upper">An uppercase letter</li>
+                    <li data-rule="lower">A lowercase letter</li>
+                    <li data-rule="number">A number</li>
+                    <li data-rule="symbol">A symbol (e.g. ! @ # $)</li>
+                  </ul>
                 </div>
                 <div class="field">
                   <label for="confirmPassword">Confirm Password <span class="req">*</span></label>
@@ -176,7 +189,9 @@
                 </div>
                 <div class="field">
                   <label for="institutionCountry">Institution Country</label>
-                  <input type="text" id="institutionCountry" name="institutionCountry">
+                  <select id="institutionCountry" name="institutionCountry" data-country-select>
+                    <option value="">Loading countries…</option>
+                  </select>
                 </div>
                 <div class="field field-wide">
                   <label for="institutionAddress">Institution Address</label>
@@ -464,5 +479,6 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'assets/js/country-list.js' %}"></script>
 <script src="{% static 'assets/js/signup.js' %}"></script>
 {% endblock %}

@@ -92,6 +92,33 @@ def upload_signup_file(uploaded_file, *, folder, field_name):
     return object_path
 
 
+def delete_object(object_path):
+    """Delete one object from the private "signup" bucket -- a CV
+    (reviewer/committee/applicant) or a photo attached at signup. Used
+    when admin_dashboard deletes a user account, so removing the account
+    doesn't leave their documents behind in Storage. Best-effort: a
+    failure here never blocks the account deletion itself, it just risks
+    leaving an orphaned object behind."""
+    if not object_path or not _configured():
+        return False
+
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{object_path}"
+    req = urllib.request.Request(
+        url,
+        method="DELETE",
+        headers={
+            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+            "apikey": settings.SUPABASE_SERVICE_KEY,
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            return resp.status in (200, 204)
+    except urllib.error.URLError:
+        logger.exception("Supabase Storage delete failed for %s", object_path)
+        return False
+
+
 def create_signed_url(object_path, *, expires_in=3600):
     """Return a temporary signed URL for a private object in the
     "signup" bucket, or None if Storage isn't configured, the object

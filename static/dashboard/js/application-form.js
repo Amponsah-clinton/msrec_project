@@ -15,6 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (radio === requestedReviewHidden) return;
       radio.addEventListener("change", () => {
         if (radio.checked) requestedReviewHidden.value = radio.value;
+        document.getElementById("applyReviewRequestError")?.classList.remove("show");
       });
     });
   }
@@ -306,15 +307,23 @@ document.addEventListener("DOMContentLoaded", () => {
      the confirmation view with the assigned reference number.
   ============================================================ */
   form.addEventListener("submit", (e) => {
+    // Requested Review lives outside the <form> (see note above), so
+    // form.checkValidity() never sees its radios — validate it by hand.
+    const requestedReviewChecked = document.querySelector('input[name="requestedReview"]:checked:not(#requestedReviewHidden)');
+    const requestedReviewError = document.getElementById("applyReviewRequestError");
+    if (!requestedReviewChecked) {
+      e.preventDefault();
+      if (requestedReviewError) requestedReviewError.classList.add("show");
+      document.getElementById("applyReviewRequest")?.scrollIntoView({ behavior: "smooth", block: "center" });
+      return;
+    }
+    if (requestedReviewError) requestedReviewError.classList.remove("show");
+    if (requestedReviewHidden) requestedReviewHidden.value = requestedReviewChecked.value;
+
     if (!form.checkValidity()) {
       e.preventDefault();
       form.reportValidity();
       return;
-    }
-
-    const requestedReviewChecked = document.querySelector('input[name="requestedReview"]:checked:not(#requestedReviewHidden)');
-    if (requestedReviewChecked && requestedReviewHidden) {
-      requestedReviewHidden.value = requestedReviewChecked.value;
     }
 
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -325,11 +334,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ============================================================
-     Application date submitted (display only — set at submission
-     time in a live system; shown here as today's date for context)
+     Application date submitted -- placeholder "today" for a brand-new
+     application (nothing real to show until it's actually submitted).
+     An application being edited back in (a draft, or a revision being
+     fixed) already has a real date server-rendered here -- data-real-date
+     marks that so this never clobbers it with today's date instead.
   ============================================================ */
   const dateSubmittedEl = document.getElementById("applyDateSubmitted");
-  if (dateSubmittedEl) {
+  if (dateSubmittedEl && !dateSubmittedEl.dataset.realDate) {
     dateSubmittedEl.textContent = new Date().toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
   }
 });

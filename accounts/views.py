@@ -2,9 +2,12 @@ import uuid
 
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
+
+from notifications.emails import send_branded_email
 
 from . import storage
 from .forms import LoginForm, SignupForm
@@ -45,6 +48,41 @@ def _collect_profile(post, fields, multi_fields=()):
     return data
 
 
+def _send_role_pending_email(user):
+    """Sent once, right at signup, to whoever ticked Reviewer and/or
+    Committee Member -- so "nothing happened, I was just dropped on the
+    Applicant dashboard" never reads as the system having lost their
+    request. The one-time flash message next to it only survives that
+    first page load; this is the durable record admin_dashboard's later
+    approval email (_send_role_approved_email) follows up on."""
+    role_labels = [User.Role(role).label for role in user.requested_roles]
+    roles_text = " and ".join(role_labels)
+    if user.wants_applicant:
+        access_note = (
+            "You already have full Applicant access, so you can start (or continue) an application "
+            f"right away. We'll email you as soon as your {roles_text} request has been decided."
+        )
+    else:
+        # Didn't tick Applicant -- don't claim access they never asked
+        # for. See accounts.models.User.awaiting_role_only.
+        access_note = (
+            f"You don't have applicant access, since you didn't request it — this account exists "
+            f"solely for your {roles_text} request. We'll email you as soon as it's been decided."
+        )
+    send_branded_email(
+        subject=f"MSREC — your {roles_text} request has been received",
+        to=user.email,
+        heading="We've received your request",
+        paragraphs=[
+            f"Hi {user.full_name},",
+            f"Thanks for signing up to MSREC. Your request to join as "
+            f"{roles_text} has been received — it's now awaiting review by an MSREC admin.",
+            access_note,
+        ],
+        preheader=f"Your {roles_text} request is pending admin review.",
+    )
+
+
 def signup(request):
     if request.user.is_authenticated:
         return redirect(request.user.dashboard_url_name())
@@ -72,6 +110,7 @@ def signup(request):
                 institution_address=cd.get("institutionAddress", ""),
                 profile_url=cd.get("profileUrl", ""),
                 role=User.Role.APPLICANT,
+                wants_applicant="applicant" in roles,
             )
 
             # Note: primaryResearchArea / reviewerExpertise / reviewerResearchAreas are
@@ -133,11 +172,23 @@ def signup(request):
             request.session["login_at"] = timezone.now().isoformat()
 
             if user.has_pending_requests:
-                messages.success(
-                    request,
-                    "Welcome to MSREC! Your account is ready. The extra role(s) you requested are "
-                    "pending admin approval — we'll notify you once they're reviewed.",
-                )
+                _send_role_pending_email(user)
+                role_labels = [User.Role(role).label for role in user.requested_roles]
+                roles_text = " and ".join(role_labels)
+                if user.wants_applicant:
+                    messages.success(
+                        request,
+                        f"Welcome to MSREC! Your account is ready. Your {roles_text} request is "
+                        "pending admin approval — we've emailed you a confirmation, and we'll notify "
+                        "you again as soon as it's reviewed.",
+                    )
+                else:
+                    messages.success(
+                        request,
+                        f"Welcome to MSREC! Your {roles_text} request has been submitted and is pending "
+                        "admin approval — we've emailed you a confirmation, and we'll notify you again "
+                        "as soon as it's reviewed.",
+                    )
             else:
                 messages.success(request, "Welcome to MSREC! Your account has been created.")
             return redirect(user.dashboard_url_name())
@@ -187,3 +238,17 @@ def logout_view(request):
     auth_logout(request)
     messages.success(request, "You've been signed out.")
     return redirect(reverse("pages:login"))
+
+
+@login_required
+def role_status(request):
+    """Landing page for an account that requested Reviewer and/or
+    Committee only (no Applicant) and hasn't been approved into either
+    yet -- see User.awaiting_role_only / dashboard_url_name(). Redirects
+    away the moment there's a real dashboard to send them to instead
+    (approved, or they've since gained Applicant access some other way),
+    so this page is never stale once a decision lands."""
+    user = request.user
+    if not user.awaiting_role_only:
+        return redirect(user.dashboard_url_name())
+    return render(request, "pages/role-status.html")

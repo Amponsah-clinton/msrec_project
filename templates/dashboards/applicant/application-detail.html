@@ -23,12 +23,12 @@
         </button>
         <div class="nav-subnav">
           <a href="{% url 'applicant_dashboard:application_new' %}" class="nav-sublink">New Application</a>
-          <a href="{% url 'applicant_dashboard:application_drafts' %}" class="nav-sublink">Draft Applications</a>
-          <a href="{% url 'applicant_dashboard:application_submitted' %}" class="nav-sublink{% if application.status == 'submitted' %} active{% endif %}">Submitted Applications</a>
-          <a href="{% url 'applicant_dashboard:application_under_review' %}" class="nav-sublink{% if application.status == 'under_review' %} active{% endif %}">Under Review</a>
-          <a href="{% url 'applicant_dashboard:application_revisions' %}" class="nav-sublink{% if application.status == 'revisions_required' %} active{% endif %}">Revisions Required</a>
-          <a href="{% url 'applicant_dashboard:application_approved' %}" class="nav-sublink{% if application.status == 'approved' %} active{% endif %}">Approved Studies</a>
-          <a href="{% url 'applicant_dashboard:application_not_approved' %}" class="nav-sublink{% if application.status == 'not_approved' %} active{% endif %}">Not Approved / Closed</a>
+          <a href="{% url 'applicant_dashboard:application_drafts' %}" class="nav-sublink">Draft Applications<span class="nav-badge" data-nav-badge="draft" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_submitted' %}" class="nav-sublink{% if application.status == 'submitted' %} active{% endif %}">Submitted Applications<span class="nav-badge" data-nav-badge="submitted" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_under_review' %}" class="nav-sublink{% if application.status == 'under_review' %} active{% endif %}">Under Review<span class="nav-badge" data-nav-badge="under_review" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_revisions' %}" class="nav-sublink{% if application.status == 'revisions_required' %} active{% endif %}">Revisions Required<span class="nav-badge" data-nav-badge="revisions" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_approved' %}" class="nav-sublink{% if application.status == 'approved' %} active{% endif %}">Approved Studies<span class="nav-badge" data-nav-badge="approved" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_not_approved' %}" class="nav-sublink{% if application.status == 'not_approved' %} active{% endif %}">Not Approved / Closed<span class="nav-badge" data-nav-badge="not_approved" hidden>0</span></a>
         </div>
       </div>
 
@@ -156,10 +156,39 @@
         </div>
         <div class="urgent-body">
           <h3>Revisions Required &ndash; Action Needed</h3>
-          <p class="urgent-note">MSREC has requested changes to this application. Message the Secretariat for details on what's needed and how to resubmit.</p>
+          {% if application.revision_comment %}
+          <p class="urgent-note"><strong>What to fix:</strong> {{ application.revision_comment|linebreaksbr }}</p>
+          {% else %}
+          <p class="urgent-note">MSREC has requested changes to this application. Message the Secretariat for details on what's needed.</p>
+          {% endif %}
+          <p class="urgent-note" style="margin-top:4px;">Fix and resubmit any time &mdash; no review fee is charged again.</p>
         </div>
-        <a href="{% url 'applicant_dashboard:messages' %}" class="btn btn-danger">Message Secretariat</a>
+        <a href="{% url 'applicant_dashboard:application_form' %}?draft={{ application.pk }}" class="btn btn-danger">Fix &amp; Resubmit</a>
       </section>
+      {% endif %}
+
+      <!-- PROGRESS TRACKER -->
+      <section class="progress-tracker">
+        {% for step in progress_steps %}
+        <div class="progress-step{% if step.done %} done{% endif %}{% if step.current %} current{% endif %}{% if step.outcome == 'not_approved' %} outcome-bad{% endif %}">
+          <span class="progress-dot">
+            {% if step.outcome == 'not_approved' %}<svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            {% elif step.done %}<svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg>
+            {% else %}{{ forloop.counter }}{% endif %}
+          </span>
+          <span class="progress-label">{{ step.label }}</span>
+          {% if step.date %}<span class="progress-date">{{ step.date|date:"j M Y" }}</span>{% endif %}
+        </div>
+        {% if not forloop.last %}<span class="progress-line{% if step.done %} done{% endif %}"></span>{% endif %}
+        {% endfor %}
+      </section>
+
+      {% if application.resubmitted_at %}
+      <div class="reuse-hint" style="margin-bottom:16px;">
+        <i class="bi bi-arrow-repeat"></i>
+        <span><strong>Revised &amp; resubmitted</strong> on {{ application.resubmitted_at|date:"j M Y, g:i A" }}
+          {% if application.revision_count > 1 %}(across {{ application.revision_count }} revision rounds){% endif %}.</span>
+      </div>
       {% endif %}
 
       <section class="apply-intro" style="margin-bottom:16px;">

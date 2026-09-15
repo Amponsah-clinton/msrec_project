@@ -14,21 +14,10 @@
         <span>Dashboard</span>
       </a>
 
-      <div class="nav-group open">
-        <button type="button" class="nav-group-toggle" aria-expanded="true">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
-          <span>Applications</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="{% url 'secretariat_dashboard:applications' %}?tab=submitted" class="nav-sublink">New Submissions</a>
-          <a href="{% url 'secretariat_dashboard:applications' %}" class="nav-sublink">All Applications</a>
-          <a href="{% url 'secretariat_dashboard:applications' %}?tab=under_review" class="nav-sublink">Under Review</a>
-          <a href="{% url 'secretariat_dashboard:applications' %}?tab=revisions" class="nav-sublink">Revisions Requested</a>
-          <a href="{% url 'secretariat_dashboard:applications' %}?tab=approved" class="nav-sublink">Approved</a>
-          <a href="{% url 'secretariat_dashboard:applications' %}?tab=not_approved" class="nav-sublink">Not Approved</a>
-        </div>
-      </div>
+      <a href="{% url 'secretariat_dashboard:applications' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
+        <span>Applications</span>
+      </a>
 
       <div class="nav-group">
         <button type="button" class="nav-group-toggle" aria-expanded="false">
@@ -43,18 +32,10 @@
         </div>
       </div>
 
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M19 8v6M22 11h-6"/></svg></span>
-          <span>Reviewer Assignment</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Assign Reviewer</a>
-          <a href="#" class="nav-sublink">Pending Assignments</a>
-          <a href="#" class="nav-sublink">Reviewer Workload</a>
-        </div>
-      </div>
+      <a href="{% url 'secretariat_dashboard:reviewer_assignment' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M19 8v6M22 11h-6"/></svg></span>
+        <span>Reviewer Assignment</span>
+      </a>
 
       <div class="nav-group">
         <button type="button" class="nav-group-toggle" aria-expanded="false">
@@ -63,10 +44,8 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Reviewer Directory</a>
-          <a href="#" class="nav-sublink">Expertise</a>
-          <a href="#" class="nav-sublink">Availability</a>
-          <a href="#" class="nav-sublink">Assignment History</a>
+          <a href="{% url 'secretariat_dashboard:reviewer_directory' %}" class="nav-sublink">Reviewer Directory</a>
+          <a href="{% url 'secretariat_dashboard:reviewer_assignment_history' %}" class="nav-sublink">Assignment History</a>
         </div>
       </div>
 
@@ -259,22 +238,37 @@
 {% block main_content %}
 
       <!-- SUMMARY STRIP -->
-      <section class="acct-summary">
-        <div class="acct-summary-cell">
-          <span class="acct-summary-value">{{ counts.all }}</span>
-          <span class="acct-summary-label">Total Payments</span>
+      <section class="stats-grid compact">
+        <div class="stat-card">
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+          </div>
+          <p class="stat-label">Total Payments</p>
+          <p class="stat-value">{{ counts.all }}</p>
         </div>
-        <div class="acct-summary-cell">
-          <span class="acct-summary-value">GHS {{ total_collected }}</span>
-          <span class="acct-summary-label">Total Collected</span>
+
+        <div class="stat-card">
+          <div class="stat-icon teal">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 1 3 2.5-1.3 2-3 2.5-3 1.1-3 2.5 1.3 2.5 3 2.5 3-1.1 3-2.5"/></svg>
+          </div>
+          <p class="stat-label">Total Collected</p>
+          <p class="stat-value">GHS {{ total_collected }}</p>
         </div>
-        <div class="acct-summary-cell{% if counts.pending %} warn{% endif %}">
-          <span class="acct-summary-value">{{ counts.pending }}</span>
-          <span class="acct-summary-label">Pending</span>
+
+        <div class="stat-card">
+          <div class="stat-icon orange">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
+          </div>
+          <p class="stat-label">Pending</p>
+          <p class="stat-value">{{ counts.pending }}</p>
         </div>
-        <div class="acct-summary-cell">
-          <span class="acct-summary-value">{{ counts.failed }}</span>
-          <span class="acct-summary-label">Failed</span>
+
+        <div class="stat-card">
+          <div class="stat-icon red">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5 14.5 14.5M14.5 9.5 9.5 14.5"/></svg>
+          </div>
+          <p class="stat-label">Failed</p>
+          <p class="stat-value">{{ counts.failed }}</p>
         </div>
       </section>
 
@@ -286,14 +280,14 @@
         </div>
         <div class="fee-schedule-grid">
           {% for fee in fee_schedule %}
-          <div class="fee-schedule-row">
-            <div class="fee-schedule-label">
+          <div class="fee-schedule-row{% if not fee.requires_payment %} is-free{% endif %}">
+            <div class="fee-schedule-top">
               <strong>{{ fee.label }}</strong>
-              <span>{% if fee.requires_payment %}Fee required before submission{% else %}Free — no payment required{% endif %}</span>
+              {% if fee.requires_payment %}<span class="fee-schedule-badge"><i></i>Fee required</span>{% else %}<span class="fee-schedule-badge free"><i></i>Free</span>{% endif %}
             </div>
             <div class="fee-schedule-input" style="cursor:default;">
               <span class="fee-currency">{{ fee.currency }}</span>
-              <strong style="font-size:14px;">{{ fee.amount }}</strong>
+              <strong class="fee-schedule-readonly">{{ fee.amount }}</strong>
             </div>
           </div>
           {% empty %}

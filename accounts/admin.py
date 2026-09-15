@@ -25,7 +25,7 @@ class UserAdmin(DjangoUserAdmin):
         )})),
         ("Signup documents", ({"fields": ("profile_photo_path",)})),
         ("Roles", ({"fields": (
-            "role", "wants_reviewer", "reviewer_status", "reviewer_profile",
+            "role", "wants_reviewer", "reviewer_status", "reviewer_availability", "reviewer_profile",
             "wants_committee", "committee_status", "committee_profile", "applicant_profile",
         )})),
         ("Permissions", ({"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")})),

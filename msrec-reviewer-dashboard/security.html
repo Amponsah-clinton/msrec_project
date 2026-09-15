@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Security | MSREC Reviewer</title>
+<meta name="theme-color" content="#f4f6f9" id="themeColorMeta">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/dashboard-extras.css">
+<link rel="stylesheet" href="css/reviewer-settings.css">
+<script>
+  (function () {
+    try {
+      var stored = localStorage.getItem("msrec-theme");
+      var theme = stored || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    } catch (e) {
+      document.documentElement.setAttribute("data-theme", "light");
+    }
+  })();
+</script>
+</head>
+<body>
+
+<button class="menu-toggle" id="menuToggle" aria-label="Toggle menu">
+  <svg viewBox="0 0 24 24"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+</button>
+<div class="overlay" id="overlay"></div>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/>
+          <path d="M9 12l2 2 4-4"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">MSREC</span>
+        <span class="brand-sub">MetaScholar Research<br>Ethics Committee</span>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <a href="index.html" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg></span>
+        <span>Dashboard</span>
+      </a>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span>
+          <span>Review Assignments</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">New Assignments</a>
+          <a href="#" class="nav-sublink">Accepted Reviews</a>
+          <a href="#" class="nav-sublink">Due / Overdue Reviews</a>
+          <a href="#" class="nav-sublink">Completed Reviews</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M16 3.5a4 4 0 0 1 0 7.6"/><path d="M20.5 21v-2a5 5 0 0 0-3.5-4.8"/></svg></span>
+          <span>Conflict of Interest</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Pending Declarations</a>
+          <a href="#" class="nav-sublink">Previous Declarations</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
+          <span>Reviews</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Protocol Documents</a>
+          <a href="#" class="nav-sublink">Ethics Review Form</a>
+          <a href="#" class="nav-sublink">Comments to Applicant</a>
+          <a href="#" class="nav-sublink">Private Review Notes</a>
+          <a href="#" class="nav-sublink">Recommendation</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+          <span>Committee Meetings</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Upcoming Meetings</a>
+          <a href="#" class="nav-sublink">Meeting Documents / Packets</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span>
+          <span>Policies &amp; Guidance</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">MSREC SOPs</a>
+          <a href="#" class="nav-sublink">Reviewer Guidance</a>
+          <a href="#" class="nav-sublink">Ethics Guidelines</a>
+        </div>
+      </div>
+
+      <a href="notifications.html" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+        <span>Notifications</span>
+      </a>
+      <a href="profile-expertise.html" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
+        <span>Profile &amp; Expertise</span>
+      </a>
+      <a href="security.html" class="nav-item active">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/></svg></span>
+        <span>Security</span>
+      </a>
+    </nav>
+
+    <div class="help-box">
+      <div class="help-icon">
+        <svg viewBox="0 0 24 24"><path d="M3 5a2 2 0 0 1 2-2h2l2 5-2 1a10 10 0 0 0 6 6l1-2 5 2v2a2 2 0 0 1-2 2A16 16 0 0 1 3 5Z"/></svg>
+      </div>
+      <div class="help-text">
+        <strong>Need Help?</strong>
+        <p>Contact the MSREC Secretariat</p>
+        <a href="mailto:msrec@metascholar.edu">msrec@metascholar.edu</a>
+        <span>+254 20 123 4567</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1>Reviewer Dashboard</h1>
+        <p>Welcome back, Dr. James Otieno</p>
+      </div>
+      <div class="topbar-actions">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" placeholder="Search...">
+        </div>
+        <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false">
+          <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+        </button>
+
+        <div class="dropdown" id="bellDropdown">
+          <button class="icon-btn bell-btn" id="bellBtn" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+            <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+            <span class="badge">4</span>
+          </button>
+          <div class="dropdown-menu bell-menu" id="bellMenu">
+            <div class="dropdown-head">
+              <h4>Notifications</h4>
+              <button class="mark-read" type="button">Mark all as read</button>
+            </div>
+            <ul class="bell-list">
+              <li class="unread">
+                <span class="notice-icon warn"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></span>
+                <div class="notice-body">
+                  <p>Urgent review MSREC/2026/0039 is due in 2 days.</p>
+                  <span class="notice-date">20 May 2026</span>
+                </div>
+              </li>
+              <li class="unread">
+                <span class="notice-icon info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg></span>
+                <div class="notice-body">
+                  <p>Next REC meeting scheduled for 29 May 2026 at 10:00 AM.</p>
+                  <span class="notice-date">20 May 2026</span>
+                </div>
+              </li>
+            </ul>
+            <a href="notifications.html" class="dropdown-footer-link">View all notifications</a>
+          </div>
+        </div>
+
+        <div class="dropdown" id="profileDropdown">
+          <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
+            <img src="https://i.pravatar.cc/80?img=13" alt="Dr. James Otieno">
+            <span>Dr. James Otieno</span>
+            <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="dropdown-menu profile-menu" id="profileMenu">
+            <div class="profile-menu-head">
+              <img src="https://i.pravatar.cc/80?img=13" alt="Dr. James Otieno">
+              <div>
+                <strong>Dr. James Otieno</strong>
+                <span>james.otieno@metascholar.edu</span>
+              </div>
+            </div>
+            <a href="profile-expertise.html" class="dropdown-item">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+              My Profile
+            </a>
+            <a href="security.html" class="dropdown-item">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+              Account Settings
+            </a>
+            <a href="#" class="dropdown-item">
+              <svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+              Messages
+            </a>
+            <div class="dropdown-divider"></div>
+            <a href="#" class="dropdown-item logout">
+              <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+              Log Out
+            </a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="rv-scope">
+
+      <div class="page-head">
+        <div class="page-head-text">
+          <h2>Security</h2>
+          <p>Manage your password, two-factor authentication and active sessions.</p>
+        </div>
+      </div>
+
+      <nav class="rv-subnav" aria-label="Settings">
+        <a href="notifications.html">
+          <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="rv-tab-label">Notifications</span>
+        </a>
+        <a href="profile-expertise.html">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+          <span class="rv-tab-label">Profile &amp; Expertise</span>
+        </a>
+        <a href="security.html" class="active">
+          <svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/></svg>
+          <span class="rv-tab-label">Security</span>
+        </a>
+      </nav>
+
+      <section class="rv-card" style="margin-bottom:22px;">
+        <div class="rv-score-card">
+          <div class="rv-donut" style="--pct:78;">
+            <div class="rv-donut-center">
+              <span class="rv-donut-value">78</span>
+              <span class="rv-donut-caption">Strong</span>
+            </div>
+          </div>
+          <div class="rv-score-list">
+            <div class="rv-score-item ok">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+              Password last changed 44 days ago <span class="rv-hint">Good</span>
+            </div>
+            <div class="rv-score-item warn">
+              <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+              Two-factor authentication not enabled <span class="rv-hint">Action recommended</span>
+            </div>
+            <div class="rv-score-item ok">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+              No suspicious sign-ins detected <span class="rv-hint">Last 30 days</span>
+            </div>
+            <div class="rv-score-item ok">
+              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+              1 active session <span class="rv-hint">This device</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div class="body-grid">
+        <section class="rv-card rv-card-pad">
+
+          <form data-rv-demo-save="Password updated">
+            <div class="rv-section-title"><span class="rv-ico teal"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span> Change Password</div>
+            <p class="rv-section-sub">Use at least 8 characters, with a mix of upper/lowercase, numbers and symbols.</p>
+
+            <div class="field-row">
+              <div class="field-group">
+                <label class="field-label" for="secCurrentPassword">Current Password</label>
+                <div class="field-password-wrap">
+                  <i class="fa-solid fa-lock field-password-icon" aria-hidden="true"></i>
+                  <input type="password" class="field-input" id="secCurrentPassword" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" autocomplete="current-password">
+                  <button type="button" class="field-password-toggle" data-password-toggle="secCurrentPassword" aria-label="Show password" aria-pressed="false">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="field-row">
+              <div class="field-group">
+                <label class="field-label" for="secNewPassword">New Password</label>
+                <div class="field-password-wrap">
+                  <i class="fa-solid fa-lock field-password-icon" aria-hidden="true"></i>
+                  <input type="password" class="field-input" id="secNewPassword" placeholder="At least 8 characters" autocomplete="new-password" data-rv-strength-input>
+                  <button type="button" class="field-password-toggle" data-password-toggle="secNewPassword" aria-label="Show password" aria-pressed="false">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div class="rv-strength" data-rv-strength data-score="0">
+                  <div class="rv-strength-bars"><i></i><i></i><i></i><i></i></div>
+                  <span class="rv-strength-label">Enter a new password</span>
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label" for="secConfirmPassword">Confirm New Password</label>
+                <div class="field-password-wrap">
+                  <i class="fa-solid fa-lock field-password-icon" aria-hidden="true"></i>
+                  <input type="password" class="field-input" id="secConfirmPassword" placeholder="Re-enter new password" autocomplete="new-password">
+                  <button type="button" class="field-password-toggle" data-password-toggle="secConfirmPassword" aria-label="Show password" aria-pressed="false">
+                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button class="btn-secondary" type="reset">Cancel</button>
+              <button class="btn-primary" type="submit">Update Password</button>
+            </div>
+          </form>
+
+          <div class="form-section" style="margin-top:30px;">
+            <div class="rv-section-title"><span class="rv-ico blue"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/><path d="M9 12l2 2 4-4"/></svg></span> Two-Factor Authentication</div>
+            <p class="rv-section-sub">Add a second step at sign-in to keep your account protected.</p>
+
+            <div class="rv-2fa-grid">
+              <div class="rv-2fa-card">
+                <div class="rv-2fa-top">
+                  <span class="rv-2fa-ico"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
+                  <span class="rv-2fa-status off">Not enabled</span>
+                </div>
+                <h4>Authenticator App</h4>
+                <p>Use Google Authenticator or Authy to generate login codes.</p>
+                <button type="button" class="btn-secondary" data-rv-demo-toggle>Set Up</button>
+              </div>
+              <div class="rv-2fa-card is-on">
+                <div class="rv-2fa-top">
+                  <span class="rv-2fa-ico" style="background:var(--green-light); color:var(--green);"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+                  <span class="rv-2fa-status on">Enabled</span>
+                </div>
+                <h4>Email Code</h4>
+                <p>A one-time code is sent to james.otieno@metascholar.edu at sign-in.</p>
+                <button type="button" class="btn-secondary">Manage</button>
+              </div>
+              <div class="rv-2fa-card">
+                <div class="rv-2fa-top">
+                  <span class="rv-2fa-ico"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
+                  <span class="rv-2fa-status off">Not enabled</span>
+                </div>
+                <h4>SMS Backup Codes</h4>
+                <p>Receive a one-time code by SMS if you lose access to your authenticator.</p>
+                <button type="button" class="btn-secondary" data-rv-demo-toggle>Set Up</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section" style="margin-top:30px; margin-bottom: 0;">
+            <div class="rv-section-title"><span class="rv-ico orange"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span> Login Alerts</div>
+            <div class="settings-row">
+              <div class="settings-row-text"><strong>Email me on new sign-in</strong><span>Get notified whenever your account is accessed from a new device.</span></div>
+              <label class="switch"><input type="checkbox" checked data-rv-autosave><span class="switch-track"></span></label>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-text"><strong>Block sign-in from unrecognised countries</strong><span>Require email verification for logins outside Kenya.</span></div>
+              <label class="switch"><input type="checkbox" data-rv-autosave><span class="switch-track"></span></label>
+            </div>
+          </div>
+        </section>
+
+        <aside class="side-col">
+          <section class="panel actions-panel">
+            <h2>Active Sessions</h2>
+            <div class="session-row">
+              <span class="rv-session-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg></span>
+              <div class="session-info">
+                <strong>Windows &middot; Chrome <span class="badge-tag green">This device</span></strong>
+                <span>Nairobi, Kenya &middot; Active now</span>
+              </div>
+            </div>
+            <div class="session-row">
+              <span class="rv-session-ico" style="background:var(--blue-light); color:var(--blue);"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
+              <div class="session-info">
+                <strong>iPhone &middot; Safari</strong>
+                <span>Nairobi, Kenya &middot; Signed in 2 days ago</span>
+              </div>
+              <form class="session-revoke-form" data-confirm="Revoke this session? That device will be signed out immediately." data-confirm-variant="danger" data-confirm-label="Revoke">
+                <button class="btn-secondary session-revoke" type="submit">Revoke</button>
+              </form>
+            </div>
+            <div class="session-row">
+              <span class="rv-session-ico" style="background:var(--orange-light); color:var(--orange);"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg></span>
+              <div class="session-info">
+                <strong>MacOS &middot; Firefox</strong>
+                <span>Mombasa, Kenya &middot; Signed in 9 days ago</span>
+              </div>
+              <form class="session-revoke-form" data-confirm="Revoke this session? That device will be signed out immediately." data-confirm-variant="danger" data-confirm-label="Revoke">
+                <button class="btn-secondary session-revoke" type="submit">Revoke</button>
+              </form>
+            </div>
+          </section>
+
+          <section class="panel actions-panel">
+            <h2>Recent Login Activity</h2>
+            <div class="rv-timeline">
+              <div class="rv-tl-item">
+                <span class="rv-tl-dot"></span>
+                <div class="rv-tl-body">
+                  <strong>Successful sign-in</strong>
+                  <span class="rv-tl-meta">Chrome on Windows &middot; Nairobi, Kenya</span>
+                </div>
+                <span class="rv-tl-time">Today, 8:02 AM</span>
+              </div>
+              <div class="rv-tl-item">
+                <span class="rv-tl-dot"></span>
+                <div class="rv-tl-body">
+                  <strong>Successful sign-in</strong>
+                  <span class="rv-tl-meta">Safari on iPhone &middot; Nairobi, Kenya</span>
+                </div>
+                <span class="rv-tl-time">2 days ago</span>
+              </div>
+              <div class="rv-tl-item fail">
+                <span class="rv-tl-dot"></span>
+                <div class="rv-tl-body">
+                  <strong>Failed sign-in attempt</strong>
+                  <span class="rv-tl-meta">Unrecognised device &middot; Accra, Ghana</span>
+                </div>
+                <span class="rv-tl-time">6 days ago</span>
+              </div>
+              <div class="rv-tl-item">
+                <span class="rv-tl-dot"></span>
+                <div class="rv-tl-body">
+                  <strong>Password changed</strong>
+                  <span class="rv-tl-meta">Chrome on Windows &middot; Nairobi, Kenya</span>
+                </div>
+                <span class="rv-tl-time">44 days ago</span>
+              </div>
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span>&copy; 2026 MetaScholar Research Ethics Committee (MSREC). All rights reserved.</span>
+      <span class="footer-links"><a href="#">Privacy Policy</a><span class="dot">|</span><a href="#">Terms of Use</a></span>
+    </footer>
+
+  </div>
+</div>
+
+<script src="js/script.js"></script>
+<script src="js/profile-security.js"></script>
+<script src="js/reviewer-settings.js"></script>
+</body>
+</html>
