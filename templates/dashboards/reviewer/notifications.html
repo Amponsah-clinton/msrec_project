@@ -93,7 +93,7 @@
 
       <div class="topbar-title">
         <h1>Reviewer Dashboard</h1>
-        <p>Welcome back, Dr. James Otieno</p>
+        <p>Welcome back, {{ request.user.full_name }}</p>
       </div>
       <div class="topbar-actions">
         <div class="search-box">
@@ -151,16 +151,16 @@
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
-            <img src="https://i.pravatar.cc/80?img=13" alt="Dr. James Otieno">
-            <span>Dr. James Otieno</span>
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
+            <span>{{ request.user.full_name }}</span>
             <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
           </button>
           <div class="dropdown-menu profile-menu" id="profileMenu">
             <div class="profile-menu-head">
-              <img src="https://i.pravatar.cc/80?img=13" alt="Dr. James Otieno">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
               <div>
-                <strong>Dr. James Otieno</strong>
-                <span>james.otieno@metascholar.edu</span>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
               </div>
             </div>
             <a href="{% url 'reviewer_dashboard:profile_expertise' %}" class="dropdown-item">
@@ -359,40 +359,48 @@
         </section>
 
         <aside class="side-col">
-          <section class="panel actions-panel">
-            <h2>Delivery Preferences</h2>
-            <div class="settings-row">
-              <div class="settings-row-text"><strong>Email alerts</strong><span>New assignments, due dates and COI requests.</span></div>
-              <label class="switch"><input type="checkbox" checked data-rv-autosave><span class="switch-track"></span></label>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-text"><strong>SMS alerts</strong><span>Only for reviews due within 48 hours.</span></div>
-              <label class="switch"><input type="checkbox" checked data-rv-autosave><span class="switch-track"></span></label>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-text"><strong>Weekly digest</strong><span>A Monday summary of everything open.</span></div>
-              <label class="switch"><input type="checkbox" data-rv-autosave><span class="switch-track"></span></label>
-            </div>
-            <div class="settings-row">
-              <div class="settings-row-text"><strong>Committee meeting invites</strong><span>Calendar invite whenever a meeting is scheduled.</span></div>
-              <label class="switch"><input type="checkbox" checked data-rv-autosave><span class="switch-track"></span></label>
-            </div>
-          </section>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_notification_prefs">
 
-          <section class="panel actions-panel">
-            <h2>Quiet Hours</h2>
-            <p class="field-hint" style="margin:-6px 0 14px;">Pause SMS notifications overnight. Email alerts are unaffected.</p>
-            <div class="field-row">
-              <div class="field-group">
-                <label class="field-label" for="rvQuietFrom">From</label>
-                <input type="time" class="field-input" id="rvQuietFrom" value="21:00">
+            <section class="panel actions-panel">
+              <h2>Delivery Preferences</h2>
+              <div class="settings-row">
+                <div class="settings-row-text"><strong>Email alerts</strong><span>New assignments, due dates and COI requests.</span></div>
+                <label class="switch"><input type="checkbox" name="notify_email" {% if notify_email %}checked{% endif %}><span class="switch-track"></span></label>
               </div>
-              <div class="field-group">
-                <label class="field-label" for="rvQuietTo">To</label>
-                <input type="time" class="field-input" id="rvQuietTo" value="07:00">
+              <div class="settings-row">
+                <div class="settings-row-text"><strong>SMS alerts</strong><span>Only for reviews due within 48 hours.</span></div>
+                <label class="switch"><input type="checkbox" name="notify_sms" {% if notify_sms %}checked{% endif %}><span class="switch-track"></span></label>
               </div>
-            </div>
-          </section>
+              <div class="settings-row">
+                <div class="settings-row-text"><strong>Weekly digest</strong><span>A Monday summary of everything open.</span></div>
+                <label class="switch"><input type="checkbox" name="notify_weekly_digest" {% if notify_weekly_digest %}checked{% endif %}><span class="switch-track"></span></label>
+              </div>
+              <div class="settings-row">
+                <div class="settings-row-text"><strong>Committee meeting invites</strong><span>Calendar invite whenever a meeting is scheduled.</span></div>
+                <label class="switch"><input type="checkbox" name="notify_committee_invites" {% if notify_committee_invites %}checked{% endif %}><span class="switch-track"></span></label>
+              </div>
+            </section>
+
+            <section class="panel actions-panel" style="margin-top:22px;">
+              <h2>Quiet Hours</h2>
+              <p class="field-hint" style="margin:-6px 0 14px;">Pause SMS notifications overnight. Email alerts are unaffected.</p>
+              <div class="field-row">
+                <div class="field-group">
+                  <label class="field-label" for="rvQuietFrom">From</label>
+                  <input type="time" class="field-input" id="rvQuietFrom" name="quiet_hours_from" value="{{ quiet_hours_from }}">
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="rvQuietTo">To</label>
+                  <input type="time" class="field-input" id="rvQuietTo" name="quiet_hours_to" value="{{ quiet_hours_to }}">
+                </div>
+              </div>
+              <div class="form-actions" style="margin-top:18px;">
+                <button class="btn-primary" type="submit" style="width:100%; justify-content:center;">Save Preferences</button>
+              </div>
+            </section>
+          </form>
         </aside>
       </div>
 

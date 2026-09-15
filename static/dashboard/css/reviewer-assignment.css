@@ -49,7 +49,6 @@
   flex-wrap: wrap;
   flex-shrink: 0;
 }
-.assign-card-form select,
 .assign-card-form input[type="date"] {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -58,16 +57,49 @@
   font-weight: 600;
   color: var(--text-main);
   background: var(--bg);
-  cursor: pointer;
+  min-width: 140px;
+  cursor: text;
 }
-.assign-card-form select { min-width: 210px; }
-.assign-card-form select:focus,
 .assign-card-form input[type="date"]:focus {
   outline: 2px solid var(--teal);
   outline-offset: 1px;
   background: var(--white);
 }
-.assign-card-form input[type="date"] { min-width: 140px; cursor: text; }
+
+.choose-reviewer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 220px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px 8px 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: var(--bg);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color .15s, background-color .15s;
+}
+.choose-reviewer-btn:hover { border-color: var(--teal); background: var(--white); }
+.choose-reviewer-btn.has-value { border-color: var(--teal); background: var(--teal-light); }
+.choose-reviewer-btn .choose-reviewer-avatar {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+}
+.choose-reviewer-btn .choose-reviewer-text { flex: 1; color: var(--text-faint); }
+.choose-reviewer-btn.has-value .choose-reviewer-text { color: var(--text-main); }
+.choose-reviewer-btn svg { width: 14px; height: 14px; flex-shrink: 0; color: var(--text-faint); fill: none; stroke: currentColor; stroke-width: 2.2; }
 
 .assign-btn {
   display: inline-flex;
@@ -156,6 +188,98 @@
 @media (max-width: 640px) {
   .assign-card, .pending-card { flex-direction: column; align-items: stretch; }
   .assign-card-form { width: 100%; }
-  .assign-card-form select { flex: 1; min-width: 0; }
+  .choose-reviewer-btn { flex: 1; min-width: 0; }
   .assign-btn { justify-content: center; }
+}
+
+/* ---------------- Choose Reviewer modal ---------------- */
+.reviewer-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 24, 40, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 300;
+}
+/* An author rule always beats the UA stylesheet's [hidden]{display:none}
+   at equal specificity -- see accounts.css's .acct-modal-overlay note. */
+.reviewer-modal-overlay[hidden] { display: none; }
+
+.reviewer-modal {
+  width: 100%;
+  max-width: 620px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+}
+
+.reviewer-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.reviewer-modal-head h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main); }
+
+.reviewer-modal-filters {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.reviewer-modal-search { width: 100%; }
+.reviewer-modal-tabs { overflow-x: auto; flex-wrap: nowrap; }
+
+.reviewer-modal-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reviewer-pick-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--white);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: border-color .15s, background-color .15s;
+}
+.reviewer-pick-card:hover { border-color: var(--teal); background: var(--teal-light); }
+.reviewer-pick-card[hidden] { display: none; }
+
+.reviewer-pick-info { flex: 1; min-width: 0; }
+.reviewer-pick-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 3px;
+}
+.reviewer-pick-top strong { font-size: 13px; color: var(--text-main); }
+.reviewer-pick-info p { margin: 0 0 6px; font-size: 12px; color: var(--text-faint); }
+.reviewer-pick-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.reviewer-pick-tags .tag-pill { font-size: 10.5px; padding: 2px 8px; }
+
+@media (max-width: 520px) {
+  .reviewer-pick-top { flex-direction: column; align-items: flex-start; gap: 4px; }
 }

@@ -280,76 +280,92 @@
       </div>
 
       <div class="body-grid">
-        <section class="rv-card rv-card-pad">
+        <div class="rv-card-stack">
 
-          <form data-rv-demo-save="Profile saved">
-            <div class="rv-section-title"><span class="rv-ico teal"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span> Personal Information</div>
-            <p class="rv-section-sub">Your name and contact details as they appear to the Secretariat and Committee.</p>
+          <form id="rvProfileForm" data-rv-demo-save="Profile saved"></form>
 
-            <div class="avatar-edit-row" style="margin-bottom:20px;">
-              <img src="https://i.pravatar.cc/80?img=13" alt="Dr. James Otieno" id="avatarPreview">
-              <div class="avatar-edit-actions">
-                <input type="file" accept="image/png,image/jpeg,image/webp" hidden id="avatarInput">
-                <button class="btn-secondary" type="button" id="changePhotoBtn">Change Photo</button>
-                <button class="btn-secondary" type="button">Remove</button>
-              </div>
-              <p class="avatar-edit-hint">JPG, PNG or WEBP, at least 200&times;200px.</p>
-            </div>
-
-            <div class="field-row">
-              <div class="field-group">
-                <label class="field-label" for="rvTitle">Title</label>
-                <select class="field-input" id="rvTitle" name="title">
-                  <option selected>Dr.</option>
-                  <option>Prof.</option>
-                  <option>Mr.</option>
-                  <option>Mrs.</option>
-                  <option>Ms.</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="rvFirst">First Name</label>
-                <input type="text" class="field-input" id="rvFirst" value="James" required>
+          <section class="rv-card">
+            <div class="rv-card-header">
+              <span class="rv-ico teal"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
+              <div class="rv-card-header-text">
+                <h3>Personal Information</h3>
+                <p>Your name and contact details as they appear to the Secretariat and Committee.</p>
               </div>
             </div>
-            <div class="field-row">
-              <div class="field-group">
-                <label class="field-label" for="rvLast">Last Name</label>
-                <input type="text" class="field-input" id="rvLast" value="Otieno" required>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="rvPhone">Phone Number</label>
-                <input type="text" class="field-input" id="rvPhone" value="+254 712 345 678">
-              </div>
-            </div>
-            <div class="field-row">
-              <div class="field-group">
-                <label class="field-label" for="rvEmail">Email Address</label>
-                <input type="email" class="field-input" id="rvEmail" value="james.otieno@metascholar.edu" required>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="rvOrcid">ORCID iD</label>
-                <input type="text" class="field-input" id="rvOrcid" value="0000-0002-4471-9021">
-              </div>
-            </div>
+            <div class="rv-card-body">
 
-            <div class="form-section" style="margin-top:28px;">
-              <div class="rv-section-title"><span class="rv-ico blue"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5Z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></span> Academic &amp; Professional</div>
-              <p class="rv-section-sub">Helps the Secretariat route protocols suited to your background.</p>
+              <div class="avatar-edit-row" style="margin-bottom:20px;">
+                <img src="https://i.pravatar.cc/80?img=13" alt="Dr. James Otieno" id="avatarPreview">
+                <div class="avatar-edit-actions">
+                  <input type="file" accept="image/png,image/jpeg,image/webp" hidden id="avatarInput">
+                  <button class="btn-secondary" type="button" id="changePhotoBtn">Change Photo</button>
+                  <button class="btn-secondary" type="button">Remove</button>
+                </div>
+                <p class="avatar-edit-hint">JPG, PNG or WEBP, at least 200&times;200px. Saved to your Supabase profile bucket.</p>
+              </div>
+
+              <div class="field-row">
+                <div class="field-group">
+                  <label class="field-label" for="rvTitle">Title</label>
+                  <select class="field-input" id="rvTitle" name="title" form="rvProfileForm">
+                    <option selected>Dr.</option>
+                    <option>Prof.</option>
+                    <option>Mr.</option>
+                    <option>Mrs.</option>
+                    <option>Ms.</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="rvFirst">First Name</label>
+                  <input type="text" class="field-input" id="rvFirst" value="James" form="rvProfileForm" required>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field-group">
+                  <label class="field-label" for="rvLast">Last Name</label>
+                  <input type="text" class="field-input" id="rvLast" value="Otieno" form="rvProfileForm" required>
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="rvPhone">Phone Number</label>
+                  <input type="text" class="field-input" id="rvPhone" value="+254 712 345 678" form="rvProfileForm">
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field-group">
+                  <label class="field-label" for="rvEmail">Email Address</label>
+                  <input type="email" class="field-input" id="rvEmail" value="james.otieno@metascholar.edu" form="rvProfileForm" required>
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="rvOrcid">ORCID iD</label>
+                  <input type="text" class="field-input" id="rvOrcid" value="0000-0002-4471-9021" form="rvProfileForm">
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="rv-card">
+            <div class="rv-card-header">
+              <span class="rv-ico blue"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5Z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></span>
+              <div class="rv-card-header-text">
+                <h3>Academic &amp; Professional</h3>
+                <p>Helps the Secretariat route protocols suited to your background.</p>
+              </div>
+            </div>
+            <div class="rv-card-body">
               <div class="field-row">
                 <div class="field-group">
                   <label class="field-label" for="rvInstitution">Institution / Affiliation</label>
-                  <input type="text" class="field-input" id="rvInstitution" value="MetaScholar University">
+                  <input type="text" class="field-input" id="rvInstitution" value="MetaScholar University" form="rvProfileForm">
                 </div>
                 <div class="field-group">
                   <label class="field-label" for="rvPosition">Position / Rank</label>
-                  <input type="text" class="field-input" id="rvPosition" value="Senior Lecturer">
+                  <input type="text" class="field-input" id="rvPosition" value="Senior Lecturer" form="rvProfileForm">
                 </div>
               </div>
               <div class="field-row">
                 <div class="field-group">
                   <label class="field-label" for="rvDegree">Highest Degree</label>
-                  <select class="field-input" id="rvDegree">
+                  <select class="field-input" id="rvDegree" form="rvProfileForm">
                     <option>PhD</option>
                     <option selected>MD, PhD</option>
                     <option>MBChB</option>
@@ -359,15 +375,21 @@
                 </div>
                 <div class="field-group">
                   <label class="field-label" for="rvYears">Years of Research Experience</label>
-                  <input type="number" class="field-input" id="rvYears" value="14" min="0">
+                  <input type="number" class="field-input" id="rvYears" value="14" form="rvProfileForm" min="0">
                 </div>
               </div>
             </div>
+          </section>
 
-            <div class="form-section" style="margin-top:28px; margin-bottom: 8px;">
-              <div class="rv-section-title"><span class="rv-ico purple"><svg viewBox="0 0 24 24"><path d="m12 3 2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5L12 3Z"/></svg></span> Areas of Expertise</div>
-              <p class="rv-section-sub">Used to match you with relevant protocols. Add or remove as your interests change.</p>
-
+          <section class="rv-card">
+            <div class="rv-card-header">
+              <span class="rv-ico purple"><svg viewBox="0 0 24 24"><path d="m12 3 2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5L12 3Z"/></svg></span>
+              <div class="rv-card-header-text">
+                <h3>Areas of Expertise</h3>
+                <p>Used to match you with relevant protocols. Add or remove as your interests change.</p>
+              </div>
+            </div>
+            <div class="rv-card-body">
               <div class="rv-chip-field" data-rv-chip-field>
                 <div class="rv-chosen-chips" data-rv-chosen>
                   <span class="rv-chip" data-value="Public Health"> Public Health <button type="button" aria-label="Remove"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button></span>
@@ -385,20 +407,26 @@
                   <input type="text" class="field-input" placeholder="Add a custom area&hellip;" data-rv-chip-input>
                   <button type="button" class="btn-secondary" data-rv-chip-add-btn>Add</button>
                 </div>
-                <input type="hidden" name="expertise" data-rv-chip-value>
+                <input type="hidden" name="expertise" data-rv-chip-value form="rvProfileForm">
               </div>
             </div>
+          </section>
 
-            <div class="form-section" style="margin-top:8px;">
-              <div class="rv-section-title"><span class="rv-ico orange"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span> Review Availability</div>
-              <p class="rv-section-sub">Controls whether the Secretariat can assign you new protocols.</p>
-
+          <section class="rv-card">
+            <div class="rv-card-header">
+              <span class="rv-ico orange"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+              <div class="rv-card-header-text">
+                <h3>Review Availability</h3>
+                <p>Controls whether the Secretariat can assign you new protocols.</p>
+              </div>
+            </div>
+            <div class="rv-card-body">
               <div class="rv-avail-row">
                 <div class="rv-avail-row-text">
                   <strong>Available for new assignments</strong>
                   <span>Turn off if you're on leave or at capacity.</span>
                 </div>
-                <label class="switch"><input type="checkbox" checked data-rv-autosave><span class="switch-track"></span></label>
+                <label class="switch"><input type="checkbox" checked form="rvProfileForm"><span class="switch-track"></span></label>
               </div>
               <div class="rv-avail-row">
                 <div class="rv-avail-row-text">
@@ -414,25 +442,32 @@
 
               <p class="field-label" style="margin: 14px 0 8px;">Preferred review categories</p>
               <div class="rv-pill-check">
-                <label><input type="checkbox" checked><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Expedited Review</label>
-                <label><input type="checkbox" checked><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Full Committee Review</label>
-                <label><input type="checkbox"><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Exempt Review</label>
-                <label><input type="checkbox" checked><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Continuing Review</label>
+                <label><input type="checkbox" checked form="rvProfileForm"><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Expedited Review</label>
+                <label><input type="checkbox" checked form="rvProfileForm"><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Full Committee Review</label>
+                <label><input type="checkbox" form="rvProfileForm"><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Exempt Review</label>
+                <label><input type="checkbox" checked form="rvProfileForm"><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Continuing Review</label>
               </div>
             </div>
+          </section>
 
-            <div class="form-section" style="margin-top:8px;">
-              <div class="rv-section-title"><span class="rv-ico teal"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span> Short Bio</div>
-              <p class="rv-section-sub">A brief statement shown to the Secretariat when assigning protocols.</p>
-              <textarea class="field-input" rows="4" style="resize:vertical;">Public health researcher with 14 years' experience in community-based intervention studies across East Africa, with a focus on hypertension and chronic disease management.</textarea>
+          <section class="rv-card">
+            <div class="rv-card-header">
+              <span class="rv-ico teal"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span>
+              <div class="rv-card-header-text">
+                <h3>Short Bio</h3>
+                <p>A brief statement shown to the Secretariat when assigning protocols.</p>
+              </div>
             </div>
+            <div class="rv-card-body">
+              <textarea class="field-input" rows="4" style="resize:vertical;" form="rvProfileForm">Public health researcher with 14 years' experience in community-based intervention studies across East Africa, with a focus on hypertension and chronic disease management.</textarea>
+            </div>
+          </section>
 
-            <div class="form-actions">
-              <button class="btn-secondary" type="reset">Cancel</button>
-              <button class="btn-primary" type="submit">Save Changes</button>
-            </div>
-          </form>
-        </section>
+          <div class="rv-card-actions">
+            <button class="btn-secondary" type="reset" form="rvProfileForm">Cancel</button>
+            <button class="btn-primary" type="submit" form="rvProfileForm">Save Changes</button>
+          </div>
+        </div>
 
         <aside class="side-col">
           <section class="panel actions-panel">

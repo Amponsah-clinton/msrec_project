@@ -222,89 +222,112 @@
       </div>
 
       <div class="body-grid">
-        <section class="rv-card rv-card-pad">
+        <div class="rv-card-stack">
 
-          <div class="avatar-edit-row" style="margin-bottom:20px;">
-            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}" id="avatarPreview">{% else %}<span class="avatar-initials avatar-initials-lg" id="avatarPreview">{{ request.user.initials }}</span>{% endif %}
-            <div class="avatar-edit-actions">
-              <form method="post" enctype="multipart/form-data" id="avatarUploadForm">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="update_avatar">
-                <input type="file" name="avatar" accept="image/png,image/jpeg,image/webp" hidden id="avatarInput">
-                <button class="btn-secondary" type="button" id="changePhotoBtn">Change Photo</button>
-              </form>
-              {% if request.user.profile_photo_path %}
-              <form method="post" id="avatarRemoveForm">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="remove_avatar">
-                <button class="btn-secondary" type="submit">Remove</button>
-              </form>
-              {% endif %}
-            </div>
-            <p class="avatar-edit-hint">JPG, PNG or WEBP, at least 200&times;200px. Saved to your Supabase profile bucket.</p>
-          </div>
-
-          <form method="post">
+          <!-- This empty form is the single save target for every field
+               below -- each one references it via form="rvProfileForm"
+               rather than being a DOM descendant, so the avatar's own
+               upload/remove forms (which must NOT nest inside another
+               form) can sit right alongside it in the Personal
+               Information card without any HTML-validity games. -->
+          <form method="post" id="rvProfileForm">
             {% csrf_token %}
             <input type="hidden" name="action" value="update_profile">
-            <div class="rv-section-title"><span class="rv-ico teal"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span> Personal Information</div>
-            <p class="rv-section-sub">Your name and contact details as they appear to the Secretariat and Committee.</p>
+          </form>
 
-            <div class="field-row">
-              <div class="field-group">
-                <label class="field-label" for="rvTitle">Title</label>
-                <select class="field-input" id="rvTitle" name="title">
-                  <option value="" {% if not request.user.title %}selected{% endif %}>Select title</option>
-                  <option {% if request.user.title == "Dr." %}selected{% endif %}>Dr.</option>
-                  <option {% if request.user.title == "Prof." %}selected{% endif %}>Prof.</option>
-                  <option {% if request.user.title == "Mr." %}selected{% endif %}>Mr.</option>
-                  <option {% if request.user.title == "Mrs." %}selected{% endif %}>Mrs.</option>
-                  <option {% if request.user.title == "Ms." %}selected{% endif %}>Ms.</option>
-                </select>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="rvFirst">First Name</label>
-                <input type="text" class="field-input" id="rvFirst" name="first_name" value="{{ request.user.first_name }}" required>
+          <section class="rv-card">
+            <div class="rv-card-header">
+              <span class="rv-ico teal"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
+              <div class="rv-card-header-text">
+                <h3>Personal Information</h3>
+                <p>Your name and contact details as they appear to the Secretariat and Committee.</p>
               </div>
             </div>
-            <div class="field-row">
-              <div class="field-group">
-                <label class="field-label" for="rvLast">Last Name</label>
-                <input type="text" class="field-input" id="rvLast" name="last_name" value="{{ request.user.last_name }}" required>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="rvPhone">Phone Number</label>
-                <input type="text" class="field-input" id="rvPhone" name="phone" value="{{ request.user.phone }}">
-              </div>
-            </div>
-            <div class="field-row">
-              <div class="field-group">
-                <label class="field-label" for="rvEmail">Email Address</label>
-                <input type="email" class="field-input" id="rvEmail" name="email" value="{{ request.user.email }}" required>
-              </div>
-              <div class="field-group">
-                <label class="field-label" for="rvOrcid">ORCID iD</label>
-                <input type="text" class="field-input" id="rvOrcid" name="orcid" value="{{ request.user.orcid }}" placeholder="0000-0000-0000-0000">
-              </div>
-            </div>
+            <div class="rv-card-body">
 
-            <div class="form-section" style="margin-top:28px;">
-              <div class="rv-section-title"><span class="rv-ico blue"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5Z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></span> Academic &amp; Professional</div>
-              <p class="rv-section-sub">Helps the Secretariat route protocols suited to your background.</p>
+              <div class="avatar-edit-row" style="margin-bottom:20px;">
+                {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}" id="avatarPreview">{% else %}<span class="avatar-initials avatar-initials-lg" id="avatarPreview">{{ request.user.initials }}</span>{% endif %}
+                <div class="avatar-edit-actions">
+                  <form method="post" enctype="multipart/form-data" id="avatarUploadForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_avatar">
+                    <input type="file" name="avatar" accept="image/png,image/jpeg,image/webp" hidden id="avatarInput">
+                    <button class="btn-secondary" type="button" id="changePhotoBtn">Change Photo</button>
+                  </form>
+                  {% if request.user.profile_photo_path %}
+                  <form method="post" id="avatarRemoveForm">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="remove_avatar">
+                    <button class="btn-secondary" type="submit">Remove</button>
+                  </form>
+                  {% endif %}
+                </div>
+                <p class="avatar-edit-hint">JPG, PNG or WEBP, at least 200&times;200px. Saved to your Supabase profile bucket.</p>
+              </div>
+
+              <div class="field-row">
+                <div class="field-group">
+                  <label class="field-label" for="rvTitle">Title</label>
+                  <select class="field-input" id="rvTitle" name="title" form="rvProfileForm">
+                    <option value="" {% if not request.user.title %}selected{% endif %}>Select title</option>
+                    <option {% if request.user.title == "Dr." %}selected{% endif %}>Dr.</option>
+                    <option {% if request.user.title == "Prof." %}selected{% endif %}>Prof.</option>
+                    <option {% if request.user.title == "Mr." %}selected{% endif %}>Mr.</option>
+                    <option {% if request.user.title == "Mrs." %}selected{% endif %}>Mrs.</option>
+                    <option {% if request.user.title == "Ms." %}selected{% endif %}>Ms.</option>
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="rvFirst">First Name</label>
+                  <input type="text" class="field-input" id="rvFirst" name="first_name" value="{{ request.user.first_name }}" form="rvProfileForm" required>
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field-group">
+                  <label class="field-label" for="rvLast">Last Name</label>
+                  <input type="text" class="field-input" id="rvLast" name="last_name" value="{{ request.user.last_name }}" form="rvProfileForm" required>
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="rvPhone">Phone Number</label>
+                  <input type="text" class="field-input" id="rvPhone" name="phone" value="{{ request.user.phone }}" form="rvProfileForm">
+                </div>
+              </div>
+              <div class="field-row">
+                <div class="field-group">
+                  <label class="field-label" for="rvEmail">Email Address</label>
+                  <input type="email" class="field-input" id="rvEmail" name="email" value="{{ request.user.email }}" form="rvProfileForm" required>
+                </div>
+                <div class="field-group">
+                  <label class="field-label" for="rvOrcid">ORCID iD</label>
+                  <input type="text" class="field-input" id="rvOrcid" name="orcid" value="{{ request.user.orcid }}" form="rvProfileForm" placeholder="0000-0000-0000-0000">
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="rv-card">
+            <div class="rv-card-header">
+              <span class="rv-ico blue"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5Z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></span>
+              <div class="rv-card-header-text">
+                <h3>Academic &amp; Professional</h3>
+                <p>Helps the Secretariat route protocols suited to your background.</p>
+              </div>
+            </div>
+            <div class="rv-card-body">
               <div class="field-row">
                 <div class="field-group">
                   <label class="field-label" for="rvInstitution">Institution / Affiliation</label>
-                  <input type="text" class="field-input" id="rvInstitution" name="institution" value="{{ profile.reviewerInstitution|default:request.user.institution }}">
+                  <input type="text" class="field-input" id="rvInstitution" name="institution" value="{{ profile.reviewerInstitution|default:request.user.institution }}" form="rvProfileForm">
                 </div>
                 <div class="field-group">
                   <label class="field-label" for="rvPosition">Position / Rank</label>
-                  <input type="text" class="field-input" id="rvPosition" name="position" value="{{ profile.reviewerPosition|default:request.user.position }}">
+                  <input type="text" class="field-input" id="rvPosition" name="position" value="{{ profile.reviewerPosition|default:request.user.position }}" form="rvProfileForm">
                 </div>
               </div>
               <div class="field-row">
                 <div class="field-group">
                   <label class="field-label" for="rvDegree">Highest Degree</label>
-                  <select class="field-input" id="rvDegree" name="degree">
+                  <select class="field-input" id="rvDegree" name="degree" form="rvProfileForm">
                     <option value="" {% if not profile.reviewerDiscipline %}selected{% endif %}>Select degree</option>
                     <option {% if profile.reviewerDiscipline == "PhD" %}selected{% endif %}>PhD</option>
                     <option {% if profile.reviewerDiscipline == "MD, PhD" %}selected{% endif %}>MD, PhD</option>
@@ -315,15 +338,21 @@
                 </div>
                 <div class="field-group">
                   <label class="field-label" for="rvYears">Years of Research Experience</label>
-                  <input type="number" class="field-input" id="rvYears" name="years_experience" value="{{ profile.reviewerYearsResearch }}" min="0">
+                  <input type="number" class="field-input" id="rvYears" name="years_experience" value="{{ profile.reviewerYearsResearch }}" form="rvProfileForm" min="0">
                 </div>
               </div>
             </div>
+          </section>
 
-            <div class="form-section" style="margin-top:28px; margin-bottom: 8px;">
-              <div class="rv-section-title"><span class="rv-ico purple"><svg viewBox="0 0 24 24"><path d="m12 3 2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5L12 3Z"/></svg></span> Areas of Expertise</div>
-              <p class="rv-section-sub">Used to match you with relevant protocols. Add or remove as your interests change.</p>
-
+          <section class="rv-card">
+            <div class="rv-card-header">
+              <span class="rv-ico purple"><svg viewBox="0 0 24 24"><path d="m12 3 2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5L12 3Z"/></svg></span>
+              <div class="rv-card-header-text">
+                <h3>Areas of Expertise</h3>
+                <p>Used to match you with relevant protocols. Add or remove as your interests change.</p>
+              </div>
+            </div>
+            <div class="rv-card-body">
               <div class="rv-chip-field" data-rv-chip-field>
                 <div class="rv-chosen-chips" data-rv-chosen>
                   {% for tag in request.user.reviewer_expertise_tags %}
@@ -339,14 +368,20 @@
                   <input type="text" class="field-input" placeholder="Add a custom area&hellip;" data-rv-chip-input>
                   <button type="button" class="btn-secondary" data-rv-chip-add-btn>Add</button>
                 </div>
-                <input type="hidden" name="expertise" data-rv-chip-value value="{{ profile.reviewerExpertise }}">
+                <input type="hidden" name="expertise" data-rv-chip-value value="{{ profile.reviewerExpertise }}" form="rvProfileForm">
               </div>
             </div>
+          </section>
 
-            <div class="form-section" style="margin-top:8px;">
-              <div class="rv-section-title"><span class="rv-ico orange"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span> Review Availability</div>
-              <p class="rv-section-sub">Controls whether the Secretariat can assign you new protocols.</p>
-
+          <section class="rv-card">
+            <div class="rv-card-header">
+              <span class="rv-ico orange"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+              <div class="rv-card-header-text">
+                <h3>Review Availability</h3>
+                <p>Controls whether the Secretariat can assign you new protocols.</p>
+              </div>
+            </div>
+            <div class="rv-card-body">
               <div class="rv-avail-row">
                 <div class="rv-avail-row-text">
                   <strong>Available for new assignments</strong>
@@ -355,7 +390,7 @@
                     {% if request.user.reviewer_availability == "limited" %}The Secretariat has currently marked you as <strong>Limited Availability</strong>.{% endif %}
                   </span>
                 </div>
-                <label class="switch"><input type="checkbox" name="available_for_assignments" {% if request.user.reviewer_availability != "unavailable" %}checked{% endif %}><span class="switch-track"></span></label>
+                <label class="switch"><input type="checkbox" name="available_for_assignments" form="rvProfileForm" {% if request.user.reviewer_availability != "unavailable" %}checked{% endif %}><span class="switch-track"></span></label>
               </div>
               <div class="rv-avail-row">
                 <div class="rv-avail-row-text">
@@ -367,30 +402,37 @@
                   <output>{{ max_concurrent_reviews }}</output>
                   <button type="button" data-dir="up" aria-label="Increase"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></button>
                 </div>
-                <input type="hidden" name="max_concurrent_reviews" data-rv-stepper-value value="{{ max_concurrent_reviews }}">
+                <input type="hidden" name="max_concurrent_reviews" data-rv-stepper-value value="{{ max_concurrent_reviews }}" form="rvProfileForm">
               </div>
 
               <p class="field-label" style="margin: 14px 0 8px;">Preferred review categories</p>
               <div class="rv-pill-check">
-                <label><input type="checkbox" name="preferred_categories" value="Expedited Review" {% if "Expedited Review" in preferred_categories %}checked{% endif %}><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Expedited Review</label>
-                <label><input type="checkbox" name="preferred_categories" value="Full Committee Review" {% if "Full Committee Review" in preferred_categories %}checked{% endif %}><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Full Committee Review</label>
-                <label><input type="checkbox" name="preferred_categories" value="Exempt Review" {% if "Exempt Review" in preferred_categories %}checked{% endif %}><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Exempt Review</label>
-                <label><input type="checkbox" name="preferred_categories" value="Continuing Review" {% if "Continuing Review" in preferred_categories %}checked{% endif %}><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Continuing Review</label>
+                <label><input type="checkbox" name="preferred_categories" value="Expedited Review" form="rvProfileForm" {% if "Expedited Review" in preferred_categories %}checked{% endif %}><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Expedited Review</label>
+                <label><input type="checkbox" name="preferred_categories" value="Full Committee Review" form="rvProfileForm" {% if "Full Committee Review" in preferred_categories %}checked{% endif %}><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Full Committee Review</label>
+                <label><input type="checkbox" name="preferred_categories" value="Exempt Review" form="rvProfileForm" {% if "Exempt Review" in preferred_categories %}checked{% endif %}><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Exempt Review</label>
+                <label><input type="checkbox" name="preferred_categories" value="Continuing Review" form="rvProfileForm" {% if "Continuing Review" in preferred_categories %}checked{% endif %}><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Continuing Review</label>
               </div>
             </div>
+          </section>
 
-            <div class="form-section" style="margin-top:8px;">
-              <div class="rv-section-title"><span class="rv-ico teal"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span> Short Bio</div>
-              <p class="rv-section-sub">A brief statement shown to the Secretariat when assigning protocols.</p>
-              <textarea class="field-input" rows="4" style="resize:vertical;" name="bio">{{ profile.reviewerBio }}</textarea>
+          <section class="rv-card">
+            <div class="rv-card-header">
+              <span class="rv-ico teal"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span>
+              <div class="rv-card-header-text">
+                <h3>Short Bio</h3>
+                <p>A brief statement shown to the Secretariat when assigning protocols.</p>
+              </div>
             </div>
+            <div class="rv-card-body">
+              <textarea class="field-input" rows="4" style="resize:vertical;" name="bio" form="rvProfileForm">{{ profile.reviewerBio }}</textarea>
+            </div>
+          </section>
 
-            <div class="form-actions">
-              <button class="btn-secondary" type="reset">Cancel</button>
-              <button class="btn-primary" type="submit">Save Changes</button>
-            </div>
-          </form>
-        </section>
+          <div class="rv-card-actions">
+            <button class="btn-secondary" type="reset" form="rvProfileForm">Cancel</button>
+            <button class="btn-primary" type="submit" form="rvProfileForm">Save Changes</button>
+          </div>
+        </div>
 
         <aside class="side-col">
           <section class="panel actions-panel">

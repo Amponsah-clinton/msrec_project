@@ -265,9 +265,23 @@ def reviewer_assignment(request):
         tab = request.POST.get("tab", "assign")
 
         if action == "assign":
-            application = get_object_or_404(oversight.staff_queryset(), pk=request.POST.get("application_id"))
+            # request.POST.get(...) is '' (never None) when a field posts
+            # empty -- e.g. "Assign" clicked before a reviewer was chosen
+            # in the modal, or with JS disabled, so the hidden reviewer_id
+            # input never got filled in. get_object_or_404(pk="") raises a
+            # raw ValueError (a bigint field's get_prep_value rejects '',
+            # and get_object_or_404 only ever catches DoesNotExist) instead
+            # of a friendly 404, so both ids are checked as real integers
+            # before either query ever runs.
+            application_id = request.POST.get("application_id", "")
+            reviewer_id = request.POST.get("reviewer_id", "")
+            if not application_id.isdigit() or not reviewer_id.isdigit():
+                messages.error(request, "Choose a reviewer before assigning.")
+                return redirect(f"{request.path}?tab={tab}")
+
+            application = get_object_or_404(oversight.staff_queryset(), pk=application_id)
             reviewer = get_object_or_404(
-                User, pk=request.POST.get("reviewer_id"),
+                User, pk=reviewer_id,
                 role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED,
             )
             due_date = request.POST.get("due_date") or None
@@ -281,8 +295,12 @@ def reviewer_assignment(request):
                 f"{reviewer.full_name} assigned to review {application.reference_no or application.title} {suffix}",
             )
         elif action == "withdraw":
+            assignment_id = request.POST.get("assignment_id", "")
+            if not assignment_id.isdigit():
+                messages.error(request, "That request could not be processed.")
+                return redirect(f"{request.path}?tab={tab}")
             assignment = get_object_or_404(
-                ReviewAssignment, pk=request.POST.get("assignment_id"), status=ReviewAssignment.Status.NEW,
+                ReviewAssignment, pk=assignment_id, status=ReviewAssignment.Status.NEW,
             )
             assignment.delete()
             messages.success(request, "Assignment withdrawn -- the application is available to assign again.")

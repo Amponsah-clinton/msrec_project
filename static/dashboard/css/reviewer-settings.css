@@ -75,6 +75,59 @@
 
 .rv-card-pad { padding: 24px; }
 
+/* A settings page as a stack of separate cards -- one per topic -- rather
+   than one long card with internal dividers. Each card gets its own
+   header (icon chip + title + one-line subtitle) so the eye has a fixed
+   place to land per section instead of scanning a wall of fields. */
+.rv-card-stack { display: flex; flex-direction: column; gap: 22px; }
+
+.rv-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+.rv-card-header .rv-ico { width: 38px; height: 38px; border-radius: 11px; flex-shrink: 0; }
+.rv-card-header .rv-ico svg { width: 18px; height: 18px; }
+.rv-card-header-text { padding-top: 2px; }
+.rv-card-header-text h3 {
+  margin: 0;
+  font-family: var(--rv-font);
+  font-size: 15.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  letter-spacing: -0.005em;
+}
+.rv-card-header-text p { margin: 3px 0 0; font-size: 12.5px; color: var(--text-sub); line-height: 1.5; }
+
+.rv-card-body { padding: 24px; }
+.rv-card-body > .field-row:last-child,
+.rv-card-body > .rv-chip-field:last-child,
+.rv-card-body > .rv-pill-check:last-child { margin-bottom: 0; }
+
+/* Save/Cancel bar as its own slim card closing the stack, rather than
+   buttons trailing off the bottom of the last section. Deliberately NOT
+   position:sticky -- a stack this long means a sticky bottom bar spends
+   most of the scroll sitting on top of whichever card is currently under
+   it, which reads as a rendering bug more than a convenience. */
+.rv-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 18px 24px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+@media (max-width: 480px) {
+  .rv-card-header { padding: 18px 18px; }
+  .rv-card-body { padding: 18px; }
+  .rv-card-actions { padding: 14px 18px; }
+}
+
 /* ---------------- Profile hero ---------------- */
 
 .rv-hero {
