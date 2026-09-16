@@ -146,10 +146,10 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Users</a>
-          <a href="#" class="nav-sublink">Role Requests</a>
-          <a href="#" class="nav-sublink">Approve Reviewer Role</a>
-          <a href="#" class="nav-sublink">Approve Committee Role</a>
+          <a href="{% url 'admin_dashboard:accounts' %}" class="nav-sublink">Users</a>
+          <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="nav-sublink">Role Requests</a>
+          <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="nav-sublink">Approve Reviewer Role</a>
+          <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="nav-sublink">Approve Committee Role</a>
           <a href="#" class="nav-sublink">Roles</a>
           <a href="#" class="nav-sublink">Permissions</a>
         </div>
@@ -159,15 +159,15 @@
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M9 3 7 21M17 3l-2 18"/></svg></span>
         <span>Reference Numbers</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'secretariat_dashboard:audit_logs' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span>
         <span>Audit Logs</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'admin_dashboard:settings' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
         <span>System Settings</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'admin_dashboard:profile_security' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
         <span>Profile &amp; Security</span>
       </a>
@@ -233,13 +233,17 @@
              data-filter-item data-filter="{{ application.tab }}"
              data-search="{{ application.reference_no|lower }} {{ application.title|lower }} {{ application.applicant.full_name|lower }}"
              {% if active_tab != 'all' and application.tab != active_tab %}hidden{% endif %}>
+            {% if application.has_completed_review %}<span class="app-card-flag" title="A reviewer has submitted their assessment -- it's ready for your decision"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 13 4 4L19 7"/></svg> Ready for Decision</span>{% endif %}
             <div class="app-card-top">
               <span class="acct-avatar cat-applicants">{{ application.applicant.initials }}</span>
               <div class="app-card-heading">
                 <h4>{{ application.title }}</h4>
                 <p>{{ application.applicant.full_name }}</p>
               </div>
+            </div>
+            <div class="app-card-badges">
               {% if application.tab == 'submitted' %}<span class="badge-tag orange">New</span>
+              {% elif application.tab == 'under_review' and application.has_completed_review %}<span class="badge-tag purple">Under Review &middot; Reviewer Responded</span>
               {% elif application.tab == 'under_review' %}<span class="badge-tag blue">Under Review</span>
               {% elif application.tab == 'revisions' %}<span class="badge-tag red">Revisions Requested</span>
               {% elif application.tab == 'approved' %}<span class="badge-tag green">Approved</span>
@@ -257,7 +261,11 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M19 8v6M22 11h-6"/></svg>
                 Reviewer &amp; Stage
               </button>
+              {% if application.has_completed_review %}
+              <a href="{% url 'secretariat_dashboard:application_detail' application.pk %}#reviewer-assessments" class="app-card-view app-card-view-primary">View Reviewer Response <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+              {% else %}
               <a href="{% url 'secretariat_dashboard:application_detail' application.pk %}" class="app-card-view">View Application <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+              {% endif %}
             </div>
           </div>
 
@@ -291,6 +299,11 @@
                   </div>
                   {% if a.status == 'declined' %}
                   <p class="field-hint" style="margin:0;">Declined -- assign a different reviewer from Reviewer Assignment.</p>
+                  {% elif a.status == 'completed' %}
+                  <div style="display:flex; align-items:center; gap:10px;">
+                    {% if a.recommendation %}<span class="badge-tag {{ a.recommendation_badge }}">{{ a.get_recommendation_display }}</span>{% endif %}
+                    <a href="{% url 'secretariat_dashboard:application_detail' application.pk %}#reviewer-assessments" class="app-card-view">View Response <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+                  </div>
                   {% else %}
                   <form method="post" action="{% url 'secretariat_dashboard:set_reviewer_deadline' %}" class="reviewer-stage-deadline">
                     {% csrf_token %}

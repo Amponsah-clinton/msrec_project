@@ -148,10 +148,10 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Users</a>
-          <a href="#" class="nav-sublink">Role Requests</a>
-          <a href="#" class="nav-sublink">Approve Reviewer Role</a>
-          <a href="#" class="nav-sublink">Approve Committee Role</a>
+          <a href="{% url 'admin_dashboard:accounts' %}" class="nav-sublink">Users</a>
+          <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="nav-sublink">Role Requests</a>
+          <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="nav-sublink">Approve Reviewer Role</a>
+          <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="nav-sublink">Approve Committee Role</a>
           <a href="#" class="nav-sublink">Roles</a>
           <a href="#" class="nav-sublink">Permissions</a>
         </div>
@@ -161,15 +161,15 @@
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M9 3 7 21M17 3l-2 18"/></svg></span>
         <span>Reference Numbers</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'secretariat_dashboard:audit_logs' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span>
         <span>Audit Logs</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'admin_dashboard:settings' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
         <span>System Settings</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'admin_dashboard:profile_security' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
         <span>Profile &amp; Security</span>
       </a>
@@ -220,6 +220,7 @@
         <div class="filter-tabs acct-tabs" data-filters-target="#raPanels" data-plain-tabs="true">
           <button type="button" class="filter-tab{% if active_tab == 'assign' %} active{% endif %}" data-filter="assign" data-ra-tab="assign">Assign Reviewer <span class="count" data-count-key="assign">{{ counts.assign }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}" data-filter="pending" data-ra-tab="pending">Pending Assignments <span class="count" data-count-key="pending">{{ counts.pending }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'completed' %} active{% endif %}" data-filter="completed" data-ra-tab="completed">Completed Reviews <span class="count" data-count-key="completed">{{ counts.completed }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'workload' %} active{% endif %}" data-filter="workload" data-ra-tab="workload">Reviewer Workload <span class="count" data-count-key="workload">{{ counts.workload }}</span></button>
         </div>
 
@@ -308,6 +309,35 @@
                 <span class="empty-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
                 <h3>No open assignments</h3>
                 <p>Once you assign a reviewer from the Assign Reviewer tab, it'll show up here until they complete it.</p>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- ============ COMPLETED REVIEWS ============ -->
+          <div class="ra-panel" data-ra-panel="completed"{% if active_tab != 'completed' %} hidden{% endif %}>
+            <div class="assign-list">
+              {% for assignment in completed %}
+              <div class="pending-card">
+                <div class="pending-card-left">
+                  <span class="acct-avatar cat-reviewers">{{ assignment.reviewer.initials }}</span>
+                  <div class="pending-card-info">
+                    <h4>{{ assignment.application.title }}</h4>
+                    <p>{{ assignment.application.reference_no|default:"No reference yet" }} &middot; {{ assignment.reviewer.full_name }}</p>
+                  </div>
+                </div>
+                <div class="pending-card-meta">
+                  <span class="badge-tag green">Completed</span>
+                  {% if assignment.recommendation %}<span class="badge-tag {{ assignment.recommendation_badge }}">{{ assignment.get_recommendation_display }}</span>{% endif %}
+                  {% if assignment.completed_at %}<span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Completed {{ assignment.completed_at|date:"d M Y" }}</span>{% endif %}
+                </div>
+                <a href="{% url 'secretariat_dashboard:application_detail' assignment.application.pk %}#reviewer-assessments" class="app-card-view">View Assessment &amp; Decide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+              </div>
+              {% empty %}
+              <div class="empty-state">
+                <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>
+                <h3>No completed reviews yet</h3>
+                <p>Once a reviewer submits their assessment, it'll show up here.</p>
               </div>
               {% endfor %}
             </div>

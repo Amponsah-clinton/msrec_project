@@ -325,6 +325,75 @@
 .assess-summary-row:last-child { border-bottom: none; }
 .assess-summary-row .assess-checklist-label { flex: 1 1 auto; font-weight: 500; color: var(--text-main); }
 
+/* ---------------- Recommendation verdict card ----------------
+   The reason a Secretariat/reviewer decision-maker actually stops on this
+   page for is "what did they recommend and why" -- so that pair gets its
+   own high-contrast card instead of blending into the same plain
+   label/value rows as every other field on the form. */
+.assess-verdict {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--bg);
+  overflow: hidden;
+}
+.assess-verdict.green  { background: var(--green-light); }
+.assess-verdict.teal   { background: var(--teal-light); }
+.assess-verdict.orange { background: var(--orange-light); }
+.assess-verdict.purple { background: var(--purple-light); }
+.assess-verdict.red    { background: var(--red-light); }
+
+.assess-verdict-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 16px 18px;
+}
+.assess-verdict-head span.assess-checklist-label { font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color: var(--text-sub); font-weight: 700; }
+.assess-verdict-decision {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--text-main);
+}
+
+.assess-verdict-reason {
+  margin: 0 14px 14px;
+  padding: 14px 16px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: var(--white);
+  border: 1px solid var(--border);
+}
+.assess-verdict-reason .assess-checklist-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: var(--text-faint);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.assess-verdict-reason p {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--text-main);
+  line-height: 1.65;
+}
+
+.assess-verdict-coi {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 14px 14px;
+  padding: 12px 16px;
+  border-radius: calc(var(--radius-sm) - 2px);
+  background: var(--white);
+  border: 1px solid color-mix(in srgb, var(--orange) 30%, var(--border));
+}
+.assess-verdict-coi svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; color: var(--orange); }
+.assess-verdict-coi strong { display: block; font-size: 12.5px; color: var(--text-main); margin-bottom: 3px; }
+.assess-verdict-coi p { margin: 0; font-size: 13px; color: var(--text-sub); line-height: 1.6; }
+
 @media (max-width: 640px) {
   .assess-checklist-row, .assess-summary-row { flex-direction: column; align-items: flex-start; }
   .assess-checklist-options { flex-wrap: wrap; }

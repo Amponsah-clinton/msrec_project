@@ -11,6 +11,7 @@ can never drift out of sync with each other.
 from django.urls import reverse
 from django.utils import timezone
 
+from accounts.models import AuditLog
 from notifications.emails import send_branded_email
 
 from .models import Application
@@ -42,7 +43,7 @@ def staff_queryset():
     return Application.objects.exclude(status=Application.Status.DRAFT).select_related("applicant")
 
 
-def apply_transition(application, action, *, comment=""):
+def apply_transition(application, action, *, comment="", actor=None):
     """Applies one of STATUS_ACTIONS to `application` and saves it.
     Returns (ok, message) -- ok=False (with an error message) if `action`
     isn't a recognized transition.
@@ -50,7 +51,12 @@ def apply_transition(application, action, *, comment=""):
     `comment` is only meaningful for "request_revisions" -- the
     Secretariat's optional note on what the applicant needs to fix,
     shown on their Revisions Required page and included in the email
-    apply_transition's caller sends (see secretariat_dashboard.views)."""
+    apply_transition's caller sends (see secretariat_dashboard.views).
+
+    `actor` is whichever staff user (Secretariat or Admin -- both call
+    this same helper) made the decision, purely for the audit trail;
+    omitting it just skips logging rather than erroring, so existing
+    callers that predate the audit log don't need updating."""
     transition = STATUS_ACTIONS.get(action)
     if not transition:
         return False, "That request could not be processed."
@@ -67,6 +73,8 @@ def apply_transition(application, action, *, comment=""):
         application.revision_count += 1
         update_fields += ["revision_comment", "revision_requested_at", "revision_count"]
     application.save(update_fields=update_fields)
+    if actor is not None:
+        AuditLog.record(actor, f"application.{action}", target=application)
     return True, note
 
 

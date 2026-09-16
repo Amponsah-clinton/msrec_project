@@ -163,27 +163,67 @@
   padding: 4px 4px 8px;
 }
 .app-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px;
+  padding: 16px 16px 14px;
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 14px;
   background: var(--surface, #fff);
   text-decoration: none;
   color: inherit;
   cursor: pointer;
-  transition: box-shadow .15s, border-color .15s, transform .15s;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease;
 }
+.app-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 4px;
+  background: var(--border);
+  transition: background .18s ease;
+}
+.app-card[data-filter="submitted"]::before   { background: var(--orange); }
+.app-card[data-filter="under_review"]::before { background: var(--blue); }
+.app-card[data-filter="revisions"]::before    { background: var(--red); }
+.app-card[data-filter="approved"]::before     { background: var(--green); }
+.app-card[data-filter="not_approved"]::before { background: var(--red); }
 .app-card:hover {
   border-color: var(--teal);
-  box-shadow: 0 6px 18px rgba(16, 24, 40, 0.08);
-  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(16, 24, 40, 0.10);
+  transform: translateY(-2px);
 }
+
+/* Corner ribbon that flags a reviewer's finished assessment -- the one
+   signal on this grid that means "there's a decision waiting on you",
+   so it needs to read before anything else on the card does. */
+.app-card-flag {
+  position: absolute;
+  top: 12px;
+  right: -30px;
+  transform: rotate(40deg);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 34px;
+  background: linear-gradient(135deg, var(--teal), #0d7c78);
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .2px;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(21, 154, 150, 0.35);
+}
+.app-card-flag svg { width: 11px; height: 11px; flex-shrink: 0; }
+
 .app-card-top {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  padding-right: 8px;
 }
 .app-card-top .acct-avatar { margin-top: 1px; }
 .app-card-heading { min-width: 0; flex: 1; }
@@ -206,21 +246,31 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.app-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.app-card-badges:empty { display: none; }
 .app-card-body {
   display: flex;
   flex-direction: column;
   gap: 6px;
   font-size: 12px;
   color: var(--text-faint);
+  padding: 10px 0;
+  border-top: 1px dashed var(--border);
 }
 .app-card-body span { display: flex; align-items: center; gap: 6px; }
-.app-card-body svg { width: 13px; height: 13px; flex-shrink: 0; }
+.app-card-body svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--text-faint); }
 .app-card-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-top: auto;
-  padding-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 .app-card-view {
@@ -231,9 +281,18 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+  padding: 6px 10px;
+  border-radius: 7px;
+  transition: background .15s ease, color .15s ease;
 }
 .app-card-view svg { width: 14px; height: 14px; transition: transform .15s; }
 .app-card:hover .app-card-view svg { transform: translateX(2px); }
+.app-card-view-primary {
+  color: #fff;
+  background: var(--teal);
+  box-shadow: 0 2px 6px rgba(21, 154, 150, 0.25);
+}
+.app-card-view-primary:hover { background: #0d7c78; }
 
 .reviewer-stage-btn {
   display: inline-flex;

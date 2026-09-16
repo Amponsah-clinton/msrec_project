@@ -9,7 +9,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from accounts.models import User
+from accounts.models import AuditLog, User
 from accounts.sessions import active_sessions_for
 from applicant_dashboard import storage as application_storage
 from notifications.models import Notification
@@ -366,6 +366,10 @@ def _handle_submit_assessment(request, assignment):
     ])
 
     ref = assignment.application.reference_no or assignment.application.title
+    AuditLog.record(
+        request.user, "review_assignment.completed", target=assignment.application,
+        description=f"Recommendation: {assignment.get_recommendation_display()}.",
+    )
     notify(
         Notification.Audience.SECRETARIAT,
         f"{request.user.full_name} submitted their assessment for {ref}: "

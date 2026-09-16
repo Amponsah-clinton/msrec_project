@@ -18,11 +18,12 @@ from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 
 from accounts import storage
-from accounts.models import RoleApprovalLog, User
+from accounts.models import AuditLog, RoleApprovalLog, User
 from accounts.sessions import active_sessions_for, describe_user_agent
 from applicant_dashboard import oversight
 from applicant_dashboard import storage as application_storage
 from applicant_dashboard.models import Application
+from messaging.access import is_staff_side
 from notifications.emails import send_branded_email
 from pages import documents_storage
 from pages import storage as pages_storage
@@ -46,6 +47,15 @@ def is_admin(user):
 
 
 admin_required = user_passes_test(is_admin, login_url="pages:login")
+
+# Accounts, Site Settings, and Profile & Security are the three admin
+# pages Secretariat's own sidebar links into (Users & Access / System
+# Settings / Profile & Security) -- reusing the same view/template rather
+# than building a parallel Secretariat copy, so this is deliberately
+# `is_staff_side` (Admin + Secretariat), not `admin_required`. Every
+# other admin_dashboard view (Finance, Reports, Access Security, Board &
+# Committee, Help & Support) stays admin-only.
+admin_or_secretariat_required = user_passes_test(is_staff_side, login_url="pages:login")
 
 
 def _categorize(user):
@@ -97,6 +107,7 @@ def _handle_role_decision(request, target, role, action):
         RoleApprovalLog.objects.create(
             user=target, role=role, action=RoleApprovalLog.Action.APPROVED, acted_by=request.user,
         )
+        AuditLog.record(request.user, f"role.{role}.approved", target=target)
         emailed = _send_role_approved_email(request, target, role)
         suffix = "and notified by email." if emailed else "(the approval email couldn't be sent -- check the email settings)."
         messages.success(request, f"{target.full_name} approved as {target.get_role_display()} {suffix}")
@@ -105,6 +116,7 @@ def _handle_role_decision(request, target, role, action):
         RoleApprovalLog.objects.create(
             user=target, role=role, action=RoleApprovalLog.Action.REJECTED, acted_by=request.user,
         )
+        AuditLog.record(request.user, f"role.{role}.rejected", target=target)
         messages.success(request, f"{role.title()} request for {target.full_name} was declined.")
 
 
@@ -127,8 +139,10 @@ def _handle_suspend(request, target, *, suspend):
                 if s.get_decoded().get("_auth_user_id") == str(target.pk)
             ]
         ).delete()
+        AuditLog.record(request.user, "user.suspended", target=target)
         messages.success(request, f"{target.full_name}'s account has been suspended.")
     else:
+        AuditLog.record(request.user, "user.activated", target=target)
         messages.success(request, f"{target.full_name}'s account has been reactivated.")
 
 
@@ -176,6 +190,7 @@ def _handle_delete(request, target):
         messages.error(request, "Superuser accounts can't be deleted from here.")
         return
     name = target.full_name
+    AuditLog.record(request.user, "user.deleted", target=target)
     _cleanup_user_storage(target)
     target.delete()
     messages.success(request, f"{name}'s account and files have been deleted.")
@@ -212,11 +227,12 @@ def _handle_edit(request, target):
         "first_name", "middle_name", "last_name", "email", "phone",
         "institution", "department", "position", "role",
     ])
+    AuditLog.record(request.user, "user.edited", target=target)
     messages.success(request, f"{target.full_name}'s account has been updated.")
 
 
 @login_required
-@admin_required
+@admin_or_secretariat_required
 def accounts(request):
     if request.method == "POST":
         target = get_object_or_404(User, pk=request.POST.get("user_id"))
@@ -421,7 +437,7 @@ def application_detail(request, pk):
     if request.method == "POST":
         action = request.POST.get("action")
         comment = request.POST.get("revision_comment", "")
-        ok, note = oversight.apply_transition(application, action, comment=comment)
+        ok, note = oversight.apply_transition(application, action, comment=comment, actor=request.user)
         if ok and action == "request_revisions":
             emailed = oversight.send_revisions_requested_email(request, application)
             note += " Applicant notified by email." if emailed else " (the notification email couldn't be sent)."
@@ -778,7 +794,7 @@ def _handle_admin_revoke_session(request):
 
 
 @login_required
-@admin_required
+@admin_or_secretariat_required
 def profile_security(request):
     if request.method == "POST":
         action = request.POST.get("action")
@@ -1180,7 +1196,7 @@ def _handle_settings_delete_policy_document(request, site):
 
 
 @login_required
-@admin_required
+@admin_or_secretariat_required
 def site_settings(request):
     site = SiteSettings.get_solo()
 

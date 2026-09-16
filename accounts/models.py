@@ -303,6 +303,61 @@ class RoleApprovalLog(models.Model):
         return f"{self.user.email} · {self.role} · {self.action}"
 
 
+class AuditLog(models.Model):
+    """General-purpose activity trail: who did what, to what, and when --
+    across the whole platform, not just role decisions (RoleApprovalLog
+    above stays as its own narrower table; this doesn't replace it, it
+    covers everything else an ethics board needs to be able to answer
+    "who changed this and when" about -- application status changes,
+    account suspensions/deletions, reviewer assignments, logins).
+
+    `target_type`/`target_id`/`target_label` are a loose pointer rather
+    than a real FK -- the target's row can be deleted (a user account,
+    an application) while the log entry itself must still read
+    sensibly, so this deliberately never cascades.
+    """
+
+    actor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="audit_logs"
+    )
+    # Dotted, namespaced action strings (e.g. "user.suspended",
+    # "application.approved") rather than a TextChoices enum -- new
+    # action types get added at call sites across several apps as the
+    # platform grows, and a fixed choices list would need a migration
+    # every time one does.
+    action = models.CharField(max_length=64)
+    target_type = models.CharField(max_length=64, blank=True)
+    target_id = models.CharField(max_length=64, blank=True)
+    target_label = models.CharField(max_length=255, blank=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "audit_logs"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.action} · {self.target_label or self.target_type} · {self.created_at:%Y-%m-%d %H:%M}"
+
+    @classmethod
+    def record(cls, actor, action, *, target=None, description=""):
+        """Logs one event. `target` is any model instance with a sensible
+        __str__ (or None for account-less events like a failed login) --
+        callers don't need to know this table's column names, just pass
+        the object the action was performed on."""
+        target_type = target.__class__.__name__ if target is not None else ""
+        target_id = str(target.pk) if target is not None else ""
+        target_label = str(target) if target is not None else ""
+        return cls.objects.create(
+            actor=actor if (actor is not None and getattr(actor, "is_authenticated", True)) else None,
+            action=action,
+            target_type=target_type,
+            target_id=target_id,
+            target_label=target_label,
+            description=description,
+        )
+
+
 class PasswordResetCode(models.Model):
     """A 6-digit code emailed to a user for the Forgot Password flow
     (accounts.views.forgot_password / reset_password). One row per code

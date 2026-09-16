@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.paginator import Paginator
 from django.db.models import Count, Prefetch, Q
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -8,7 +9,7 @@ from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 
 from accounts import storage as accounts_storage
-from accounts.models import RoleApprovalLog, User
+from accounts.models import AuditLog, RoleApprovalLog, User
 from applicant_dashboard import oversight
 from applicant_dashboard import storage as application_storage
 from applicant_dashboard.models import Application
@@ -51,7 +52,7 @@ def parse_date_as_datetime(value, *, end_of_day=False):
 
 
 REVIEWER_DIRECTORY_TABS = {"all", "available", "limited", "unavailable"}
-REVIEWER_ASSIGNMENT_TABS = {"assign", "pending", "workload"}
+REVIEWER_ASSIGNMENT_TABS = {"assign", "pending", "completed", "workload"}
 
 
 @login_required
@@ -99,6 +100,12 @@ def applications(request):
         # this is what keeps the "reviewer, deadline & stage" modal button
         # on every card from turning into an N+1.
         application.assignments = list(application.review_assignments.all())
+        # Surfaced directly on the card (not just inside the Reviewer &
+        # Stage modal) so a reviewer's finished assessment is visible at a
+        # glance instead of requiring an extra click to discover.
+        application.has_completed_review = any(
+            a.status == ReviewAssignment.Status.COMPLETED for a in application.assignments
+        )
 
     return render(request, "dashboards/secretariat/applications.html", {
         "all_applications": all_applications,
@@ -180,7 +187,7 @@ def application_detail(request, pk):
     if request.method == "POST":
         action = request.POST.get("action")
         comment = request.POST.get("revision_comment", "")
-        ok, note = oversight.apply_transition(application, action, comment=comment)
+        ok, note = oversight.apply_transition(application, action, comment=comment, actor=request.user)
         if ok and action == "request_revisions":
             emailed = oversight.send_revisions_requested_email(request, application)
             note += " Applicant notified by email." if emailed else " (the notification email couldn't be sent)."
@@ -194,9 +201,14 @@ def application_detail(request, pk):
         for doc in (application.documents or [])
     ]
 
+    assignments = list(
+        application.review_assignments.select_related("reviewer").order_by("-assigned_at")
+    )
+
     return render(request, "dashboards/secretariat/application_detail.html", {
         "application": application,
         "documents": documents,
+        "assignments": assignments,
     })
 
 
@@ -387,6 +399,10 @@ def reviewer_assignment(request):
             assignment = ReviewAssignment.objects.create(
                 application=application, reviewer=reviewer, assigned_by=request.user, due_date=due_date,
             )
+            AuditLog.record(
+                request.user, "review_assignment.created", target=application,
+                description=f"Assigned to {reviewer.full_name}.",
+            )
             emailed = _send_assignment_email(request, assignment)
             suffix = "and notified by email." if emailed else "(the notification email couldn't be sent)."
             messages.success(
@@ -399,7 +415,12 @@ def reviewer_assignment(request):
                 messages.error(request, "That request could not be processed.")
                 return redirect(f"{request.path}?tab={tab}")
             assignment = get_object_or_404(
-                ReviewAssignment, pk=assignment_id, status=ReviewAssignment.Status.NEW,
+                ReviewAssignment.objects.select_related("application", "reviewer"),
+                pk=assignment_id, status=ReviewAssignment.Status.NEW,
+            )
+            AuditLog.record(
+                request.user, "review_assignment.withdrawn", target=assignment.application,
+                description=f"Withdrawn from {assignment.reviewer.full_name}.",
             )
             assignment.delete()
             messages.success(request, "Assignment withdrawn -- the application is available to assign again.")
@@ -440,6 +461,12 @@ def reviewer_assignment(request):
     for assignment in pending:
         assignment.tab_value = assignment.tab
 
+    completed = list(
+        ReviewAssignment.objects.filter(status=ReviewAssignment.Status.COMPLETED)
+        .select_related("application", "reviewer")
+        .order_by("-completed_at")
+    )
+
     workload = list(
         User.objects.filter(role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED)
         .annotate(
@@ -468,6 +495,7 @@ def reviewer_assignment(request):
     counts = {
         "assign": len(needs_assignment),
         "pending": len(pending),
+        "completed": len(completed),
         "workload": len(reviewers),
     }
 
@@ -475,6 +503,7 @@ def reviewer_assignment(request):
         "active_tab": active_tab,
         "needs_assignment": needs_assignment,
         "pending": pending,
+        "completed": completed,
         "workload": workload,
         "reviewers": reviewers,
         "counts": counts,
@@ -489,6 +518,7 @@ def reviewer_assignment_counts(request):
     return JsonResponse({
         "assign": _needs_assignment_qs().count(),
         "pending": _open_assignments().count(),
+        "completed": ReviewAssignment.objects.filter(status=ReviewAssignment.Status.COMPLETED).count(),
         "workload": User.objects.filter(
             role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED
         ).count(),
@@ -817,4 +847,69 @@ def reports(request):
         "committee": reports_data.committee_activity(),
         "compliance": reports_data.post_approval_compliance(),
         "financial": reports_data.financial_reports(),
+    })
+
+
+# ---------------------------------------------------------------------
+# Audit Logs -- read-only trail of AuditLog.record() calls across the
+# whole platform (see accounts.models.AuditLog). Grouped by action
+# prefix ("user.", "application.", "review_assignment.", "role.")
+# rather than a fixed choices list, since that's how AuditLog itself
+# stores actions -- new prefixes just show up under "Other" until this
+# CATEGORY map is taught about them.
+# ---------------------------------------------------------------------
+
+AUDIT_LOG_CATEGORIES = {
+    "all": None,
+    "users": "user.",
+    "applications": "application.",
+    "reviews": "review_assignment.",
+    "roles": "role.",
+}
+
+
+def _audit_log_category(action):
+    for key, prefix in AUDIT_LOG_CATEGORIES.items():
+        if prefix and action.startswith(prefix):
+            return key
+    return "other"
+
+
+@login_required
+@staff_required
+def audit_logs(request):
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in AUDIT_LOG_CATEGORIES:
+        active_tab = "all"
+    query = request.GET.get("q", "").strip()
+
+    base_qs = AuditLog.objects.select_related("actor").order_by("-created_at")
+    if query:
+        base_qs = base_qs.filter(
+            Q(actor__first_name__icontains=query) | Q(actor__last_name__icontains=query)
+            | Q(actor__email__icontains=query) | Q(action__icontains=query)
+            | Q(target_label__icontains=query) | Q(description__icontains=query)
+        )
+
+    counts = {"all": base_qs.count()}
+    for key, prefix in AUDIT_LOG_CATEGORIES.items():
+        if prefix:
+            counts[key] = base_qs.filter(action__startswith=prefix).count()
+    counts["other"] = counts["all"] - sum(v for k, v in counts.items() if k not in ("all", "other"))
+
+    scoped_qs = base_qs
+    prefix = AUDIT_LOG_CATEGORIES.get(active_tab)
+    if prefix:
+        scoped_qs = base_qs.filter(action__startswith=prefix)
+
+    paginator = Paginator(scoped_qs, 40)
+    page = paginator.get_page(request.GET.get("page"))
+    for log in page:
+        log.category = _audit_log_category(log.action)
+
+    return render(request, "dashboards/secretariat/audit-logs.html", {
+        "page": page,
+        "counts": counts,
+        "active_tab": active_tab,
+        "query": query,
     })

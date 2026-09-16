@@ -55,4 +55,5 @@ urlpatterns = [
     path("reviewers/assignment-history/", views.reviewer_assignment_history, name="reviewer_assignment_history"),
     path("reviewers/assignment/", views.reviewer_assignment, name="reviewer_assignment"),
     path("reviewers/assignment/counts/", views.reviewer_assignment_counts, name="reviewer_assignment_counts"),
+    path("audit-logs/", views.audit_logs, name="audit_logs"),
 ]

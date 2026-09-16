@@ -7,6 +7,7 @@
 <link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
 <link href="{% static 'assets/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
 <link href="{% static 'dashboard/css/application-form.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/reviewer-assessment.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block nav_content %}
@@ -148,10 +149,10 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Users</a>
-          <a href="#" class="nav-sublink">Role Requests</a>
-          <a href="#" class="nav-sublink">Approve Reviewer Role</a>
-          <a href="#" class="nav-sublink">Approve Committee Role</a>
+          <a href="{% url 'admin_dashboard:accounts' %}" class="nav-sublink">Users</a>
+          <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="nav-sublink">Role Requests</a>
+          <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="nav-sublink">Approve Reviewer Role</a>
+          <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="nav-sublink">Approve Committee Role</a>
           <a href="#" class="nav-sublink">Roles</a>
           <a href="#" class="nav-sublink">Permissions</a>
         </div>
@@ -161,15 +162,15 @@
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M9 3 7 21M17 3l-2 18"/></svg></span>
         <span>Reference Numbers</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'secretariat_dashboard:audit_logs' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span>
         <span>Audit Logs</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'admin_dashboard:settings' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
         <span>System Settings</span>
       </a>
-      <a href="#" class="nav-item">
+      <a href="{% url 'admin_dashboard:profile_security' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
         <span>Profile &amp; Security</span>
       </a>
@@ -272,6 +273,88 @@
           </form>
           {% endif %}
         </div>
+      </section>
+
+      <!-- REVIEWER ASSESSMENTS -->
+      <section class="panel" id="reviewer-assessments" style="padding:24px 26px; margin-bottom:20px;">
+        <h3 class="form-section-title" style="margin-bottom:14px;"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M19 8v6M22 11h-6"/></svg> Reviewer Assessments ({{ assignments|length }})</h3>
+
+        {% for assignment in assignments %}
+        <div class="form-section" style="border-top:1px solid var(--border); padding-top:16px; {% if not forloop.first %}margin-top:16px;{% endif %}">
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="acct-avatar cat-reviewers">{{ assignment.reviewer.initials }}</span>
+              <div>
+                <strong style="font-size:13px; color:var(--text-main);">{{ assignment.reviewer.full_name }}</strong>
+                <p style="margin:0; font-size:12px; color:var(--text-sub);">{{ assignment.reviewer.email }}</p>
+              </div>
+            </div>
+            {% if assignment.status == 'new' %}<span class="badge-tag orange">New</span>
+            {% elif assignment.status == 'accepted' %}<span class="badge-tag blue">Accepted{% if assignment.due_date %} &middot; due {{ assignment.due_date|date:"d M Y" }}{% endif %}</span>
+            {% elif assignment.status == 'declined' %}<span class="badge-tag red">Declined</span>
+            {% elif assignment.status == 'completed' %}<span class="badge-tag green">Completed {{ assignment.completed_at|date:"d M Y" }}</span>
+            {% endif %}
+          </div>
+
+          {% if assignment.status == 'completed' %}
+          <div class="form-section">
+            <h3 class="form-section-title"><span class="section-icon-badge green"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Ethical Review</h3>
+            <div class="assess-checklist">
+              {% for row in assignment.checklist_rows %}
+              <div class="assess-summary-row">
+                <span class="assess-checklist-label">{{ row.label }}</span>
+                <span class="badge-tag {{ row.badge }}">{{ row.value_label }}</span>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title"><span class="section-icon-badge blue"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span> Reviewer Comments</h3>
+            <div class="field-grid">
+              <div class="field field-wide"><label>Key ethical concerns or required revisions</label><p style="margin:0; font-size:13px; color:var(--text-main); line-height:1.6;">{{ assignment.key_concerns|default:"None recorded."|linebreaksbr }}</p></div>
+              <div class="field field-wide"><label>Additional comments / recommendations</label><p style="margin:0; font-size:13px; color:var(--text-main); line-height:1.6;">{{ assignment.review_notes|default:"None recorded."|linebreaksbr }}</p></div>
+              {% if assignment.documents_comment %}
+              <div class="field field-wide"><label>Comments on additional documents</label><p style="margin:0; font-size:13px; color:var(--text-main); line-height:1.6;">{{ assignment.documents_comment|linebreaksbr }}</p></div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="form-section">
+            <h3 class="form-section-title"><span class="section-icon-badge purple"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span> Recommendation</h3>
+            <div class="assess-verdict {{ assignment.recommendation_badge }}">
+              <div class="assess-verdict-head">
+                <span class="assess-checklist-label">Decision</span>
+                <span class="assess-verdict-decision">{{ assignment.get_recommendation_display }}</span>
+              </div>
+              {% if assignment.recommendation_reason %}
+              <div class="assess-verdict-reason">
+                <span class="assess-checklist-label">Reviewer's reason</span>
+                <p>{{ assignment.recommendation_reason|linebreaksbr }}</p>
+              </div>
+              {% endif %}
+              {% if assignment.coi_has_conflict %}
+              <div class="assess-verdict-coi">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+                <div>
+                  <strong>Conflict of interest declared</strong>
+                  <p>{{ assignment.coi_details|linebreaksbr }}</p>
+                </div>
+              </div>
+              {% endif %}
+            </div>
+          </div>
+          {% elif assignment.status == 'declined' %}
+          <p class="field-hint" style="margin:0;">This reviewer declined the assignment -- assign a different reviewer from Reviewer Assignment.</p>
+          {% else %}
+          <p class="field-hint" style="margin:0;">Assessment not submitted yet.</p>
+          {% endif %}
+        </div>
+        {% empty %}
+        <p class="field-hint" style="margin:0;">
+          No reviewer assigned yet. <a href="{% url 'secretariat_dashboard:reviewer_assignment' %}">Assign one from Reviewer Assignment &rarr;</a>
+        </p>
+        {% endfor %}
       </section>
 
       <!-- REQUEST REVISIONS MODAL -->
