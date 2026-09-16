@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "messaging",
     "notifications",
     "communications",
+    "meetings",
     "payments",
     "reviewer_dashboard",
     "applicant_dashboard",

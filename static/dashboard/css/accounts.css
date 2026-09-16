@@ -178,19 +178,6 @@
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
   transition: box-shadow .18s ease, border-color .18s ease, transform .18s ease;
 }
-.app-card::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; bottom: 0;
-  width: 4px;
-  background: var(--border);
-  transition: background .18s ease;
-}
-.app-card[data-filter="submitted"]::before   { background: var(--orange); }
-.app-card[data-filter="under_review"]::before { background: var(--blue); }
-.app-card[data-filter="revisions"]::before    { background: var(--red); }
-.app-card[data-filter="approved"]::before     { background: var(--green); }
-.app-card[data-filter="not_approved"]::before { background: var(--red); }
 .app-card:hover {
   border-color: var(--teal);
   box-shadow: 0 10px 24px rgba(16, 24, 40, 0.10);
@@ -264,6 +251,18 @@
 }
 .app-card-body span { display: flex; align-items: center; gap: 6px; }
 .app-card-body svg { width: 13px; height: 13px; flex-shrink: 0; color: var(--text-faint); }
+.app-card-reviewer {
+  color: var(--text-sub);
+  font-weight: 500;
+  white-space: normal;
+}
+.app-card-reviewer svg { color: var(--teal); }
+.app-card-reviewer a {
+  color: var(--teal);
+  text-decoration: none;
+  font-weight: 600;
+}
+.app-card-reviewer a:hover { text-decoration: underline; }
 .app-card-foot {
   display: flex;
   align-items: center;

@@ -1,26 +1,59 @@
 /* ==========================================================
    MSREC Admin — Site Settings
-   Four independent forms in a responsive card grid, built entirely from
-   the existing shared vocabulary: .panel / .form-section / .field-grid /
-   .field / .field-hint / .btn-primary (style.css + application-form.css).
-   Nothing here introduces a new visual system -- just the logo preview
-   and the small "using server default" badge.
+   Flat, monochrome tabbed layout: an underline tab bar switches
+   between single-column panels, each built entirely from the existing
+   shared vocabulary (.panel / .form-section / .field-grid / .field /
+   .field-hint / .btn-primary from application-form.css + style.css).
+   No colored icon chips, no multi-card grid -- one focused panel at a
+   time, matching the flat sidebar aesthetic.
 ========================================================== */
 
-.settings-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  align-items: start;
+.settings-shell { max-width: 780px; }
+
+/* ---------------- Tab bar ---------------- */
+
+.settings-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
 }
 
-.settings-panel { padding: 24px 26px; }
+.settings-tab {
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 9px 4px 10px;
+  margin-right: 22px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-sub);
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
+}
+.settings-tab:hover { color: var(--text-main); }
+.settings-tab.active {
+  color: var(--text-main);
+  border-bottom-color: var(--teal);
+}
+
+/* ---------------- Panels ---------------- */
+
+.settings-panel-section { display: none; }
+.settings-panel-section.active { display: block; }
+
+.settings-panel {
+  padding: 22px 24px;
+}
 
 .settings-form-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 18px;
-  padding-top: 16px;
+  margin-top: 16px;
+  padding-top: 14px;
   border-top: 1px solid var(--border);
 }
 
@@ -41,21 +74,21 @@
 .settings-logo-row {
   display: flex;
   align-items: flex-start;
-  gap: 18px;
+  gap: 16px;
 }
 
 .settings-logo-preview {
   flex-shrink: 0;
-  width: 76px;
-  height: 76px;
-  border-radius: 14px;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
   border: 1px solid var(--border);
   background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 10px;
+  padding: 9px;
 }
 .settings-logo-preview img {
   width: 100%;
@@ -63,92 +96,29 @@
   object-fit: contain;
 }
 
-@media (max-width: 1180px) {
-  .settings-grid { grid-template-columns: 1fr; }
-}
-
 @media (max-width: 560px) {
   .settings-logo-row { flex-direction: column; align-items: flex-start; }
+  .settings-tabs { gap: 2px 16px; }
 }
 
-/* ---------------- Meetings & Documents / Policy Library ----------------
-   Full-width panels below the two-column settings-grid -- each holds an
-   "add" form (the same .field-grid vocabulary as everything else on this
-   page) plus a plain, flat list of existing records. Deliberately no
-   card gradients/shadows beyond the shared .panel -- this is a back-
-   office data-entry screen, not a marketing surface. */
+/* ---------------- Policy Library ----------------
+   Same flat panel, plus a plain list of existing records below the
+   "add" form -- no extra gradients/shadows beyond the shared .panel. */
 
-.settings-full-panel { margin-top: 20px; padding: 24px 26px; }
+.settings-full-panel { }
 
-.doc-manager-list { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; }
-
-.doc-record-card {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px 18px;
-  background: var(--bg);
-}
-.doc-record-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-.doc-record-title h4 { margin: 0 0 3px; font-size: 13.5px; font-weight: 700; color: var(--text-main); }
-.doc-record-title span { font-size: 12px; color: var(--text-sub); }
-
-.doc-file-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.doc-file-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--white);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 8px 10px;
-  font-size: 12.5px;
-}
-.doc-file-name { flex: 1; font-weight: 600; color: var(--text-main); }
-.doc-file-list a.download-link { color: var(--teal); font-weight: 600; text-decoration: none; }
-.doc-file-list a.download-link:hover { text-decoration: underline; }
-.doc-file-empty { font-size: 12px; color: var(--text-faint); margin: 0 0 12px; }
-
-.doc-inline-form {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  align-items: center;
-  padding-top: 12px;
-  border-top: 1px dashed var(--border);
-}
-.doc-inline-form select,
-.doc-inline-form input[type="text"],
-.doc-inline-form input[type="file"] {
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 7px 10px;
-  font-size: 12.5px;
-  font-family: inherit;
-  background: var(--white);
-  color: var(--text-main);
-}
-.doc-inline-form input[type="text"] { flex: 1; min-width: 160px; }
-.doc-inline-form input[type="file"] { flex: 1; min-width: 180px; }
-
-.policy-group { margin-top: 22px; }
-.policy-group:first-of-type { margin-top: 24px; }
+.policy-group { margin-top: 20px; }
+.policy-group:first-of-type { margin-top: 22px; }
 .policy-group-heading {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 0 0 10px;
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--text-main);
+  color: var(--text-sub);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
 }
 .policy-group-heading .count { font-size: 11px; font-weight: 700; color: var(--text-faint); text-transform: none; letter-spacing: normal; }
 
@@ -160,7 +130,7 @@
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--bg);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   flex-wrap: wrap;
 }
 .policy-doc-info { flex: 1; min-width: 200px; }

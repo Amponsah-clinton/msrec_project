@@ -74,13 +74,13 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Schedule Meeting</a>
-          <a href="#" class="nav-sublink">Meetings Calendar</a>
-          <a href="#" class="nav-sublink">Agenda</a>
-          <a href="#" class="nav-sublink">Attendance</a>
-          <a href="#" class="nav-sublink">Quorum</a>
-          <a href="#" class="nav-sublink">Minutes</a>
-          <a href="#" class="nav-sublink">Decisions</a>
+          <a href="{% url 'secretariat_dashboard:meetings_schedule' %}" class="nav-sublink">Schedule Meeting</a>
+          <a href="{% url 'secretariat_dashboard:meetings_calendar' %}" class="nav-sublink">Meetings Calendar</a>
+          <a href="{% url 'secretariat_dashboard:meetings_agenda' %}" class="nav-sublink">Agenda</a>
+          <a href="{% url 'secretariat_dashboard:meetings_attendance' %}" class="nav-sublink">Attendance</a>
+          <a href="{% url 'secretariat_dashboard:meetings_quorum' %}" class="nav-sublink">Quorum</a>
+          <a href="{% url 'secretariat_dashboard:meetings_minutes' %}" class="nav-sublink">Minutes</a>
+          <a href="{% url 'secretariat_dashboard:meetings_decisions' %}" class="nav-sublink">Decisions</a>
         </div>
       </div>
 
@@ -157,11 +157,6 @@
           <a href="#" class="nav-sublink">Permissions</a>
         </div>
       </div>
-
-      <a href="#" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M9 3 7 21M17 3l-2 18"/></svg></span>
-        <span>Reference Numbers</span>
-      </a>
       <a href="{% url 'secretariat_dashboard:audit_logs' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span>
         <span>Audit Logs</span>

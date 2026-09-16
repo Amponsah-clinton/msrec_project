@@ -71,13 +71,13 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Schedule Meeting</a>
-          <a href="#" class="nav-sublink">Meetings Calendar</a>
-          <a href="#" class="nav-sublink">Agenda</a>
-          <a href="#" class="nav-sublink">Attendance</a>
-          <a href="#" class="nav-sublink">Quorum</a>
-          <a href="#" class="nav-sublink">Minutes</a>
-          <a href="#" class="nav-sublink">Decisions</a>
+          <a href="{% url 'secretariat_dashboard:meetings_schedule' %}" class="nav-sublink">Schedule Meeting</a>
+          <a href="{% url 'secretariat_dashboard:meetings_calendar' %}" class="nav-sublink">Meetings Calendar</a>
+          <a href="{% url 'secretariat_dashboard:meetings_agenda' %}" class="nav-sublink">Agenda</a>
+          <a href="{% url 'secretariat_dashboard:meetings_attendance' %}" class="nav-sublink">Attendance</a>
+          <a href="{% url 'secretariat_dashboard:meetings_quorum' %}" class="nav-sublink">Quorum</a>
+          <a href="{% url 'secretariat_dashboard:meetings_minutes' %}" class="nav-sublink">Minutes</a>
+          <a href="{% url 'secretariat_dashboard:meetings_decisions' %}" class="nav-sublink">Decisions</a>
         </div>
       </div>
 
@@ -154,11 +154,6 @@
           <a href="#" class="nav-sublink">Permissions</a>
         </div>
       </div>
-
-      <a href="#" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M9 3 7 21M17 3l-2 18"/></svg></span>
-        <span>Reference Numbers</span>
-      </a>
       <a href="{% url 'secretariat_dashboard:audit_logs' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span>
         <span>Audit Logs</span>
@@ -255,6 +250,12 @@
               <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>{{ application.reference_no|default:"No reference yet" }}</span>
               <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Submitted {{ application.submitted_at|date:"d M Y"|default:"—" }}</span>
               <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3v12"/><circle cx="6" cy="18" r="3"/><circle cx="6" cy="3" r="3"/><path d="M6 9a9 9 0 0 0 9 9"/></svg>{{ application.review_type|default:"No pathway requested" }}</span>
+              {% for a in application.completed_reviewers|slice:":1" %}
+              <span class="app-card-reviewer" title="Reviewed by {{ a.reviewer.full_name }}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/></svg>
+                Reviewed by {{ a.reviewer.full_name }} &middot; <a href="mailto:{{ a.reviewer.email }}" onclick="event.stopPropagation()">{{ a.reviewer.email }}</a>
+              </span>
+              {% endfor %}
             </div>
             <div class="app-card-foot">
               <button type="button" class="reviewer-stage-btn" data-open-modal="reviewerStage-{{ application.pk }}" title="Reviewer &amp; stage details">

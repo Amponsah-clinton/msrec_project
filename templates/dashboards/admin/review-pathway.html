@@ -1,0 +1,252 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}{{ info.label }} | MSREC Admin{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/review-pathway.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}
+      <a href="{% url 'admin_dashboard:home' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg></span>
+        <span>Dashboard</span>
+      </a>
+
+      <a href="{% url 'admin_dashboard:accounts' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+        <span>Users &amp; Roles</span>
+      </a>
+
+      <a href="{% url 'admin_dashboard:inquiries' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+        <span>Inquiries</span>
+      </a>
+
+      <div class="nav-group open">
+        <button type="button" class="nav-group-toggle" aria-expanded="true">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
+          <span>Applications</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'admin_dashboard:applications' %}" class="nav-sublink">All Applications</a>
+          <a href="{% url 'admin_dashboard:review_pathway' 'exemption' %}" class="nav-sublink{% if pathway == 'exemption' %} active{% endif %}">Determination / Exemption</a>
+          <a href="{% url 'admin_dashboard:review_pathway' 'expedited' %}" class="nav-sublink{% if pathway == 'expedited' %} active{% endif %}">Expedited</a>
+          <a href="{% url 'admin_dashboard:review_pathway' 'full' %}" class="nav-sublink{% if pathway == 'full' %} active{% endif %}">Full Committee</a>
+          <a href="#" class="nav-sublink">By Institution</a>
+          <a href="#" class="nav-sublink">Flagged / Escalated</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h1M9 11h1M9 15h1M14 7h1M14 11h1M14 15h1"/></svg></span>
+          <span>Institutions</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Registered Institutions</a>
+          <a href="#" class="nav-sublink">Verification Requests</a>
+          <a href="#" class="nav-sublink">Institution Admins</a>
+        </div>
+      </div>
+
+      <a href="{% url 'admin_dashboard:board_committee' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        <span>Board &amp; Committee</span>
+      </a>
+
+      <a href="{% url 'admin_dashboard:finance' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+        <span>Finance</span>
+      </a>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+          <span>Communications</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Announcements</a>
+          <a href="#" class="nav-sublink">Email Templates</a>
+          <a href="#" class="nav-sublink">Notification Settings</a>
+        </div>
+      </div>
+
+      <a href="{% url 'admin_dashboard:settings' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
+        <span>System</span>
+      </a>
+
+      <a href="{% url 'admin_dashboard:messages' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+        <span>Messages</span>
+      </a>
+      <a href="{% url 'admin_dashboard:reports_analytics' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span>
+        <span>Reports &amp; Analytics</span>
+      </a>
+      <a href="{% url 'admin_dashboard:access_security' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v1"/></svg></span>
+        <span>Access &amp; Security</span>
+      </a>
+      <a href="{% url 'admin_dashboard:profile_security' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
+        <span>Profile &amp; Security</span>
+      </a>
+      <a href="{% url 'admin_dashboard:help_support' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m4.9 4.9 3.5 3.5M19.1 4.9l-3.5 3.5M4.9 19.1l3.5-3.5M19.1 19.1l-3.5-3.5"/></svg></span>
+        <span>Help &amp; Support</span>
+      </a>
+
+{% endblock %}
+
+{% block topbar %}
+
+      <div class="topbar-title">
+        <h1>{{ info.label }}</h1>
+        <p>{{ info.summary }}</p>
+      </div>
+      <div class="topbar-actions">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="adminAppsSearch" placeholder="Search by ref no, title, applicant...">
+        </div>
+        <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false">
+          <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+        </button>
+
+        <div class="dropdown" id="profileDropdown">
+          <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
+            <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="dropdown-menu profile-menu" id="profileMenu">
+            <div class="profile-menu-head">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
+              <div>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <a href="{% url 'pages:logout' %}" class="dropdown-item logout">
+              <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+              Log Out
+            </a>
+          </div>
+        </div>
+      </div>
+
+{% endblock %}
+
+{% block main_content %}
+
+      <div data-pathway-accent="{{ info.accent }}">
+
+      <!-- PATHWAY OVERVIEW -->
+      <section class="pathway-hero">
+        <div class="panel pathway-criteria-panel">
+          <div class="pathway-panel-title">
+            <span class="pathway-accent-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            </span>
+            What qualifies for {{ info.short_label }}
+          </div>
+          <p class="pathway-panel-sub">Use this as a quick screening reference when a new submission comes in under this pathway &mdash; it doesn't replace the committee's own judgement on borderline cases.</p>
+          <ul class="pathway-criteria-list">
+            {% for item in info.criteria %}
+            <li>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="m5 13 4 4L19 7"/></svg>
+              <span>{{ item }}</span>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+
+        <div class="panel pathway-info-panel">
+          <div class="pathway-panel-title">
+            <span class="pathway-accent-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            </span>
+            Pathway Details
+          </div>
+          <div class="pathway-info-rows">
+            <div class="pathway-info-row">
+              <span class="pathway-info-row-label">Review Fee</span>
+              <span class="pathway-info-row-value">{% if fee %}{{ currency }} {{ fee }}{% else %}Free{% endif %}</span>
+            </div>
+            <div class="pathway-info-row">
+              <span class="pathway-info-row-label">Applications on this pathway</span>
+              <span class="pathway-info-row-value">{{ counts.all }}</span>
+            </div>
+            <div class="pathway-info-row">
+              <span class="pathway-info-row-label">Awaiting a decision</span>
+              <span class="pathway-info-row-value">{{ counts.under_review }}</span>
+            </div>
+            <div class="pathway-info-row">
+              <span class="pathway-info-row-label">Approved</span>
+              <span class="pathway-info-row-value">{{ counts.approved }}</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TABS + LIST -->
+      <section class="panel acct-panel">
+        <div class="filter-tabs acct-tabs" data-filters-target="#adminAppsList">
+          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count">{{ counts.all }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'submitted' %} active{% endif %}" data-filter="submitted">New <span class="count">{{ counts.submitted }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'under_review' %} active{% endif %}" data-filter="under_review">Under Review <span class="count">{{ counts.under_review }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'revisions' %} active{% endif %}" data-filter="revisions">Revisions <span class="count">{{ counts.revisions }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'approved' %} active{% endif %}" data-filter="approved">Approved <span class="count">{{ counts.approved }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'not_approved' %} active{% endif %}" data-filter="not_approved">Not Approved <span class="count">{{ counts.not_approved }}</span></button>
+        </div>
+
+        <div class="acct-list" id="adminAppsList">
+          {% for application in all_applications %}
+          <a href="{% url 'admin_dashboard:application_detail' application.pk %}"
+             class="acct-row" data-filter-item data-filter="{{ application.tab }}"
+             data-search="{{ application.reference_no|lower }} {{ application.title|lower }} {{ application.applicant.full_name|lower }}"
+             {% if active_tab != 'all' and application.tab != active_tab %}hidden{% endif %}
+             style="text-decoration:none; cursor:pointer;">
+            <span class="acct-avatar cat-applicants">{{ application.applicant.initials }}</span>
+            <div class="acct-info">
+              <h4>
+                {{ application.title }}
+                {% if application.tab == 'submitted' %}<span class="badge-tag orange">New</span>
+                {% elif application.tab == 'under_review' %}<span class="badge-tag blue">Under Review</span>
+                {% elif application.tab == 'revisions' %}<span class="badge-tag red">Revisions Requested</span>
+                {% elif application.tab == 'approved' %}<span class="badge-tag green">Approved</span>
+                {% elif application.tab == 'not_approved' %}<span class="badge-tag red">Not Approved</span>
+                {% endif %}
+                {% if application.resubmitted_at %}<span class="badge-tag blue" title="Resubmitted {{ application.resubmitted_at|date:'j M Y' }}">Revised</span>{% endif %}
+              </h4>
+              <p>{{ application.reference_no }} &middot; {{ application.applicant.full_name }}</p>
+            </div>
+            <div class="acct-meta">
+              <span>Submitted {{ application.submitted_at|date:"d M Y" }}</span>
+              <span>{{ application.applicant.email }}</span>
+            </div>
+          </a>
+          {% empty %}
+          <div class="empty-state">
+            <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span>
+            <h3>No applications on this pathway yet</h3>
+            <p>Applicants who select {{ info.short_label }} at submission will show up here.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/admin-applications.js' %}"></script>
+{% endblock %}

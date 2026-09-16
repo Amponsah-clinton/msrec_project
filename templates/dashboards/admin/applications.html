@@ -31,7 +31,9 @@
         </button>
         <div class="nav-subnav">
           <a href="{% url 'admin_dashboard:applications' %}" class="nav-sublink active">All Applications</a>
-          <a href="#" class="nav-sublink">By Review Pathway</a>
+          <a href="{% url 'admin_dashboard:review_pathway' 'exemption' %}" class="nav-sublink">Determination / Exemption</a>
+          <a href="{% url 'admin_dashboard:review_pathway' 'expedited' %}" class="nav-sublink">Expedited</a>
+          <a href="{% url 'admin_dashboard:review_pathway' 'full' %}" class="nav-sublink">Full Committee</a>
           <a href="#" class="nav-sublink">By Institution</a>
           <a href="#" class="nav-sublink">Flagged / Escalated</a>
         </div>
@@ -50,10 +52,21 @@
         </div>
       </div>
 
-      <a href="{% url 'admin_dashboard:board_committee' %}" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-        <span>Board &amp; Committee</span>
-      </a>
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <span>Committee</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'admin_dashboard:committee_overview' %}" class="nav-sublink">Committee</a>
+          <a href="{% url 'admin_dashboard:board_committee' %}" class="nav-sublink">Committee Members</a>
+          <a href="{% url 'admin_dashboard:membership_appointments' %}" class="nav-sublink">Membership / Appointments</a>
+          <a href="{% url 'admin_dashboard:terms_expiry' %}" class="nav-sublink">Terms &amp; Expiry</a>
+          <a href="{% url 'admin_dashboard:committee_training' %}" class="nav-sublink">Training</a>
+          <a href="{% url 'admin_dashboard:conflict_records' %}" class="nav-sublink">Conflict Records</a>
+        </div>
+      </div>
 
       <a href="{% url 'admin_dashboard:finance' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
@@ -73,19 +86,10 @@
         </div>
       </div>
 
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
-          <span>System</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Audit Logs</a>
-          <a href="{% url 'admin_dashboard:settings' %}" class="nav-sublink">Site Settings</a>
-          <a href="#" class="nav-sublink">Integrations</a>
-          <a href="#" class="nav-sublink">Backups &amp; Exports</a>
-        </div>
-      </div>
+      <a href="{% url 'admin_dashboard:settings' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
+        <span>System</span>
+      </a>
 
       <a href="{% url 'admin_dashboard:messages' %}" class="nav-item">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>

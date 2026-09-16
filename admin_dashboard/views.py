@@ -27,7 +27,17 @@ from messaging.access import is_staff_side
 from notifications.emails import send_branded_email
 from pages import documents_storage
 from pages import storage as pages_storage
-from pages.models import CommitteeMeeting, GovernanceMember, Inquiry, MeetingDocument, PolicyDocument, SiteSettings
+from pages.models import (
+    CommitteeAppointment,
+    CommitteeMeeting,
+    ConflictDeclaration,
+    GovernanceMember,
+    Inquiry,
+    MeetingDocument,
+    PolicyDocument,
+    SiteSettings,
+    TrainingRecord,
+)
 from payments import fees
 from payments import services as payment_services
 from reviewer_dashboard import storage as reviewer_storage
@@ -416,6 +426,80 @@ def applications(request):
 
     return render(request, "dashboards/admin/applications.html", {
         "all_applications": all_applications,
+        "counts": counts,
+        "active_tab": active_tab,
+    })
+
+
+PATHWAY_INFO = {
+    "exemption": {
+        "label": "Determination / Exemption",
+        "short_label": "Exemption",
+        "accent": "green",
+        "summary": "Minimal-risk studies that qualify for an ethics determination without full board review.",
+        "criteria": [
+            "Research on standard educational practices in established or commonly accepted educational settings.",
+            "Anonymous surveys, interviews, or observation of public behaviour where no participant can be identified, directly or indirectly.",
+            "Secondary analysis of existing, de-identified data, records, or specimens already collected for another purpose.",
+            "Evaluation or quality-improvement activity conducted by an institution about its own programs, where findings are not intended to contribute to generalizable knowledge.",
+        ],
+    },
+    "expedited": {
+        "label": "Expedited Review",
+        "short_label": "Expedited",
+        "accent": "teal",
+        "summary": "Minimal-risk studies reviewed by one or two designated reviewers rather than the full committee.",
+        "criteria": [
+            "Collection of biological specimens by minimally invasive means (e.g. venipuncture, buccal swab, hair or nail clippings).",
+            "Research involving materials collected solely for non-research purposes, such as routine clinical or diagnostic records.",
+            "Non-invasive procedures routinely used in clinical practice, excluding X-ray or microwave exposure.",
+            "Research employing surveys, interviews, or focus groups on non-sensitive topics with identifiable but not vulnerable participants.",
+        ],
+    },
+    "full": {
+        "label": "Full Committee Review",
+        "short_label": "Full Committee",
+        "accent": "purple",
+        "summary": "Greater-than-minimal-risk studies that require deliberation by the full committee at a convened meeting.",
+        "criteria": [
+            "Research presenting more than minimal risk to participants, including invasive procedures or experimental interventions.",
+            "Studies involving vulnerable populations -- children, pregnant women, prisoners, or persons with diminished decision-making capacity.",
+            "Research on sensitive topics where disclosure could expose participants to legal, financial, or reputational harm.",
+            "Any study a designated reviewer refers up because it doesn't clearly meet the exemption or expedited criteria above.",
+        ],
+    },
+}
+
+
+def _review_pathway_queryset(pathway):
+    return oversight.staff_queryset().filter(review_type=pathway).order_by("-submitted_at")
+
+
+@login_required
+@admin_required
+def review_pathway(request, pathway):
+    info = PATHWAY_INFO.get(pathway)
+    if info is None:
+        messages.error(request, "That review pathway doesn't exist.")
+        return redirect("admin_dashboard:applications")
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in oversight.STATUS_TABS:
+        active_tab = "all"
+
+    base_qs = _review_pathway_queryset(pathway)
+    counts = oversight.status_counts(base_qs)
+
+    pathway_applications = list(base_qs)
+    for application in pathway_applications:
+        application.tab = oversight.STATUS_TO_TAB.get(application.status, "all")
+
+    return render(request, "dashboards/admin/review-pathway.html", {
+        "pathway": pathway,
+        "info": info,
+        "fee": fees.fee_for(pathway),
+        "currency": fees.CURRENCY,
+        "all_applications": pathway_applications,
         "counts": counts,
         "active_tab": active_tab,
     })
@@ -946,6 +1030,393 @@ def board_committee(request):
         "counts": counts,
         "active_tab": active_tab,
         "groups": GovernanceMember.Group.choices,
+    })
+
+
+# ---------------------------------------------------------------------
+# Committee -- Overview, Membership/Appointments, Terms & Expiry,
+# Training and Conflict Records. All four read/write the governance
+# tables added alongside GovernanceMember (pages.models): one
+# appointment/training/conflict history per Board or Committee member.
+# Membership/Appointments and Terms & Expiry are two views onto the same
+# CommitteeAppointment table -- one for "who holds what seat", the other
+# sorted/filtered by how soon a term runs out.
+# ---------------------------------------------------------------------
+
+def _active_governance_members():
+    return list(GovernanceMember.objects.filter(is_active=True).order_by("group", "display_order", "full_name"))
+
+
+@login_required
+@admin_required
+def committee_overview(request):
+    members = list(GovernanceMember.objects.all())
+    appointments = list(CommitteeAppointment.objects.select_related("member").all())
+    training_records = list(TrainingRecord.objects.select_related("member").all())
+    conflicts = list(ConflictDeclaration.objects.select_related("member").all())
+
+    counts = {
+        "members": sum(1 for m in members if m.is_active),
+        "board": sum(1 for m in members if m.is_active and m.group == GovernanceMember.Group.BOARD),
+        "committee": sum(1 for m in members if m.is_active and m.group == GovernanceMember.Group.COMMITTEE),
+        "secretariat": sum(1 for m in members if m.is_active and m.group == GovernanceMember.Group.SECRETARIAT),
+        "appointments_expiring": sum(1 for a in appointments if a.expiry_state == "expiring"),
+        "appointments_expired": sum(1 for a in appointments if a.expiry_state == "expired"),
+        "training_expiring": sum(1 for t in training_records if t.expiry_state == "expiring"),
+        "training_expired": sum(1 for t in training_records if t.expiry_state == "expired"),
+        "conflicts_open": sum(1 for c in conflicts if c.status in (ConflictDeclaration.Status.PENDING, ConflictDeclaration.Status.REVIEWED)),
+    }
+
+    upcoming_expiries = sorted(
+        (a for a in appointments if a.expiry_state in ("expiring", "expired")),
+        key=lambda a: (a.end_date is None, a.end_date),
+    )[:6]
+    upcoming_training = sorted(
+        (t for t in training_records if t.expiry_state in ("expiring", "expired")),
+        key=lambda t: (t.expiry_date is None, t.expiry_date),
+    )[:6]
+    recent_conflicts = sorted(conflicts, key=lambda c: c.date_declared, reverse=True)[:6]
+
+    return render(request, "dashboards/admin/committee/overview.html", {
+        "counts": counts,
+        "upcoming_expiries": upcoming_expiries,
+        "upcoming_training": upcoming_training,
+        "recent_conflicts": recent_conflicts,
+    })
+
+
+def _handle_appointment_add(request):
+    member = get_object_or_404(GovernanceMember, pk=request.POST.get("member_id"))
+    seat_title = request.POST.get("seat_title", "").strip()
+    start_date = request.POST.get("start_date", "").strip()
+
+    if not seat_title or not start_date:
+        messages.error(request, "Seat / title and start date are required.")
+        return
+
+    appointment = CommitteeAppointment.objects.create(
+        member=member,
+        seat_title=seat_title,
+        appointed_by=request.POST.get("appointed_by", "").strip(),
+        start_date=start_date,
+        end_date=request.POST.get("end_date") or None,
+        status=request.POST.get("status") or CommitteeAppointment.Status.ACTIVE,
+        notes=request.POST.get("notes", "").strip(),
+    )
+
+    letter = request.FILES.get("letter")
+    if letter:
+        object_path = documents_storage.upload_document(letter, folder=f"appointments/{appointment.pk}")
+        if object_path:
+            appointment.letter_path = object_path
+            appointment.save(update_fields=["letter_path"])
+        else:
+            messages.warning(request, "The appointment was saved, but the letter couldn't be uploaded right now.")
+
+    messages.success(request, f"Appointment recorded for {member.full_name}.")
+
+
+def _handle_appointment_edit(request, appointment):
+    seat_title = request.POST.get("seat_title", "").strip()
+    start_date = request.POST.get("start_date", "").strip()
+
+    if not seat_title or not start_date:
+        messages.error(request, "Seat / title and start date are required.")
+        return
+
+    appointment.seat_title = seat_title
+    appointment.appointed_by = request.POST.get("appointed_by", "").strip()
+    appointment.start_date = start_date
+    appointment.end_date = request.POST.get("end_date") or None
+    appointment.status = request.POST.get("status") or CommitteeAppointment.Status.ACTIVE
+    appointment.notes = request.POST.get("notes", "").strip()
+
+    letter = request.FILES.get("letter")
+    if letter:
+        old_path = appointment.letter_path
+        object_path = documents_storage.upload_document(letter, folder=f"appointments/{appointment.pk}")
+        if object_path:
+            appointment.letter_path = object_path
+            if old_path and old_path != object_path:
+                documents_storage.delete_object(old_path)
+        else:
+            messages.warning(request, "The new letter couldn't be uploaded right now -- everything else was saved.")
+
+    appointment.save()
+    messages.success(request, "Appointment updated.")
+
+
+APPOINTMENT_TABS = {"all", "active", "renewed", "expired", "terminated"}
+
+
+@login_required
+@admin_required
+def membership_appointments(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+        tab = request.POST.get("tab", "all")
+
+        if action == "add":
+            _handle_appointment_add(request)
+        else:
+            appointment = get_object_or_404(CommitteeAppointment, pk=request.POST.get("appointment_id", ""))
+            if action == "edit":
+                _handle_appointment_edit(request, appointment)
+            elif action == "delete":
+                if appointment.letter_path:
+                    documents_storage.delete_object(appointment.letter_path)
+                name = appointment.member.full_name
+                appointment.delete()
+                messages.success(request, f"Appointment record for {name} removed.")
+            else:
+                messages.error(request, "That request could not be processed.")
+        return redirect(f"{request.path}?tab={tab}")
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in APPOINTMENT_TABS:
+        active_tab = "all"
+
+    appointments = list(CommitteeAppointment.objects.select_related("member").all())
+    for appointment in appointments:
+        appointment.letter_url = documents_storage.public_url(appointment.letter_path)
+
+    counts = {"all": len(appointments)}
+    for value, _label in CommitteeAppointment.Status.choices:
+        counts[value] = sum(1 for a in appointments if a.status == value)
+
+    return render(request, "dashboards/admin/committee/appointments.html", {
+        "appointments": appointments,
+        "counts": counts,
+        "active_tab": active_tab,
+        "members": _active_governance_members(),
+        "statuses": CommitteeAppointment.Status.choices,
+    })
+
+
+EXPIRY_TABS = {"all", "expiring", "expired", "ongoing"}
+
+
+@login_required
+@admin_required
+def terms_expiry(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+        tab = request.POST.get("tab", "all")
+        appointment = get_object_or_404(CommitteeAppointment, pk=request.POST.get("appointment_id", ""))
+
+        if action == "edit":
+            _handle_appointment_edit(request, appointment)
+        else:
+            messages.error(request, "That request could not be processed.")
+        return redirect(f"{request.path}?tab={tab}")
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in EXPIRY_TABS:
+        active_tab = "all"
+
+    appointments = list(CommitteeAppointment.objects.select_related("member").all())
+    appointments.sort(key=lambda a: (a.end_date is None, a.end_date))
+
+    counts = {
+        "all": len(appointments),
+        "expiring": sum(1 for a in appointments if a.expiry_state == "expiring"),
+        "expired": sum(1 for a in appointments if a.expiry_state == "expired"),
+        "ongoing": sum(1 for a in appointments if a.expiry_state in ("ongoing", "current")),
+    }
+
+    return render(request, "dashboards/admin/committee/terms-expiry.html", {
+        "appointments": appointments,
+        "counts": counts,
+        "active_tab": active_tab,
+        "statuses": CommitteeAppointment.Status.choices,
+    })
+
+
+def _handle_training_add(request):
+    member = get_object_or_404(GovernanceMember, pk=request.POST.get("member_id"))
+    course_title = request.POST.get("course_title", "").strip()
+
+    if not course_title:
+        messages.error(request, "Course / training title is required.")
+        return
+
+    record = TrainingRecord.objects.create(
+        member=member,
+        course_title=course_title,
+        provider=request.POST.get("provider", "").strip(),
+        completed_date=request.POST.get("completed_date") or None,
+        expiry_date=request.POST.get("expiry_date") or None,
+        notes=request.POST.get("notes", "").strip(),
+    )
+
+    certificate = request.FILES.get("certificate")
+    if certificate:
+        object_path = documents_storage.upload_document(certificate, folder=f"training/{record.pk}")
+        if object_path:
+            record.certificate_path = object_path
+            record.save(update_fields=["certificate_path"])
+        else:
+            messages.warning(request, "The record was saved, but the certificate couldn't be uploaded right now.")
+
+    messages.success(request, f"Training record added for {member.full_name}.")
+
+
+def _handle_training_edit(request, record):
+    course_title = request.POST.get("course_title", "").strip()
+    if not course_title:
+        messages.error(request, "Course / training title is required.")
+        return
+
+    record.course_title = course_title
+    record.provider = request.POST.get("provider", "").strip()
+    record.completed_date = request.POST.get("completed_date") or None
+    record.expiry_date = request.POST.get("expiry_date") or None
+    record.notes = request.POST.get("notes", "").strip()
+
+    certificate = request.FILES.get("certificate")
+    if certificate:
+        old_path = record.certificate_path
+        object_path = documents_storage.upload_document(certificate, folder=f"training/{record.pk}")
+        if object_path:
+            record.certificate_path = object_path
+            if old_path and old_path != object_path:
+                documents_storage.delete_object(old_path)
+        else:
+            messages.warning(request, "The new certificate couldn't be uploaded right now -- everything else was saved.")
+
+    record.save()
+    messages.success(request, "Training record updated.")
+
+
+TRAINING_TABS = {"all", "current", "expiring", "expired", "ongoing"}
+
+
+@login_required
+@admin_required
+def training(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+        tab = request.POST.get("tab", "all")
+
+        if action == "add":
+            _handle_training_add(request)
+        else:
+            record = get_object_or_404(TrainingRecord, pk=request.POST.get("record_id", ""))
+            if action == "edit":
+                _handle_training_edit(request, record)
+            elif action == "delete":
+                if record.certificate_path:
+                    documents_storage.delete_object(record.certificate_path)
+                name = record.member.full_name
+                record.delete()
+                messages.success(request, f"Training record for {name} removed.")
+            else:
+                messages.error(request, "That request could not be processed.")
+        return redirect(f"{request.path}?tab={tab}")
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in TRAINING_TABS:
+        active_tab = "all"
+
+    records = list(TrainingRecord.objects.select_related("member").all())
+    for record in records:
+        record.certificate_url = documents_storage.public_url(record.certificate_path)
+
+    counts = {
+        "all": len(records),
+        "current": sum(1 for r in records if r.expiry_state == "current"),
+        "expiring": sum(1 for r in records if r.expiry_state == "expiring"),
+        "expired": sum(1 for r in records if r.expiry_state == "expired"),
+        "ongoing": sum(1 for r in records if r.expiry_state == "ongoing"),
+    }
+
+    return render(request, "dashboards/admin/committee/training.html", {
+        "records": records,
+        "counts": counts,
+        "active_tab": active_tab,
+        "members": _active_governance_members(),
+    })
+
+
+def _handle_conflict_add(request):
+    member = get_object_or_404(GovernanceMember, pk=request.POST.get("member_id"))
+    description = request.POST.get("description", "").strip()
+
+    if not description:
+        messages.error(request, "A description of the conflict is required.")
+        return
+
+    ConflictDeclaration.objects.create(
+        member=member,
+        related_to=request.POST.get("related_to", "").strip(),
+        date_declared=request.POST.get("date_declared") or timezone.now().date(),
+        description=description,
+        status=request.POST.get("status") or ConflictDeclaration.Status.PENDING,
+        recorded_by=request.user,
+    )
+    messages.success(request, f"Conflict of interest record added for {member.full_name}.")
+
+
+def _handle_conflict_edit(request, record):
+    description = request.POST.get("description", "").strip()
+    if not description:
+        messages.error(request, "A description of the conflict is required.")
+        return
+
+    new_status = request.POST.get("status") or ConflictDeclaration.Status.PENDING
+    record.related_to = request.POST.get("related_to", "").strip()
+    record.date_declared = request.POST.get("date_declared") or record.date_declared
+    record.description = description
+    record.resolution_notes = request.POST.get("resolution_notes", "").strip()
+
+    if new_status in (ConflictDeclaration.Status.RESOLVED, ConflictDeclaration.Status.RECUSED) and record.status != new_status:
+        record.resolved_at = timezone.now()
+    record.status = new_status
+
+    record.save()
+    messages.success(request, "Conflict of interest record updated.")
+
+
+CONFLICT_TABS = {"all", "pending", "reviewed", "recused", "resolved"}
+
+
+@login_required
+@admin_required
+def conflict_records(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+        tab = request.POST.get("tab", "all")
+
+        if action == "add":
+            _handle_conflict_add(request)
+        else:
+            record = get_object_or_404(ConflictDeclaration, pk=request.POST.get("record_id", ""))
+            if action == "edit":
+                _handle_conflict_edit(request, record)
+            elif action == "delete":
+                name = record.member.full_name
+                record.delete()
+                messages.success(request, f"Conflict of interest record for {name} removed.")
+            else:
+                messages.error(request, "That request could not be processed.")
+        return redirect(f"{request.path}?tab={tab}")
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in CONFLICT_TABS:
+        active_tab = "all"
+
+    records = list(ConflictDeclaration.objects.select_related("member").all())
+
+    counts = {"all": len(records)}
+    for value, _label in ConflictDeclaration.Status.choices:
+        counts[value] = sum(1 for r in records if r.status == value)
+
+    return render(request, "dashboards/admin/committee/conflict-records.html", {
+        "records": records,
+        "counts": counts,
+        "active_tab": active_tab,
+        "members": _active_governance_members(),
+        "statuses": ConflictDeclaration.Status.choices,
     })
 
 

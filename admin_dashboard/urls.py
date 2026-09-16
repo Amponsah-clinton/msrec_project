@@ -12,6 +12,7 @@ urlpatterns = [
     path("inquiries/", views.inquiries, name="inquiries"),
     path("applications/", views.applications, name="applications"),
     path("applications/counts/", views.applications_counts, name="applications_counts"),
+    path("applications/pathway/<str:pathway>/", views.review_pathway, name="review_pathway"),
     path("applications/<int:pk>/", views.application_detail, name="application_detail"),
     path("finance/", views.finance, name="finance"),
     # Broader than admin_required (secretariat included, not just
@@ -30,5 +31,10 @@ urlpatterns = [
     path("profile-security/", views.profile_security, name="profile_security"),
     path("help-support/", views.help_support, name="help_support"),
     path("board-committee/", views.board_committee, name="board_committee"),
+    path("committee/", views.committee_overview, name="committee_overview"),
+    path("committee/appointments/", views.membership_appointments, name="membership_appointments"),
+    path("committee/terms-expiry/", views.terms_expiry, name="terms_expiry"),
+    path("committee/training/", views.training, name="committee_training"),
+    path("committee/conflict-records/", views.conflict_records, name="conflict_records"),
     path("settings/", views.site_settings, name="settings"),
 ]
