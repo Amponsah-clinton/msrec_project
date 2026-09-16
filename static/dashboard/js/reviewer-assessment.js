@@ -31,9 +31,7 @@
   checklistInputs.forEach(function (input) { input.addEventListener("change", syncProgress); });
   syncProgress();
 
-  form.addEventListener("submit", function (event) {
-    if (!confirm("Submit this assessment? Once submitted it can't be edited, and the Secretariat will be notified immediately.")) {
-      event.preventDefault();
-    }
-  });
+  // Submit confirmation is handled by the shared confirm-modal in
+  // script.js via this form's data-confirm attribute -- no native
+  // window.confirm() here.
 })();

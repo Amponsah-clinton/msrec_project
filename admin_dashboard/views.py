@@ -24,8 +24,9 @@ from applicant_dashboard import oversight
 from applicant_dashboard import storage as application_storage
 from applicant_dashboard.models import Application
 from notifications.emails import send_branded_email
+from pages import documents_storage
 from pages import storage as pages_storage
-from pages.models import GovernanceMember, Inquiry, SiteSettings
+from pages.models import CommitteeMeeting, GovernanceMember, Inquiry, MeetingDocument, PolicyDocument, SiteSettings
 from payments import fees
 from payments import services as payment_services
 from reviewer_dashboard import storage as reviewer_storage
@@ -1039,6 +1040,145 @@ def _handle_settings_paystack(request, site):
     messages.success(request, "Payment gateway settings updated.")
 
 
+def _parse_local_datetime(value):
+    """Parses an <input type="datetime-local"> value into a timezone-aware
+    datetime -- that input has no timezone of its own, so naive-vs-aware
+    is resolved once, here, the same idea as
+    secretariat_dashboard.views.parse_datetime_local."""
+    if not value:
+        return None
+    parsed = parse_datetime(value)
+    if parsed is None:
+        return None
+    return timezone.make_aware(parsed) if timezone.is_naive(parsed) else parsed
+
+
+def _handle_settings_add_meeting(request, site):
+    title = request.POST.get("meeting_title", "").strip()
+    scheduled_at = _parse_local_datetime(request.POST.get("meeting_scheduled_at"))
+    if not title or not scheduled_at:
+        messages.error(request, "A meeting needs at least a title and a date/time.")
+        return
+
+    CommitteeMeeting.objects.create(
+        title=title,
+        scheduled_at=scheduled_at,
+        location=request.POST.get("meeting_location", "").strip(),
+        meeting_link=request.POST.get("meeting_link", "").strip(),
+        agenda=request.POST.get("meeting_agenda", "").strip(),
+    )
+    messages.success(request, f'"{title}" was added to the meetings calendar.')
+
+
+def _handle_settings_delete_meeting(request, site):
+    meeting = get_object_or_404(CommitteeMeeting, pk=request.POST.get("meeting_id"))
+    for doc in meeting.documents.all():
+        if doc.file_path:
+            documents_storage.delete_object(doc.file_path)
+    title = meeting.title
+    meeting.delete()
+    messages.success(request, f'"{title}" and its documents were deleted.')
+
+
+def _handle_settings_add_meeting_document(request, site):
+    meeting = get_object_or_404(CommitteeMeeting, pk=request.POST.get("meeting_id"))
+    title = request.POST.get("document_title", "").strip()
+    doc_type = request.POST.get("doc_type", MeetingDocument.DocType.OTHER)
+    upload = request.FILES.get("document_file")
+
+    if not title:
+        messages.error(request, "Give the document a title.")
+        return
+    if doc_type not in MeetingDocument.DocType.values:
+        doc_type = MeetingDocument.DocType.OTHER
+
+    document = MeetingDocument.objects.create(meeting=meeting, title=title, doc_type=doc_type)
+    if upload:
+        object_path = documents_storage.upload_document(upload, folder=f"meetings/{meeting.pk}")
+        if object_path:
+            document.file_path = object_path
+            document.file_size = upload.size
+            document.save(update_fields=["file_path", "file_size"])
+        else:
+            messages.warning(request, f'"{title}" was saved, but the file upload failed -- try again from here.')
+    messages.success(request, f'"{title}" was added to {meeting.title}.')
+
+
+def _handle_settings_delete_meeting_document(request, site):
+    document = get_object_or_404(MeetingDocument, pk=request.POST.get("document_id"))
+    if document.file_path:
+        documents_storage.delete_object(document.file_path)
+    title = document.title
+    document.delete()
+    messages.success(request, f'"{title}" was deleted.')
+
+
+def _handle_settings_add_policy_document(request, site):
+    category = request.POST.get("category", "")
+    title = request.POST.get("policy_title", "").strip()
+    upload = request.FILES.get("policy_file")
+
+    if category not in PolicyDocument.Category.values:
+        messages.error(request, "Choose a valid category.")
+        return
+    if not title:
+        messages.error(request, "Give the document a title.")
+        return
+
+    document = PolicyDocument.objects.create(
+        category=category,
+        title=title,
+        description=request.POST.get("policy_description", "").strip(),
+        version=request.POST.get("policy_version", "").strip(),
+        display_order=request.POST.get("policy_display_order") or 0,
+    )
+    if upload:
+        object_path = documents_storage.upload_document(upload, folder=f"policies/{document.pk}")
+        if object_path:
+            document.file_path = object_path
+            document.file_size = upload.size
+            document.save(update_fields=["file_path", "file_size"])
+        else:
+            messages.warning(request, f'"{title}" was saved, but the file upload failed -- try again from here.')
+    messages.success(request, f'"{title}" was added to {document.get_category_display()}.')
+
+
+def _handle_settings_edit_policy_document(request, site):
+    document = get_object_or_404(PolicyDocument, pk=request.POST.get("document_id"))
+    title = request.POST.get("policy_title", "").strip()
+    if not title:
+        messages.error(request, "Give the document a title.")
+        return
+
+    document.title = title
+    document.description = request.POST.get("policy_description", "").strip()
+    document.version = request.POST.get("policy_version", "").strip()
+    document.display_order = request.POST.get("policy_display_order") or 0
+
+    upload = request.FILES.get("policy_file")
+    if upload:
+        old_path = document.file_path
+        object_path = documents_storage.upload_document(upload, folder=f"policies/{document.pk}")
+        if object_path:
+            document.file_path = object_path
+            document.file_size = upload.size
+            if old_path and old_path != object_path:
+                documents_storage.delete_object(old_path)
+        else:
+            messages.warning(request, "Details saved, but the replacement file upload failed -- try again.")
+    document.save()
+    messages.success(request, f'"{title}" was updated.')
+
+
+def _handle_settings_delete_policy_document(request, site):
+    document = get_object_or_404(PolicyDocument, pk=request.POST.get("document_id"))
+    if document.file_path:
+        documents_storage.delete_object(document.file_path)
+    title = document.title
+    document.delete()
+    messages.success(request, f'"{title}" was deleted.')
+
+
 @login_required
 @admin_required
 def site_settings(request):
@@ -1050,12 +1190,39 @@ def site_settings(request):
             "update_footer": _handle_settings_footer,
             "update_contact": _handle_settings_contact,
             "update_paystack": _handle_settings_paystack,
+            "add_meeting": _handle_settings_add_meeting,
+            "delete_meeting": _handle_settings_delete_meeting,
+            "add_meeting_document": _handle_settings_add_meeting_document,
+            "delete_meeting_document": _handle_settings_delete_meeting_document,
+            "add_policy_document": _handle_settings_add_policy_document,
+            "edit_policy_document": _handle_settings_edit_policy_document,
+            "delete_policy_document": _handle_settings_delete_policy_document,
         }.get(request.POST.get("action"))
         if handler:
             handler(request, site)
         else:
             messages.error(request, "That request could not be processed.")
         return redirect("admin_dashboard:settings")
+
+    meetings = list(
+        CommitteeMeeting.objects.prefetch_related("documents").order_by("-scheduled_at")
+    )
+    for meeting in meetings:
+        for doc in meeting.documents.all():
+            doc.download_url = documents_storage.public_url(doc.file_path)
+
+    policy_documents = list(PolicyDocument.objects.all())
+    for doc in policy_documents:
+        doc.download_url = documents_storage.public_url(doc.file_path)
+    policy_groups = [
+        (value, label, [doc for doc in policy_documents if doc.category == value])
+        for value, label in PolicyDocument.Category.choices
+    ]
+
+    editing_policy = None
+    edit_policy_id = request.GET.get("edit_policy")
+    if edit_policy_id:
+        editing_policy = get_object_or_404(PolicyDocument, pk=edit_policy_id)
 
     return render(request, "dashboards/admin/settings.html", {
         "site": site,
@@ -1064,4 +1231,9 @@ def site_settings(request):
         "using_env_public_key": not site.paystack_public_key,
         "using_env_secret_key": not site.paystack_secret_key,
         "env_paystack_public_key": django_settings.PAYSTACK_PUBLIC_KEY,
+        "meetings": meetings,
+        "meeting_doc_types": MeetingDocument.DocType.choices,
+        "policy_categories": PolicyDocument.Category.choices,
+        "policy_groups": policy_groups,
+        "editing_policy": editing_policy,
     })

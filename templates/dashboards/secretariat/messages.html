@@ -106,11 +106,11 @@
         </button>
         <div class="nav-subnav">
           <a href="{% url 'secretariat_dashboard:messages' %}" class="nav-sublink active">Applicant Messages</a>
-          <a href="#" class="nav-sublink">Reviewer Messages</a>
-          <a href="#" class="nav-sublink">Email Templates</a>
-          <a href="#" class="nav-sublink">Notifications</a>
-          <a href="#" class="nav-sublink">Announcements</a>
-          <a href="#" class="nav-sublink">Reminders</a>
+          <a href="{% url 'secretariat_dashboard:reviewer_messages' %}" class="nav-sublink">Reviewer Messages</a>
+          <a href="{% url 'secretariat_dashboard:email_templates' %}" class="nav-sublink">Email Templates</a>
+          <a href="{% url 'secretariat_dashboard:notifications_page' %}" class="nav-sublink">Notifications</a>
+          <a href="{% url 'secretariat_dashboard:announcements' %}" class="nav-sublink">Announcements</a>
+          <a href="{% url 'secretariat_dashboard:reminders' %}" class="nav-sublink">Reminders</a>
         </div>
       </div>
 
@@ -129,22 +129,10 @@
         </div>
       </div>
 
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span>
-          <span>Reports &amp; Analytics</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Application Statistics</a>
-          <a href="#" class="nav-sublink">Status Reports</a>
-          <a href="#" class="nav-sublink">Turnaround Times</a>
-          <a href="#" class="nav-sublink">Reviewer Workload</a>
-          <a href="#" class="nav-sublink">Committee Activity</a>
-          <a href="#" class="nav-sublink">Post-Approval Compliance</a>
-          <a href="#" class="nav-sublink">Financial Reports</a>
-        </div>
-      </div>
+      <a href="{% url 'secretariat_dashboard:reports' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span>
+        <span>Reports &amp; Analytics</span>
+      </a>
 
       <div class="nav-group">
         <button type="button" class="nav-group-toggle" aria-expanded="false">

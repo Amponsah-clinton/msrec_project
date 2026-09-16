@@ -1,0 +1,180 @@
+/* ---------------------------------------------------------------------
+   Reports & Analytics -- a single page, seven tabs, no page reloads.
+   Everything below is server-rendered (real Application/Payment/
+   ReviewAssignment/RoleApprovalLog data) -- these are plain CSS bar/
+   column charts, not a JS charting library, so they stay legible and
+   themeable (light/dark) with zero extra dependencies.
+--------------------------------------------------------------------- */
+
+.reports-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 5px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  box-shadow: var(--shadow);
+}
+.reports-tabs::-webkit-scrollbar { display: none; }
+
+.report-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-sub);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 10px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.report-tab svg { width: 15px; height: 15px; flex-shrink: 0; }
+.report-tab:hover { background: var(--hover-bg); color: var(--text-main); }
+.report-tab.active { background: var(--teal); color: #fff; box-shadow: 0 2px 8px rgba(21, 154, 150, 0.28); }
+
+.report-section { animation: reportFadeIn 0.18s ease; }
+.report-section[hidden] { display: none; }
+@keyframes reportFadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.report-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.report-head h2 { margin: 0 0 4px; font-size: 16px; font-weight: 700; color: var(--text-main); }
+.report-head p { margin: 0; font-size: 12.5px; color: var(--text-sub); max-width: 62ch; line-height: 1.6; }
+
+/* ---------------- Horizontal breakdown bars (status/type distribution) ---------------- */
+
+.bar-list { display: flex; flex-direction: column; gap: 14px; }
+.bar-row-label {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 12.5px;
+}
+.bar-row-label strong { font-weight: 600; color: var(--text-main); }
+.bar-row-label span { color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.bar-track {
+  height: 9px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.bar-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+.bar-fill.blue { background: var(--blue); }
+.bar-fill.purple { background: var(--purple); }
+.bar-fill.orange { background: var(--orange); }
+.bar-fill.green { background: var(--green); }
+.bar-fill.red { background: var(--red); }
+.bar-fill.teal { background: var(--teal); }
+.bar-fill.gray { background: var(--gray); }
+
+/* ---------------- Monthly trend column chart ---------------- */
+
+.column-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  height: 160px;
+  padding: 10px 6px 0;
+  border-bottom: 1px solid var(--border);
+}
+.column-chart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 100%;
+  min-width: 0;
+}
+.column-chart-bar-wrap {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  justify-content: center;
+}
+.column-chart-bar {
+  width: 60%;
+  max-width: 34px;
+  min-height: 3px;
+  border-radius: 5px 5px 2px 2px;
+  background: var(--teal);
+  position: relative;
+  transition: height 0.4s ease;
+}
+.column-chart-bar[data-empty="true"] { background: var(--border); }
+.column-chart-value {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  white-space: nowrap;
+}
+.column-chart-label {
+  margin-top: 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* ---------------- Compliance placeholder cards (no data source yet) ---------------- */
+
+.compliance-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 14px;
+}
+.compliance-card {
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  text-align: center;
+  background: var(--bg);
+}
+.compliance-card .stat-icon { margin: 0 auto 10px; }
+.compliance-card h4 { margin: 0 0 4px; font-size: 12.5px; font-weight: 700; color: var(--text-main); }
+.compliance-card p { margin: 0; font-size: 11px; color: var(--text-faint); line-height: 1.5; }
+.compliance-card .value { font-size: 22px; font-weight: 800; color: var(--text-faint); margin: 4px 0; }
+
+.report-note {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  background: var(--blue-light);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-top: 16px;
+}
+.report-note svg { width: 16px; height: 16px; color: var(--blue); flex-shrink: 0; margin-top: 1px; }
+.report-note p { margin: 0; font-size: 12px; color: var(--text-main); line-height: 1.6; }
+
+/* ---------------- Ranked table (reviewer workload / committee activity) ---------------- */
+
+.rank-cell { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; background: var(--bg); border: 1px solid var(--border); font-size: 11px; font-weight: 700; color: var(--text-sub); }
+
+@media (max-width: 720px) {
+  .column-chart { gap: 6px; }
+  .column-chart-label { font-size: 9px; }
+}

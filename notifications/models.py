@@ -11,7 +11,12 @@ class Notification(models.Model):
     """
 
     class Audience(models.TextChoices):
+        APPLICANT = "applicant", "Applicant"
+        REVIEWER = "reviewer", "Reviewer"
+        COMMITTEE = "committee", "Committee Member"
+        CHAIR = "chair", "Chair"
         SECRETARIAT = "secretariat", "Secretariat"
+        ADMIN = "admin", "Administrator"
 
     class Icon(models.TextChoices):
         INFO = "info", "Info"

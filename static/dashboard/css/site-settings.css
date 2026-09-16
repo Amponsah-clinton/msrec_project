@@ -70,3 +70,100 @@
 @media (max-width: 560px) {
   .settings-logo-row { flex-direction: column; align-items: flex-start; }
 }
+
+/* ---------------- Meetings & Documents / Policy Library ----------------
+   Full-width panels below the two-column settings-grid -- each holds an
+   "add" form (the same .field-grid vocabulary as everything else on this
+   page) plus a plain, flat list of existing records. Deliberately no
+   card gradients/shadows beyond the shared .panel -- this is a back-
+   office data-entry screen, not a marketing surface. */
+
+.settings-full-panel { margin-top: 20px; padding: 24px 26px; }
+
+.doc-manager-list { display: flex; flex-direction: column; gap: 14px; margin-top: 20px; }
+
+.doc-record-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  background: var(--bg);
+}
+.doc-record-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.doc-record-title h4 { margin: 0 0 3px; font-size: 13.5px; font-weight: 700; color: var(--text-main); }
+.doc-record-title span { font-size: 12px; color: var(--text-sub); }
+
+.doc-file-list { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.doc-file-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+}
+.doc-file-name { flex: 1; font-weight: 600; color: var(--text-main); }
+.doc-file-list a.download-link { color: var(--teal); font-weight: 600; text-decoration: none; }
+.doc-file-list a.download-link:hover { text-decoration: underline; }
+.doc-file-empty { font-size: 12px; color: var(--text-faint); margin: 0 0 12px; }
+
+.doc-inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.doc-inline-form select,
+.doc-inline-form input[type="text"],
+.doc-inline-form input[type="file"] {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 7px 10px;
+  font-size: 12.5px;
+  font-family: inherit;
+  background: var(--white);
+  color: var(--text-main);
+}
+.doc-inline-form input[type="text"] { flex: 1; min-width: 160px; }
+.doc-inline-form input[type="file"] { flex: 1; min-width: 180px; }
+
+.policy-group { margin-top: 22px; }
+.policy-group:first-of-type { margin-top: 24px; }
+.policy-group-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.policy-group-heading .count { font-size: 11px; font-weight: 700; color: var(--text-faint); text-transform: none; letter-spacing: normal; }
+
+.policy-doc-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.policy-doc-info { flex: 1; min-width: 200px; }
+.policy-doc-info strong { display: block; font-size: 13px; color: var(--text-main); }
+.policy-doc-info span { font-size: 11.5px; color: var(--text-sub); }
+.policy-doc-actions { display: flex; gap: 6px; flex-shrink: 0; }

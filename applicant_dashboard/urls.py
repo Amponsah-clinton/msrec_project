@@ -169,7 +169,7 @@ _urlpatterns = [
     ),
     path(
         "research-team/",
-        TemplateView.as_view(template_name="dashboards/applicant/research-team.html"),
+        views.research_team,
         name="research_team",
     ),
     path(
@@ -196,3 +196,14 @@ _urlpatterns = [
 urlpatterns = _urlpatterns
 for _pattern in urlpatterns:
     _pattern.callback = login_required(_pattern.callback)
+
+# Deliberately outside the login_required loop above: the link in a team
+# invite email is opened by the invitee, who has no MSREC account to log
+# into -- see views.team_invite_accept().
+urlpatterns.append(
+    path(
+        "research-team/invite/<str:token>/accept/",
+        views.team_invite_accept,
+        name="team_invite_accept",
+    )
+)

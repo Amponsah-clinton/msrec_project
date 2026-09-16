@@ -1,12 +1,77 @@
 /* ==========================================================
    MSREC Reviewer — Ethical Review Assessment Form
-   Same flat, token-driven language as application-form.css /
-   reviewer-assignment.css: solid colour + a thin border, one accent
-   (teal), no gradients. Reuses .chip-checkbox from application-form.css
-   for every radio/checkbox row so this reads as one product, not a
-   form bolted onto the review page.
+   Same flat, token-driven language as the rest of the dashboard (solid
+   colour + a thin border, one accent per section, no gradients) but with
+   real component states: every selectable option here actually shows
+   what's selected (colour fill + accent-color radios/checkboxes), instead
+   of relying on the browser's bare default control.
 ========================================================== */
 
+/* ---------------- Section header icon badge -----------------
+   Same "colour-tinted circle behind an icon" language as .stat-icon on
+   the dashboard's summary cards -- gives each section its own identity
+   at a glance instead of every heading looking the same. */
+.form-section-title { gap: 12px; }
+.form-section-title .section-icon-badge {
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.form-section-title .section-icon-badge svg { width: 16px; height: 16px; }
+.form-section-title .section-icon-badge.blue   { background: var(--blue-light);   color: var(--blue); }
+.form-section-title .section-icon-badge.purple { background: var(--purple-light); color: var(--purple); }
+.form-section-title .section-icon-badge.orange { background: var(--orange-light); color: var(--orange); }
+.form-section-title .section-icon-badge.navy   { background: var(--gray-light);   color: var(--navy); }
+.form-section-title .section-icon-badge.teal   { background: var(--teal-light);   color: var(--teal); }
+.form-section-title .section-icon-badge.green  { background: var(--green-light);  color: var(--green); }
+
+/* ---------------- Application reference header ---------------- */
+.review-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.review-hero-who { display: flex; align-items: center; gap: 14px; }
+.review-hero-avatar {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 15px;
+  background: var(--navy); color: #fff;
+  flex-shrink: 0;
+}
+.review-hero-who h3 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main); }
+.review-hero-who p { margin: 3px 0 0; font-size: 12.5px; color: var(--text-sub); }
+.review-hero-status { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+/* ---------------- "Full Submitted Text": readable key/value list ----------------
+   Replaces a raw dict dump (camelCase keys, Python list reprs) with the
+   humanize_key / pretty_value template filters -- alternating row tint
+   for scanability across ~30 rows, not a plain unbroken wall of text. */
+.review-data-list { display: flex; flex-direction: column; }
+.review-data-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 240px) 1fr;
+  gap: 20px;
+  padding: 11px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+.review-data-row:nth-child(odd) { background: var(--bg); }
+.review-data-row dt { margin: 0; font-weight: 600; color: var(--text-sub); }
+.review-data-row dd { margin: 0; color: var(--text-main); line-height: 1.55; white-space: pre-line; }
+
+/* ---------------- Shared control primitives ----------------
+   Every radio/checkbox on this page routes through here -- selecting an
+   option always repaints the whole chip, not just a tiny native dot, and
+   the input itself still gets a themed accent-color so keyboard/
+   accessibility behaviour stays completely native. */
 .assess-intro {
   display: flex;
   align-items: flex-start;
@@ -22,14 +87,25 @@
 }
 .assess-intro svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; color: var(--teal); stroke: currentColor; fill: none; stroke-width: 2; }
 
+.chip-checkbox input { accent-color: var(--teal); width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+
 /* ---------------- Declaration: COI + confidentiality ---------------- */
 .assess-coi-options {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  max-width: 480px;
+  gap: 8px;
+  max-width: 520px;
 }
-.assess-coi-options .chip-checkbox { padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--white); }
+.assess-coi-options .chip-checkbox {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.assess-coi-options .chip-checkbox:hover { border-color: color-mix(in srgb, var(--teal) 45%, var(--border)); }
 .assess-coi-options .chip-checkbox:has(input:checked) { background: var(--teal-light); border-color: var(--teal); font-weight: 600; }
 
 .assess-coi-details {
@@ -44,36 +120,42 @@
   border-top: 1px dashed var(--border);
 }
 .assess-confidentiality .chip-checkbox {
+  display: flex; align-items: flex-start; gap: 10px;
   max-width: 560px;
-  padding: 11px 13px;
+  padding: 12px 14px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   background: var(--white);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
 }
 .assess-confidentiality .chip-checkbox:has(input:checked) { background: var(--teal-light); border-color: var(--teal); }
 
 /* ---------------- Ethical Review checklist ---------------- */
-.assess-checklist { display: flex; flex-direction: column; }
+.assess-checklist { display: flex; flex-direction: column; gap: 6px; }
 .assess-checklist-row {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 14px 4px;
-  border-bottom: 1px solid var(--border);
+  padding: 14px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  transition: border-color .15s, background .15s;
 }
-.assess-checklist-row:last-child { border-bottom: none; }
+.assess-checklist-row:has(input:checked) { border-color: color-mix(in srgb, var(--teal) 35%, var(--border)); }
 .assess-checklist-num {
   flex-shrink: 0;
-  width: 22px; height: 22px;
-  border-radius: 6px;
+  width: 24px; height: 24px;
+  border-radius: 7px;
   background: var(--bg);
   color: var(--text-faint);
   font-size: 11px;
   font-weight: 700;
   display: inline-flex; align-items: center; justify-content: center;
-  margin-right: 4px;
+  margin-right: 6px;
 }
 .assess-checklist-label {
   flex: 1 1 320px;
@@ -87,23 +169,41 @@
   display: flex;
   gap: 6px;
   flex-shrink: 0;
+  flex-wrap: wrap;
 }
 .assess-checklist-options .chip-checkbox {
-  padding: 7px 12px;
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 13px;
   border-radius: 50px;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   background: var(--white);
   font-size: 12px;
-  gap: 6px;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: border-color .15s, background .15s, color .15s;
 }
-.assess-checklist-options .chip-checkbox input { width: 14px; height: 14px; }
+.assess-checklist-options .chip-checkbox:hover { border-color: color-mix(in srgb, var(--text-sub) 40%, var(--border)); }
+/* Selected state colour depends on which option was picked -- satisfactory
+   reads as "good" (green), needs revision as "attention" (amber), N/A as
+   neutral (grey) -- so a reviewer scanning ten rows sees the shape of
+   their answers at a glance, not just ten identical teal fills. */
+.assess-checklist-options .chip-checkbox:has(input[value="satisfactory"]:checked) {
+  background: var(--green-light); border-color: var(--green); color: var(--green);
+}
+.assess-checklist-options .chip-checkbox:has(input[value="needs_revision"]:checked) {
+  background: var(--orange-light); border-color: var(--orange); color: var(--orange);
+}
+.assess-checklist-options .chip-checkbox:has(input[value="na"]:checked) {
+  background: var(--gray-light); border-color: var(--text-faint); color: var(--text-sub);
+}
 
 .assess-progress {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 14px;
   margin-bottom: 18px;
-  padding: 10px 14px;
+  padding: 14px 16px;
   border-radius: var(--radius-sm);
   background: var(--bg);
   border: 1px solid var(--border);
@@ -113,7 +213,7 @@
 }
 .assess-progress-track {
   flex: 1;
-  height: 6px;
+  height: 8px;
   border-radius: 100px;
   background: var(--border);
   overflow: hidden;
@@ -125,36 +225,52 @@
   width: 0%;
   transition: width .2s;
 }
-.assess-progress-count { flex-shrink: 0; color: var(--text-main); }
+.assess-progress-count { flex-shrink: 0; color: var(--text-main); font-size: 13px; }
 
 /* ---------------- Recommendation ---------------- */
 .assess-recommendation-options {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
   margin-bottom: 16px;
 }
 .assess-recommendation-options .chip-checkbox {
-  padding: 12px 14px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 15px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   background: var(--white);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
 }
-.assess-recommendation-options .chip-checkbox:has(input:checked) {
-  background: var(--teal-light);
-  border-color: var(--teal);
-}
+.assess-recommendation-options .chip-checkbox:hover { border-color: color-mix(in srgb, var(--teal) 40%, var(--border)); }
+.assess-recommendation-options .chip-checkbox:has(input[value="approve"]:checked) { background: var(--green-light); border-color: var(--green); }
+.assess-recommendation-options .chip-checkbox:has(input[value="minor_revisions"]:checked) { background: var(--teal-light); border-color: var(--teal); }
+.assess-recommendation-options .chip-checkbox:has(input[value="major_revisions"]:checked) { background: var(--orange-light); border-color: var(--orange); }
+.assess-recommendation-options .chip-checkbox:has(input[value="refer_committee"]:checked) { background: var(--purple-light); border-color: var(--purple); }
+.assess-recommendation-options .chip-checkbox:has(input[value="not_approved"]:checked) { background: var(--red-light); border-color: var(--red); }
 
-/* ---------------- Submit footer ---------------- */
+/* ---------------- Submit footer ----------------
+   Sticky to the bottom of the viewport -- this form can run to 25+
+   answers, and re-finding a submit button at the very end of a long
+   scroll is exactly the kind of friction a reviewer shouldn't fight. */
 .assess-submit-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 14px;
-  margin-top: 24px;
-  padding-top: 20px;
+  margin: 24px -26px -24px;
+  padding: 18px 26px;
+  background: var(--white);
   border-top: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
 }
 .assess-submit-note {
   font-size: 12px;
@@ -167,6 +283,7 @@
 .assess-summary-banner {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   padding: 14px 16px;
   border-radius: var(--radius-sm);
@@ -177,13 +294,31 @@
 .assess-summary-banner svg { width: 20px; height: 20px; color: var(--green); flex-shrink: 0; }
 .assess-summary-banner strong { display: block; font-size: 13px; color: var(--text-main); }
 .assess-summary-banner span { font-size: 12px; color: var(--text-sub); }
+.assess-summary-banner > div { flex: 1 1 auto; }
+
+.assess-export-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 9px 16px;
+  border-radius: 50px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background .15s;
+}
+.assess-export-btn:hover { background: color-mix(in srgb, var(--navy), black 12%); color: #fff; }
+.assess-export-btn svg { width: 15px; height: 15px; color: #fff; }
 
 .assess-summary-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 2px;
+  padding: 12px 4px;
   border-bottom: 1px solid var(--border);
   font-size: 13px;
 }
@@ -193,4 +328,7 @@
 @media (max-width: 640px) {
   .assess-checklist-row, .assess-summary-row { flex-direction: column; align-items: flex-start; }
   .assess-checklist-options { flex-wrap: wrap; }
+  .review-data-row { grid-template-columns: 1fr; gap: 4px; }
+  .assess-submit-bar { margin: 24px -18px -20px; padding: 16px 18px; flex-direction: column; align-items: stretch; }
+  .assess-submit-bar .btn-primary { justify-content: center; }
 }

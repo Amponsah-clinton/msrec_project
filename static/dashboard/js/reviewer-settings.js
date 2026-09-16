@@ -114,24 +114,71 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // ---------------- Password strength meter ----------------
+  // ---------------- Password strength meter + live requirement checklist ----------------
   const pwInput = document.querySelector("[data-rv-strength-input]");
   const strengthEl = document.querySelector("[data-rv-strength]");
   if (pwInput && strengthEl) {
-    const label = strengthEl.querySelector(".rv-strength-label");
+    const pill = strengthEl.querySelector("[data-rv-strength-pill]");
+    const requirements = strengthEl.querySelectorAll("[data-rv-req]");
     const labels = ["Too short", "Weak", "Fair", "Good", "Strong"];
 
-    pwInput.addEventListener("input", () => {
+    const checks = {
+      length: (val) => val.length >= 8,
+      case: (val) => /[a-z]/.test(val) && /[A-Z]/.test(val),
+      number: (val) => /\d/.test(val),
+      symbol: (val) => /[^A-Za-z0-9]/.test(val),
+    };
+
+    function updateStrength() {
       const val = pwInput.value;
       let score = 0;
-      if (val.length >= 8) score++;
-      if (/[a-z]/.test(val) && /[A-Z]/.test(val)) score++;
-      if (/\d/.test(val)) score++;
-      if (/[^A-Za-z0-9]/.test(val)) score++;
+      requirements.forEach((item) => {
+        const met = checks[item.dataset.rvReq](val);
+        item.classList.toggle("met", met);
+        if (met) score++;
+      });
       if (!val) score = 0;
 
       strengthEl.dataset.score = String(score);
-      label.textContent = val ? labels[score] : "Enter a new password";
+      if (pill) pill.textContent = val ? labels[score] : "Enter a new password";
+    }
+
+    pwInput.addEventListener("input", updateStrength);
+    updateStrength();
+  }
+
+  // ---------------- Confirm-password live match indicator ----------------
+  const confirmInput = document.querySelector("[data-rv-confirm-input]");
+  const matchEl = document.querySelector("[data-rv-match]");
+  if (pwInput && confirmInput && matchEl) {
+    const matchLabel = matchEl.querySelector("span");
+
+    function updateMatch() {
+      if (!confirmInput.value) {
+        matchEl.hidden = true;
+        matchEl.removeAttribute("data-match");
+        return;
+      }
+      const matches = confirmInput.value === pwInput.value;
+      matchEl.hidden = false;
+      matchEl.dataset.match = matches ? "yes" : "no";
+      matchLabel.textContent = matches ? "Passwords match" : "Passwords don't match";
+    }
+
+    pwInput.addEventListener("input", updateMatch);
+    confirmInput.addEventListener("input", updateMatch);
+  }
+
+  // Cancel (type=reset) clears the fields natively -- but the strength
+  // meter/checklist/match hint only listen for "input", so reset them
+  // explicitly once the native reset has run (next tick).
+  const pwForm = pwInput && pwInput.closest("form");
+  if (pwForm) {
+    pwForm.addEventListener("reset", () => {
+      setTimeout(() => {
+        pwInput.dispatchEvent(new Event("input"));
+        if (confirmInput) confirmInput.dispatchEvent(new Event("input"));
+      }, 0);
     });
   }
 

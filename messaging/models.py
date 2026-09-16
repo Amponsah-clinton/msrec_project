@@ -62,3 +62,58 @@ class ConversationRead(models.Model):
 
     def __str__(self):
         return f"{self.user_id} read conversation {self.conversation_id} @ {self.last_read_at}"
+
+
+class ReviewerConversation(models.Model):
+    """The Secretariat's side-channel to one reviewer -- same shape as
+    Conversation above (one row per reviewer, get-or-create), but this
+    side the Secretariat is the one who opens the first line, since a
+    reviewer has no reason to message in before they've been assigned
+    anything. Kept as its own table rather than reusing Conversation so
+    "applicant" never has to become a nullable/generic FK just to also
+    mean "reviewer" -- the two inboxes never mix.
+    """
+
+    reviewer = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reviewer_conversation"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "reviewer_conversations"
+
+    def __str__(self):
+        return f"Reviewer conversation with {self.reviewer.email}"
+
+
+class ReviewerMessage(models.Model):
+    conversation = models.ForeignKey(ReviewerConversation, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sent_reviewer_messages"
+    )
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "reviewer_messages"
+        ordering = ["created_at", "id"]
+
+    def __str__(self):
+        return f"#{self.pk} in reviewer conversation {self.conversation_id}"
+
+
+class ReviewerConversationRead(models.Model):
+    conversation = models.ForeignKey(ReviewerConversation, on_delete=models.CASCADE, related_name="read_marks")
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="reviewer_conversation_reads"
+    )
+    last_read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = "reviewer_conversation_reads"
+        constraints = [
+            models.UniqueConstraint(fields=["conversation", "user"], name="unique_reviewer_conversation_read_per_user")
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} read reviewer conversation {self.conversation_id} @ {self.last_read_at}"

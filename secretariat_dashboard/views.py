@@ -1,17 +1,20 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db.models import Count, Prefetch, Q
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_datetime
 
 from accounts import storage as accounts_storage
 from accounts.models import RoleApprovalLog, User
 from applicant_dashboard import oversight
 from applicant_dashboard import storage as application_storage
 from applicant_dashboard.models import Application
+from communications import services as communications_services
+from communications.emails_preview import render_template_preview
+from communications.models import Announcement, AudienceChoices, EmailTemplate, Reminder
 from messaging.access import is_staff_side
 from notifications import services as notification_services
 from notifications.emails import send_branded_email
@@ -19,7 +22,33 @@ from notifications.models import Notification
 from payments import services as payment_services
 from reviewer_dashboard.models import ReviewAssignment
 
+from . import reports as reports_data
+
 staff_required = user_passes_test(is_staff_side, login_url="pages:login")
+
+
+def parse_datetime_local(value):
+    """Parses an <input type="datetime-local"> value ("YYYY-MM-DDTHH:MM")
+    into a timezone-aware datetime in the server's current timezone --
+    that input has no timezone of its own, so naive-vs-aware is resolved
+    once, here, rather than at every call site."""
+    if not value:
+        return None
+    parsed = parse_datetime(value)
+    if parsed is None:
+        return None
+    return timezone.make_aware(parsed) if timezone.is_naive(parsed) else parsed
+
+
+def parse_date_as_datetime(value, *, end_of_day=False):
+    """Same idea as parse_datetime_local, for the plain <input type="date">
+    fields on Announcements (a start/expiry day, not a specific time)."""
+    day = parse_date(value or "")
+    if day is None:
+        return None
+    naive = timezone.datetime.combine(day, timezone.datetime.max.time() if end_of_day else timezone.datetime.min.time())
+    return timezone.make_aware(naive)
+
 
 REVIEWER_DIRECTORY_TABS = {"all", "available", "limited", "unavailable"}
 REVIEWER_ASSIGNMENT_TABS = {"assign", "pending", "workload"}
@@ -463,4 +492,329 @@ def reviewer_assignment_counts(request):
         "workload": User.objects.filter(
             role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED
         ).count(),
+    })
+
+
+# ---------------------------------------------------------------------
+# Communications -- Email Templates
+# ---------------------------------------------------------------------
+
+EMAIL_TEMPLATE_CATEGORIES = {c for c, _ in EmailTemplate.Category.choices}
+
+
+@login_required
+@staff_required
+def email_templates(request):
+    active_category = request.GET.get("category", "all")
+    templates = EmailTemplate.objects.all()
+    if active_category in EMAIL_TEMPLATE_CATEGORIES:
+        templates = templates.filter(category=active_category)
+
+    editing = None
+    edit_id = request.GET.get("edit")
+    if edit_id and edit_id != "new":
+        editing = get_object_or_404(EmailTemplate, pk=edit_id)
+    compose_open = bool(edit_id)
+
+    return render(request, "dashboards/secretariat/email-templates.html", {
+        "templates": templates.order_by("name"),
+        "categories": EmailTemplate.Category.choices,
+        "active_category": active_category,
+        "placeholders": EmailTemplate.PLACEHOLDERS,
+        "editing": editing,
+        "compose_open": compose_open,
+        "counts": {
+            "all": EmailTemplate.objects.count(),
+            "active": EmailTemplate.objects.filter(is_active=True).count(),
+        },
+    })
+
+
+@login_required
+@staff_required
+def email_template_save(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:email_templates")
+
+    pk = request.POST.get("pk")
+    name = (request.POST.get("name") or "").strip()
+    subject = (request.POST.get("subject") or "").strip()
+    body = (request.POST.get("body") or "").strip()
+    category = request.POST.get("category") or EmailTemplate.Category.GENERAL
+
+    if not name or not subject or not body:
+        messages.error(request, "Name, subject and body are all required.")
+        return redirect(f"{reverse('secretariat_dashboard:email_templates')}?edit={pk or 'new'}")
+
+    if category not in EMAIL_TEMPLATE_CATEGORIES:
+        category = EmailTemplate.Category.GENERAL
+
+    if pk:
+        template = get_object_or_404(EmailTemplate, pk=pk)
+        template.name, template.subject, template.body, template.category = name, subject, body, category
+        template.is_active = bool(request.POST.get("is_active"))
+        template.save()
+        messages.success(request, f'"{template.name}" was updated.')
+    else:
+        EmailTemplate.objects.create(
+            name=name, subject=subject, body=body, category=category,
+            is_active=bool(request.POST.get("is_active", True)), created_by=request.user,
+        )
+        messages.success(request, f'"{name}" was created.')
+
+    return redirect("secretariat_dashboard:email_templates")
+
+
+@login_required
+@staff_required
+def email_template_delete(request, pk):
+    template = get_object_or_404(EmailTemplate, pk=pk)
+    if request.method == "POST":
+        name = template.name
+        template.delete()
+        messages.success(request, f'"{name}" was deleted.')
+    return redirect("secretariat_dashboard:email_templates")
+
+
+@login_required
+@staff_required
+def email_template_preview(request, pk):
+    template = get_object_or_404(EmailTemplate, pk=pk)
+    return HttpResponse(render_template_preview(template))
+
+
+# ---------------------------------------------------------------------
+# Communications -- Notifications (compose + sent history, across every
+# audience -- the Secretariat's own bell only ever shows its own).
+# ---------------------------------------------------------------------
+
+@login_required
+@staff_required
+def notifications_page(request):
+    active_audience = request.GET.get("audience", "all")
+    notices = Notification.objects.all()
+    if active_audience != "all" and active_audience in Notification.Audience.values:
+        notices = notices.filter(audience=active_audience)
+
+    audience_rows = [
+        (value, label, Notification.objects.filter(audience=value).count())
+        for value, label in Notification.Audience.choices
+    ]
+
+    return render(request, "dashboards/secretariat/notifications.html", {
+        "notices": notices.order_by("-created_at")[:200],
+        "audiences": Notification.Audience.choices,
+        "audience_rows": audience_rows,
+        "active_audience": active_audience,
+        "icons": Notification.Icon.choices,
+    })
+
+
+@login_required
+@staff_required
+def notification_send(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:notifications_page")
+
+    audience = request.POST.get("audience")
+    message_text = (request.POST.get("message") or "").strip()
+    icon = request.POST.get("icon") or Notification.Icon.INFO
+
+    if audience not in Notification.Audience.values or not message_text:
+        messages.error(request, "Pick an audience and write a message before sending.")
+        return redirect("secretariat_dashboard:notifications_page")
+
+    if icon not in Notification.Icon.values:
+        icon = Notification.Icon.INFO
+
+    notification_services.notify(audience, message_text, icon=icon)
+    messages.success(request, f"Notification sent to {dict(Notification.Audience.choices)[audience]}.")
+    return redirect("secretariat_dashboard:notifications_page")
+
+
+# ---------------------------------------------------------------------
+# Communications -- Announcements
+# ---------------------------------------------------------------------
+
+@login_required
+@staff_required
+def announcements(request):
+    editing = None
+    edit_id = request.GET.get("edit")
+    if edit_id and edit_id != "new":
+        editing = get_object_or_404(Announcement, pk=edit_id)
+
+    now = timezone.now()
+    all_announcements = list(Announcement.objects.all())
+    for a in all_announcements:
+        a.live = a.is_live(now=now)
+
+    return render(request, "dashboards/secretariat/announcements.html", {
+        "announcements": all_announcements,
+        "audiences": AudienceChoices.choices,
+        "editing": editing,
+        "compose_open": bool(edit_id),
+        "counts": {
+            "all": len(all_announcements),
+            "live": sum(1 for a in all_announcements if a.live),
+        },
+    })
+
+
+@login_required
+@staff_required
+def announcement_save(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:announcements")
+
+    pk = request.POST.get("pk")
+    title = (request.POST.get("title") or "").strip()
+    body = (request.POST.get("body") or "").strip()
+    audience = request.POST.get("audience") or AudienceChoices.ALL
+    if audience not in AudienceChoices.values:
+        audience = AudienceChoices.ALL
+
+    if not title or not body:
+        messages.error(request, "Title and body are both required.")
+        return redirect(f"{reverse('secretariat_dashboard:announcements')}?edit={pk or 'new'}")
+
+    starts_at = parse_date_as_datetime(request.POST.get("starts_at"))
+    expires_at = parse_date_as_datetime(request.POST.get("expires_at"), end_of_day=True)
+    is_pinned = bool(request.POST.get("is_pinned"))
+
+    if pk:
+        announcement = get_object_or_404(Announcement, pk=pk)
+        announcement.title, announcement.body, announcement.audience = title, body, audience
+        announcement.is_pinned = is_pinned
+        announcement.starts_at = starts_at
+        announcement.expires_at = expires_at
+        announcement.save()
+        messages.success(request, f'"{announcement.title}" was updated.')
+    else:
+        Announcement.objects.create(
+            title=title, body=body, audience=audience, is_pinned=is_pinned,
+            starts_at=starts_at, expires_at=expires_at, created_by=request.user,
+        )
+        messages.success(request, f'"{title}" was published.')
+
+    return redirect("secretariat_dashboard:announcements")
+
+
+@login_required
+@staff_required
+def announcement_toggle(request, pk):
+    announcement = get_object_or_404(Announcement, pk=pk)
+    if request.method == "POST":
+        announcement.is_active = not announcement.is_active
+        announcement.save(update_fields=["is_active"])
+        messages.success(
+            request,
+            f'"{announcement.title}" is now {"active" if announcement.is_active else "hidden"}.',
+        )
+    return redirect("secretariat_dashboard:announcements")
+
+
+@login_required
+@staff_required
+def announcement_delete(request, pk):
+    announcement = get_object_or_404(Announcement, pk=pk)
+    if request.method == "POST":
+        title = announcement.title
+        announcement.delete()
+        messages.success(request, f'"{title}" was deleted.')
+    return redirect("secretariat_dashboard:announcements")
+
+
+# ---------------------------------------------------------------------
+# Communications -- Reminders
+# ---------------------------------------------------------------------
+
+@login_required
+@staff_required
+def reminders(request):
+    communications_services.dispatch_due_reminders()
+
+    active_tab = request.GET.get("tab", "scheduled")
+    if active_tab not in {"scheduled", "sent", "cancelled"}:
+        active_tab = "scheduled"
+
+    all_reminders = Reminder.objects.select_related("application", "created_by")
+    status_map = {"scheduled": Reminder.Status.SCHEDULED, "sent": Reminder.Status.SENT, "cancelled": Reminder.Status.CANCELLED}
+
+    return render(request, "dashboards/secretariat/reminders.html", {
+        "reminders": all_reminders.filter(status=status_map[active_tab]),
+        "active_tab": active_tab,
+        "audiences": AudienceChoices.choices,
+        "recent_applications": Application.objects.order_by("-submitted_at")[:100],
+        "counts": {key: all_reminders.filter(status=value).count() for key, value in status_map.items()},
+    })
+
+
+@login_required
+@staff_required
+def reminder_save(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:reminders")
+
+    title = (request.POST.get("title") or "").strip()
+    message_text = (request.POST.get("message") or "").strip()
+    audience = request.POST.get("audience") or AudienceChoices.APPLICANT
+    if audience not in AudienceChoices.values:
+        audience = AudienceChoices.APPLICANT
+    remind_at = parse_datetime_local(request.POST.get("remind_at"))
+    application_id = request.POST.get("application_id") or None
+
+    if not title or not message_text or not remind_at:
+        messages.error(request, "Title, message and a date/time are all required.")
+        return redirect("secretariat_dashboard:reminders")
+
+    Reminder.objects.create(
+        title=title, message=message_text, audience=audience, remind_at=remind_at,
+        application_id=application_id, send_email=bool(request.POST.get("send_email", True)),
+        created_by=request.user,
+    )
+    messages.success(request, f'Reminder "{title}" scheduled.')
+    return redirect("secretariat_dashboard:reminders")
+
+
+@login_required
+@staff_required
+def reminder_cancel(request, pk):
+    reminder = get_object_or_404(Reminder, pk=pk)
+    if request.method == "POST" and reminder.status == Reminder.Status.SCHEDULED:
+        reminder.status = Reminder.Status.CANCELLED
+        reminder.save(update_fields=["status"])
+        messages.success(request, f'Reminder "{reminder.title}" was cancelled.')
+    return redirect("secretariat_dashboard:reminders")
+
+
+@login_required
+@staff_required
+def reminder_send_now(request, pk):
+    reminder = get_object_or_404(Reminder, pk=pk)
+    if request.method == "POST" and reminder.status == Reminder.Status.SCHEDULED:
+        communications_services.dispatch_reminder(reminder)
+        messages.success(request, f'Reminder "{reminder.title}" was sent.')
+    return redirect("secretariat_dashboard:reminders")
+
+
+# ---------------------------------------------------------------------
+# Reports & Analytics -- one page, seven tabs. All seven are computed
+# and rendered on every request (see secretariat_dashboard/reports.py)
+# so switching tabs in the browser is instant show/hide, no round trip
+# -- the query volume behind each tab is small enough that this is
+# cheaper than it sounds, and far nicer to use than a spinner per tab.
+# ---------------------------------------------------------------------
+
+@login_required
+@staff_required
+def reports(request):
+    return render(request, "dashboards/secretariat/reports.html", {
+        "application_stats": reports_data.application_statistics(),
+        "status_report": reports_data.status_reports(),
+        "turnaround": reports_data.turnaround_times(),
+        "workload": reports_data.reviewer_workload(),
+        "committee": reports_data.committee_activity(),
+        "compliance": reports_data.post_approval_compliance(),
+        "financial": reports_data.financial_reports(),
     })

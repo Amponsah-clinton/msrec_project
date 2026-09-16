@@ -8,17 +8,18 @@ from messaging.access import is_staff_side
 from . import services
 from .models import Notification
 
-# Which audiences a given user is allowed to read/clear. Only one exists
-# today (Secretariat), gated the same way messaging's support inbox is --
-# any admin/secretariat account, not a fixed list.
-_AUDIENCE_CHECKS = {
-    Notification.Audience.SECRETARIAT: is_staff_side,
-}
-
-
+# Which audiences a given user is allowed to read/clear -- a notification
+# for role X is only ever meant for whoever currently holds role X (see
+# Notification's own docstring), so this just re-checks request.user.role
+# rather than any fixed recipient list. Staff (Admin/Secretariat) can also
+# open anything, the same "staff sees every inbox" rule messaging.access
+# already applies to the applicant support inbox.
 def _authorized(user, audience):
-    check = _AUDIENCE_CHECKS.get(audience)
-    return bool(check and check(user))
+    if not user.is_authenticated:
+        return False
+    if is_staff_side(user):
+        return True
+    return user.role == audience
 
 
 @login_required

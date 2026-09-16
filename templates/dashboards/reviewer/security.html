@@ -30,23 +30,8 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Pending Declarations</a>
-          <a href="#" class="nav-sublink">Previous Declarations</a>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
-          <span>Reviews</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Protocol Documents</a>
-          <a href="#" class="nav-sublink">Ethics Review Form</a>
-          <a href="#" class="nav-sublink">Comments to Applicant</a>
-          <a href="#" class="nav-sublink">Private Review Notes</a>
-          <a href="#" class="nav-sublink">Recommendation</a>
+          <a href="{% url 'reviewer_dashboard:coi_pending' %}" class="nav-sublink">Pending Declarations</a>
+          <a href="{% url 'reviewer_dashboard:coi_previous' %}" class="nav-sublink">Previous Declarations</a>
         </div>
       </div>
 
@@ -57,8 +42,8 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Upcoming Meetings</a>
-          <a href="#" class="nav-sublink">Meeting Documents / Packets</a>
+          <a href="{% url 'reviewer_dashboard:committee_meetings' %}" class="nav-sublink">Upcoming Meetings</a>
+          <a href="{% url 'reviewer_dashboard:meeting_documents' %}" class="nav-sublink">Meeting Documents / Packets</a>
         </div>
       </div>
 
@@ -69,9 +54,9 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">MSREC SOPs</a>
-          <a href="#" class="nav-sublink">Reviewer Guidance</a>
-          <a href="#" class="nav-sublink">Ethics Guidelines</a>
+          <a href="{% url 'reviewer_dashboard:policy_sops' %}" class="nav-sublink">MSREC SOPs</a>
+          <a href="{% url 'reviewer_dashboard:policy_guidance' %}" class="nav-sublink">Reviewer Guidance</a>
+          <a href="{% url 'reviewer_dashboard:policy_ethics' %}" class="nav-sublink">Ethics Guidelines</a>
         </div>
       </div>
 
@@ -243,7 +228,7 @@
             <div class="rv-section-title"><span class="rv-ico teal"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span> Change Password</div>
             <p class="rv-section-sub">Use at least 8 characters, with a mix of upper/lowercase, numbers and symbols.</p>
 
-            <div class="field-row">
+            <div class="rv-pw-panel">
               <div class="field-group">
                 <label class="field-label" for="secCurrentPassword">Current Password</label>
                 <div class="field-password-wrap">
@@ -254,31 +239,47 @@
                   </button>
                 </div>
               </div>
-            </div>
-            <div class="field-row">
-              <div class="field-group">
-                <label class="field-label" for="secNewPassword">New Password</label>
-                <div class="field-password-wrap">
-                  <i class="fa-solid fa-lock field-password-icon" aria-hidden="true"></i>
-                  <input type="password" class="field-input" id="secNewPassword" name="new_password" placeholder="At least 8 characters" autocomplete="new-password" data-rv-strength-input>
-                  <button type="button" class="field-password-toggle" data-password-toggle="secNewPassword" aria-label="Show password" aria-pressed="false">
-                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
-                  </button>
+
+              <div class="rv-pw-divider"></div>
+
+              <div class="field-row">
+                <div class="field-group">
+                  <label class="field-label" for="secNewPassword">New Password</label>
+                  <div class="field-password-wrap">
+                    <i class="fa-solid fa-lock field-password-icon" aria-hidden="true"></i>
+                    <input type="password" class="field-input" id="secNewPassword" name="new_password" placeholder="At least 8 characters" autocomplete="new-password" data-rv-strength-input>
+                    <button type="button" class="field-password-toggle" data-password-toggle="secNewPassword" aria-label="Show password" aria-pressed="false">
+                      <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                    </button>
+                  </div>
                 </div>
-                <div class="rv-strength" data-rv-strength data-score="0">
-                  <div class="rv-strength-bars"><i></i><i></i><i></i><i></i></div>
-                  <span class="rv-strength-label">Enter a new password</span>
+                <div class="field-group">
+                  <label class="field-label" for="secConfirmPassword">Confirm New Password</label>
+                  <div class="field-password-wrap">
+                    <i class="fa-solid fa-lock field-password-icon" aria-hidden="true"></i>
+                    <input type="password" class="field-input" id="secConfirmPassword" name="confirm_password" placeholder="Re-enter new password" autocomplete="new-password" data-rv-confirm-input>
+                    <button type="button" class="field-password-toggle" data-password-toggle="secConfirmPassword" aria-label="Show password" aria-pressed="false">
+                      <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <p class="rv-pw-match" data-rv-match hidden>
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+                    <span>Passwords match</span>
+                  </p>
                 </div>
               </div>
-              <div class="field-group">
-                <label class="field-label" for="secConfirmPassword">Confirm New Password</label>
-                <div class="field-password-wrap">
-                  <i class="fa-solid fa-lock field-password-icon" aria-hidden="true"></i>
-                  <input type="password" class="field-input" id="secConfirmPassword" name="confirm_password" placeholder="Re-enter new password" autocomplete="new-password">
-                  <button type="button" class="field-password-toggle" data-password-toggle="secConfirmPassword" aria-label="Show password" aria-pressed="false">
-                    <i class="fa-solid fa-eye" aria-hidden="true"></i>
-                  </button>
+
+              <div class="rv-strength" data-rv-strength data-score="0">
+                <div class="rv-strength-top">
+                  <div class="rv-strength-bars"><i></i><i></i><i></i><i></i></div>
+                  <span class="rv-strength-pill" data-rv-strength-pill>Enter a new password</span>
                 </div>
+                <ul class="rv-pw-requirements">
+                  <li data-rv-req="length"><span class="rv-pw-req-ico"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>At least 8 characters</li>
+                  <li data-rv-req="case"><span class="rv-pw-req-ico"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>Upper &amp; lowercase letters</li>
+                  <li data-rv-req="number"><span class="rv-pw-req-ico"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>At least one number</li>
+                  <li data-rv-req="symbol"><span class="rv-pw-req-ico"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>At least one symbol</li>
+                </ul>
               </div>
             </div>
 

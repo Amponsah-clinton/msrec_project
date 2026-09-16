@@ -1,3 +1,5 @@
+import secrets
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -98,3 +100,78 @@ class Application(models.Model):
         year = (self.submitted_at or self.created_at or timezone.now()).year
         self.reference_no = f"MSREC/{year}/{self.pk:04d}"
         self.save(update_fields=["reference_no"])
+
+
+class TeamMember(models.Model):
+    """One person on an applicant's research team (Research Team page).
+
+    Owned by the applicant who added/invited them (`applicant`) -- this is
+    the applicant's own address book of collaborators, not tied to any one
+    Application. Adding someone here always sends them an email invite
+    (see applicant_dashboard.views._send_team_invite_email); `status` just
+    tracks whether they've followed that link yet. There's no real login
+    account behind a team member -- accepting an invite only flips
+    status/accepted_at (see team_invite_accept()), it doesn't create a
+    User, since a collaborator being *listed* on the team is independent
+    of them ever having their own MSREC account.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending Invite"
+        ACTIVE = "active", "Active"
+
+    class Role(models.TextChoices):
+        CO_INVESTIGATOR = "co_investigator", "Co-Investigator"
+        RESEARCH_ASSISTANT = "research_assistant", "Research Assistant"
+        STATISTICIAN = "statistician", "Statistician"
+        OTHER = "other", "Other"
+
+    applicant = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="research_team_members"
+    )
+
+    full_name = models.CharField(max_length=200)
+    email = models.EmailField()
+    role = models.CharField(max_length=30, choices=Role.choices, default=Role.CO_INVESTIGATOR)
+    institution = models.CharField(max_length=200, blank=True)
+
+    # Object path inside Supabase Storage's "team_member" bucket (see
+    # applicant_dashboard/team_storage.py) -- blank means no photo yet,
+    # the template falls back to an initials avatar.
+    photo_path = models.CharField(max_length=255, blank=True)
+
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+
+    # Same "one active token per row, reissued on resend" shape as
+    # accounts.models.PasswordResetCode, but a clickable link rather than a
+    # typed code -- the invitee is opening this on whatever device the
+    # email landed on, not necessarily the one they'd sign in from. NULL
+    # (not "") once accepted/cleared -- a unique constraint treats every ""
+    # as equal, and Postgres allows any number of NULLs (same reasoning as
+    # Application.reference_no above).
+    invite_token = models.CharField(max_length=64, unique=True, blank=True, null=True, default=None)
+    invited_at = models.DateTimeField(null=True, blank=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "research_team_members"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.full_name
+
+    @property
+    def initials(self):
+        parts = self.full_name.split()
+        return ("".join(p[0] for p in parts[:2]) or "?").upper()
+
+    def issue_invite_token(self):
+        """(Re)issues this member's accept-invite link -- called once when
+        first invited, and again on every "Resend" click, so a stale link
+        from an earlier email can never be used after a resend."""
+        self.invite_token = secrets.token_urlsafe(32)
+        self.invited_at = timezone.now()
+        self.save(update_fields=["invite_token", "invited_at"])

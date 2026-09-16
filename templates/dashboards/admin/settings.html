@@ -328,4 +328,185 @@
 
       </div>
 
+      <!-- Meetings & Documents -->
+      <section class="panel settings-full-panel" id="meetings-documents">
+        <div class="form-section">
+          <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Meetings &amp; Documents</h3>
+          <p class="section-note">Feeds the Reviewer dashboard's Upcoming Meetings and Meeting Documents / Packets pages. Files are saved to Supabase Storage's "ethics" bucket.</p>
+
+          <form method="post" class="settings-form">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_meeting">
+            <div class="field-grid">
+              <div class="field field-wide">
+                <label for="meetingTitle">Meeting Title</label>
+                <input type="text" id="meetingTitle" name="meeting_title" placeholder="e.g. Full Committee Review &ndash; June 2026" required>
+              </div>
+              <div class="field">
+                <label for="meetingScheduledAt">Date &amp; Time</label>
+                <input type="datetime-local" id="meetingScheduledAt" name="meeting_scheduled_at" required>
+              </div>
+              <div class="field">
+                <label for="meetingLocation">Location</label>
+                <input type="text" id="meetingLocation" name="meeting_location" placeholder="Room / building &mdash; leave blank if virtual-only">
+              </div>
+              <div class="field">
+                <label for="meetingLink">Meeting Link</label>
+                <input type="url" id="meetingLink" name="meeting_link" placeholder="https://zoom.us/...">
+              </div>
+              <div class="field field-wide">
+                <label for="meetingAgenda">Agenda</label>
+                <textarea id="meetingAgenda" name="meeting_agenda" rows="2" placeholder="Optional &mdash; what's on the agenda"></textarea>
+              </div>
+            </div>
+            <div class="settings-form-actions">
+              <button type="submit" class="btn-primary">Add Meeting</button>
+            </div>
+          </form>
+
+          <div class="doc-manager-list">
+            {% for meeting in meetings %}
+            <article class="doc-record-card">
+              <div class="doc-record-top">
+                <div class="doc-record-title">
+                  <h4>{{ meeting.title }}</h4>
+                  <span>{{ meeting.scheduled_at|date:"j M Y, g:i A" }}{% if meeting.location %} &middot; {{ meeting.location }}{% endif %}{% if meeting.is_past %} &middot; <span style="color:var(--text-faint);">Past</span>{% endif %}</span>
+                </div>
+                <form method="post" data-confirm="Delete &quot;{{ meeting.title }}&quot; and all its documents? This can't be undone." data-confirm-variant="danger">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete_meeting">
+                  <input type="hidden" name="meeting_id" value="{{ meeting.pk }}">
+                  <button type="submit" class="btn-secondary" style="padding:7px 14px;font-size:12px;color:var(--red);">Delete Meeting</button>
+                </form>
+              </div>
+
+              {% with docs=meeting.documents.all %}
+              {% if docs %}
+              <ul class="doc-file-list">
+                {% for doc in docs %}
+                <li>
+                  <span class="badge-tag blue">{{ doc.get_doc_type_display }}</span>
+                  <span class="doc-file-name">{{ doc.title }}</span>
+                  {% if doc.download_url %}<a href="{{ doc.download_url }}" target="_blank" rel="noopener" class="download-link">Download</a>{% else %}<span style="font-size:11.5px;color:var(--text-faint);">No file</span>{% endif %}
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_meeting_document">
+                    <input type="hidden" name="document_id" value="{{ doc.pk }}">
+                    <button type="submit" class="icon-btn" style="width:26px;height:26px;color:var(--red);" aria-label="Delete {{ doc.title }}">
+                      <svg viewBox="0 0 24 24" width="14" height="14"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+                    </button>
+                  </form>
+                </li>
+                {% endfor %}
+              </ul>
+              {% else %}
+              <p class="doc-file-empty">No documents attached yet.</p>
+              {% endif %}
+              {% endwith %}
+
+              <form method="post" enctype="multipart/form-data" class="doc-inline-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_meeting_document">
+                <input type="hidden" name="meeting_id" value="{{ meeting.pk }}">
+                <select name="doc_type">
+                  {% for value, label in meeting_doc_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                </select>
+                <input type="text" name="document_title" placeholder="Document title" required>
+                <input type="file" name="document_file">
+                <button type="submit" class="btn-secondary" style="padding:8px 14px;font-size:12px;">Add File</button>
+              </form>
+            </article>
+            {% empty %}
+            <div class="empty-state">
+              <span class="empty-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+              <h3>No meetings scheduled yet</h3>
+              <p>Add one above to start building the Reviewer dashboard's meetings calendar.</p>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </section>
+
+      <!-- Policy Library -->
+      <section class="panel settings-full-panel" id="policy-library">
+        <div class="form-section">
+          <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg> Policy Library</h3>
+          <p class="section-note">MSREC SOPs, Reviewer Guidance and Ethics Guidelines shown on the Reviewer dashboard's Policies &amp; Guidance pages. Files are saved to Supabase Storage's "ethics" bucket.</p>
+
+          <form method="post" enctype="multipart/form-data" class="settings-form">
+            {% csrf_token %}
+            {% if editing_policy %}
+              <input type="hidden" name="action" value="edit_policy_document">
+              <input type="hidden" name="document_id" value="{{ editing_policy.pk }}">
+              <input type="hidden" name="category" value="{{ editing_policy.category }}">
+            {% else %}
+              <input type="hidden" name="action" value="add_policy_document">
+            {% endif %}
+
+            <div class="field-grid">
+              <div class="field">
+                <label for="policyCategory">Category</label>
+                <select id="policyCategory" name="category" {% if editing_policy %}disabled{% endif %}>
+                  {% for value, label in policy_categories %}
+                  <option value="{{ value }}"{% if editing_policy.category == value %} selected{% endif %}>{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="field">
+                <label for="policyTitle">Title</label>
+                <input type="text" id="policyTitle" name="policy_title" value="{{ editing_policy.title|default:'' }}" placeholder="e.g. Informed Consent SOP" required>
+              </div>
+              <div class="field">
+                <label for="policyVersion">Version</label>
+                <input type="text" id="policyVersion" name="policy_version" value="{{ editing_policy.version|default:'' }}" placeholder="e.g. v2.1">
+              </div>
+              <div class="field">
+                <label for="policyOrder">Display Order</label>
+                <input type="number" id="policyOrder" name="policy_display_order" value="{{ editing_policy.display_order|default:0 }}" min="0">
+              </div>
+              <div class="field field-wide">
+                <label for="policyDescription">Description</label>
+                <textarea id="policyDescription" name="policy_description" rows="2" placeholder="Optional -- shown under the title on the reviewer's page">{{ editing_policy.description|default:"" }}</textarea>
+              </div>
+              <div class="field field-wide">
+                <label for="policyFile">{% if editing_policy %}Replace File (optional){% else %}File{% endif %}</label>
+                <input type="file" id="policyFile" name="policy_file" accept=".pdf,.doc,.docx">
+                {% if editing_policy.file_path %}<p class="field-hint">Leave blank to keep the current file.</p>{% endif %}
+              </div>
+            </div>
+
+            <div class="settings-form-actions">
+              {% if editing_policy %}<a href="{% url 'admin_dashboard:settings' %}#policy-library" class="btn-secondary">Cancel</a>{% endif %}
+              <button type="submit" class="btn-primary">{% if editing_policy %}Save Changes{% else %}Add Document{% endif %}</button>
+            </div>
+          </form>
+
+          {% for value, label, docs in policy_groups %}
+          <div class="policy-group">
+            <h4 class="policy-group-heading">{{ label }} <span class="count">({{ docs|length }})</span></h4>
+            {% for doc in docs %}
+            <div class="policy-doc-row">
+              <div class="policy-doc-info">
+                <strong>{{ doc.title }}</strong>
+                <span>{% if doc.version %}{{ doc.version }} &middot; {% endif %}Updated {{ doc.updated_at|date:"j M Y" }}{% if not doc.file_path %} &middot; No file uploaded{% endif %}</span>
+              </div>
+              <div class="policy-doc-actions">
+                {% if doc.download_url %}<a href="{{ doc.download_url }}" target="_blank" rel="noopener" class="btn-secondary" style="padding:6px 12px;font-size:12px;">Download</a>{% endif %}
+                <a href="{% url 'admin_dashboard:settings' %}?edit_policy={{ doc.pk }}#policy-library" class="btn-secondary" style="padding:6px 12px;font-size:12px;">Edit</a>
+                <form method="post" data-confirm="Delete &quot;{{ doc.title }}&quot;? This can't be undone." data-confirm-variant="danger">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="delete_policy_document">
+                  <input type="hidden" name="document_id" value="{{ doc.pk }}">
+                  <button type="submit" class="btn-secondary" style="padding:6px 12px;font-size:12px;color:var(--red);">Delete</button>
+                </form>
+              </div>
+            </div>
+            {% empty %}
+            <p class="doc-file-empty">No {{ label|lower }} documents yet.</p>
+            {% endfor %}
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
 {% endblock %}

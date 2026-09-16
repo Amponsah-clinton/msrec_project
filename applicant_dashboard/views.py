@@ -15,13 +15,14 @@ from django.views.decorators.http import require_POST
 from accounts.models import User
 from accounts.sessions import active_sessions_for
 from messaging.services import unread_count_for_user
+from notifications.emails import send_branded_email
 from notifications.models import Notification
 from notifications.services import notify
 from payments import fees
 from payments.models import Payment
 
-from . import storage
-from .models import Application
+from . import storage, team_storage
+from .models import Application, TeamMember
 
 # Checkbox groups on the application form where more than one value can be
 # ticked (name="..." repeated across several <input type="checkbox">) --
@@ -499,6 +500,186 @@ def profile_security(request):
 
     sessions = active_sessions_for(request.user, current_session_key=request.session.session_key)
     return render(request, "dashboards/applicant/profile-security.html", {"sessions": sessions})
+
+
+def _send_team_invite_email(member, request):
+    """Emails `member` an accept-invite link carrying their (freshly
+    issued) invite_token. Reuses notifications.emails.send_branded_email
+    exactly as accounts/views.py's signup/reset-code emails and
+    applicant_dashboard/oversight.py's revision email do -- same branded
+    HTML+text template, same fire-and-return-bool contract. The link is
+    public (see urls.py: team_invite_accept is deliberately left outside
+    the login_required wrap) since the invitee has no MSREC account to
+    log into yet."""
+    accept_url = request.build_absolute_uri(
+        reverse("applicant_dashboard:team_invite_accept", kwargs={"token": member.invite_token})
+    )
+    inviter = member.applicant
+    return send_branded_email(
+        subject=f"{inviter.full_name} invited you to a research team on MSREC",
+        to=member.email,
+        heading="You've been invited to a research team",
+        paragraphs=[
+            f"{inviter.full_name} ({inviter.email}) has added you to their research team on MSREC "
+            f"as {member.get_role_display()}.",
+            "Click below to confirm you've received this invitation.",
+        ],
+        cta_text="View Invitation",
+        cta_url=accept_url,
+        quote_label="Invited by",
+        quote_text=f"{inviter.full_name} · {inviter.institution or 'MSREC'}",
+        preheader=f"{inviter.full_name} added you as {member.get_role_display()} on MSREC.",
+    )
+
+
+def _handle_team_invite(request):
+    full_name = request.POST.get("full_name", "").strip()
+    email = request.POST.get("email", "").strip().lower()
+    role = request.POST.get("role", "")
+    institution = request.POST.get("institution", "").strip()
+
+    if not full_name or not email:
+        messages.error(request, "Full name and email are required.")
+        return
+    try:
+        validate_email(email)
+    except ValidationError:
+        messages.error(request, "Enter a valid email address.")
+        return
+    if role not in TeamMember.Role.values:
+        role = TeamMember.Role.OTHER
+    if TeamMember.objects.filter(applicant=request.user, email__iexact=email).exists():
+        messages.error(request, "You've already added or invited someone with that email address.")
+        return
+
+    member = TeamMember.objects.create(
+        applicant=request.user, full_name=full_name, email=email,
+        role=role, institution=institution,
+    )
+    member.issue_invite_token()
+
+    if _send_team_invite_email(member, request):
+        messages.success(request, f"Invitation sent to {full_name}.")
+    else:
+        messages.warning(request, f"{full_name} was added, but the invitation email couldn't be sent right now.")
+
+
+def _handle_team_resend(request, member):
+    member.issue_invite_token()
+    if _send_team_invite_email(member, request):
+        messages.success(request, f"Invitation resent to {member.full_name}.")
+    else:
+        messages.error(request, "Couldn't resend the invitation right now. Please try again.")
+
+
+def _handle_team_update(request, member):
+    full_name = request.POST.get("full_name", "").strip()
+    email = request.POST.get("email", "").strip().lower()
+    role = request.POST.get("role", "")
+    institution = request.POST.get("institution", "").strip()
+
+    if not full_name or not email:
+        messages.error(request, "Full name and email are required.")
+        return
+    try:
+        validate_email(email)
+    except ValidationError:
+        messages.error(request, "Enter a valid email address.")
+        return
+    if role not in TeamMember.Role.values:
+        role = TeamMember.Role.OTHER
+    if TeamMember.objects.exclude(pk=member.pk).filter(applicant=request.user, email__iexact=email).exists():
+        messages.error(request, "Another team member already uses that email address.")
+        return
+
+    member.full_name = full_name
+    member.email = email
+    member.role = role
+    member.institution = institution
+
+    photo = request.FILES.get("photo")
+    if photo:
+        if not (photo.content_type or "").startswith("image/"):
+            messages.error(request, "Please upload an image file (JPG or PNG).")
+            return
+        old_path = member.photo_path
+        object_path = team_storage.upload_team_photo(photo, member_id=member.pk)
+        if object_path:
+            member.photo_path = object_path
+            if old_path and old_path != object_path:
+                team_storage.delete_object(old_path)
+        else:
+            messages.warning(request, "Details saved, but the photo couldn't be uploaded right now.")
+
+    member.save()
+    messages.success(request, f"{full_name} updated.")
+
+
+def _handle_team_delete(request, member):
+    if member.photo_path:
+        team_storage.delete_object(member.photo_path)
+    name = member.full_name
+    member.delete()
+    messages.success(request, f"{name} removed from your research team.")
+
+
+def research_team(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "invite":
+            _handle_team_invite(request)
+            return redirect("applicant_dashboard:research_team")
+
+        member_id = request.POST.get("member_id", "")
+        if not member_id.isdigit():
+            messages.error(request, "That request could not be processed.")
+            return redirect("applicant_dashboard:research_team")
+        member = get_object_or_404(TeamMember, pk=member_id, applicant=request.user)
+
+        if action == "update":
+            _handle_team_update(request, member)
+        elif action == "resend":
+            _handle_team_resend(request, member)
+        elif action == "delete":
+            _handle_team_delete(request, member)
+        else:
+            messages.error(request, "That request could not be processed.")
+        return redirect("applicant_dashboard:research_team")
+
+    members = list(TeamMember.objects.filter(applicant=request.user))
+    for member in members:
+        member.photo_url = team_storage.public_url(member.photo_path)
+
+    counts = {
+        "co_investigator": sum(1 for m in members if m.role == TeamMember.Role.CO_INVESTIGATOR),
+        "research_assistant": sum(1 for m in members if m.role == TeamMember.Role.RESEARCH_ASSISTANT),
+        "pending": sum(1 for m in members if m.status == TeamMember.Status.PENDING),
+    }
+
+    return render(request, "dashboards/applicant/research-team.html", {
+        "team_members": members,
+        "team_counts": counts,
+        "team_roles": TeamMember.Role.choices,
+    })
+
+
+def team_invite_accept(request, token):
+    """Public landing page for the link in a team invite email -- no
+    login required (the invitee has no MSREC account). Marks the member
+    Active the first time it's opened; opening it again (e.g. the
+    inviter's own click-to-preview, or the invitee revisiting the email)
+    is harmless and just re-shows the same confirmation."""
+    member = TeamMember.objects.filter(invite_token=token).select_related("applicant").first()
+    if member is None:
+        return render(request, "pages/team_invite_accept.html", {"valid": False}, status=404)
+
+    if member.status != TeamMember.Status.ACTIVE:
+        member.status = TeamMember.Status.ACTIVE
+        member.accepted_at = timezone.now()
+        member.save(update_fields=["status", "accepted_at"])
+
+    return render(request, "pages/team_invite_accept.html", {"valid": True, "member": member})
 
 
 def _my_applications(request, *, status=None):

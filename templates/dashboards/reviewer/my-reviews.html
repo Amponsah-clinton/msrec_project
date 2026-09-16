@@ -26,8 +26,8 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Pending Declarations</a>
-          <a href="#" class="nav-sublink">Previous Declarations</a>
+          <a href="{% url 'reviewer_dashboard:coi_pending' %}" class="nav-sublink">Pending Declarations</a>
+          <a href="{% url 'reviewer_dashboard:coi_previous' %}" class="nav-sublink">Previous Declarations</a>
         </div>
       </div>
 
@@ -38,8 +38,8 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Upcoming Meetings</a>
-          <a href="#" class="nav-sublink">Meeting Documents / Packets</a>
+          <a href="{% url 'reviewer_dashboard:committee_meetings' %}" class="nav-sublink">Upcoming Meetings</a>
+          <a href="{% url 'reviewer_dashboard:meeting_documents' %}" class="nav-sublink">Meeting Documents / Packets</a>
         </div>
       </div>
 
@@ -50,9 +50,9 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">MSREC SOPs</a>
-          <a href="#" class="nav-sublink">Reviewer Guidance</a>
-          <a href="#" class="nav-sublink">Ethics Guidelines</a>
+          <a href="{% url 'reviewer_dashboard:policy_sops' %}" class="nav-sublink">MSREC SOPs</a>
+          <a href="{% url 'reviewer_dashboard:policy_guidance' %}" class="nav-sublink">Reviewer Guidance</a>
+          <a href="{% url 'reviewer_dashboard:policy_ethics' %}" class="nav-sublink">Ethics Guidelines</a>
         </div>
       </div>
 

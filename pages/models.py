@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 
 class SiteSettings(models.Model):
@@ -210,3 +211,100 @@ class GovernanceMember(models.Model):
         first = significant[0][0] if significant else ""
         last = significant[-1][0] if len(significant) > 1 else ""
         return (first + last).upper() or "?"
+
+
+class CommitteeMeeting(models.Model):
+    """One scheduled Full Committee / REC meeting -- shown on the
+    Reviewer dashboard's Upcoming Meetings page. Managed from Django
+    admin (/admin/) by the Secretariat; MeetingDocument rows (agenda,
+    packet, minutes) attach to one of these.
+    """
+
+    title = models.CharField(max_length=200)
+    scheduled_at = models.DateTimeField()
+    # Physical room, or blank if this is a virtual-only meeting.
+    location = models.CharField(max_length=255, blank=True)
+    # Zoom/Teams/etc link -- blank means in-person only.
+    meeting_link = models.URLField(blank=True)
+    agenda = models.TextField(blank=True)
+    notes = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "committee_meetings"
+        ordering = ["scheduled_at"]
+
+    def __str__(self):
+        return f"{self.title} ({self.scheduled_at:%d %b %Y})"
+
+    @property
+    def is_past(self):
+        return self.scheduled_at < timezone.now()
+
+
+class MeetingDocument(models.Model):
+    """One file attached to a CommitteeMeeting -- its agenda, full review
+    packet, or minutes. Shown on the Reviewer dashboard's Meeting
+    Documents / Packets page. File lives in Supabase Storage's public
+    "ethics" bucket (pages/documents_storage.py); downloads are a direct
+    public URL, resolved fresh on every render from file_path.
+    """
+
+    class DocType(models.TextChoices):
+        AGENDA = "agenda", "Agenda"
+        PACKET = "packet", "Meeting Packet"
+        MINUTES = "minutes", "Minutes"
+        OTHER = "other", "Other"
+
+    meeting = models.ForeignKey(CommitteeMeeting, on_delete=models.CASCADE, related_name="documents")
+    doc_type = models.CharField(max_length=20, choices=DocType.choices, default=DocType.OTHER)
+    title = models.CharField(max_length=200)
+
+    # Blank until a file is actually uploaded (see admin.py's upload
+    # form) -- the record can exist first (e.g. "Minutes -- pending")
+    # without blocking on a file being ready yet.
+    file_path = models.CharField(max_length=255, blank=True)
+    file_size = models.PositiveIntegerField(default=0)
+
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "meeting_documents"
+        ordering = ["-uploaded_at"]
+
+    def __str__(self):
+        return f"{self.title} ({self.get_doc_type_display()})"
+
+
+class PolicyDocument(models.Model):
+    """One MSREC SOP / Reviewer Guidance / Ethics Guideline document,
+    shown on the Reviewer dashboard's three Policies & Guidance pages
+    (filtered by `category`, each its own URL -- not tabs on one page).
+    Same public "ethics" bucket as MeetingDocument.
+    """
+
+    class Category(models.TextChoices):
+        SOP = "sop", "MSREC SOP"
+        GUIDANCE = "guidance", "Reviewer Guidance"
+        ETHICS = "ethics", "Ethics Guideline"
+
+    category = models.CharField(max_length=20, choices=Category.choices)
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    version = models.CharField(max_length=20, blank=True)
+
+    file_path = models.CharField(max_length=255, blank=True)
+    file_size = models.PositiveIntegerField(default=0)
+
+    display_order = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "policy_documents"
+        ordering = ["category", "display_order", "title"]
+
+    def __str__(self):
+        return f"{self.title} ({self.get_category_display()})"
