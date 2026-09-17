@@ -22,10 +22,19 @@
 --   SQL editor first, e.g. to review/tweak them before Django touches
 --   anything):
 --     1. Run this whole file in the Supabase SQL editor.
---     2. Run: python manage.py migrate --fake-initial
---        (tells Django "these tables already exist with this shape, just
---        record the migration as applied" instead of trying to CREATE them
---        again).
+--     2. Run: python manage.py migrate --fake
+--        (tells Django "every one of these tables/columns already exists
+--        with this shape, just record every migration as applied" instead
+--        of trying to CREATE/ALTER them again). NOT --fake-initial: that
+--        flag only special-cases each app's very first migration, and
+--        this project is now many migrations past that for most apps
+--        (pages, payments, applicant_dashboard, ...) -- with
+--        --fake-initial, `migrate` gets partway through, hits a table or
+--        column this file already created, and fails with "relation ...
+--        already exists" (or "column ... already exists"). If that's
+--        already happened to you: `python manage.py migrate --fake` from
+--        a clean slate, or `python manage.py migrate <app> <migration> --fake`
+--        to unstick just the one migration it stopped on and continue.
 --
 -- Either path lands on the identical schema, so accounts/models.py (the
 -- Django User model) works unmodified against it either way.

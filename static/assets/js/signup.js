@@ -211,38 +211,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   /* ============================================================
      Independent researcher / reviewer toggles
+     (The shared Institution/Professional Information section --
+     noInstitution/institution/department/position/institutionCountry/
+     institutionAddress -- was removed from the Applicant/Researcher
+     signup form; Reviewer and Committee keep their own dedicated
+     institution fields below, each already independent of it.)
   ============================================================ */
-  const noInstitution = document.getElementById("noInstitution");
-  const institution = document.getElementById("institution");
-  const department = document.getElementById("department");
-  const institutionReqTag = document.getElementById("institutionReqTag");
-  const departmentReqTag = document.getElementById("departmentReqTag");
-  // Position / country / address aren't required either way, but they're
-  // still institution details -- lock them too so "I don't have one"
-  // isn't contradicted by a half-filled-in section. Personal Website is
-  // left alone: that's the applicant's own, not the institution's.
-  const institutionLockFields = [
-    institution, department,
-    document.getElementById("position"),
-    document.getElementById("institutionCountry"),
-    document.getElementById("institutionAddress"),
-  ];
-
-  function applyInstitutionRequirement() {
-    const independent = noInstitution.checked;
-    institution.required = !independent;
-    department.required = !independent;
-    institutionReqTag.hidden = independent;
-    departmentReqTag.hidden = independent;
-    institutionLockFields.forEach((field) => {
-      if (!field) return;
-      field.disabled = independent;
-      if (independent) field.value = "";
-    });
-  }
-  noInstitution.addEventListener("change", applyInstitutionRequirement);
-  applyInstitutionRequirement();
-
   const independentReviewer = document.getElementById("independentReviewer");
   const reviewerInstitution = document.getElementById("reviewerInstitution");
   const reviewerInstitutionReqTag = document.getElementById("reviewerInstitutionReqTag");
