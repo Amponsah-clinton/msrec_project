@@ -6,7 +6,10 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .access import is_staff_side, staff_role_label
-from .models import Conversation, ConversationRead, Message
+from .models import (
+    Conversation, ConversationRead, Message,
+    ReviewerConversation, ReviewerConversationRead, ReviewerMessage,
+)
 
 staff_required = user_passes_test(is_staff_side, login_url="pages:login")
 
@@ -177,4 +180,116 @@ def _send_response(request, conversation):
 
     message = Message.objects.create(conversation=conversation, sender=request.user, body=body)
     _mark_read(conversation, request.user)
+    return JsonResponse(_serialize_message(message, request.user))
+
+
+# ---------------------------------------------------------------------
+# Secretariat <-> Reviewer side-channel. Same poll/send shape as the
+# applicant thread above, but the Secretariat is always the one who
+# opens the first line (a reviewer has nothing to say until they've been
+# assigned something), so the inbox is built from the reviewer directory
+# rather than from conversations that already exist -- see
+# staff_reviewer_messages below.
+# ---------------------------------------------------------------------
+
+def _mark_reviewer_read(conversation, user):
+    ReviewerConversationRead.objects.update_or_create(
+        conversation=conversation, user=user, defaults={"last_read_at": timezone.now()}
+    )
+
+
+def _reviewer_unread_count(conversation, user):
+    if conversation is None:
+        return 0
+    qs = conversation.messages.exclude(sender=user)
+    mark = ReviewerConversationRead.objects.filter(conversation=conversation, user=user).first()
+    if mark and mark.last_read_at:
+        qs = qs.filter(created_at__gt=mark.last_read_at)
+    return qs.count()
+
+
+def _get_or_create_reviewer_conversation(reviewer):
+    conversation, _ = ReviewerConversation.objects.get_or_create(reviewer=reviewer)
+    return conversation
+
+
+@login_required
+@staff_required
+def staff_reviewer_messages(request, template_name="dashboards/admin/reviewer-messages.html"):
+    from accounts.models import User
+
+    reviewers = list(
+        User.objects.filter(role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED)
+        .order_by("first_name", "last_name")
+    )
+    conversations = {
+        c.reviewer_id: c
+        for c in ReviewerConversation.objects.filter(reviewer__in=reviewers)
+        .annotate(last_message_at=Max("messages__created_at"))
+    }
+    for r in reviewers:
+        r.conversation = conversations.get(r.pk)
+        r.unread_for_staff = _reviewer_unread_count(r.conversation, request.user)
+
+    selected_id = request.GET.get("reviewer")
+    selected_reviewer = None
+    if selected_id:
+        selected_reviewer = next((r for r in reviewers if str(r.pk) == selected_id), None)
+    if selected_reviewer is None and reviewers:
+        active = [r for r in reviewers if r.conversation and r.conversation.last_message_at]
+        selected_reviewer = max(active, key=lambda r: r.conversation.last_message_at) if active else reviewers[0]
+
+    selected = None
+    thread_messages = []
+    if selected_reviewer is not None:
+        selected = selected_reviewer.conversation or _get_or_create_reviewer_conversation(selected_reviewer)
+        thread_messages = [
+            _serialize_message(m, request.user) for m in selected.messages.select_related("sender")
+        ]
+        _mark_reviewer_read(selected, request.user)
+        selected_reviewer.unread_for_staff = 0
+
+    return render(request, template_name, {
+        "reviewers": reviewers,
+        "selected_reviewer": selected_reviewer,
+        "selected": selected,
+        "thread_messages": thread_messages,
+        "last_message_id": thread_messages[-1]["id"] if thread_messages else 0,
+    })
+
+
+@login_required
+@staff_required
+def staff_reviewer_messages_poll(request, conversation_id):
+    conversation = get_object_or_404(ReviewerConversation, pk=conversation_id)
+    after_id = request.GET.get("after") or 0
+    try:
+        after_id = int(after_id)
+    except (TypeError, ValueError):
+        after_id = 0
+
+    new_messages = list(conversation.messages.select_related("sender").filter(pk__gt=after_id))
+    if new_messages:
+        _mark_reviewer_read(conversation, request.user)
+
+    latest = conversation.messages.aggregate(Max("id"))["id__max"] or after_id
+    return JsonResponse({
+        "messages": [_serialize_message(m, request.user) for m in new_messages],
+        "last_id": latest,
+    })
+
+
+@login_required
+@staff_required
+@require_POST
+def staff_reviewer_messages_send(request, conversation_id):
+    conversation = get_object_or_404(ReviewerConversation, pk=conversation_id)
+    body = request.POST.get("body", "").strip()
+    if not body:
+        return JsonResponse({"error": "empty"}, status=400)
+    if len(body) > 4000:
+        return JsonResponse({"error": "too_long"}, status=400)
+
+    message = ReviewerMessage.objects.create(conversation=conversation, sender=request.user, body=body)
+    _mark_reviewer_read(conversation, request.user)
     return JsonResponse(_serialize_message(message, request.user))

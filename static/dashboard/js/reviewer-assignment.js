@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // Three real panels (Assign Reviewer / Pending Assignments / Reviewer
-  // Workload), not a filtered list -- script.js's generic filter-tabs
+  // Four real panels (Assign Reviewer / Pending Assignments / Completed
+  // Reviews / Reviewer Workload), not a filtered list -- script.js's generic filter-tabs
   // handler still toggles `.active` on these buttons (harmless), but
   // showing/hiding the actual panel is this page's own job.
   const tabs = document.querySelectorAll("[data-ra-tab]");

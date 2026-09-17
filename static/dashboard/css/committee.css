@@ -1,0 +1,173 @@
+/* ==========================================================
+   MSREC Admin — Committee section
+   (Overview, Membership/Appointments, Terms & Expiry, Training,
+   Conflict Records). Same flat, token-driven language as the rest of
+   the dashboard (var(--bg)/--white/--border/--teal/--radius/--shadow) --
+   nothing here introduces a new color system or a second visual
+   language; it composes with accounts.css's acct-* classes rather than
+   duplicating them.
+========================================================== */
+
+/* ---------------- Overview stat grid ---------------- */
+.cmt-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+.cmt-stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 18px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.cmt-stat-card:hover {
+  border-color: color-mix(in srgb, var(--teal) 35%, var(--border));
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.08);
+  transform: translateY(-1px);
+}
+.cmt-stat-card.cmt-stat-warn .cmt-stat-value { color: var(--orange); }
+.cmt-stat-card.cmt-stat-danger .cmt-stat-value { color: var(--red); }
+
+.cmt-stat-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.cmt-stat-icon svg { width: 18px; height: 18px; }
+.cmt-icon-navy   { background: color-mix(in srgb, var(--navy) 14%, transparent);   color: var(--navy); }
+.cmt-icon-blue   { background: var(--blue-light);   color: var(--blue); }
+.cmt-icon-purple { background: var(--purple-light); color: var(--purple); }
+.cmt-icon-teal   { background: var(--teal-light);   color: var(--teal); }
+.cmt-icon-orange { background: var(--orange-light); color: var(--orange); }
+.cmt-icon-red    { background: var(--red-light);    color: var(--red); }
+
+.cmt-stat-value {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1;
+}
+.cmt-stat-label { font-size: 12px; font-weight: 500; color: var(--text-sub); }
+
+/* ---------------- Two-column watchlist panels ---------------- */
+.cmt-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  margin-bottom: 18px;
+  align-items: start;
+}
+.cmt-panel { padding: 18px; margin-bottom: 18px; }
+.cmt-columns .cmt-panel { margin-bottom: 0; }
+.cmt-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.cmt-panel-head h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main); }
+.cmt-panel-link { font-size: 12.5px; font-weight: 600; color: var(--teal); text-decoration: none; }
+.cmt-panel-link:hover { text-decoration: underline; }
+
+.cmt-watchlist { display: flex; flex-direction: column; }
+.cmt-watch-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 2px;
+  border-top: 1px solid var(--border);
+}
+.cmt-watchlist .cmt-watch-row:first-child { border-top: none; }
+.cmt-watch-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.cmt-watch-info strong { font-size: 13px; font-weight: 700; color: var(--text-main); }
+.cmt-watch-info span {
+  font-size: 12px;
+  color: var(--text-sub);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.cmt-empty-line { margin: 6px 2px; font-size: 12.5px; color: var(--text-faint); }
+
+/* ---------------- Status pills (expiry state) ---------------- */
+.cmt-pill {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+.cmt-pill-current  { background: var(--green-light);  color: var(--green); }
+.cmt-pill-expiring { background: var(--orange-light); color: var(--orange); }
+.cmt-pill-expired  { background: var(--red-light);    color: var(--red); }
+.cmt-pill-ongoing  { background: var(--gray-light);   color: var(--gray); }
+
+/* ---------------- List toolbar (filter tabs + search + add) ---------------- */
+.cmt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.cmt-toolbar-tabs { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; flex: 1; }
+
+/* ---------------- Row extras (appointments / training / conflicts) ---------------- */
+.cmt-row-title { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.cmt-doc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--teal);
+  text-decoration: none;
+}
+.cmt-doc-link svg { width: 13px; height: 13px; }
+.cmt-doc-link:hover { text-decoration: underline; }
+
+.cmt-modal-wide .acct-modal { max-width: 620px; }
+.acct-form-row textarea {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-main);
+  background: var(--white);
+  resize: vertical;
+  min-height: 70px;
+}
+.acct-form-row textarea:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+.acct-form-row label.cmt-full { grid-column: 1 / -1; }
+
+/* ---------------- Responsive ---------------- */
+@media (max-width: 1100px) {
+  .cmt-stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 900px) {
+  .cmt-columns { grid-template-columns: 1fr; }
+}
+@media (max-width: 640px) {
+  .cmt-stat-grid { grid-template-columns: 1fr 1fr; }
+  .cmt-toolbar { flex-direction: column; align-items: stretch; }
+}

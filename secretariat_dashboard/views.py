@@ -1,17 +1,23 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.paginator import Paginator
 from django.db.models import Count, Prefetch, Q
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_datetime
 
 from accounts import storage as accounts_storage
-from accounts.models import RoleApprovalLog, User
+from accounts.models import AuditLog, RoleApprovalLog, User
 from applicant_dashboard import oversight
 from applicant_dashboard import storage as application_storage
 from applicant_dashboard.models import Application
+from communications import services as communications_services
+from communications.emails_preview import render_template_preview
+from communications.models import Announcement, AudienceChoices, EmailTemplate, Reminder
+from meetings import services as meetings_services
+from meetings.models import AgendaItem, Decision, Meeting, MeetingMinutes, MeetingParticipant
 from messaging.access import is_staff_side
 from notifications import services as notification_services
 from notifications.emails import send_branded_email
@@ -19,10 +25,36 @@ from notifications.models import Notification
 from payments import services as payment_services
 from reviewer_dashboard.models import ReviewAssignment
 
+from . import reports as reports_data
+
 staff_required = user_passes_test(is_staff_side, login_url="pages:login")
 
+
+def parse_datetime_local(value):
+    """Parses an <input type="datetime-local"> value ("YYYY-MM-DDTHH:MM")
+    into a timezone-aware datetime in the server's current timezone --
+    that input has no timezone of its own, so naive-vs-aware is resolved
+    once, here, rather than at every call site."""
+    if not value:
+        return None
+    parsed = parse_datetime(value)
+    if parsed is None:
+        return None
+    return timezone.make_aware(parsed) if timezone.is_naive(parsed) else parsed
+
+
+def parse_date_as_datetime(value, *, end_of_day=False):
+    """Same idea as parse_datetime_local, for the plain <input type="date">
+    fields on Announcements (a start/expiry day, not a specific time)."""
+    day = parse_date(value or "")
+    if day is None:
+        return None
+    naive = timezone.datetime.combine(day, timezone.datetime.max.time() if end_of_day else timezone.datetime.min.time())
+    return timezone.make_aware(naive)
+
+
 REVIEWER_DIRECTORY_TABS = {"all", "available", "limited", "unavailable"}
-REVIEWER_ASSIGNMENT_TABS = {"assign", "pending", "workload"}
+REVIEWER_ASSIGNMENT_TABS = {"assign", "pending", "completed", "workload"}
 
 
 @login_required
@@ -34,15 +66,24 @@ def home(request):
         "under_review": base_qs.filter(status=Application.Status.UNDER_REVIEW).count(),
         "revisions": base_qs.filter(status=Application.Status.REVISIONS_REQUIRED).count(),
         "approved": base_qs.filter(status=Application.Status.APPROVED).count(),
+        # The stats strip is a 5-up grid (see .stats-grid) -- Pending
+        # Assignments is the fifth card, reusing the same "open" definition
+        # as the Reviewer Assignment page's own Pending tab (_open_assignments).
+        "pending_assignments": _open_assignments().count(),
     }
     submitted_qs = base_qs.filter(status=Application.Status.SUBMITTED)
     recent_submissions = submitted_qs.order_by("-submitted_at")[:8]
     oldest_submission = submitted_qs.order_by("submitted_at").first()
 
+    recent_activity = list(AuditLog.objects.select_related("actor").order_by("-created_at")[:6])
+    for log in recent_activity:
+        log.category = _audit_log_category(log.action)
+
     return render(request, "dashboards/secretariat.html", {
         "counts": counts,
         "recent_submissions": recent_submissions,
         "oldest_submission": oldest_submission,
+        "recent_activity": recent_activity,
         "notifications": notification_services.for_user(request.user, Notification.Audience.SECRETARIAT, limit=6),
         "unread_count": notification_services.unread_count(request.user, Notification.Audience.SECRETARIAT),
     })
@@ -70,6 +111,15 @@ def applications(request):
         # this is what keeps the "reviewer, deadline & stage" modal button
         # on every card from turning into an N+1.
         application.assignments = list(application.review_assignments.all())
+        # Surfaced directly on the card (not just inside the Reviewer &
+        # Stage modal) so a reviewer's finished assessment is visible at a
+        # glance instead of requiring an extra click to discover.
+        completed = [a for a in application.assignments if a.status == ReviewAssignment.Status.COMPLETED]
+        application.has_completed_review = bool(completed)
+        # Most-recently-completed first -- with multiple reviewers, the
+        # card only has room for one name, and the latest decision is the
+        # one most likely to be what the Secretariat is waiting on.
+        application.completed_reviewers = sorted(completed, key=lambda a: a.completed_at, reverse=True)
 
     return render(request, "dashboards/secretariat/applications.html", {
         "all_applications": all_applications,
@@ -151,7 +201,7 @@ def application_detail(request, pk):
     if request.method == "POST":
         action = request.POST.get("action")
         comment = request.POST.get("revision_comment", "")
-        ok, note = oversight.apply_transition(application, action, comment=comment)
+        ok, note = oversight.apply_transition(application, action, comment=comment, actor=request.user)
         if ok and action == "request_revisions":
             emailed = oversight.send_revisions_requested_email(request, application)
             note += " Applicant notified by email." if emailed else " (the notification email couldn't be sent)."
@@ -165,9 +215,14 @@ def application_detail(request, pk):
         for doc in (application.documents or [])
     ]
 
+    assignments = list(
+        application.review_assignments.select_related("reviewer").order_by("-assigned_at")
+    )
+
     return render(request, "dashboards/secretariat/application_detail.html", {
         "application": application,
         "documents": documents,
+        "assignments": assignments,
     })
 
 
@@ -358,6 +413,10 @@ def reviewer_assignment(request):
             assignment = ReviewAssignment.objects.create(
                 application=application, reviewer=reviewer, assigned_by=request.user, due_date=due_date,
             )
+            AuditLog.record(
+                request.user, "review_assignment.created", target=application,
+                description=f"Assigned to {reviewer.full_name}.",
+            )
             emailed = _send_assignment_email(request, assignment)
             suffix = "and notified by email." if emailed else "(the notification email couldn't be sent)."
             messages.success(
@@ -370,7 +429,12 @@ def reviewer_assignment(request):
                 messages.error(request, "That request could not be processed.")
                 return redirect(f"{request.path}?tab={tab}")
             assignment = get_object_or_404(
-                ReviewAssignment, pk=assignment_id, status=ReviewAssignment.Status.NEW,
+                ReviewAssignment.objects.select_related("application", "reviewer"),
+                pk=assignment_id, status=ReviewAssignment.Status.NEW,
+            )
+            AuditLog.record(
+                request.user, "review_assignment.withdrawn", target=assignment.application,
+                description=f"Withdrawn from {assignment.reviewer.full_name}.",
             )
             assignment.delete()
             messages.success(request, "Assignment withdrawn -- the application is available to assign again.")
@@ -411,6 +475,12 @@ def reviewer_assignment(request):
     for assignment in pending:
         assignment.tab_value = assignment.tab
 
+    completed = list(
+        ReviewAssignment.objects.filter(status=ReviewAssignment.Status.COMPLETED)
+        .select_related("application", "reviewer")
+        .order_by("-completed_at")
+    )
+
     workload = list(
         User.objects.filter(role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED)
         .annotate(
@@ -439,6 +509,7 @@ def reviewer_assignment(request):
     counts = {
         "assign": len(needs_assignment),
         "pending": len(pending),
+        "completed": len(completed),
         "workload": len(reviewers),
     }
 
@@ -446,6 +517,7 @@ def reviewer_assignment(request):
         "active_tab": active_tab,
         "needs_assignment": needs_assignment,
         "pending": pending,
+        "completed": completed,
         "workload": workload,
         "reviewers": reviewers,
         "counts": counts,
@@ -460,7 +532,835 @@ def reviewer_assignment_counts(request):
     return JsonResponse({
         "assign": _needs_assignment_qs().count(),
         "pending": _open_assignments().count(),
+        "completed": ReviewAssignment.objects.filter(status=ReviewAssignment.Status.COMPLETED).count(),
         "workload": User.objects.filter(
             role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED
         ).count(),
+    })
+
+
+# ---------------------------------------------------------------------
+# Communications -- Email Templates
+# ---------------------------------------------------------------------
+
+EMAIL_TEMPLATE_CATEGORIES = {c for c, _ in EmailTemplate.Category.choices}
+
+
+@login_required
+@staff_required
+def email_templates(request):
+    active_category = request.GET.get("category", "all")
+    templates = EmailTemplate.objects.all()
+    if active_category in EMAIL_TEMPLATE_CATEGORIES:
+        templates = templates.filter(category=active_category)
+
+    editing = None
+    edit_id = request.GET.get("edit")
+    if edit_id and edit_id != "new":
+        editing = get_object_or_404(EmailTemplate, pk=edit_id)
+    compose_open = bool(edit_id)
+
+    return render(request, "dashboards/secretariat/email-templates.html", {
+        "templates": templates.order_by("name"),
+        "categories": EmailTemplate.Category.choices,
+        "active_category": active_category,
+        "placeholders": EmailTemplate.PLACEHOLDERS,
+        "editing": editing,
+        "compose_open": compose_open,
+        "counts": {
+            "all": EmailTemplate.objects.count(),
+            "active": EmailTemplate.objects.filter(is_active=True).count(),
+        },
+    })
+
+
+@login_required
+@staff_required
+def email_template_save(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:email_templates")
+
+    pk = request.POST.get("pk")
+    name = (request.POST.get("name") or "").strip()
+    subject = (request.POST.get("subject") or "").strip()
+    body = (request.POST.get("body") or "").strip()
+    category = request.POST.get("category") or EmailTemplate.Category.GENERAL
+
+    if not name or not subject or not body:
+        messages.error(request, "Name, subject and body are all required.")
+        return redirect(f"{reverse('secretariat_dashboard:email_templates')}?edit={pk or 'new'}")
+
+    if category not in EMAIL_TEMPLATE_CATEGORIES:
+        category = EmailTemplate.Category.GENERAL
+
+    if pk:
+        template = get_object_or_404(EmailTemplate, pk=pk)
+        template.name, template.subject, template.body, template.category = name, subject, body, category
+        template.is_active = bool(request.POST.get("is_active"))
+        template.save()
+        messages.success(request, f'"{template.name}" was updated.')
+    else:
+        EmailTemplate.objects.create(
+            name=name, subject=subject, body=body, category=category,
+            is_active=bool(request.POST.get("is_active", True)), created_by=request.user,
+        )
+        messages.success(request, f'"{name}" was created.')
+
+    return redirect("secretariat_dashboard:email_templates")
+
+
+@login_required
+@staff_required
+def email_template_delete(request, pk):
+    template = get_object_or_404(EmailTemplate, pk=pk)
+    if request.method == "POST":
+        name = template.name
+        template.delete()
+        messages.success(request, f'"{name}" was deleted.')
+    return redirect("secretariat_dashboard:email_templates")
+
+
+@login_required
+@staff_required
+def email_template_preview(request, pk):
+    template = get_object_or_404(EmailTemplate, pk=pk)
+    return HttpResponse(render_template_preview(template))
+
+
+# ---------------------------------------------------------------------
+# Communications -- Notifications (compose + sent history, across every
+# audience -- the Secretariat's own bell only ever shows its own).
+# ---------------------------------------------------------------------
+
+@login_required
+@staff_required
+def notifications_page(request):
+    active_audience = request.GET.get("audience", "all")
+    notices = Notification.objects.all()
+    if active_audience != "all" and active_audience in Notification.Audience.values:
+        notices = notices.filter(audience=active_audience)
+
+    audience_rows = [
+        (value, label, Notification.objects.filter(audience=value).count())
+        for value, label in Notification.Audience.choices
+    ]
+
+    return render(request, "dashboards/secretariat/notifications.html", {
+        "notices": notices.order_by("-created_at")[:200],
+        "audiences": Notification.Audience.choices,
+        "audience_rows": audience_rows,
+        "active_audience": active_audience,
+        "icons": Notification.Icon.choices,
+    })
+
+
+@login_required
+@staff_required
+def notification_send(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:notifications_page")
+
+    audience = request.POST.get("audience")
+    message_text = (request.POST.get("message") or "").strip()
+    icon = request.POST.get("icon") or Notification.Icon.INFO
+
+    if audience not in Notification.Audience.values or not message_text:
+        messages.error(request, "Pick an audience and write a message before sending.")
+        return redirect("secretariat_dashboard:notifications_page")
+
+    if icon not in Notification.Icon.values:
+        icon = Notification.Icon.INFO
+
+    notification_services.notify(audience, message_text, icon=icon)
+    messages.success(request, f"Notification sent to {dict(Notification.Audience.choices)[audience]}.")
+    return redirect("secretariat_dashboard:notifications_page")
+
+
+# ---------------------------------------------------------------------
+# Communications -- Announcements
+# ---------------------------------------------------------------------
+
+@login_required
+@staff_required
+def announcements(request):
+    editing = None
+    edit_id = request.GET.get("edit")
+    if edit_id and edit_id != "new":
+        editing = get_object_or_404(Announcement, pk=edit_id)
+
+    now = timezone.now()
+    all_announcements = list(Announcement.objects.all())
+    for a in all_announcements:
+        a.live = a.is_live(now=now)
+
+    return render(request, "dashboards/secretariat/announcements.html", {
+        "announcements": all_announcements,
+        "audiences": AudienceChoices.choices,
+        "editing": editing,
+        "compose_open": bool(edit_id),
+        "counts": {
+            "all": len(all_announcements),
+            "live": sum(1 for a in all_announcements if a.live),
+        },
+    })
+
+
+@login_required
+@staff_required
+def announcement_save(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:announcements")
+
+    pk = request.POST.get("pk")
+    title = (request.POST.get("title") or "").strip()
+    body = (request.POST.get("body") or "").strip()
+    audience = request.POST.get("audience") or AudienceChoices.ALL
+    if audience not in AudienceChoices.values:
+        audience = AudienceChoices.ALL
+
+    if not title or not body:
+        messages.error(request, "Title and body are both required.")
+        return redirect(f"{reverse('secretariat_dashboard:announcements')}?edit={pk or 'new'}")
+
+    starts_at = parse_date_as_datetime(request.POST.get("starts_at"))
+    expires_at = parse_date_as_datetime(request.POST.get("expires_at"), end_of_day=True)
+    is_pinned = bool(request.POST.get("is_pinned"))
+
+    if pk:
+        announcement = get_object_or_404(Announcement, pk=pk)
+        announcement.title, announcement.body, announcement.audience = title, body, audience
+        announcement.is_pinned = is_pinned
+        announcement.starts_at = starts_at
+        announcement.expires_at = expires_at
+        announcement.save()
+        messages.success(request, f'"{announcement.title}" was updated.')
+    else:
+        Announcement.objects.create(
+            title=title, body=body, audience=audience, is_pinned=is_pinned,
+            starts_at=starts_at, expires_at=expires_at, created_by=request.user,
+        )
+        messages.success(request, f'"{title}" was published.')
+
+    return redirect("secretariat_dashboard:announcements")
+
+
+@login_required
+@staff_required
+def announcement_toggle(request, pk):
+    announcement = get_object_or_404(Announcement, pk=pk)
+    if request.method == "POST":
+        announcement.is_active = not announcement.is_active
+        announcement.save(update_fields=["is_active"])
+        messages.success(
+            request,
+            f'"{announcement.title}" is now {"active" if announcement.is_active else "hidden"}.',
+        )
+    return redirect("secretariat_dashboard:announcements")
+
+
+@login_required
+@staff_required
+def announcement_delete(request, pk):
+    announcement = get_object_or_404(Announcement, pk=pk)
+    if request.method == "POST":
+        title = announcement.title
+        announcement.delete()
+        messages.success(request, f'"{title}" was deleted.')
+    return redirect("secretariat_dashboard:announcements")
+
+
+# ---------------------------------------------------------------------
+# Communications -- Reminders
+# ---------------------------------------------------------------------
+
+@login_required
+@staff_required
+def reminders(request):
+    communications_services.dispatch_due_reminders()
+
+    active_tab = request.GET.get("tab", "scheduled")
+    if active_tab not in {"scheduled", "sent", "cancelled"}:
+        active_tab = "scheduled"
+
+    all_reminders = Reminder.objects.select_related("application", "created_by")
+    status_map = {"scheduled": Reminder.Status.SCHEDULED, "sent": Reminder.Status.SENT, "cancelled": Reminder.Status.CANCELLED}
+
+    return render(request, "dashboards/secretariat/reminders.html", {
+        "reminders": all_reminders.filter(status=status_map[active_tab]),
+        "active_tab": active_tab,
+        "audiences": AudienceChoices.choices,
+        "recent_applications": Application.objects.order_by("-submitted_at")[:100],
+        "counts": {key: all_reminders.filter(status=value).count() for key, value in status_map.items()},
+    })
+
+
+@login_required
+@staff_required
+def reminder_save(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:reminders")
+
+    title = (request.POST.get("title") or "").strip()
+    message_text = (request.POST.get("message") or "").strip()
+    audience = request.POST.get("audience") or AudienceChoices.APPLICANT
+    if audience not in AudienceChoices.values:
+        audience = AudienceChoices.APPLICANT
+    remind_at = parse_datetime_local(request.POST.get("remind_at"))
+    application_id = request.POST.get("application_id") or None
+
+    if not title or not message_text or not remind_at:
+        messages.error(request, "Title, message and a date/time are all required.")
+        return redirect("secretariat_dashboard:reminders")
+
+    Reminder.objects.create(
+        title=title, message=message_text, audience=audience, remind_at=remind_at,
+        application_id=application_id, send_email=bool(request.POST.get("send_email", True)),
+        created_by=request.user,
+    )
+    messages.success(request, f'Reminder "{title}" scheduled.')
+    return redirect("secretariat_dashboard:reminders")
+
+
+@login_required
+@staff_required
+def reminder_cancel(request, pk):
+    reminder = get_object_or_404(Reminder, pk=pk)
+    if request.method == "POST" and reminder.status == Reminder.Status.SCHEDULED:
+        reminder.status = Reminder.Status.CANCELLED
+        reminder.save(update_fields=["status"])
+        messages.success(request, f'Reminder "{reminder.title}" was cancelled.')
+    return redirect("secretariat_dashboard:reminders")
+
+
+@login_required
+@staff_required
+def reminder_send_now(request, pk):
+    reminder = get_object_or_404(Reminder, pk=pk)
+    if request.method == "POST" and reminder.status == Reminder.Status.SCHEDULED:
+        communications_services.dispatch_reminder(reminder)
+        messages.success(request, f'Reminder "{reminder.title}" was sent.')
+    return redirect("secretariat_dashboard:reminders")
+
+
+# ---------------------------------------------------------------------
+# Meetings -- Schedule, Calendar, Agenda, Attendance, Quorum, Minutes,
+# Decisions. All seven pages share one "which meeting am I looking at"
+# picker (the ?meeting= query param, defaulting to the next upcoming
+# one) so jumping between them keeps you on the same meeting.
+# ---------------------------------------------------------------------
+
+MEETING_PARTICIPANT_ROLES = (User.Role.CHAIR, User.Role.COMMITTEE, User.Role.SECRETARIAT)
+
+
+def _eligible_meeting_participants():
+    return User.objects.filter(role__in=MEETING_PARTICIPANT_ROLES, is_active=True).order_by("role", "first_name")
+
+
+def _meeting_queryset():
+    return Meeting.objects.select_related("chair", "created_by").prefetch_related(
+        "participants__user", "agenda_items", "decisions",
+    )
+
+
+def _selected_meeting(request):
+    meeting_id = request.GET.get("meeting") or request.POST.get("meeting")
+    qs = _meeting_queryset()
+    if meeting_id:
+        return get_object_or_404(qs, pk=meeting_id)
+    upcoming = qs.filter(
+        scheduled_at__gte=timezone.now(), status=Meeting.Status.SCHEDULED,
+    ).order_by("scheduled_at").first()
+    return upcoming or qs.order_by("-scheduled_at").first()
+
+
+def _default_role_for_user(user):
+    return {
+        User.Role.CHAIR: MeetingParticipant.ParticipantRole.CHAIR,
+        User.Role.SECRETARIAT: MeetingParticipant.ParticipantRole.SECRETARY,
+    }.get(user.role, MeetingParticipant.ParticipantRole.MEMBER)
+
+
+@login_required
+@staff_required
+def meetings_schedule(request):
+    upcoming = _meeting_queryset().filter(
+        scheduled_at__gte=timezone.now(), status=Meeting.Status.SCHEDULED,
+    ).order_by("scheduled_at")
+    return render(request, "dashboards/secretariat/meetings/schedule.html", {
+        "upcoming_meetings": upcoming,
+        "eligible_participants": _eligible_meeting_participants(),
+        "meeting_types": Meeting.MeetingType.choices,
+        "modes": Meeting.Mode.choices,
+        "now": timezone.now(),
+    })
+
+
+@login_required
+@staff_required
+def meeting_save(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:meetings_schedule")
+
+    title = (request.POST.get("title") or "").strip()
+    scheduled_at = parse_datetime_local(request.POST.get("scheduled_at"))
+    meeting_type = request.POST.get("meeting_type") or Meeting.MeetingType.FULL_COMMITTEE
+    mode = request.POST.get("mode") or Meeting.Mode.IN_PERSON
+    participant_ids = request.POST.getlist("participants")
+
+    if not title or not scheduled_at:
+        messages.error(request, "Title and date/time are both required.")
+        return redirect("secretariat_dashboard:meetings_schedule")
+    if meeting_type not in Meeting.MeetingType.values:
+        meeting_type = Meeting.MeetingType.FULL_COMMITTEE
+    if mode not in Meeting.Mode.values:
+        mode = Meeting.Mode.IN_PERSON
+
+    chair_id = request.POST.get("chair_id") or None
+    duration_minutes = request.POST.get("duration_minutes") or 120
+    quorum_required = request.POST.get("quorum_required") or 0
+
+    meeting = Meeting.objects.create(
+        title=title,
+        meeting_type=meeting_type,
+        description=(request.POST.get("description") or "").strip(),
+        scheduled_at=scheduled_at,
+        duration_minutes=int(duration_minutes) if str(duration_minutes).isdigit() else 120,
+        mode=mode,
+        location=(request.POST.get("location") or "").strip(),
+        meeting_link=(request.POST.get("meeting_link") or "").strip(),
+        quorum_required=int(quorum_required) if str(quorum_required).isdigit() else 0,
+        chair_id=chair_id,
+        created_by=request.user,
+    )
+
+    participants = []
+    for user in _eligible_meeting_participants().filter(pk__in=participant_ids):
+        participants.append(MeetingParticipant.objects.create(
+            meeting=meeting, user=user, role_at_meeting=_default_role_for_user(user),
+        ))
+
+    agenda_titles = request.POST.getlist("agenda_title")
+    agenda_presenters = request.POST.getlist("agenda_presenter")
+    agenda_durations = request.POST.getlist("agenda_duration")
+    for index, agenda_title in enumerate(agenda_titles):
+        agenda_title = agenda_title.strip()
+        if not agenda_title:
+            continue
+        duration = agenda_durations[index] if index < len(agenda_durations) else "10"
+        AgendaItem.objects.create(
+            meeting=meeting, order=index, title=agenda_title,
+            presenter=(agenda_presenters[index].strip() if index < len(agenda_presenters) else ""),
+            duration_minutes=int(duration) if str(duration).isdigit() else 10,
+        )
+
+    AuditLog.record(request.user, "meeting.scheduled", target=meeting, description=f"{len(participants)} participant(s) invited.")
+
+    emailed = meetings_services.send_meeting_invites(meeting, participants=participants, kind="invitation")
+    messages.success(
+        request,
+        f'"{meeting.title}" scheduled for {meeting.scheduled_at:%d %b %Y, %I:%M %p} — {emailed} invitation email(s) sent.',
+    )
+    return redirect("secretariat_dashboard:meetings_schedule")
+
+
+@login_required
+@staff_required
+def meeting_cancel(request, pk):
+    meeting = get_object_or_404(Meeting, pk=pk)
+    if request.method == "POST" and meeting.status != Meeting.Status.CANCELLED:
+        meeting.status = Meeting.Status.CANCELLED
+        meeting.save(update_fields=["status"])
+        meetings_services.send_meeting_invites(meeting, kind="cancellation")
+        AuditLog.record(request.user, "meeting.cancelled", target=meeting)
+        messages.success(request, f'"{meeting.title}" was cancelled and participants were notified.')
+    return redirect("secretariat_dashboard:meetings_schedule")
+
+
+@login_required
+@staff_required
+def meetings_calendar(request):
+    import calendar as _calendar
+    from collections import defaultdict
+
+    today = timezone.localdate()
+    try:
+        year = int(request.GET.get("year", today.year))
+        month = int(request.GET.get("month", today.month))
+    except ValueError:
+        year, month = today.year, today.month
+
+    first_of_month = timezone.datetime(year, month, 1)
+    if month == 12:
+        next_month = timezone.datetime(year + 1, 1, 1)
+    else:
+        next_month = timezone.datetime(year, month + 1, 1)
+
+    month_meetings = _meeting_queryset().filter(
+        scheduled_at__date__gte=first_of_month.date(), scheduled_at__date__lt=next_month.date(),
+    ).order_by("scheduled_at")
+
+    by_day = defaultdict(list)
+    for meeting in month_meetings:
+        by_day[meeting.scheduled_at.day].append(meeting)
+
+    cal = _calendar.Calendar(firstweekday=6)  # Sunday-first grid
+    weeks = []
+    for week in cal.monthdayscalendar(year, month):
+        week_rows = []
+        for day in week:
+            week_rows.append({
+                "day": day,
+                "is_today": day and today.year == year and today.month == month and today.day == day,
+                "meetings": by_day.get(day, []) if day else [],
+            })
+        weeks.append(week_rows)
+
+    prev_month = (year, month - 1) if month > 1 else (year - 1, 12)
+    forward_month = (year, month + 1) if month < 12 else (year + 1, 1)
+
+    return render(request, "dashboards/secretariat/meetings/calendar.html", {
+        "weeks": weeks,
+        "month_label": first_of_month.strftime("%B %Y"),
+        "prev_year": prev_month[0], "prev_month": prev_month[1],
+        "next_year": forward_month[0], "next_month": forward_month[1],
+        "cur_year": year, "cur_month": month,
+        "today_year": today.year, "today_month": today.month,
+        "upcoming_meetings": _meeting_queryset().filter(
+            scheduled_at__gte=timezone.now(), status=Meeting.Status.SCHEDULED,
+        ).order_by("scheduled_at")[:6],
+    })
+
+
+@login_required
+@staff_required
+def meetings_agenda(request):
+    meeting = _selected_meeting(request)
+    return render(request, "dashboards/secretariat/meetings/agenda.html", {
+        "meetings": _meeting_queryset().order_by("-scheduled_at")[:100],
+        "meeting": meeting,
+        "agenda_items": meeting.agenda_items.select_related("application").order_by("order", "id") if meeting else [],
+        "recent_applications": Application.objects.order_by("-submitted_at")[:100],
+    })
+
+
+@login_required
+@staff_required
+def agenda_item_save(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:meetings_agenda")
+    meeting = get_object_or_404(Meeting, pk=request.POST.get("meeting_id"))
+    pk = request.POST.get("pk")
+    title = (request.POST.get("title") or "").strip()
+    if not title:
+        messages.error(request, "An agenda item needs a title.")
+        return redirect(f"{reverse('secretariat_dashboard:meetings_agenda')}?meeting={meeting.pk}")
+
+    duration = request.POST.get("duration_minutes") or 10
+    application_id = request.POST.get("application_id") or None
+    fields = dict(
+        title=title,
+        description=(request.POST.get("description") or "").strip(),
+        presenter=(request.POST.get("presenter") or "").strip(),
+        duration_minutes=int(duration) if str(duration).isdigit() else 10,
+        application_id=application_id,
+    )
+    if pk:
+        AgendaItem.objects.filter(pk=pk, meeting=meeting).update(**fields)
+        messages.success(request, "Agenda item updated.")
+    else:
+        fields["order"] = meeting.agenda_items.count()
+        AgendaItem.objects.create(meeting=meeting, **fields)
+        messages.success(request, "Agenda item added.")
+    return redirect(f"{reverse('secretariat_dashboard:meetings_agenda')}?meeting={meeting.pk}")
+
+
+@login_required
+@staff_required
+def agenda_item_delete(request, pk):
+    item = get_object_or_404(AgendaItem, pk=pk)
+    meeting_id = item.meeting_id
+    if request.method == "POST":
+        item.delete()
+        messages.success(request, "Agenda item removed.")
+    return redirect(f"{reverse('secretariat_dashboard:meetings_agenda')}?meeting={meeting_id}")
+
+
+@login_required
+@staff_required
+def meetings_attendance(request):
+    meeting = _selected_meeting(request)
+    participants = meeting.participants.select_related("user").order_by("role_at_meeting", "user__first_name") if meeting else []
+    return render(request, "dashboards/secretariat/meetings/attendance.html", {
+        "meetings": _meeting_queryset().order_by("-scheduled_at")[:100],
+        "meeting": meeting,
+        "participants": participants,
+        "eligible_participants": _eligible_meeting_participants(),
+        "rsvp_statuses": MeetingParticipant.RsvpStatus.choices,
+    })
+
+
+@login_required
+@staff_required
+def attendance_add_participant(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:meetings_attendance")
+    meeting = get_object_or_404(Meeting, pk=request.POST.get("meeting_id"))
+    user = get_object_or_404(_eligible_meeting_participants(), pk=request.POST.get("user_id"))
+    participant, created = MeetingParticipant.objects.get_or_create(
+        meeting=meeting, user=user, defaults={"role_at_meeting": _default_role_for_user(user)},
+    )
+    if created:
+        meetings_services.send_meeting_invites(meeting, participants=[participant], kind="invitation")
+        messages.success(request, f"{user.full_name} added and invited.")
+    else:
+        messages.info(request, f"{user.full_name} is already on this meeting's list.")
+    return redirect(f"{reverse('secretariat_dashboard:meetings_attendance')}?meeting={meeting.pk}")
+
+
+@login_required
+@staff_required
+def attendance_mark(request, pk):
+    participant = get_object_or_404(MeetingParticipant, pk=pk)
+    if request.method == "POST":
+        field = request.POST.get("field")
+        if field == "attended":
+            participant.attended = not participant.attended
+            participant.checked_in_at = timezone.now() if participant.attended else None
+            participant.save(update_fields=["attended", "checked_in_at"])
+        elif field == "rsvp":
+            rsvp = request.POST.get("rsvp_status")
+            if rsvp in MeetingParticipant.RsvpStatus.values:
+                participant.rsvp_status = rsvp
+                participant.responded_at = timezone.now()
+                participant.save(update_fields=["rsvp_status", "responded_at"])
+    return redirect(f"{reverse('secretariat_dashboard:meetings_attendance')}?meeting={participant.meeting_id}")
+
+
+@login_required
+@staff_required
+def attendance_remove_participant(request, pk):
+    participant = get_object_or_404(MeetingParticipant, pk=pk)
+    meeting_id = participant.meeting_id
+    if request.method == "POST":
+        participant.delete()
+        messages.success(request, "Participant removed from this meeting.")
+    return redirect(f"{reverse('secretariat_dashboard:meetings_attendance')}?meeting={meeting_id}")
+
+
+@login_required
+@staff_required
+def meetings_quorum(request):
+    meeting = _selected_meeting(request)
+    quorum_pct = 0
+    if meeting and meeting.quorum_required:
+        quorum_pct = min(100, round(meeting.attended_voting_count() / meeting.quorum_required * 100))
+    return render(request, "dashboards/secretariat/meetings/quorum.html", {
+        "meetings": _meeting_queryset().order_by("-scheduled_at")[:100],
+        "meeting": meeting,
+        "quorum_pct": quorum_pct,
+    })
+
+
+@login_required
+@staff_required
+def quorum_update(request, pk):
+    meeting = get_object_or_404(Meeting, pk=pk)
+    if request.method == "POST":
+        value = request.POST.get("quorum_required") or 0
+        meeting.quorum_required = int(value) if str(value).isdigit() else 0
+        meeting.save(update_fields=["quorum_required"])
+        messages.success(request, f"Quorum requirement set to {meeting.quorum_required}.")
+    return redirect(f"{reverse('secretariat_dashboard:meetings_quorum')}?meeting={meeting.pk}")
+
+
+@login_required
+@staff_required
+def meetings_minutes(request):
+    meeting = _selected_meeting(request)
+    minutes = None
+    if meeting:
+        minutes, _ = MeetingMinutes.objects.get_or_create(meeting=meeting)
+    return render(request, "dashboards/secretariat/meetings/minutes.html", {
+        "meetings": _meeting_queryset().order_by("-scheduled_at")[:100],
+        "meeting": meeting,
+        "minutes": minutes,
+    })
+
+
+@login_required
+@staff_required
+def minutes_save(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:meetings_minutes")
+    meeting = get_object_or_404(Meeting, pk=request.POST.get("meeting_id"))
+    minutes, _ = MeetingMinutes.objects.get_or_create(meeting=meeting)
+    minutes.content = request.POST.get("content") or ""
+    minutes.recorded_by = request.user
+    minutes.save(update_fields=["content", "recorded_by", "updated_at"])
+    messages.success(request, "Minutes saved.")
+    return redirect(f"{reverse('secretariat_dashboard:meetings_minutes')}?meeting={meeting.pk}")
+
+
+@login_required
+@staff_required
+def minutes_finalize(request, pk):
+    minutes = get_object_or_404(MeetingMinutes, pk=pk)
+    if request.method == "POST":
+        minutes.is_finalized = not minutes.is_finalized
+        minutes.finalized_at = timezone.now() if minutes.is_finalized else None
+        minutes.save(update_fields=["is_finalized", "finalized_at"])
+        if minutes.is_finalized and minutes.meeting.status == Meeting.Status.SCHEDULED and minutes.meeting.is_past:
+            minutes.meeting.status = Meeting.Status.COMPLETED
+            minutes.meeting.save(update_fields=["status"])
+        messages.success(request, "Minutes finalized." if minutes.is_finalized else "Minutes reopened for editing.")
+    return redirect(f"{reverse('secretariat_dashboard:meetings_minutes')}?meeting={minutes.meeting_id}")
+
+
+@login_required
+@staff_required
+def meetings_decisions(request):
+    meeting_id = request.GET.get("meeting")
+    all_decisions = Decision.objects.select_related("meeting", "agenda_item", "application")
+    if meeting_id:
+        all_decisions = all_decisions.filter(meeting_id=meeting_id)
+        meeting = get_object_or_404(_meeting_queryset(), pk=meeting_id)
+    else:
+        meeting = _selected_meeting(request)
+    return render(request, "dashboards/secretariat/meetings/decisions.html", {
+        "meetings": _meeting_queryset().order_by("-scheduled_at")[:100],
+        "meeting": meeting,
+        "selected_meeting_id": meeting_id,
+        "decisions": all_decisions[:200],
+        "outcomes": Decision.Outcome.choices,
+        "recent_applications": Application.objects.order_by("-submitted_at")[:100],
+    })
+
+
+@login_required
+@staff_required
+def decision_save(request):
+    if request.method != "POST":
+        return redirect("secretariat_dashboard:meetings_decisions")
+    meeting = get_object_or_404(Meeting, pk=request.POST.get("meeting_id"))
+    title = (request.POST.get("title") or "").strip()
+    if not title:
+        messages.error(request, "A decision needs a title.")
+        return redirect(f"{reverse('secretariat_dashboard:meetings_decisions')}?meeting={meeting.pk}")
+
+    outcome = request.POST.get("outcome") or Decision.Outcome.NOTED
+    if outcome not in Decision.Outcome.values:
+        outcome = Decision.Outcome.NOTED
+    agenda_item_id = request.POST.get("agenda_item_id") or None
+    application_id = request.POST.get("application_id") or None
+
+    def _int(name):
+        value = request.POST.get(name) or 0
+        return int(value) if str(value).isdigit() else 0
+
+    Decision.objects.create(
+        meeting=meeting, agenda_item_id=agenda_item_id, application_id=application_id,
+        title=title, outcome=outcome, details=(request.POST.get("details") or "").strip(),
+        votes_for=_int("votes_for"), votes_against=_int("votes_against"), votes_abstain=_int("votes_abstain"),
+        recorded_by=request.user,
+    )
+    AuditLog.record(request.user, "meeting.decision_recorded", target=meeting, description=title)
+    messages.success(request, f'Decision "{title}" recorded.')
+    return redirect(f"{reverse('secretariat_dashboard:meetings_decisions')}?meeting={meeting.pk}")
+
+
+@login_required
+@staff_required
+def decision_delete(request, pk):
+    decision = get_object_or_404(Decision, pk=pk)
+    meeting_id = decision.meeting_id
+    if request.method == "POST":
+        decision.delete()
+        messages.success(request, "Decision removed.")
+    return redirect(f"{reverse('secretariat_dashboard:meetings_decisions')}?meeting={meeting_id}")
+
+
+# ---------------------------------------------------------------------
+# Reports & Analytics -- one page, seven tabs. All seven are computed
+# and rendered on every request (see secretariat_dashboard/reports.py)
+# so switching tabs in the browser is instant show/hide, no round trip
+# -- the query volume behind each tab is small enough that this is
+# cheaper than it sounds, and far nicer to use than a spinner per tab.
+# ---------------------------------------------------------------------
+
+@login_required
+@staff_required
+def reports(request):
+    return render(request, "dashboards/secretariat/reports.html", {
+        "application_stats": reports_data.application_statistics(),
+        "status_report": reports_data.status_reports(),
+        "turnaround": reports_data.turnaround_times(),
+        "workload": reports_data.reviewer_workload(),
+        "committee": reports_data.committee_activity(),
+        "compliance": reports_data.post_approval_compliance(),
+        "financial": reports_data.financial_reports(),
+    })
+
+
+# ---------------------------------------------------------------------
+# Audit Logs -- read-only trail of AuditLog.record() calls across the
+# whole platform (see accounts.models.AuditLog). Grouped by action
+# prefix ("user.", "application.", "review_assignment.", "role.")
+# rather than a fixed choices list, since that's how AuditLog itself
+# stores actions -- new prefixes just show up under "Other" until this
+# CATEGORY map is taught about them.
+# ---------------------------------------------------------------------
+
+AUDIT_LOG_CATEGORIES = {
+    "all": None,
+    "users": "user.",
+    "applications": "application.",
+    "reviews": "review_assignment.",
+    "roles": "role.",
+}
+
+
+def _audit_log_category(action):
+    for key, prefix in AUDIT_LOG_CATEGORIES.items():
+        if prefix and action.startswith(prefix):
+            return key
+    return "other"
+
+
+@login_required
+@staff_required
+def audit_logs(request):
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in AUDIT_LOG_CATEGORIES:
+        active_tab = "all"
+    query = request.GET.get("q", "").strip()
+
+    base_qs = AuditLog.objects.select_related("actor").order_by("-created_at")
+    if query:
+        base_qs = base_qs.filter(
+            Q(actor__first_name__icontains=query) | Q(actor__last_name__icontains=query)
+            | Q(actor__email__icontains=query) | Q(action__icontains=query)
+            | Q(target_label__icontains=query) | Q(description__icontains=query)
+        )
+
+    counts = {"all": base_qs.count()}
+    for key, prefix in AUDIT_LOG_CATEGORIES.items():
+        if prefix:
+            counts[key] = base_qs.filter(action__startswith=prefix).count()
+    counts["other"] = counts["all"] - sum(v for k, v in counts.items() if k not in ("all", "other"))
+
+    scoped_qs = base_qs
+    prefix = AUDIT_LOG_CATEGORIES.get(active_tab)
+    if prefix:
+        scoped_qs = base_qs.filter(action__startswith=prefix)
+
+    paginator = Paginator(scoped_qs, 40)
+    page = paginator.get_page(request.GET.get("page"))
+    for log in page:
+        log.category = _audit_log_category(log.action)
+
+    return render(request, "dashboards/secretariat/audit-logs.html", {
+        "page": page,
+        "counts": counts,
+        "active_tab": active_tab,
+        "query": query,
     })

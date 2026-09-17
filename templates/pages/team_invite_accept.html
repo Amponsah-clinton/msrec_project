@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block title %}Research Team Invitation - MSREC | Metascholar Research Ethics Committee{% endblock %}
+{% block body_class %}team-invite-page{% endblock %}
+
+{% block content %}
+  <main class="main">
+    <section class="section" style="padding:120px 0 100px;">
+      <div class="container" style="max-width:620px;">
+        <div style="background:var(--surface-color);border:1px solid color-mix(in srgb, var(--default-color), transparent 90%);border-radius:14px;padding:44px 40px;text-align:center;">
+
+          {% if valid %}
+            <div style="width:64px;height:64px;border-radius:50%;background:color-mix(in srgb, var(--accent-color), transparent 85%);display:flex;align-items:center;justify-content:center;margin:0 auto 22px;">
+              <i class="bi bi-check-lg" style="font-size:30px;color:var(--accent-color);"></i>
+            </div>
+            <h1 style="font-size:24px;margin-bottom:12px;">Invitation confirmed</h1>
+            <p style="color:color-mix(in srgb, var(--default-color), transparent 30%);margin-bottom:6px;">
+              You're now listed as <strong>{{ member.get_role_display }}</strong> on
+              {{ member.applicant.full_name }}'s research team on MSREC.
+            </p>
+            <p style="color:color-mix(in srgb, var(--default-color), transparent 40%);font-size:14px;">
+              Nothing further is required from you right now &mdash; the Principal Investigator can reach you at
+              {{ member.email }} for anything related to this study.
+            </p>
+          {% else %}
+            <div style="width:64px;height:64px;border-radius:50%;background:color-mix(in srgb, #d9534f, transparent 88%);display:flex;align-items:center;justify-content:center;margin:0 auto 22px;">
+              <i class="bi bi-exclamation-lg" style="font-size:30px;color:#d9534f;"></i>
+            </div>
+            <h1 style="font-size:24px;margin-bottom:12px;">Invitation not found</h1>
+            <p style="color:color-mix(in srgb, var(--default-color), transparent 30%);">
+              This invitation link is invalid or has already been used. If you believe this is a mistake,
+              contact the person who invited you and ask them to resend it.
+            </p>
+          {% endif %}
+
+          <a href="{% url 'pages:index' %}" class="btn-get-started" style="margin-top:24px;display:inline-block;">Go to MSREC</a>
+        </div>
+      </div>
+    </section>
+  </main>
+{% endblock %}

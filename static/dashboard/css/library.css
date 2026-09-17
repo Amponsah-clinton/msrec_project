@@ -1,0 +1,181 @@
+/* ==========================================================
+   MSREC Reviewer — Committee Meetings & Policies/Guidance library pages
+   Same flat, token-driven visual language as coi.css / accounts.css --
+   two new component shapes: a calendar-tile meeting card, and a
+   file-tile document row, both reused across all five library pages.
+========================================================== */
+
+/* ---------------- Meeting card ---------------- */
+.meeting-card {
+  display: flex;
+  gap: 18px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  transition: box-shadow .15s, transform .15s;
+}
+.meeting-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+
+.meeting-date-tile {
+  width: 68px;
+  height: 68px;
+  border-radius: var(--radius-sm);
+  background: var(--teal-light);
+  color: var(--teal);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.meeting-date-tile .meeting-date-day { font-size: 24px; font-weight: 800; line-height: 1.1; }
+.meeting-date-tile .meeting-date-month { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
+
+.meeting-body { flex: 1; min-width: 0; }
+.meeting-body-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.meeting-body h4 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main); }
+.meeting-body-top .badge-tag { flex-shrink: 0; }
+
+.meeting-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: var(--text-sub);
+}
+.meeting-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.meeting-meta svg { width: 14px; height: 14px; flex-shrink: 0; stroke: currentColor; fill: none; stroke-width: 2; color: var(--text-faint); }
+.meeting-meta a { color: var(--teal); font-weight: 600; text-decoration: none; }
+.meeting-meta a:hover { text-decoration: underline; }
+
+.meeting-agenda {
+  margin-top: 14px;
+  border-top: 1px dashed var(--border);
+  padding-top: 12px;
+}
+.meeting-agenda summary {
+  cursor: pointer;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--teal);
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.meeting-agenda summary::-webkit-details-marker { display: none; }
+.meeting-agenda summary::before { content: "▸"; font-size: 10px; transition: transform .15s; }
+.meeting-agenda[open] summary::before { transform: rotate(90deg); }
+.meeting-agenda-body {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--text-main);
+  line-height: 1.7;
+  white-space: pre-line;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+/* ---------------- Document row ---------------- */
+.doc-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+  transition: box-shadow .15s, transform .15s;
+}
+.doc-row:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+
+.doc-icon-tile {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--red-light);
+  color: var(--red);
+}
+.doc-icon-tile svg { width: 20px; height: 20px; }
+
+.doc-info { flex: 1; min-width: 0; }
+.doc-info h4 { margin: 0; font-size: 14px; font-weight: 700; color: var(--text-main); }
+.doc-info p { margin: 3px 0 0; font-size: 12.5px; color: var(--text-sub); }
+.doc-info .doc-desc { margin-top: 6px; font-size: 12.5px; color: var(--text-sub); line-height: 1.6; }
+
+.doc-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 9px 16px;
+  border-radius: 50px;
+  background: var(--teal);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background .15s;
+}
+.doc-download-btn:hover { background: color-mix(in srgb, var(--teal), black 10%); color: #fff; }
+.doc-download-btn svg { width: 14px; height: 14px; }
+.doc-download-btn.disabled {
+  background: var(--gray-light);
+  color: var(--text-faint);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* ---------------- Grouped document list (Meeting Documents page) ---------------- */
+.doc-group-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 22px 0 12px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.doc-group-title:first-child { margin-top: 0; }
+.doc-group-title span.count { color: var(--text-faint); font-weight: 500; text-transform: none; letter-spacing: 0; }
+
+.doc-list, .meeting-list { display: flex; flex-direction: column; gap: 12px; }
+
+/* ---------------- Policy category chips (shared header across the 3 policy pages) ---------------- */
+.policy-category-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.policy-category-tabs a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 50px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  color: var(--text-sub);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.policy-category-tabs a:hover { border-color: color-mix(in srgb, var(--teal) 40%, var(--border)); }
+.policy-category-tabs a.active { background: var(--teal-light); border-color: var(--teal); color: var(--teal); }
+
+@media (max-width: 640px) {
+  .meeting-card { flex-direction: column; }
+  .doc-row { flex-wrap: wrap; }
+  .doc-download-btn { width: 100%; justify-content: center; }
+}

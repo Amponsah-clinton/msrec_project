@@ -1,0 +1,112 @@
+/* ==========================================================
+   MSREC Admin — Review Pathway pages (Determination/Exemption,
+   Expedited, Full Committee). Same flat, token-driven language as the
+   rest of the dashboard -- one accent color per pathway (set once via
+   a data attribute) rather than three near-identical stylesheets.
+========================================================== */
+
+.pathway-hero {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 18px;
+  margin-bottom: 20px;
+  align-items: stretch;
+}
+
+.pathway-criteria-panel,
+.pathway-info-panel {
+  padding: 22px 24px;
+}
+
+.pathway-criteria-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.pathway-criteria-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 11px 13px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 13px;
+  color: var(--text-main);
+  line-height: 1.55;
+}
+.pathway-criteria-list li svg {
+  flex-shrink: 0;
+  width: 15px;
+  height: 15px;
+  margin-top: 2px;
+}
+
+/* Accent applied to the section icon badge + list-item check marks --
+   set once per page via [data-pathway-accent] rather than a class per
+   node, so the three pathway pages share one stylesheet instead of
+   three near-duplicate ones. */
+[data-pathway-accent="green"] .pathway-accent-icon  { background: var(--green-light);  color: var(--green); }
+[data-pathway-accent="teal"]  .pathway-accent-icon  { background: var(--teal-light);   color: var(--teal); }
+[data-pathway-accent="purple"] .pathway-accent-icon { background: var(--purple-light); color: var(--purple); }
+
+[data-pathway-accent="green"] .pathway-criteria-list li svg  { color: var(--green); }
+[data-pathway-accent="teal"]  .pathway-criteria-list li svg  { color: var(--teal); }
+[data-pathway-accent="purple"] .pathway-criteria-list li svg { color: var(--purple); }
+
+.pathway-accent-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.pathway-accent-icon svg { width: 18px; height: 18px; }
+
+.pathway-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.pathway-panel-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-sub);
+  line-height: 1.6;
+}
+
+.pathway-info-panel { display: flex; flex-direction: column; }
+.pathway-info-rows { display: flex; flex-direction: column; margin-top: 6px; }
+.pathway-info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pathway-info-row:last-child { border-bottom: none; }
+.pathway-info-row-label {
+  font-size: 12px;
+  color: var(--text-sub);
+  font-weight: 500;
+}
+.pathway-info-row-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-main);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+@media (max-width: 980px) {
+  .pathway-hero { grid-template-columns: 1fr; }
+}

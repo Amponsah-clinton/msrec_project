@@ -4,19 +4,22 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from accounts.models import User
+from accounts.models import AuditLog, User
 from accounts.sessions import active_sessions_for
 from applicant_dashboard import storage as application_storage
 from notifications.models import Notification
 from notifications.services import notify
+from pages import documents_storage
+from pages.models import CommitteeMeeting, MeetingDocument, PolicyDocument
 
 from . import storage
 from .models import ReviewAssignment
+from .pdf import render_assessment_pdf
 
 TABS = {"all", "new", "accepted", "due_overdue", "completed"}
 
@@ -136,6 +139,126 @@ def my_reviews(request):
 
 @login_required
 @reviewer_required
+def coi_pending(request):
+    """Every accepted-but-not-yet-completed assignment -- COI declaration
+    happens inside the Reviewer Declaration section at the top of the
+    Ethical Review Assessment Form itself (see _handle_submit_assessment),
+    not as a separate step, so "pending" here means exactly the assignments
+    that haven't reached that form's submit yet. Excludes New assignments
+    on purpose -- there's nothing to declare a conflict against until the
+    reviewer has actually accepted the assignment."""
+    assignments = list(
+        _assignments_for(request.user)
+        .filter(status=ReviewAssignment.Status.ACCEPTED)
+        .order_by("due_date")
+    )
+    for assignment in assignments:
+        _annotate_due(assignment)
+
+    return render(request, "dashboards/reviewer/coi-pending.html", {
+        "assignments": assignments,
+        "due_soon_count": sum(1 for a in assignments if a.due_date and 0 <= a.days_remaining <= 7),
+        "no_due_count": sum(1 for a in assignments if not a.due_date),
+    })
+
+
+@login_required
+@reviewer_required
+def coi_previous(request):
+    """Every assignment whose COI declaration was already made -- i.e.
+    every Completed assignment, since coi_declared flips True at the same
+    moment status flips to Completed. completed_at doubles as "when this
+    declaration was made" -- there's no separate coi_declared_at column,
+    because nothing today can complete the assessment without declaring
+    COI in the same submit."""
+    assignments = list(
+        _assignments_for(request.user)
+        .filter(status=ReviewAssignment.Status.COMPLETED, coi_declared=True)
+        .order_by("-completed_at")
+    )
+    return render(request, "dashboards/reviewer/coi-previous.html", {
+        "assignments": assignments,
+        "conflict_count": sum(1 for a in assignments if a.coi_has_conflict),
+        "clear_count": sum(1 for a in assignments if not a.coi_has_conflict),
+    })
+
+
+@login_required
+@reviewer_required
+def committee_meetings(request):
+    """Every scheduled meeting that hasn't happened yet, soonest first --
+    a straight, un-tabbed read of pages.models.CommitteeMeeting (managed
+    from Django admin by the Secretariat)."""
+    meetings = list(
+        CommitteeMeeting.objects.filter(scheduled_at__gte=timezone.now()).order_by("scheduled_at")
+    )
+    return render(request, "dashboards/reviewer/committee-meetings.html", {
+        "meetings": meetings,
+    })
+
+
+@login_required
+@reviewer_required
+def meeting_documents(request):
+    """Every document attached to any meeting, most recent meeting first --
+    the packet/agenda/minutes library, separate from the meetings list
+    itself. Downloads are a direct public URL into the "ethics" bucket
+    (pages/documents_storage.py) -- reviewer-only in practice because
+    this page itself is gated, not because the link is secret."""
+    documents = list(
+        MeetingDocument.objects.select_related("meeting")
+        .order_by("-meeting__scheduled_at", "-uploaded_at")
+    )
+    for doc in documents:
+        doc.download_url = documents_storage.public_url(doc.file_path) if doc.file_path else None
+
+    return render(request, "dashboards/reviewer/meeting-documents.html", {
+        "documents": documents,
+    })
+
+
+def _policy_documents_page(request, *, category, page_title, page_subtitle):
+    documents = list(PolicyDocument.objects.filter(category=category))
+    for doc in documents:
+        doc.download_url = documents_storage.public_url(doc.file_path) if doc.file_path else None
+
+    return render(request, "dashboards/reviewer/policy-documents.html", {
+        "documents": documents,
+        "page_title": page_title,
+        "page_subtitle": page_subtitle,
+        "active_key": category,
+    })
+
+
+@login_required
+@reviewer_required
+def policy_sops(request):
+    return _policy_documents_page(
+        request, category=PolicyDocument.Category.SOP, page_title="MSREC SOPs",
+        page_subtitle="Standard operating procedures that govern how MSREC reviews are run",
+    )
+
+
+@login_required
+@reviewer_required
+def policy_guidance(request):
+    return _policy_documents_page(
+        request, category=PolicyDocument.Category.GUIDANCE, page_title="Reviewer Guidance",
+        page_subtitle="Practical guidance for conducting a thorough, consistent ethics review",
+    )
+
+
+@login_required
+@reviewer_required
+def policy_ethics(request):
+    return _policy_documents_page(
+        request, category=PolicyDocument.Category.ETHICS, page_title="Ethics Guidelines",
+        page_subtitle="MSREC's foundational ethics standards and guidance documents",
+    )
+
+
+@login_required
+@reviewer_required
 def my_reviews_counts(request):
     """Polled by live-counts.js to keep the My Reviews tab badges current
     without a page reload -- e.g. the Secretariat assigns a new review
@@ -243,6 +366,10 @@ def _handle_submit_assessment(request, assignment):
     ])
 
     ref = assignment.application.reference_no or assignment.application.title
+    AuditLog.record(
+        request.user, "review_assignment.completed", target=assignment.application,
+        description=f"Recommendation: {assignment.get_recommendation_display()}.",
+    )
     notify(
         Notification.Audience.SECRETARIAT,
         f"{request.user.full_name} submitted their assessment for {ref}: "
@@ -294,6 +421,25 @@ def review_application(request, assignment_id):
         # `assignment.checklist.rationale` via the `default` filter.
         "posted": request.POST if request.method == "POST" else None,
     })
+
+
+@login_required
+@reviewer_required
+def review_application_pdf(request, assignment_id):
+    """Downloadable PDF of a submitted Ethical Review Assessment Form --
+    only exists once there's something to export, so this 404s on
+    anything but a Completed assignment (same pk + reviewer scoping as
+    review_application itself, for the same reason)."""
+    assignment = get_object_or_404(
+        ReviewAssignment.objects.select_related("application", "application__applicant", "reviewer"),
+        pk=assignment_id, reviewer=request.user, status=ReviewAssignment.Status.COMPLETED,
+    )
+    pdf_bytes = render_assessment_pdf(assignment)
+    ref = assignment.application.reference_no or f"assignment-{assignment.pk}"
+    filename = f"MSREC Ethical Review Assessment - {ref}.pdf".replace("/", "-")
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 # ---------------------------------------------------------------------

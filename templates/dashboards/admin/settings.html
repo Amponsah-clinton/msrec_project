@@ -10,7 +10,114 @@
 {% endblock %}
 
 {% block nav_content %}
+<<<<<<< HEAD
       {% include "dashboards/admin/_nav.html" with active="settings" %}
+=======
+      <a href="{% url 'admin_dashboard:home' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg></span>
+        <span>Dashboard</span>
+      </a>
+
+      <a href="{% url 'admin_dashboard:accounts' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+        <span>Users &amp; Roles</span>
+      </a>
+
+      <a href="{% url 'admin_dashboard:inquiries' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+        <span>Inquiries</span>
+      </a>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
+          <span>Applications</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'admin_dashboard:applications' %}" class="nav-sublink">All Applications</a>
+          <a href="{% url 'admin_dashboard:review_pathway' 'exemption' %}" class="nav-sublink">Determination / Exemption</a>
+          <a href="{% url 'admin_dashboard:review_pathway' 'expedited' %}" class="nav-sublink">Expedited</a>
+          <a href="{% url 'admin_dashboard:review_pathway' 'full' %}" class="nav-sublink">Full Committee</a>
+          <a href="#" class="nav-sublink">By Institution</a>
+          <a href="#" class="nav-sublink">Flagged / Escalated</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h1M9 11h1M9 15h1M14 7h1M14 11h1M14 15h1"/></svg></span>
+          <span>Institutions</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Registered Institutions</a>
+          <a href="#" class="nav-sublink">Verification Requests</a>
+          <a href="#" class="nav-sublink">Institution Admins</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <span>Committee</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'admin_dashboard:committee_overview' %}" class="nav-sublink">Committee</a>
+          <a href="{% url 'admin_dashboard:board_committee' %}" class="nav-sublink">Committee Members</a>
+          <a href="{% url 'admin_dashboard:membership_appointments' %}" class="nav-sublink">Membership / Appointments</a>
+          <a href="{% url 'admin_dashboard:terms_expiry' %}" class="nav-sublink">Terms &amp; Expiry</a>
+          <a href="{% url 'admin_dashboard:committee_training' %}" class="nav-sublink">Training</a>
+          <a href="{% url 'admin_dashboard:conflict_records' %}" class="nav-sublink">Conflict Records</a>
+        </div>
+      </div>
+
+      <a href="{% url 'admin_dashboard:finance' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+        <span>Finance</span>
+      </a>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+          <span>Communications</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Announcements</a>
+          <a href="#" class="nav-sublink">Email Templates</a>
+          <a href="#" class="nav-sublink">Notification Settings</a>
+        </div>
+      </div>
+
+      <a href="{% url 'admin_dashboard:settings' %}" class="nav-item active">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
+        <span>System</span>
+      </a>
+
+      <a href="{% url 'admin_dashboard:messages' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+        <span>Messages</span>
+      </a>
+      <a href="{% url 'admin_dashboard:reports_analytics' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span>
+        <span>Reports &amp; Analytics</span>
+      </a>
+      <a href="{% url 'admin_dashboard:access_security' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v1"/></svg></span>
+        <span>Access &amp; Security</span>
+      </a>
+      <a href="{% url 'admin_dashboard:profile_security' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
+        <span>Profile &amp; Security</span>
+      </a>
+      <a href="{% url 'admin_dashboard:help_support' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m4.9 4.9 3.5 3.5M19.1 4.9l-3.5 3.5M4.9 19.1l3.5-3.5M19.1 19.1l-3.5-3.5"/></svg></span>
+        <span>Help &amp; Support</span>
+      </a>
+
+>>>>>>> 9e82dbf56602c998c6309bd331a8d3acee436cea
 {% endblock %}
 
 {% block topbar %}
@@ -19,177 +126,309 @@
 
 {% block main_content %}
 
-      <div class="settings-grid">
+      <div class="settings-shell">
+
+        <div class="settings-tabs" role="tablist" aria-label="Settings sections">
+          <button type="button" class="settings-tab active" data-target="identity" role="tab" aria-selected="true">Site Identity</button>
+          <button type="button" class="settings-tab" data-target="payment" role="tab" aria-selected="false">Payment Gateway</button>
+          <button type="button" class="settings-tab" data-target="footer" role="tab" aria-selected="false">Footer</button>
+          <button type="button" class="settings-tab" data-target="contact" role="tab" aria-selected="false">Contact Page</button>
+          <button type="button" class="settings-tab" data-target="policy-library" role="tab" aria-selected="false">Policy Library</button>
+        </div>
 
         <!-- Site Identity -->
-        <section class="panel settings-panel">
-          <div class="form-section">
-            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> Site Identity</h3>
-            <p class="section-note">The logo and name shown across the public site and every dashboard.</p>
+        <section class="settings-panel-section active" id="identity">
+          <div class="panel settings-panel">
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> Site Identity</h3>
+              <p class="section-note">The logo and name shown across the public site and every dashboard.</p>
 
-            <form method="post" enctype="multipart/form-data" class="settings-form">
-              {% csrf_token %}
-              <input type="hidden" name="action" value="update_identity">
+              <form method="post" enctype="multipart/form-data" class="settings-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_identity">
 
-              <div class="settings-logo-row">
-                <div class="settings-logo-preview">
-                  {% if logo_url %}
-                    <img src="{{ logo_url }}" alt="Current logo">
-                  {% else %}
-                    <img src="{% static 'assets/img/logo1.png' %}" alt="Default logo">
-                  {% endif %}
+                <div class="settings-logo-row">
+                  <div class="settings-logo-preview">
+                    {% if logo_url %}
+                      <img src="{{ logo_url }}" alt="Current logo">
+                    {% else %}
+                      <img src="{% static 'assets/img/logo1.png' %}" alt="Default logo">
+                    {% endif %}
+                  </div>
+                  <div class="field field-wide" style="margin:0;">
+                    <label for="logoUpload">{% if logo_url %}Replace logo{% else %}Upload a custom logo (optional){% endif %}</label>
+                    <input type="file" id="logoUpload" name="logo" accept="image/*">
+                    <p class="field-hint">Saved to Supabase Storage's "profile" bucket. Without one, the bundled MSREC logo is shown.</p>
+                  </div>
                 </div>
-                <div class="field field-wide" style="margin:0;">
-                  <label for="logoUpload">{% if logo_url %}Replace logo{% else %}Upload a custom logo (optional){% endif %}</label>
-                  <input type="file" id="logoUpload" name="logo" accept="image/*">
-                  <p class="field-hint">Saved to Supabase Storage's "profile" bucket. Without one, the bundled MSREC logo is shown.</p>
-                </div>
-              </div>
 
-              <div class="field-grid" style="margin-top:16px;">
-                <div class="field field-wide">
-                  <label for="siteName">Site Name</label>
-                  <input type="text" id="siteName" name="site_name" value="{{ site.site_name }}" maxlength="150" required>
+                <div class="field-grid" style="margin-top:16px;">
+                  <div class="field field-wide">
+                    <label for="siteName">Site Name</label>
+                    <input type="text" id="siteName" name="site_name" value="{{ site.site_name }}" maxlength="150" required>
+                  </div>
                 </div>
-              </div>
 
-              <div class="settings-form-actions">
-                <button type="submit" class="btn-primary">Save Identity</button>
-              </div>
-            </form>
+                <div class="settings-form-actions">
+                  <button type="submit" class="btn-primary">Save Identity</button>
+                </div>
+              </form>
+            </div>
           </div>
         </section>
 
         <!-- Payment Gateway -->
-        <section class="panel settings-panel">
-          <div class="form-section">
-            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Payment Gateway (Paystack)</h3>
-            <p class="section-note">Keys used for the application review-fee checkout. Leave blank to keep using the values configured on the server.</p>
+        <section class="settings-panel-section" id="payment">
+          <div class="panel settings-panel">
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg> Payment Gateway (Paystack)</h3>
+              <p class="section-note">Keys used for the application review-fee checkout. Leave blank to keep using the values configured on the server.</p>
 
-            <form method="post" class="settings-form">
-              {% csrf_token %}
-              <input type="hidden" name="action" value="update_paystack">
+              <form method="post" class="settings-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_paystack">
 
-              <div class="field-grid">
-                <div class="field field-wide">
-                  <label for="paystackPublicKey">Public Key
-                    {% if using_env_public_key %}<span class="settings-badge">Using server default</span>{% endif %}
-                  </label>
-                  <input type="text" id="paystackPublicKey" name="paystack_public_key" value="{{ site.paystack_public_key }}" placeholder="{{ env_paystack_public_key }}" autocomplete="off">
-                  <p class="field-hint">Safe to show client-side &mdash; sent to the browser on the payment page.</p>
+                <div class="field-grid">
+                  <div class="field field-wide">
+                    <label for="paystackPublicKey">Public Key
+                      {% if using_env_public_key %}<span class="settings-badge">Using server default</span>{% endif %}
+                    </label>
+                    <input type="text" id="paystackPublicKey" name="paystack_public_key" value="{{ site.paystack_public_key }}" placeholder="{{ env_paystack_public_key }}" autocomplete="off">
+                    <p class="field-hint">Safe to show client-side &mdash; sent to the browser on the payment page.</p>
+                  </div>
+                  <div class="field field-wide">
+                    <label for="paystackSecretKey">Secret Key
+                      {% if using_env_secret_key %}<span class="settings-badge">Using server default</span>{% endif %}
+                    </label>
+                    <input type="password" id="paystackSecretKey" name="paystack_secret_key" placeholder="{% if paystack_secret_key_masked %}{{ paystack_secret_key_masked }}{% else %}Not set{% endif %}" autocomplete="off">
+                    <p class="field-hint">Never shown once saved. Leave blank to keep the current key &mdash; type a new one only to replace it.</p>
+                  </div>
                 </div>
-                <div class="field field-wide">
-                  <label for="paystackSecretKey">Secret Key
-                    {% if using_env_secret_key %}<span class="settings-badge">Using server default</span>{% endif %}
-                  </label>
-                  <input type="password" id="paystackSecretKey" name="paystack_secret_key" placeholder="{% if paystack_secret_key_masked %}{{ paystack_secret_key_masked }}{% else %}Not set{% endif %}" autocomplete="off">
-                  <p class="field-hint">Never shown once saved. Leave blank to keep the current key &mdash; type a new one only to replace it.</p>
-                </div>
-              </div>
 
-              <div class="settings-form-actions">
-                <button type="submit" class="btn-primary">Save Payment Settings</button>
-              </div>
-            </form>
+                <div class="settings-form-actions">
+                  <button type="submit" class="btn-primary">Save Payment Settings</button>
+                </div>
+              </form>
+            </div>
           </div>
         </section>
 
         <!-- Footer -->
-        <section class="panel settings-panel">
-          <div class="form-section">
-            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15h18"/></svg> Footer</h3>
-            <p class="section-note">The address, contact line and social links shown in the public site's footer.</p>
+        <section class="settings-panel-section" id="footer">
+          <div class="panel settings-panel">
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 15h18"/></svg> Footer</h3>
+              <p class="section-note">The address, contact line and social links shown in the public site's footer.</p>
 
-            <form method="post" class="settings-form">
-              {% csrf_token %}
-              <input type="hidden" name="action" value="update_footer">
+              <form method="post" class="settings-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_footer">
 
-              <div class="field-grid">
-                <div class="field field-wide">
-                  <label for="footerAbout">About blurb</label>
-                  <textarea id="footerAbout" name="footer_about" rows="3">{{ site.footer_about }}</textarea>
+                <div class="field-grid">
+                  <div class="field field-wide">
+                    <label for="footerAbout">About blurb</label>
+                    <textarea id="footerAbout" name="footer_about" rows="3">{{ site.footer_about }}</textarea>
+                  </div>
+                  <div class="field field-wide">
+                    <label for="footerAddress">Address (one line per row)</label>
+                    <textarea id="footerAddress" name="footer_address" rows="3">{{ site.footer_address }}</textarea>
+                  </div>
+                  <div class="field">
+                    <label for="footerPhone">Phone</label>
+                    <input type="text" id="footerPhone" name="footer_phone" value="{{ site.footer_phone }}" maxlength="40">
+                  </div>
+                  <div class="field">
+                    <label for="footerEmail">Email</label>
+                    <input type="email" id="footerEmail" name="footer_email" value="{{ site.footer_email }}">
+                  </div>
+                  <div class="field">
+                    <label for="socialTwitter">X / Twitter URL</label>
+                    <input type="url" id="socialTwitter" name="social_twitter_url" value="{{ site.social_twitter_url }}" placeholder="https://x.com/msrec">
+                  </div>
+                  <div class="field">
+                    <label for="socialFacebook">Facebook URL</label>
+                    <input type="url" id="socialFacebook" name="social_facebook_url" value="{{ site.social_facebook_url }}" placeholder="https://facebook.com/msrec">
+                  </div>
+                  <div class="field">
+                    <label for="socialInstagram">Instagram URL</label>
+                    <input type="url" id="socialInstagram" name="social_instagram_url" value="{{ site.social_instagram_url }}" placeholder="https://instagram.com/msrec">
+                  </div>
+                  <div class="field">
+                    <label for="socialLinkedin">LinkedIn URL</label>
+                    <input type="url" id="socialLinkedin" name="social_linkedin_url" value="{{ site.social_linkedin_url }}" placeholder="https://linkedin.com/company/msrec">
+                  </div>
                 </div>
-                <div class="field field-wide">
-                  <label for="footerAddress">Address (one line per row)</label>
-                  <textarea id="footerAddress" name="footer_address" rows="3">{{ site.footer_address }}</textarea>
-                </div>
-                <div class="field">
-                  <label for="footerPhone">Phone</label>
-                  <input type="text" id="footerPhone" name="footer_phone" value="{{ site.footer_phone }}" maxlength="40">
-                </div>
-                <div class="field">
-                  <label for="footerEmail">Email</label>
-                  <input type="email" id="footerEmail" name="footer_email" value="{{ site.footer_email }}">
-                </div>
-                <div class="field">
-                  <label for="socialTwitter">X / Twitter URL</label>
-                  <input type="url" id="socialTwitter" name="social_twitter_url" value="{{ site.social_twitter_url }}" placeholder="https://x.com/msrec">
-                </div>
-                <div class="field">
-                  <label for="socialFacebook">Facebook URL</label>
-                  <input type="url" id="socialFacebook" name="social_facebook_url" value="{{ site.social_facebook_url }}" placeholder="https://facebook.com/msrec">
-                </div>
-                <div class="field">
-                  <label for="socialInstagram">Instagram URL</label>
-                  <input type="url" id="socialInstagram" name="social_instagram_url" value="{{ site.social_instagram_url }}" placeholder="https://instagram.com/msrec">
-                </div>
-                <div class="field">
-                  <label for="socialLinkedin">LinkedIn URL</label>
-                  <input type="url" id="socialLinkedin" name="social_linkedin_url" value="{{ site.social_linkedin_url }}" placeholder="https://linkedin.com/company/msrec">
-                </div>
-              </div>
 
-              <div class="settings-form-actions">
-                <button type="submit" class="btn-primary">Save Footer</button>
-              </div>
-            </form>
+                <div class="settings-form-actions">
+                  <button type="submit" class="btn-primary">Save Footer</button>
+                </div>
+              </form>
+            </div>
           </div>
         </section>
 
         <!-- Contact page -->
-        <section class="panel settings-panel">
-          <div class="form-section">
-            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg> Contact Page</h3>
-            <p class="section-note">The routing address shown for each enquiry type on the public Contact page.</p>
+        <section class="settings-panel-section" id="contact">
+          <div class="panel settings-panel">
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg> Contact Page</h3>
+              <p class="section-note">The routing address shown for each enquiry type on the public Contact page.</p>
 
-            <form method="post" class="settings-form">
-              {% csrf_token %}
-              <input type="hidden" name="action" value="update_contact">
+              <form method="post" class="settings-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_contact">
 
-              <div class="field-grid">
-                <div class="field">
-                  <label for="contactSecretariat">Secretariat / General</label>
-                  <input type="email" id="contactSecretariat" name="contact_secretariat_email" value="{{ site.contact_secretariat_email }}">
+                <div class="field-grid">
+                  <div class="field">
+                    <label for="contactSecretariat">Secretariat / General</label>
+                    <input type="email" id="contactSecretariat" name="contact_secretariat_email" value="{{ site.contact_secretariat_email }}">
+                  </div>
+                  <div class="field">
+                    <label for="contactApplications">Application Support</label>
+                    <input type="email" id="contactApplications" name="contact_applications_email" value="{{ site.contact_applications_email }}">
+                  </div>
+                  <div class="field">
+                    <label for="contactComplaints">Complaints</label>
+                    <input type="email" id="contactComplaints" name="contact_complaints_email" value="{{ site.contact_complaints_email }}">
+                  </div>
+                  <div class="field">
+                    <label for="contactEthics">Ethics Concerns</label>
+                    <input type="email" id="contactEthics" name="contact_ethics_email" value="{{ site.contact_ethics_email }}">
+                  </div>
+                  <div class="field">
+                    <label for="contactTech">Technical Support</label>
+                    <input type="email" id="contactTech" name="contact_techsupport_email" value="{{ site.contact_techsupport_email }}">
+                  </div>
+                  <div class="field">
+                    <label for="contactPhone">Phone</label>
+                    <input type="text" id="contactPhone" name="contact_phone" value="{{ site.contact_phone }}" maxlength="40">
+                  </div>
                 </div>
-                <div class="field">
-                  <label for="contactApplications">Application Support</label>
-                  <input type="email" id="contactApplications" name="contact_applications_email" value="{{ site.contact_applications_email }}">
+
+                <div class="settings-form-actions">
+                  <button type="submit" class="btn-primary">Save Contact Details</button>
                 </div>
-                <div class="field">
-                  <label for="contactComplaints">Complaints</label>
-                  <input type="email" id="contactComplaints" name="contact_complaints_email" value="{{ site.contact_complaints_email }}">
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- Policy Library -->
+        <section class="settings-panel-section" id="policy-library">
+          <div class="panel settings-full-panel">
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg> Policy Library</h3>
+              <p class="section-note">MSREC SOPs, Reviewer Guidance and Ethics Guidelines shown on the Reviewer dashboard's Policies &amp; Guidance pages. Files are saved to Supabase Storage's "ethics" bucket.</p>
+
+              <form method="post" enctype="multipart/form-data" class="settings-form">
+                {% csrf_token %}
+                {% if editing_policy %}
+                  <input type="hidden" name="action" value="edit_policy_document">
+                  <input type="hidden" name="document_id" value="{{ editing_policy.pk }}">
+                  <input type="hidden" name="category" value="{{ editing_policy.category }}">
+                {% else %}
+                  <input type="hidden" name="action" value="add_policy_document">
+                {% endif %}
+
+                <div class="field-grid">
+                  <div class="field">
+                    <label for="policyCategory">Category</label>
+                    <select id="policyCategory" name="category" {% if editing_policy %}disabled{% endif %}>
+                      {% for value, label in policy_categories %}
+                      <option value="{{ value }}"{% if editing_policy.category == value %} selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="policyTitle">Title</label>
+                    <input type="text" id="policyTitle" name="policy_title" value="{{ editing_policy.title|default:'' }}" placeholder="e.g. Informed Consent SOP" required>
+                  </div>
+                  <div class="field">
+                    <label for="policyVersion">Version</label>
+                    <input type="text" id="policyVersion" name="policy_version" value="{{ editing_policy.version|default:'' }}" placeholder="e.g. v2.1">
+                  </div>
+                  <div class="field">
+                    <label for="policyOrder">Display Order</label>
+                    <input type="number" id="policyOrder" name="policy_display_order" value="{{ editing_policy.display_order|default:0 }}" min="0">
+                  </div>
+                  <div class="field field-wide">
+                    <label for="policyDescription">Description</label>
+                    <textarea id="policyDescription" name="policy_description" rows="2" placeholder="Optional -- shown under the title on the reviewer's page">{{ editing_policy.description|default:"" }}</textarea>
+                  </div>
+                  <div class="field field-wide">
+                    <label for="policyFile">{% if editing_policy %}Replace File (optional){% else %}File{% endif %}</label>
+                    <input type="file" id="policyFile" name="policy_file" accept=".pdf,.doc,.docx">
+                    {% if editing_policy.file_path %}<p class="field-hint">Leave blank to keep the current file.</p>{% endif %}
+                  </div>
                 </div>
-                <div class="field">
-                  <label for="contactEthics">Ethics Concerns</label>
-                  <input type="email" id="contactEthics" name="contact_ethics_email" value="{{ site.contact_ethics_email }}">
+
+                <div class="settings-form-actions">
+                  {% if editing_policy %}<a href="{% url 'admin_dashboard:settings' %}#policy-library" class="btn-secondary">Cancel</a>{% endif %}
+                  <button type="submit" class="btn-primary">{% if editing_policy %}Save Changes{% else %}Add Document{% endif %}</button>
                 </div>
-                <div class="field">
-                  <label for="contactTech">Technical Support</label>
-                  <input type="email" id="contactTech" name="contact_techsupport_email" value="{{ site.contact_techsupport_email }}">
+              </form>
+
+              {% for value, label, docs in policy_groups %}
+              <div class="policy-group">
+                <h4 class="policy-group-heading">{{ label }} <span class="count">({{ docs|length }})</span></h4>
+                {% for doc in docs %}
+                <div class="policy-doc-row">
+                  <div class="policy-doc-info">
+                    <strong>{{ doc.title }}</strong>
+                    <span>{% if doc.version %}{{ doc.version }} &middot; {% endif %}Updated {{ doc.updated_at|date:"j M Y" }}{% if not doc.file_path %} &middot; No file uploaded{% endif %}</span>
+                  </div>
+                  <div class="policy-doc-actions">
+                    {% if doc.download_url %}<a href="{{ doc.download_url }}" target="_blank" rel="noopener" class="btn-secondary" style="padding:6px 12px;font-size:12px;">Download</a>{% endif %}
+                    <a href="{% url 'admin_dashboard:settings' %}?edit_policy={{ doc.pk }}#policy-library" class="btn-secondary" style="padding:6px 12px;font-size:12px;">Edit</a>
+                    <form method="post" data-confirm="Delete &quot;{{ doc.title }}&quot;? This can't be undone." data-confirm-variant="danger">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete_policy_document">
+                      <input type="hidden" name="document_id" value="{{ doc.pk }}">
+                      <button type="submit" class="btn-secondary" style="padding:6px 12px;font-size:12px;color:var(--red);">Delete</button>
+                    </form>
+                  </div>
                 </div>
-                <div class="field">
-                  <label for="contactPhone">Phone</label>
-                  <input type="text" id="contactPhone" name="contact_phone" value="{{ site.contact_phone }}" maxlength="40">
-                </div>
+                {% empty %}
+                <p class="doc-file-empty">No {{ label|lower }} documents yet.</p>
+                {% endfor %}
               </div>
-
-              <div class="settings-form-actions">
-                <button type="submit" class="btn-primary">Save Contact Details</button>
-              </div>
-            </form>
+              {% endfor %}
+            </div>
           </div>
         </section>
 
       </div>
 
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var tabs = document.querySelectorAll('.settings-tab');
+  var panels = document.querySelectorAll('.settings-panel-section');
+
+  function activate(id) {
+    tabs.forEach(function (t) {
+      var on = t.dataset.target === id;
+      t.classList.toggle('active', on);
+      t.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    panels.forEach(function (p) {
+      p.classList.toggle('active', p.id === id);
+    });
+  }
+
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      activate(t.dataset.target);
+      history.replaceState(null, '', '#' + t.dataset.target);
+    });
+  });
+
+  var initial = (window.location.hash || '').slice(1);
+  if (initial && document.getElementById(initial)) {
+    activate(initial);
+  }
+})();
+</script>
 {% endblock %}

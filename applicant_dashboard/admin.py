@@ -1,6 +1,10 @@
 from django.contrib import admin
 
+<<<<<<< HEAD
 from .models import Application, PostApprovalSubmission
+=======
+from .models import Application, TeamMember
+>>>>>>> 9e82dbf56602c998c6309bd331a8d3acee436cea
 
 
 @admin.register(Application)
@@ -11,6 +15,7 @@ class ApplicationAdmin(admin.ModelAdmin):
     readonly_fields = ("reference_no", "form_data", "documents", "created_at", "updated_at")
 
 
+<<<<<<< HEAD
 @admin.register(PostApprovalSubmission)
 class PostApprovalSubmissionAdmin(admin.ModelAdmin):
     """No dedicated Secretariat dashboard page exists yet for amendments /
@@ -26,3 +31,11 @@ class PostApprovalSubmissionAdmin(admin.ModelAdmin):
         "application", "applicant", "type", "form_data",
         "status", "secretariat_note", "decided_at", "submitted_at", "updated_at",
     )
+=======
+@admin.register(TeamMember)
+class TeamMemberAdmin(admin.ModelAdmin):
+    list_display = ("full_name", "email", "applicant", "role", "status", "invited_at", "accepted_at")
+    list_filter = ("status", "role")
+    search_fields = ("full_name", "email", "applicant__email")
+    readonly_fields = ("invite_token", "created_at", "updated_at")
+>>>>>>> 9e82dbf56602c998c6309bd331a8d3acee436cea

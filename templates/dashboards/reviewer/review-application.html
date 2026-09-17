@@ -1,5 +1,6 @@
 {% extends "dashboards/base.html" %}
 {% load static %}
+{% load review_filters %}
 
 {% block title %}{{ application.reference_no|default:"Review" }} | MSREC Reviewer{% endblock %}
 
@@ -33,8 +34,33 @@
           <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
         </button>
         <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Pending Declarations</a>
-          <a href="#" class="nav-sublink">Previous Declarations</a>
+          <a href="{% url 'reviewer_dashboard:coi_pending' %}" class="nav-sublink">Pending Declarations</a>
+          <a href="{% url 'reviewer_dashboard:coi_previous' %}" class="nav-sublink">Previous Declarations</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+          <span>Committee Meetings</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'reviewer_dashboard:committee_meetings' %}" class="nav-sublink">Upcoming Meetings</a>
+          <a href="{% url 'reviewer_dashboard:meeting_documents' %}" class="nav-sublink">Meeting Documents / Packets</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span>
+          <span>Policies &amp; Guidance</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'reviewer_dashboard:policy_sops' %}" class="nav-sublink">MSREC SOPs</a>
+          <a href="{% url 'reviewer_dashboard:policy_guidance' %}" class="nav-sublink">Reviewer Guidance</a>
+          <a href="{% url 'reviewer_dashboard:policy_ethics' %}" class="nav-sublink">Ethics Guidelines</a>
         </div>
       </div>
 
@@ -97,21 +123,28 @@
         Back to My Reviews
       </a>
 
-      <section class="panel" style="padding:24px 26px; margin-bottom:20px;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <span class="acct-avatar cat-applicants" style="width:44px;height:44px;">{{ application.applicant.initials }}</span>
+      <section class="panel" style="padding:22px 26px; margin-bottom:20px;">
+        <div class="review-hero">
+          <div class="review-hero-who">
+            <span class="review-hero-avatar">{{ application.applicant.initials }}</span>
             <div>
-              <h3 style="margin:0; font-size:14.5px; font-weight:700; color:var(--text-main);">{{ application.applicant.full_name }}</h3>
-              <p style="margin:2px 0 0; font-size:12.5px; color:var(--text-sub);">Submitted {{ application.submitted_at|date:"j M Y, g:i A" }}</p>
+              <h3>{{ application.applicant.full_name }}</h3>
+              <p>Submitted {{ application.submitted_at|date:"j M Y, g:i A" }}</p>
             </div>
           </div>
-          {% if assignment.due_date %}
-          <span class="due-meta" style="font-size:12.5px; font-weight:700;">
-            <svg class="due-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-            Review due {{ assignment.due_date|date:"d M Y" }}
-          </span>
-          {% endif %}
+          <div class="review-hero-status">
+            {% if assignment.status == 'completed' %}
+              <span class="badge-tag green">Completed</span>
+            {% else %}
+              <span class="badge-tag teal">In Progress</span>
+            {% endif %}
+            {% if assignment.due_date %}
+            <span class="due-meta" style="font-size:12.5px; font-weight:700;">
+              <svg class="due-meta-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              Review due {{ assignment.due_date|date:"d M Y" }}
+            </span>
+            {% endif %}
+          </div>
         </div>
       </section>
 
@@ -119,7 +152,7 @@
         <section class="panel" style="padding:24px 26px;">
 
           <div class="form-section">
-            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> Research Information</h3>
+            <h3 class="form-section-title"><span class="section-icon-badge blue"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span> Research Information</h3>
             <div class="field-grid">
               <div class="field field-wide"><label>Full Title</label><p style="margin:0; font-size:13px; color:var(--text-main);">{{ application.title }}</p></div>
               <div class="field"><label>Requested Review</label><p style="margin:0; font-size:13px; color:var(--text-main);">{{ application.review_type|default:"Not specified" }}</p></div>
@@ -129,7 +162,7 @@
           </div>
 
           <div class="form-section">
-            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg> Principal Investigator</h3>
+            <h3 class="form-section-title"><span class="section-icon-badge purple"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span> Principal Investigator</h3>
             <div class="field-grid">
               <div class="field"><label>Name</label><p style="margin:0; font-size:13px;">{{ application.form_data.piName|default:"Not provided" }}</p></div>
               <div class="field"><label>Email</label><p style="margin:0; font-size:13px;">{{ application.form_data.piEmail|default:"Not provided" }}</p></div>
@@ -139,7 +172,7 @@
           </div>
 
           <div class="form-section">
-            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg> Documents ({{ documents|length }})</h3>
+            <h3 class="form-section-title"><span class="section-icon-badge orange"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></span> Documents ({{ documents|length }})</h3>
             {% if documents %}
             <div class="apply-file-list">
               {% for doc in documents %}
@@ -156,14 +189,14 @@
           </div>
 
           <div class="form-section">
-            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg> Full Submitted Text</h3>
-            <div class="apply-official-grid" style="margin-top:14px;">
+            <h3 class="form-section-title"><span class="section-icon-badge navy"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span> Full Submitted Text</h3>
+            <dl class="review-data-list">
               {% for key, value in application.form_data.items %}
               {% if value %}
-              <div class="apply-official-row"><dt>{{ key }}</dt><dd style="white-space:normal; text-align:left;">{{ value }}</dd></div>
+              <div class="review-data-row"><dt>{{ key|humanize_key }}</dt><dd>{{ value|pretty_value }}</dd></div>
               {% endif %}
               {% endfor %}
-            </div>
+            </dl>
           </div>
 
         </section>
@@ -179,10 +212,14 @@
               <strong>Assessment submitted</strong>
               <span>Recorded {{ assignment.completed_at|date:"j M Y, g:i A" }} &middot; the Secretariat has been notified.</span>
             </div>
+            <a href="{% url 'reviewer_dashboard:review_application_pdf' assignment.pk %}" class="assess-export-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v13m0 0 4-4m-4 4-4-4"/><path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></svg>
+              Export to PDF
+            </a>
           </div>
 
           <div class="form-section">
-            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/></svg> Reviewer Declaration</h3>
+            <h3 class="form-section-title"><span class="section-icon-badge teal"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/></svg></span> Reviewer Declaration</h3>
             <div class="assess-summary-row">
               <span class="assess-checklist-label">Conflict of interest</span>
               {% if assignment.coi_has_conflict %}<span class="badge-tag orange">Potential conflict declared</span>{% else %}<span class="badge-tag green">None declared</span>{% endif %}
@@ -198,7 +235,7 @@
           </div>
 
           <div class="form-section">
-            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> Ethical Review</h3>
+            <h3 class="form-section-title"><span class="section-icon-badge green"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Ethical Review</h3>
             <div class="assess-checklist">
               {% for row in assignment.checklist_rows %}
               <div class="assess-summary-row">
@@ -210,7 +247,7 @@
           </div>
 
           <div class="form-section">
-            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg> Reviewer Comments</h3>
+            <h3 class="form-section-title"><span class="section-icon-badge blue"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span> Reviewer Comments</h3>
             <div class="field-grid">
               <div class="field field-wide"><label>Key ethical concerns or required revisions</label><p style="margin:0; font-size:13px; color:var(--text-main); line-height:1.6;">{{ assignment.key_concerns|default:"None recorded."|linebreaksbr }}</p></div>
               <div class="field field-wide"><label>Additional comments / recommendations</label><p style="margin:0; font-size:13px; color:var(--text-main); line-height:1.6;">{{ assignment.review_notes|default:"None recorded."|linebreaksbr }}</p></div>
@@ -221,7 +258,7 @@
           </div>
 
           <div class="form-section">
-            <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Recommendation</h3>
+            <h3 class="form-section-title"><span class="section-icon-badge purple"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span> Recommendation</h3>
             <div class="assess-summary-row">
               <span class="assess-checklist-label">Decision</span>
               <span class="badge-tag {{ assignment.recommendation_badge }}">{{ assignment.get_recommendation_display }}</span>
@@ -243,11 +280,13 @@
             <span>Complete the Ethical Review Assessment Form below. It mirrors MSREC's paper reviewer form, is submitted once, and the Secretariat is notified the moment you send it.</span>
           </div>
 
-          <form method="post" id="assessmentForm">
+          <form method="post" id="assessmentForm"
+                data-confirm="Submit this assessment? Once submitted it can't be edited, and the Secretariat will be notified immediately."
+                data-confirm-label="Submit Assessment">
             {% csrf_token %}
 
             <div class="form-section">
-              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/></svg> Reviewer Declaration</h3>
+              <h3 class="form-section-title"><span class="section-icon-badge teal"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/></svg></span> Reviewer Declaration</h3>
               <p class="section-note">Confirm your conflict-of-interest status and confidentiality obligations before reviewing the application below.</p>
 
               <label style="display:block; font-weight:600; color:var(--text-main); font-size:12.5px; margin-bottom:8px;">Conflict of interest <span class="req">*</span></label>
@@ -269,7 +308,7 @@
             </div>
 
             <div class="form-section">
-              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg> Ethical Review</h3>
+              <h3 class="form-section-title"><span class="section-icon-badge green"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> Ethical Review</h3>
               <p class="section-note">Assess each area below. Every row is required.</p>
 
               <div class="assess-progress">
@@ -292,7 +331,7 @@
             </div>
 
             <div class="form-section">
-              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg> Reviewer Comments</h3>
+              <h3 class="form-section-title"><span class="section-icon-badge blue"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span> Reviewer Comments</h3>
               <div class="field-grid">
                 <div class="field field-wide">
                   <label for="keyConcerns">Key ethical concerns or required revisions</label>
@@ -310,7 +349,7 @@
             </div>
 
             <div class="form-section">
-              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Recommendation</h3>
+              <h3 class="form-section-title"><span class="section-icon-badge purple"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span> Recommendation</h3>
               <p class="section-note">Select the outcome you're recommending to the Secretariat. <span class="req">*</span></p>
               <div class="assess-recommendation-options">
                 {% for value, display in recommendation_choices %}

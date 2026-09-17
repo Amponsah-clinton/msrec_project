@@ -1585,6 +1585,8 @@ svg {
   font-weight: 600;
   color: #fff;
   width: 100%;
+  text-decoration: none;
+  box-sizing: border-box;
 }
 
 .qa-left { display: flex; align-items: center; gap: 10px; }
