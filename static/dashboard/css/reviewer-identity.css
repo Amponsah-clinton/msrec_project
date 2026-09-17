@@ -1,0 +1,61 @@
+/* ---------------------------------------------------------------------
+   MSREC Reviewer — shared identity layer
+   Loaded on all six Reviewer dashboard pages, on top of style.css and
+   whichever page-specific sheet (reviewer-settings.css /
+   reviewer-assessment.css / accounts.css) is already in play. Everything
+   here is scoped under .rv-scope (the wrapper every Reviewer page's
+   {% block main_content %} opens with) or the .rv-heading class used on
+   the one heading that sits outside that wrapper, the topbar <h1> — so
+   none of it reaches the Admin/Applicant/Chair/Committee/Secretariat
+   dashboards that share the same style.css.
+
+   What this file is for: giving the Reviewer role its own quiet
+   typographic identity (a serif for headings, instead of the same Inter
+   every other dashboard uses for everything) and tightening the stat
+   tiles / icon chips so they read as considered rather than templated —
+   no fills without a matching hairline border, no icon shape used only
+   because it's the default. Still zero gradients and zero colour
+   painted at a card's edge, same house rule as the rest of the app.
+--------------------------------------------------------------------- */
+
+.rv-heading,
+.rv-scope h1,
+.rv-scope h2,
+.rv-scope h3,
+.rv-scope .panel-header h2,
+.rv-scope .page-head-text h2,
+.rv-scope .topbar-title h1 {
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+
+/* ---------------- Stat tiles (Dashboard home + My Reviews summary strip) ----------------
+   Shared .stat-card/.stat-icon come from style.css and are used by every
+   dashboard, so only reshape them inside .rv-scope. Circle chip -> the
+   same rounded-square shape the Settings pages' .rv-ico already uses,
+   with a hairline border in the icon's own hue standing in for the flat
+   pastel fill everywhere else uses alone -- same treatment .badge-tag
+   already gets, just extended to the icon chips. Nothing added to the
+   card's own edge; the border lives on the icon, not the card. */
+.rv-scope .stat-card {
+  transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+}
+.rv-scope .stat-card:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-1px);
+}
+
+.rv-scope .stat-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  margin-bottom: 12px;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+}
+.rv-scope .stat-icon svg { width: 19px; height: 19px; }
+
+.rv-scope .stat-value {
+  font-size: 26px;
+  letter-spacing: -0.02em;
+}

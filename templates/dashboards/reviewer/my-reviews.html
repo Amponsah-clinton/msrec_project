@@ -5,6 +5,10 @@
 
 {% block extra_css %}
 <link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/reviewer-identity.css' %}">
 {% endblock %}
 
 {% block nav_content %}
@@ -74,7 +78,7 @@
 {% block topbar %}
 
       <div class="topbar-title">
-        <h1>My Reviews</h1>
+        <h1 class="rv-heading">My Reviews</h1>
         <p>Every application assigned to you, from a fresh assignment through to a submitted recommendation</p>
       </div>
       <div class="topbar-actions">
@@ -113,7 +117,7 @@
 
 {% block main_content %}
 
-      <div data-counts-url="{% url 'reviewer_dashboard:my_reviews_counts' %}">
+      <div class="rv-scope" data-counts-url="{% url 'reviewer_dashboard:my_reviews_counts' %}">
 
       <!-- SUMMARY STRIP -->
       <section class="stats-grid compact">

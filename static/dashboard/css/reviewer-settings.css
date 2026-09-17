@@ -6,7 +6,7 @@
 --------------------------------------------------- */
 
 .rv-scope {
-  --rv-font: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --rv-font: "Fraunces", Georgia, "Times New Roman", serif;
 }
 
 .rv-scope h1, .rv-scope h2, .rv-scope h3, .rv-scope h4,
@@ -54,8 +54,8 @@
 
 .rv-subnav a.active {
   color: #fff;
-  background: linear-gradient(135deg, var(--teal), color-mix(in srgb, var(--teal) 70%, var(--blue)));
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--teal) 35%, transparent);
+  background: var(--navy);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--navy) 30%, transparent);
 }
 
 @media (max-width: 480px) {
@@ -142,19 +142,19 @@
 
 .rv-hero-band {
   height: 84px;
-  background:
-    radial-gradient(120% 220% at 8% 0%, color-mix(in srgb, var(--teal) 30%, transparent), transparent 60%),
-    linear-gradient(120deg, var(--navy), color-mix(in srgb, var(--navy) 60%, var(--blue)));
+  background: var(--navy);
   position: relative;
 }
 
+/* Fine dot texture, not a gradient wash -- reads as letterhead stock,
+   not a marketing-page hero glow. */
 .rv-hero-band::after {
   content: "";
   position: absolute;
   inset: 0;
-  background-image: radial-gradient(rgba(255,255,255,0.16) 1px, transparent 1px);
-  background-size: 14px 14px;
-  opacity: 0.5;
+  background-image: radial-gradient(rgba(255,255,255,0.14) 1px, transparent 1px);
+  background-size: 16px 16px;
+  opacity: 0.6;
 }
 
 .rv-hero-body {
@@ -285,11 +285,23 @@
   flex-shrink: 0;
 }
 .rv-section-title .rv-ico svg { width: 16px; height: 16px; }
-.rv-section-title .rv-ico.teal   { background: var(--teal-light);   color: var(--teal); }
-.rv-section-title .rv-ico.blue   { background: var(--blue-light);   color: var(--blue); }
-.rv-section-title .rv-ico.purple { background: var(--purple-light); color: var(--purple); }
-.rv-section-title .rv-ico.orange { background: var(--orange-light); color: var(--orange); }
-.rv-section-title .rv-ico.red    { background: var(--red-light);    color: var(--red); }
+
+/* Color variants live on the bare .rv-ico class (not nested under
+   .rv-section-title) so the same teal/blue/purple/orange/red chips work
+   in every context that reuses this component -- card headers, the KPI
+   strip, section titles -- instead of only the first place it shipped.
+   A hairline border in the icon's own hue (via currentColor) replaces a
+   flat pastel fill with a touch more definition, still with no fill
+   gradient and nothing painted at a card's edge. */
+.rv-scope .rv-ico {
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+}
+.rv-scope .rv-ico.teal   { background: var(--teal-light);   color: var(--teal); }
+.rv-scope .rv-ico.blue   { background: var(--blue-light);   color: var(--blue); }
+.rv-scope .rv-ico.purple { background: var(--purple-light); color: var(--purple); }
+.rv-scope .rv-ico.orange { background: var(--orange-light); color: var(--orange); }
+.rv-scope .rv-ico.red    { background: var(--red-light);    color: var(--red); }
+.rv-scope .rv-ico.green  { background: var(--green-light);  color: var(--green); }
 
 .rv-section-sub { margin: 0 0 18px 40px; font-size: 12px; color: var(--text-sub); }
 
@@ -313,7 +325,7 @@
   border-radius: 999px;
   font-size: 12.5px;
   font-weight: 600;
-  background: linear-gradient(135deg, var(--teal-light), var(--blue-light));
+  background: var(--teal-light);
   color: var(--text-main);
   border: 1px solid color-mix(in srgb, var(--teal) 25%, transparent);
 }
@@ -623,6 +635,7 @@
   justify-content: center;
   background: var(--blue-light);
   color: var(--blue);
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
 }
 .rv-2fa-ico svg { width: 18px; height: 18px; }
 .rv-2fa-card h4 { margin: 0; font-size: 13.5px; font-weight: 700; }
@@ -645,6 +658,7 @@
   justify-content: center;
   background: var(--purple-light);
   color: var(--purple);
+  border: 1px solid color-mix(in srgb, var(--purple) 20%, transparent);
   flex-shrink: 0;
 }
 .rv-session-ico svg { width: 19px; height: 19px; }

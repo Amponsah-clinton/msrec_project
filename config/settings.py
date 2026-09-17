@@ -86,6 +86,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "accounts.context_processors.profile_avatar",
                 "pages.context_processors.site_settings",
+                "applicant_dashboard.context_processors.notif_bell",
             ],
         },
     },

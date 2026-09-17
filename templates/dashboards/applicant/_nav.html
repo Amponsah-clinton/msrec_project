@@ -1,0 +1,101 @@
+{% comment %}
+The applicant sidebar, in one place.
+
+This markup used to be copy-pasted into all 30 applicant templates, which
+is precisely how three fake hardcoded notifications ended up shipping in
+30 files at once. Active/open state is derived from the resolved URL name
+rather than passed in per-page, so a template physically cannot mark the
+wrong item active, and a new page gets correct nav for free.
+{% endcomment %}
+{% with u=request.resolver_match.url_name %}
+      <a href="{% url 'applicant_dashboard:home' %}" class="nav-item{% if u == 'home' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg></span>
+        <span>Dashboard</span>
+      </a>
+
+      <div class="nav-group{% if 'application' in u and u != 'application_letter' %} open{% endif %}">
+        <button type="button" class="nav-group-toggle" aria-expanded="{% if 'application' in u and u != 'application_letter' %}true{% else %}false{% endif %}">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
+          <span>Applications</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'applicant_dashboard:application_new' %}" class="nav-sublink{% if u == 'application_new' or u == 'application_form' %} active{% endif %}">New Application</a>
+          <a href="{% url 'applicant_dashboard:application_drafts' %}" class="nav-sublink{% if u == 'application_drafts' %} active{% endif %}">Draft Applications<span class="nav-badge" data-nav-badge="draft" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_submitted' %}" class="nav-sublink{% if u == 'application_submitted' %} active{% endif %}">Submitted Applications<span class="nav-badge" data-nav-badge="submitted" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_under_review' %}" class="nav-sublink{% if u == 'application_under_review' %} active{% endif %}">Under Review<span class="nav-badge" data-nav-badge="under_review" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_revisions' %}" class="nav-sublink{% if u == 'application_revisions' %} active{% endif %}">Revisions Required<span class="nav-badge" data-nav-badge="revisions" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_approved' %}" class="nav-sublink{% if u == 'application_approved' %} active{% endif %}">Approved Studies<span class="nav-badge" data-nav-badge="approved" hidden>0</span></a>
+          <a href="{% url 'applicant_dashboard:application_not_approved' %}" class="nav-sublink{% if u == 'application_not_approved' %} active{% endif %}">Not Approved / Closed<span class="nav-badge" data-nav-badge="not_approved" hidden>0</span></a>
+        </div>
+      </div>
+
+      <div class="nav-group{% if 'postapproval' in u %} open{% endif %}">
+        <button type="button" class="nav-group-toggle" aria-expanded="{% if 'postapproval' in u %}true{% else %}false{% endif %}">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></span>
+          <span>Post-Approval</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'applicant_dashboard:postapproval_amendments' %}" class="nav-sublink{% if u == 'postapproval_amendments' or ptype == 'amendment' %} active{% endif %}">Amendments</a>
+          <a href="{% url 'applicant_dashboard:postapproval_continuing_reviews' %}" class="nav-sublink{% if u == 'postapproval_continuing_reviews' or ptype == 'continuing_review' %} active{% endif %}">Continuing Reviews</a>
+          <a href="{% url 'applicant_dashboard:postapproval_progress_reports' %}" class="nav-sublink{% if u == 'postapproval_progress_reports' or ptype == 'progress_report' %} active{% endif %}">Annual / Progress Reports</a>
+          <a href="{% url 'applicant_dashboard:postapproval_adverse_events' %}" class="nav-sublink{% if u == 'postapproval_adverse_events' or ptype == 'adverse_event' %} active{% endif %}">Adverse Events</a>
+          <a href="{% url 'applicant_dashboard:postapproval_deviations' %}" class="nav-sublink{% if u == 'postapproval_deviations' or ptype == 'deviation' %} active{% endif %}">Deviations / Violations</a>
+          <a href="{% url 'applicant_dashboard:postapproval_closure' %}" class="nav-sublink{% if u == 'postapproval_closure' or ptype == 'closure' %} active{% endif %}">Study Closure / Final Report</a>
+        </div>
+      </div>
+
+      <div class="nav-group{% if 'payment' in u %} open{% endif %}">
+        <button type="button" class="nav-group-toggle" aria-expanded="{% if 'payment' in u %}true{% else %}false{% endif %}">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></span>
+          <span>Payments</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'applicant_dashboard:payments_fees' %}" class="nav-sublink{% if u == 'payments_fees' %} active{% endif %}">Fees &amp; Invoices</a>
+          <a href="{% url 'applicant_dashboard:payments_make' %}" class="nav-sublink{% if u == 'payments_make' or u == 'application_pay' %} active{% endif %}">Make Payment</a>
+          <a href="{% url 'applicant_dashboard:payments_history' %}" class="nav-sublink{% if u == 'payments_history' %} active{% endif %}">Payment History</a>
+          <a href="{% url 'applicant_dashboard:payments_receipts' %}" class="nav-sublink{% if u == 'payments_receipts' or u == 'payment_receipt' %} active{% endif %}">Receipts</a>
+        </div>
+      </div>
+
+      <div class="nav-group{% if 'documents' in u or u == 'application_letter' %} open{% endif %}">
+        <button type="button" class="nav-group-toggle" aria-expanded="{% if 'documents' in u or u == 'application_letter' %}true{% else %}false{% endif %}">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></span>
+          <span>Documents</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'applicant_dashboard:documents_submitted' %}" class="nav-sublink{% if u == 'documents_submitted' %} active{% endif %}">Submitted Documents</a>
+          <a href="{% url 'applicant_dashboard:documents_decision_letters' %}" class="nav-sublink{% if u == 'documents_decision_letters' %} active{% endif %}">Decision Letters</a>
+          <a href="{% url 'applicant_dashboard:documents_approval_letters' %}" class="nav-sublink{% if u == 'documents_approval_letters' %} active{% endif %}">Approval Letters</a>
+          <a href="{% url 'applicant_dashboard:documents_certificates_receipts' %}" class="nav-sublink{% if u == 'documents_certificates_receipts' %} active{% endif %}">Certificates / Receipts</a>
+        </div>
+      </div>
+
+      <a href="{% url 'applicant_dashboard:messages' %}" class="nav-item{% if u == 'messages' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+        <span>Messages</span>
+      </a>
+      <a href="{% url 'applicant_dashboard:notifications' %}" class="nav-item{% if u == 'notifications' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+        <span>Notifications</span>
+      </a>
+      <a href="{% url 'applicant_dashboard:research_team' %}" class="nav-item{% if u == 'research_team' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M16 3.5a4 4 0 0 1 0 7.6"/><path d="M20.5 21v-2a5 5 0 0 0-3.5-4.8"/></svg></span>
+        <span>Research Team</span>
+      </a>
+      <a href="{% url 'applicant_dashboard:institution' %}" class="nav-item{% if u == 'institution' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h1M9 11h1M9 15h1M14 7h1M14 11h1M14 15h1"/></svg></span>
+        <span>Institution / Affiliation</span>
+      </a>
+      <a href="{% url 'applicant_dashboard:profile_security' %}" class="nav-item{% if u == 'profile_security' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/></svg></span>
+        <span>Profile &amp; Security</span>
+      </a>
+      <a href="{% url 'applicant_dashboard:help_support' %}" class="nav-item{% if u == 'help_support' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m4.9 4.9 3.5 3.5M19.1 4.9l-3.5 3.5M4.9 19.1l3.5-3.5M19.1 19.1l-3.5-3.5"/></svg></span>
+        <span>Help &amp; Support</span>
+      </a>
+{% endwith %}

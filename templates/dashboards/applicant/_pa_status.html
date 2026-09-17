@@ -1,0 +1,7 @@
+{% comment %}
+Status pill for one PostApprovalSubmission. Included as:
+  {% include "dashboards/applicant/_pa_status.html" with status=submission.status %}
+Kept in one place so amendments, progress reports, deviations, adverse
+events, continuing reviews and closure can't drift into five different
+colour vocabularies for the same five statuses.
+{% endcomment %}{% if status == 'submitted' %}<span class="badge-tag orange">Submitted</span>{% elif status == 'under_review' %}<span class="badge-tag purple">Under Review</span>{% elif status == 'action_required' %}<span class="badge-tag red">Action Required</span>{% elif status == 'approved' %}<span class="badge-tag green">Approved</span>{% elif status == 'acknowledged' %}<span class="badge-tag green">Acknowledged</span>{% endif %}

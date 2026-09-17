@@ -1,0 +1,43 @@
+{% load static %}
+<div class="dropdown" id="bellDropdown">
+  <button class="icon-btn bell-btn" id="bellBtn" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+    <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    {% if notif_unread_count %}<span class="badge">{{ notif_unread_count }}</span>{% endif %}
+  </button>
+  <div class="dropdown-menu bell-menu" id="bellMenu">
+    <div class="dropdown-head">
+      <h4>Notifications</h4>
+      {% if notif_unread_count %}
+      <form method="post" action="{% url 'applicant_dashboard:notifications_mark_read' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button class="mark-read" type="submit">Mark all as read</button>
+      </form>
+      {% endif %}
+    </div>
+    <ul class="bell-list">
+      {% for item in notif_bell_items %}
+      <li{% if item.unread %} class="unread"{% endif %}>
+        <span class="notice-icon {{ item.notice_class }}">
+          {% if item.icon == 'success' %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+          {% elif item.icon == 'warn' %}<svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+          {% elif item.icon == 'pay' %}<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          {% else %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+          {% endif %}
+        </span>
+        <div class="notice-body">
+          {% if item.url %}<p><a href="{{ item.url }}">{{ item.message }}</a></p>{% else %}<p>{{ item.message }}</p>{% endif %}
+          <span class="notice-date">{{ item.at|date:"d M Y" }}</span>
+        </div>
+      </li>
+      {% empty %}
+      <li>
+        <div class="notice-body">
+          <p>Nothing yet &mdash; updates on your applications and payments will show up here.</p>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    <a href="{% url 'applicant_dashboard:notifications' %}" class="dropdown-footer-link">View all notifications</a>
+  </div>
+</div>

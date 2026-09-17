@@ -6,8 +6,9 @@
 {% block extra_css %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/reviewer-settings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/reviewer-identity.css' %}">
 {% endblock %}
 
 {% block nav_content %}
@@ -92,7 +93,7 @@
 {% block topbar %}
 
       <div class="topbar-title">
-        <h1>Reviewer Dashboard</h1>
+        <h1 class="rv-heading">Reviewer Dashboard</h1>
         <p>Welcome back, {{ request.user.full_name }}</p>
       </div>
       <div class="topbar-actions">

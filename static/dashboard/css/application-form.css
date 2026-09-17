@@ -243,6 +243,62 @@
 }
 .field-wide { grid-column: 1 / -1; }
 
+/* Read-only field value (admin/secretariat application detail view) --
+   the display counterpart to .field input/select/textarea above, for
+   fields shown as plain text rather than an editable control. */
+.field-value {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-main);
+}
+.field-value.wrap { line-height: 1.6; }
+
+/* ---------------- Application detail (admin/secretariat) ---------------- */
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.back-link svg { width: 14px; height: 14px; }
+
+.panel-detail { padding: 24px 26px; }
+.panel-detail + .panel-detail,
+.app-detail-summary { margin-bottom: 20px; }
+
+.app-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+.app-detail-identity { display: flex; align-items: center; gap: 12px; }
+.app-detail-identity .acct-avatar { width: 44px; height: 44px; }
+.app-detail-identity h3 { margin: 0; font-size: 14.5px; font-weight: 700; color: var(--text-main); }
+.app-detail-identity p { margin: 2px 0 0; font-size: 12.5px; color: var(--text-sub); }
+
+.app-detail-head .badge-tag { font-size: 12px; padding: 6px 14px; }
+.app-detail-head .badge-tag svg { width: 13px; height: 13px; margin-right: 4px; vertical-align: -2px; }
+
+.acct-actions-detail { justify-content: flex-start; margin-top: 14px; }
+
+.form-label-block { display: flex; flex-direction: column; gap: 6px; }
+.form-label-block > span { font-size: 12px; font-weight: 600; color: var(--text-sub); }
+.form-textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-main);
+  background: var(--white);
+  resize: vertical;
+}
+
 .field label,
 .signup-subsection-title + .field label {
   display: block;
@@ -602,7 +658,7 @@
   transition: background-color .15s, border-color .15s;
 }
 .apply-signature-input::placeholder {
-  font-family: "Inter", "Poppins", sans-serif;
+  font-family: "IBM Plex Sans", sans-serif;
   font-size: 13.5px;
   font-weight: 400;
   color: var(--text-faint);

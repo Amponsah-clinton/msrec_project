@@ -39,6 +39,19 @@ INQUIRY_TABS = {"all", "new", "resolved"}
 # elevated, cross-account access.
 STAFF_SECURITY_ROLES = [User.Role.ADMIN, User.Role.SECRETARIAT, User.Role.CHAIR]
 
+# Presentation-only detail for the dashboard's "Users by Role" panel, keyed
+# by the labels _role_counts() returns. Kept out of _role_counts() itself so
+# the Reports page and its CSV export -- which want numbers, not blurbs and
+# badge colours -- are unaffected by anything the dashboard wants to show.
+ROLE_PANEL_META = {
+    "Applicants": ("Researchers submitting studies", "blue"),
+    "Reviewers": ("Assigned to expedited & full review", "teal"),
+    "Committee": ("Full committee reviewers", "purple"),
+    "Secretariat": ("Day-to-day operations", "navy"),
+    "Chair": ("Governance & final sign-off", "orange"),
+    "Admins": ("Full platform access", "green"),
+}
+
 
 def is_admin(user):
     return user.is_authenticated and (user.is_superuser or user.role == User.Role.ADMIN)
@@ -375,11 +388,43 @@ def home(request):
     }
     oldest_pending = pending_qs.order_by("date_joined").first()
 
+    # Institutions aren't a model of their own -- an institution exists on
+    # this platform exactly when someone registered against it, so count
+    # the distinct non-blank names rather than invent a table for them.
+    institution_count = (
+        all_users.exclude(institution="")
+        .values("institution")
+        .distinct()
+        .count()
+    )
+
     return render(request, "dashboards/admin.html", {
+        "page_subtitle": f"Welcome back, {request.user.first_name}",
         "application_counts": application_counts,
+        # "Active" means still moving through the pipeline. application_counts
+        # ["all"] is every non-draft application ever, decided ones included,
+        # so it overstates the live workload it was being used to label.
+        "active_application_count": (
+            application_counts["submitted"]
+            + application_counts["under_review"]
+            + application_counts["revisions"]
+        ),
         "recent_applications": recent_applications,
         "user_counts": user_counts,
         "oldest_pending": oldest_pending,
+        "institution_count": institution_count,
+        "open_inquiry_count": Inquiry.objects.filter(status=Inquiry.Status.NEW).count(),
+        # Same helper the Reports page and its CSV export use, so the
+        # dashboard's role breakdown can never drift from the report's.
+        "role_rows": [
+            {
+                "label": label,
+                "count": count,
+                "blurb": ROLE_PANEL_META.get(label, ("", "gray"))[0],
+                "tone": ROLE_PANEL_META.get(label, ("", "gray"))[1],
+            }
+            for label, count in _role_counts()
+        ],
     })
 
 
@@ -396,6 +441,9 @@ def applications(request):
     all_applications = list(base_qs)
     for application in all_applications:
         application.tab = oversight.STATUS_TO_TAB.get(application.status, "all")
+        # The stored value is the form's slug ("not-sure", "expedited").
+        # Show the same wording the fee schedule and Reports page use.
+        application.review_type_label = fees.label_for(application.review_type)
 
     return render(request, "dashboards/admin/applications.html", {
         "all_applications": all_applications,
@@ -428,6 +476,7 @@ def application_detail(request, pk):
         return redirect("admin_dashboard:application_detail", pk=application.pk)
 
     application.tab = oversight.STATUS_TO_TAB.get(application.status, "all")
+    application.review_type_label = fees.label_for(application.review_type)
 
     documents = [
         {**doc, "url": application_storage.public_url(doc.get("path"))}

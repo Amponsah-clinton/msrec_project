@@ -105,6 +105,19 @@ class User(AbstractBaseUser, PermissionsMixin):
     two_factor_sms = models.BooleanField(default=False)
     notify_new_signin = models.BooleanField(default=True)
 
+    # Notification Preferences (dashboards/applicant/notifications.html
+    # side panel). Independent of notify_new_signin above (that one's
+    # specifically the Profile & Security "new sign-in" alert).
+    notify_email_alerts = models.BooleanField(default=True)
+    notify_sms_alerts = models.BooleanField(default=False)
+    notify_weekly_digest = models.BooleanField(default=True)
+
+    # Read marker for the applicant notification feed (derived from this
+    # user's own Application activity -- see applicant_dashboard.notifications).
+    # Everything with an activity timestamp after this is "unread"; NULL
+    # means nothing has ever been marked read.
+    notifications_last_read_at = models.DateTimeField(null=True, blank=True)
+
     # Object path inside the Supabase Storage "signup" bucket (see
     # accounts/storage.py) -- not a public URL, since that bucket is
     # private. Resolve to a viewable link with storage.create_signed_url().

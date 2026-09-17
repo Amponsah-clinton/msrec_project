@@ -4,18 +4,31 @@
    Flat design only -- no gradients anywhere in this file, matching
    style.css's own "no gradients, no colored card edges" house rule.
    Scoped under .ad-scope so nothing here leaks into other dashboards.
+   Typeface follows the house system in style.css: IBM Plex Serif for
+   the titles that open a page or a card, IBM Plex Sans for the working
+   interface. These four pages used to load Plus Jakarta Sans on top of
+   the house font, which split the admin section into two visibly
+   different type systems. Kept as a token so a future, deliberate
+   per-section typeface change has one place to land.
 --------------------------------------------------- */
 
 .ad-scope {
-  --ad-font: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --ad-font: "IBM Plex Serif", Georgia, "Times New Roman", serif;
 }
 
 .ad-scope h1, .ad-scope h2, .ad-scope h3, .ad-scope h4,
-.ad-scope .page-head-text h2,
+.ad-scope .page-head-text h2 {
+  font-family: var(--ad-font);
+  letter-spacing: -0.011em;
+}
+
+/* Figures, not titles -- these match .stat-value's fixed-width numerals
+   in style.css so a KPI on this page and a stat card on the dashboard
+   home read as the same kind of number. */
 .ad-scope .ad-kpi-value,
 .ad-scope .ad-meter-value {
-  font-family: var(--ad-font);
-  letter-spacing: -0.01em;
+  font-family: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  letter-spacing: -0.02em;
 }
 
 /* ---------------- Segmented settings tabs (flat, solid active state) ---------------- */

@@ -1,0 +1,99 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Receipt {{ payment.reference }} | MSREC{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'dashboard/css/letter.css' %}">{% endblock %}
+
+{% block nav_content %}
+      {% include "dashboards/applicant/_nav.html" %}
+{% endblock %}
+
+{% block topbar %}
+      <div class="topbar-title">
+        <h1>Payment Receipt</h1>
+        <p>{{ payment.reference }}</p>
+      </div>
+      <div class="topbar-actions">
+        <button type="button" class="btn-secondary" onclick="window.print()">
+          <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+          Print / Save PDF
+        </button>
+        {% include "dashboards/applicant/_profile_menu.html" %}
+      </div>
+{% endblock %}
+
+{% block main_content %}
+
+      <a href="{% url 'applicant_dashboard:payments_receipts' %}" class="back-link no-print">
+        <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        Back to receipts
+      </a>
+
+      <article class="letter letter-receipt">
+
+        <header class="letter-head">
+          <img class="letter-logo" src="{% if site_settings.logo_url %}{{ site_settings.logo_url }}{% else %}{% static 'assets/img/logo1.png' %}{% endif %}" alt="">
+          <div class="letter-org">
+            <h1>{{ site_settings.site_name|default:"MSREC" }}</h1>
+            <p>Official Payment Receipt</p>
+          </div>
+          <div class="letter-receipt-stamp">Paid</div>
+        </header>
+
+        <div class="letter-meta">
+          <span class="mono">{{ payment.reference }}</span>
+          <span>{{ payment.paid_at|date:"d F Y" }}</span>
+        </div>
+
+        <div class="letter-body">
+          <dl class="letter-facts">
+            <div><dt>Received From</dt><dd>{{ payment.applicant.full_name }}</dd></div>
+            <div><dt>Email</dt><dd>{{ payment.applicant.email }}</dd></div>
+            {% if payment.applicant.institution %}<div><dt>Institution</dt><dd>{{ payment.applicant.institution }}</dd></div>{% endif %}
+            {% if payment.paystack_response.channel %}<div><dt>Payment Method</dt><dd>{{ payment.paystack_response.channel|title }}</dd></div>{% endif %}
+          </dl>
+
+          <table class="letter-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th>Reference</th>
+                <th class="amount-col">Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  {{ payment.purpose|default:"MSREC Review Fee" }}
+                  {% if payment.application %}<span class="letter-table-sub">{{ payment.application.title }}</span>{% endif %}
+                </td>
+                <td class="mono">{{ payment.application.reference_no|default:"&mdash;" }}</td>
+                <td class="amount-col mono">{{ payment.currency }} {{ payment.amount|floatformat:2 }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="2">Total Paid</td>
+                <td class="amount-col mono">{{ payment.currency }} {{ payment.amount|floatformat:2 }}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <p class="letter-receipt-note">
+            Payment was received and verified on {{ payment.paid_at|date:"d F Y" }} at {{ payment.paid_at|time:"g:i A" }}.
+            This receipt confirms settlement in full of the review fee for the application referenced above.
+          </p>
+        </div>
+
+        <footer class="letter-foot">
+          <p>
+            Computer-generated receipt issued by the {{ site_settings.site_name|default:"MSREC" }} portal on
+            {% now "d F Y" %}; valid without signature. Queries about this payment should quote reference
+            <strong class="mono">{{ payment.reference }}</strong>{% if site_settings.contact_secretariat_email %} and be sent to {{ site_settings.contact_secretariat_email }}{% endif %}.
+          </p>
+        </footer>
+
+      </article>
+
+{% endblock %}

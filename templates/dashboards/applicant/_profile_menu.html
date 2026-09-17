@@ -1,0 +1,38 @@
+{% comment %}
+Topbar profile dropdown. Extracted from all 30 applicant templates for
+the same reason as _nav.html -- and because the three menu items in here
+were dead href="#" links in every single copy. They now point at the real
+pages that already existed.
+{% endcomment %}
+<div class="dropdown" id="profileDropdown">
+  <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
+    {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
+    <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
+  </button>
+  <div class="dropdown-menu profile-menu" id="profileMenu">
+    <div class="profile-menu-head">
+      {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
+      <div>
+        <strong>{{ request.user.full_name }}</strong>
+        <span>{{ request.user.email }}</span>
+      </div>
+    </div>
+    <a href="{% url 'applicant_dashboard:profile_security' %}" class="dropdown-item">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+      My Profile
+    </a>
+    <a href="{% url 'applicant_dashboard:institution' %}" class="dropdown-item">
+      <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h1M9 11h1M9 15h1M14 7h1M14 11h1M14 15h1"/></svg>
+      Institution / Affiliation
+    </a>
+    <a href="{% url 'applicant_dashboard:messages' %}" class="dropdown-item">
+      <svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+      Messages
+    </a>
+    <div class="dropdown-divider"></div>
+    <a href="{% url 'pages:logout' %}" class="dropdown-item logout">
+      <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Log Out
+    </a>
+  </div>
+</div>

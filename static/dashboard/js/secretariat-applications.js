@@ -42,6 +42,16 @@ document.addEventListener("DOMContentLoaded", () => {
     if (noMatchesEl) noMatchesEl.hidden = anyVisible;
   }
 
+  // A term handed over from another page's search box (the Dashboard's
+  // topbar posts here as ?q=) lands in the box and is applied on load, so
+  // arriving from that search shows the filtered list with the term still
+  // visible and editable rather than the unfiltered one.
+  const handedOver = new URLSearchParams(window.location.search).get("q");
+  if (handedOver) {
+    searchInput.value = handedOver;
+    applyFilters();
+  }
+
   searchInput.addEventListener("input", applyFilters);
   // The dashboard-wide filter-tabs handler (dashboard/js/script.js) already
   // toggles each row's `hidden` by tab on click, registered before this

@@ -1,0 +1,158 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}{% if kind == 'certificate' %}Ethics Clearance Certificate{% elif kind == 'approval' %}Approval Letter{% else %}Decision Letter{% endif %} | MSREC{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'dashboard/css/letter.css' %}">{% endblock %}
+
+{% block nav_content %}
+      {% include "dashboards/applicant/_nav.html" %}
+{% endblock %}
+
+{% block topbar %}
+      <div class="topbar-title">
+        <h1>{% if kind == 'certificate' %}Ethics Clearance Certificate{% elif kind == 'approval' %}Approval Letter{% else %}Decision Letter{% endif %}</h1>
+        <p>{{ application.reference_no|default:"Reference pending" }}</p>
+      </div>
+      <div class="topbar-actions">
+        <button type="button" class="btn-secondary" onclick="window.print()">
+          <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+          Print / Save PDF
+        </button>
+        {% include "dashboards/applicant/_profile_menu.html" %}
+      </div>
+{% endblock %}
+
+{% block main_content %}
+
+      <a href="{% if kind == 'certificate' %}{% url 'applicant_dashboard:documents_certificates_receipts' %}{% elif kind == 'approval' %}{% url 'applicant_dashboard:documents_approval_letters' %}{% else %}{% url 'applicant_dashboard:documents_decision_letters' %}{% endif %}" class="back-link no-print">
+        <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        Back to documents
+      </a>
+
+      <article class="letter{% if kind == 'certificate' %} letter-certificate{% endif %}">
+
+        <header class="letter-head">
+          <img class="letter-logo" src="{% if site_settings.logo_url %}{{ site_settings.logo_url }}{% else %}{% static 'assets/img/logo1.png' %}{% endif %}" alt="">
+          <div class="letter-org">
+            <h1>{{ site_settings.site_name|default:"MSREC" }}</h1>
+            {% if site_settings.footer_address %}
+              {# The configured address already opens with the committee's
+                 own name, so printing the static descriptor above it too
+                 just says the same thing twice on a formal document. #}
+              <p class="letter-org-address">{{ site_settings.footer_address|linebreaksbr }}</p>
+            {% else %}
+              <p>Metascholar Research Ethics Committee</p>
+            {% endif %}
+          </div>
+        </header>
+
+        {% if kind == 'certificate' %}
+
+        <div class="letter-cert-body">
+          <p class="letter-cert-eyebrow">Certificate of Ethical Clearance</p>
+          <p class="letter-cert-intro">This is to certify that the research study described below has been reviewed and granted ethical clearance by the {{ site_settings.site_name|default:"MSREC" }}.</p>
+          <h2 class="letter-cert-title">{{ application.title }}</h2>
+          <p class="letter-cert-pi">Principal Investigator &mdash; {{ application.applicant.full_name }}</p>
+          <dl class="letter-facts">
+            <div><dt>Reference Number</dt><dd class="mono">{{ application.reference_no|default:"&mdash;" }}</dd></div>
+            <div><dt>Review Pathway</dt><dd>{{ review_type_label }}</dd></div>
+            <div><dt>Date of Approval</dt><dd>{{ application.decided_at|date:"d F Y" }}</dd></div>
+            <div><dt>Valid Until</dt><dd>{{ application.approval_expires_at|date:"d F Y" }}</dd></div>
+          </dl>
+        </div>
+
+        {% else %}
+
+        <div class="letter-meta">
+          <span class="mono">{{ application.reference_no|default:"Reference pending" }}</span>
+          <span>{{ application.decided_at|default:application.revision_requested_at|date:"d F Y" }}</span>
+        </div>
+
+        <div class="letter-body">
+          <p class="letter-to">
+            {{ application.applicant.full_name }}<br>
+            {% if application.applicant.department %}{{ application.applicant.department }}<br>{% endif %}
+            {% if application.applicant.institution %}{{ application.applicant.institution }}{% endif %}
+          </p>
+
+          <p class="letter-subject">
+            RE: {% if kind == 'approval' %}Ethical Approval{% else %}Outcome of Ethics Review{% endif %} &mdash; {{ application.title }}
+          </p>
+
+          <p>Dear {{ application.applicant.full_name }},</p>
+
+          {% if application.status == 'approved' %}
+          <p>
+            I write on behalf of the {{ site_settings.site_name|default:"MSREC" }} to confirm that your application,
+            submitted under reference <strong>{{ application.reference_no }}</strong>, has been reviewed
+            under the <strong>{{ review_type_label }}</strong> pathway and has been <strong>approved</strong>.
+          </p>
+          <p>
+            This approval takes effect from {{ application.decided_at|date:"d F Y" }} and remains valid until
+            {{ application.approval_expires_at|date:"d F Y" }}. You may proceed with the study as described in
+            the approved protocol.
+          </p>
+          <p>
+            Approval is granted on the understanding that you will seek prior approval for any amendment to the
+            protocol, report adverse events and protocol deviations promptly, submit continuing review
+            documentation before the expiry date above, and notify the Committee on completion or early
+            termination of the study.
+          </p>
+          {% elif application.status == 'not_approved' %}
+          <p>
+            I write on behalf of the {{ site_settings.site_name|default:"MSREC" }} regarding your application
+            submitted under reference <strong>{{ application.reference_no }}</strong>, reviewed under the
+            <strong>{{ review_type_label }}</strong> pathway.
+          </p>
+          <p>
+            Following its review, the Committee was unable to grant ethical approval for the study as presented,
+            and the application is recorded as <strong>not approved</strong> as of
+            {{ application.decided_at|date:"d F Y" }}.
+          </p>
+          <p>
+            This decision does not prevent you from submitting a revised application addressing the Committee's
+            concerns. The Secretariat can be contacted through the portal for guidance on doing so.
+          </p>
+          {% else %}
+          <p>
+            I write on behalf of the {{ site_settings.site_name|default:"MSREC" }} regarding your application
+            submitted under reference <strong>{{ application.reference_no }}</strong>, reviewed under the
+            <strong>{{ review_type_label }}</strong> pathway.
+          </p>
+          <p>
+            The Committee has completed its review and requires <strong>revisions</strong> before a final
+            determination can be made. The points to be addressed are set out below.
+          </p>
+          {% if application.revision_comment %}
+          <blockquote class="letter-quote">{{ application.revision_comment|linebreaksbr }}</blockquote>
+          {% endif %}
+          <p>
+            Please revise your application accordingly and resubmit it through the portal. The Committee will
+            resume its review once the revised submission is received.
+          </p>
+          {% endif %}
+
+          <p>Yours sincerely,</p>
+
+          <div class="letter-sign">
+            <span class="letter-sign-line"></span>
+            <strong>The Secretariat</strong>
+            <span>{{ site_settings.site_name|default:"MSREC" }}</span>
+          </div>
+        </div>
+
+        {% endif %}
+
+        <footer class="letter-foot">
+          <p>
+            This document was generated from the {{ site_settings.site_name|default:"MSREC" }} portal on
+            {% now "d F Y" %} and reflects the current recorded status of reference
+            {{ application.reference_no|default:"&mdash;" }}. Its authenticity can be confirmed with the
+            Secretariat{% if site_settings.contact_secretariat_email %} at {{ site_settings.contact_secretariat_email }}{% endif %}.
+          </p>
+        </footer>
+
+      </article>
+
+{% endblock %}

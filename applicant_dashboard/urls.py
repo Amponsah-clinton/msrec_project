@@ -83,69 +83,84 @@ _urlpatterns = [
     ),
     path(
         "post-approval/amendments/",
-        TemplateView.as_view(template_name="dashboards/applicant/postapproval-amendments.html"),
+        views.postapproval_amendments,
         name="postapproval_amendments",
     ),
     path(
         "post-approval/continuing-reviews/",
-        TemplateView.as_view(template_name="dashboards/applicant/postapproval-continuing-reviews.html"),
+        views.postapproval_continuing_reviews,
         name="postapproval_continuing_reviews",
     ),
     path(
         "post-approval/progress-reports/",
-        TemplateView.as_view(template_name="dashboards/applicant/postapproval-progress-reports.html"),
+        views.postapproval_progress_reports,
         name="postapproval_progress_reports",
     ),
     path(
         "post-approval/adverse-events/",
-        TemplateView.as_view(template_name="dashboards/applicant/postapproval-adverse-events.html"),
+        views.postapproval_adverse_events,
         name="postapproval_adverse_events",
     ),
     path(
         "post-approval/deviations/",
-        TemplateView.as_view(template_name="dashboards/applicant/postapproval-deviations.html"),
+        views.postapproval_deviations,
         name="postapproval_deviations",
     ),
     path(
         "post-approval/closure/",
-        TemplateView.as_view(template_name="dashboards/applicant/postapproval-closure.html"),
+        views.postapproval_closure,
         name="postapproval_closure",
     ),
     path(
+        "post-approval/<str:ptype>/new/",
+        views.postapproval_new,
+        name="postapproval_new",
+    ),
+    path(
         "documents/submitted/",
-        TemplateView.as_view(template_name="dashboards/applicant/documents-submitted.html"),
+        views.documents_submitted,
         name="documents_submitted",
     ),
     path(
         "documents/decision-letters/",
-        TemplateView.as_view(template_name="dashboards/applicant/documents-decision-letters.html"),
+        views.documents_decision_letters,
         name="documents_decision_letters",
     ),
     path(
         "documents/approval-letters/",
-        TemplateView.as_view(template_name="dashboards/applicant/documents-approval-letters.html"),
+        views.documents_approval_letters,
         name="documents_approval_letters",
     ),
     path(
         "documents/certificates-receipts/",
-        TemplateView.as_view(template_name="dashboards/applicant/documents-certificates-receipts.html"),
+        views.documents_certificates_receipts,
         name="documents_certificates_receipts",
+    ),
+    path(
+        "applications/<int:pk>/letter/<str:kind>/",
+        views.application_letter,
+        name="application_letter",
     ),
     path("payments/fees/", views.payments_fees, name="payments_fees"),
     path(
         "payments/make/",
-        TemplateView.as_view(template_name="dashboards/applicant/payments-make.html"),
+        views.payments_make,
         name="payments_make",
     ),
     path(
         "payments/history/",
-        TemplateView.as_view(template_name="dashboards/applicant/payments-history.html"),
+        views.payments_history,
         name="payments_history",
     ),
     path(
         "payments/receipts/",
-        TemplateView.as_view(template_name="dashboards/applicant/payments-receipts.html"),
+        views.payments_receipts,
         name="payments_receipts",
+    ),
+    path(
+        "payments/receipts/<int:pk>/",
+        views.payment_receipt,
+        name="payment_receipt",
     ),
     path(
         "messages/",
@@ -164,12 +179,17 @@ _urlpatterns = [
     ),
     path(
         "notifications/",
-        TemplateView.as_view(template_name="dashboards/applicant/notifications.html"),
+        views.notifications_page,
         name="notifications",
     ),
     path(
+        "notifications/mark-read/",
+        views.notifications_mark_read,
+        name="notifications_mark_read",
+    ),
+    path(
         "research-team/",
-        TemplateView.as_view(template_name="dashboards/applicant/research-team.html"),
+        views.research_team,
         name="research_team",
     ),
     path(

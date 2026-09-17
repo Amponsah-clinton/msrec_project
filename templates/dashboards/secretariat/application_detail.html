@@ -1,197 +1,23 @@
 {% extends "dashboards/base.html" %}
-{% load static %}
+{% load static sc_extras %}
 
-{% block title %}{{ application.reference_no }} | MSREC Secretariat{% endblock %}
+{% block title %}{{ application.reference_no|default:"Application" }} | MSREC Secretariat{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
 <link href="{% static 'assets/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
 <link href="{% static 'dashboard/css/application-form.css' %}" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/secretariat.css' %}">
 {% endblock %}
 
 {% block nav_content %}
-
-      <a href="{% url 'secretariat_dashboard:home' %}" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg></span>
-        <span>Dashboard</span>
-      </a>
-
-      <a href="{% url 'secretariat_dashboard:applications' %}" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
-        <span>Applications</span>
-      </a>
-
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M6 3v12"/><circle cx="6" cy="18" r="3"/><circle cx="6" cy="3" r="3"/><path d="M6 9a9 9 0 0 0 9 9"/></svg></span>
-          <span>Review Pathways</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Determination / Exemption</a>
-          <a href="#" class="nav-sublink">Expedited</a>
-          <a href="#" class="nav-sublink">Full Committee</a>
-        </div>
-      </div>
-
-      <a href="{% url 'secretariat_dashboard:reviewer_assignment' %}" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M19 8v6M22 11h-6"/></svg></span>
-        <span>Reviewer Assignment</span>
-      </a>
-
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M16 3.5a4 4 0 0 1 0 7.6"/><path d="M20.5 21v-2a5 5 0 0 0-3.5-4.8"/></svg></span>
-          <span>Reviewers</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="{% url 'secretariat_dashboard:reviewer_directory' %}" class="nav-sublink">Reviewer Directory</a>
-          <a href="{% url 'secretariat_dashboard:reviewer_assignment_history' %}" class="nav-sublink">Assignment History</a>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M16 3.5a4 4 0 0 1 0 7.6"/><path d="M20.5 21v-2a5 5 0 0 0-3.5-4.8"/></svg></span>
-          <span>Committee</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Committee Members</a>
-          <a href="#" class="nav-sublink">Membership / Appointments</a>
-          <a href="#" class="nav-sublink">Terms &amp; Expiry</a>
-          <a href="#" class="nav-sublink">Training</a>
-          <a href="#" class="nav-sublink">Conflict Records</a>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
-          <span>Meetings</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Schedule Meeting</a>
-          <a href="#" class="nav-sublink">Meetings Calendar</a>
-          <a href="#" class="nav-sublink">Agenda</a>
-          <a href="#" class="nav-sublink">Attendance</a>
-          <a href="#" class="nav-sublink">Quorum</a>
-          <a href="#" class="nav-sublink">Minutes</a>
-          <a href="#" class="nav-sublink">Decisions</a>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg></span>
-          <span>Post-Approval Management</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Amendments</a>
-          <a href="#" class="nav-sublink">Continuing Reviews</a>
-          <a href="#" class="nav-sublink">Progress Reports</a>
-          <a href="#" class="nav-sublink">Deviations</a>
-          <a href="#" class="nav-sublink">Adverse Events</a>
-          <a href="#" class="nav-sublink">Complaints / Ethics Concerns</a>
-          <a href="#" class="nav-sublink">Closures</a>
-        </div>
-      </div>
-
-      <a href="{% url 'secretariat_dashboard:finance' %}" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
-        <span>Finance</span>
-      </a>
-
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
-          <span>Communications</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="{% url 'secretariat_dashboard:messages' %}" class="nav-sublink">Applicant Messages</a>
-          <a href="#" class="nav-sublink">Reviewer Messages</a>
-          <a href="#" class="nav-sublink">Email Templates</a>
-          <a href="#" class="nav-sublink">Notifications</a>
-          <a href="#" class="nav-sublink">Announcements</a>
-          <a href="#" class="nav-sublink">Reminders</a>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 3h8a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z"/></svg></span>
-          <span>Document Templates</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Decision Letters</a>
-          <a href="#" class="nav-sublink">Approval Letters</a>
-          <a href="#" class="nav-sublink">Amendment Letters</a>
-          <a href="#" class="nav-sublink">Continuing Review Letters</a>
-          <a href="#" class="nav-sublink">Closure Letters</a>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span>
-          <span>Reports &amp; Analytics</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Application Statistics</a>
-          <a href="#" class="nav-sublink">Status Reports</a>
-          <a href="#" class="nav-sublink">Turnaround Times</a>
-          <a href="#" class="nav-sublink">Reviewer Workload</a>
-          <a href="#" class="nav-sublink">Committee Activity</a>
-          <a href="#" class="nav-sublink">Post-Approval Compliance</a>
-          <a href="#" class="nav-sublink">Financial Reports</a>
-        </div>
-      </div>
-
-      <div class="nav-group">
-        <button type="button" class="nav-group-toggle" aria-expanded="false">
-          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-          <span>Users &amp; Access</span>
-          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-        </button>
-        <div class="nav-subnav">
-          <a href="#" class="nav-sublink">Users</a>
-          <a href="#" class="nav-sublink">Role Requests</a>
-          <a href="#" class="nav-sublink">Approve Reviewer Role</a>
-          <a href="#" class="nav-sublink">Approve Committee Role</a>
-          <a href="#" class="nav-sublink">Roles</a>
-          <a href="#" class="nav-sublink">Permissions</a>
-        </div>
-      </div>
-
-      <a href="#" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M9 3 7 21M17 3l-2 18"/></svg></span>
-        <span>Reference Numbers</span>
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span>
-        <span>Audit Logs</span>
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
-        <span>System Settings</span>
-      </a>
-      <a href="#" class="nav-item">
-        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
-        <span>Profile &amp; Security</span>
-      </a>
-    
+{% include "dashboards/_secretariat_nav.html" %}
 {% endblock %}
 
 {% block topbar %}
 
       <div class="topbar-title">
-        <h1>{{ application.reference_no }}</h1>
+        <h1>{{ application.reference_no|default:"Reference pending" }}</h1>
         <p>{{ application.title }}</p>
       </div>
       <div class="topbar-actions">
@@ -225,61 +51,64 @@
 {% endblock %}
 
 {% block main_content %}
+<div class="sc-scope">
 
-      <a href="{% url 'secretariat_dashboard:applications' %}" class="panel-link" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;">
-        <svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="m15 18-6-6 6-6"/></svg>
+      <a href="{% url 'secretariat_dashboard:applications' %}" class="sc-back">
+        <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
         Back to Applications
       </a>
 
-      <section class="panel" style="padding:24px 26px; margin-bottom:20px;">
-        <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px;">
-          <div style="display:flex; align-items:center; gap:12px;">
-            <span class="acct-avatar cat-applicants" style="width:44px;height:44px;">{{ application.applicant.initials }}</span>
+      <section class="panel">
+        <div class="sc-detail-head">
+          <div class="sc-detail-who">
+            <span class="acct-avatar cat-applicants">{{ application.applicant.initials }}</span>
             <div>
-              <h3 style="margin:0; font-size:14.5px; font-weight:700; color:var(--text-main);">{{ application.applicant.full_name }}</h3>
-              <p style="margin:2px 0 0; font-size:12.5px; color:var(--text-sub);">{{ application.applicant.email }} &middot; Submitted {{ application.submitted_at|date:"j M Y, g:i A" }}</p>
+              <h3>{{ application.applicant.full_name }}</h3>
+              <p>{{ application.applicant.email }}{% if application.submitted_at %} &middot; Submitted {{ application.submitted_at|date:"j M Y, g:i A" }}{% endif %}</p>
             </div>
           </div>
-          <span class="badge-tag {% if application.tab == 'submitted' %}orange{% elif application.tab == 'under_review' %}blue{% elif application.tab == 'revisions' %}red{% elif application.tab == 'approved' %}green{% elif application.tab == 'not_approved' %}red{% endif %}" style="font-size:12px; padding:6px 14px;">
-            {% if application.tab == 'submitted' %}New Submission{% elif application.tab == 'under_review' %}Under Review{% elif application.tab == 'revisions' %}Revisions Requested{% elif application.tab == 'approved' %}Approved{% elif application.tab == 'not_approved' %}Not Approved{% endif %}
-          </span>
-          {% if application.resubmitted_at %}
-          <span class="badge-tag blue" style="font-size:12px; padding:6px 14px;" title="Resubmitted {{ application.resubmitted_at|date:'j M Y, g:i A' }}">
-            <svg viewBox="0 0 24 24" style="width:13px;height:13px;margin-right:4px;vertical-align:-2px;"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
-            Revised &middot; {{ application.revision_count }} round{{ application.revision_count|pluralize }}
-          </span>
-          {% endif %}
+          <div class="sc-detail-badges">
+            <span class="badge-tag {% if application.tab == 'submitted' %}orange{% elif application.tab == 'under_review' %}blue{% elif application.tab == 'revisions' %}red{% elif application.tab == 'approved' %}green{% elif application.tab == 'not_approved' %}red{% endif %}">
+              {{ application.get_status_display }}
+            </span>
+            {% if application.resubmitted_at %}
+            <span class="badge-tag blue" title="Resubmitted {{ application.resubmitted_at|date:'j M Y, g:i A' }}">
+              <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+              Revised &middot; {{ application.revision_count }} round{{ application.revision_count|pluralize }}
+            </span>
+            {% endif %}
+          </div>
         </div>
 
         {% if application.revision_comment %}
-        <div class="reuse-hint" style="margin-top:14px;">
+        <div class="reuse-hint">
           <i class="bi bi-info-circle"></i>
           <span><strong>Last revision request{% if application.revision_requested_at %} ({{ application.revision_requested_at|date:"j M Y" }}){% endif %}:</strong> {{ application.revision_comment|linebreaksbr }}</span>
         </div>
         {% endif %}
 
-        <div class="acct-actions" style="justify-content:flex-start; gap:10px; flex-wrap:wrap; margin-top:14px;">
+        <div class="sc-detail-actions">
           {% if application.status == 'submitted' %}
-          <form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="start_review">
+          <form method="post">{% csrf_token %}<input type="hidden" name="action" value="start_review">
             <button type="submit" class="acct-btn acct-btn-approve"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Start Review</button>
           </form>
           {% endif %}
           {% if application.status == 'submitted' or application.status == 'under_review' %}
           <button type="button" id="requestRevisionsOpen" class="acct-btn acct-btn-suspend"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Request Revisions</button>
-          <form method="post" data-confirm="Approve {{ application.reference_no }}? The applicant will see this as an approved study." data-confirm-label="Approve"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="approve">
+          <form method="post" data-confirm="Approve {{ application.reference_no|default:'this application' }}? The applicant will see this as an approved study." data-confirm-label="Approve">{% csrf_token %}<input type="hidden" name="action" value="approve">
             <button type="submit" class="acct-btn acct-btn-activate"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Approve</button>
           </form>
-          <form method="post" data-confirm="Mark {{ application.reference_no }} as not approved? This cannot be undone from here." data-confirm-variant="danger" data-confirm-label="Not Approve"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="not_approve">
+          <form method="post" data-confirm="Mark {{ application.reference_no|default:'this application' }} as not approved? This cannot be undone from here." data-confirm-variant="danger" data-confirm-label="Not Approve">{% csrf_token %}<input type="hidden" name="action" value="not_approve">
             <button type="submit" class="acct-btn acct-btn-delete"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg> Not Approve</button>
           </form>
           {% endif %}
           {% if application.status == 'revisions_required' %}
-          <form method="post"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="start_review">
+          <form method="post">{% csrf_token %}<input type="hidden" name="action" value="start_review">
             <button type="submit" class="acct-btn acct-btn-approve"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Back to Review</button>
           </form>
           {% endif %}
           {% if application.status == 'approved' or application.status == 'not_approved' %}
-          <form method="post" data-confirm="Reopen {{ application.reference_no }} for screening?"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="reopen">
+          <form method="post" data-confirm="Reopen {{ application.reference_no|default:'this application' }} for screening?">{% csrf_token %}<input type="hidden" name="action" value="reopen">
             <button type="submit" class="acct-btn acct-btn-edit"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg> Reopen</button>
           </form>
           {% endif %}
@@ -299,14 +128,14 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="request_revisions">
             <div class="acct-modal-body">
-              <p class="field-hint" style="margin:0;">
-                Let {{ application.applicant.full_name }} know what needs fixing on {{ application.reference_no }}
+              <p class="field-hint">
+                Let {{ application.applicant.full_name }} know what needs fixing on {{ application.reference_no|default:"this application" }}
                 &mdash; this is optional, but it's the only detail they'll see before you message them separately.
                 They'll get an email right away and can resubmit without paying again.
               </p>
-              <label style="display:flex; flex-direction:column; gap:6px;">
-                <span style="font-size:12px; font-weight:600; color:var(--text-sub);">Comment (optional)</span>
-                <textarea name="revision_comment" rows="5" placeholder="e.g. Please attach the informed consent form in English, and clarify the sample size calculation in Section 5." style="width:100%; padding:10px 12px; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:inherit; font-size:13px; color:var(--text-main); background:var(--white); resize:vertical;"></textarea>
+              <label class="sc-modal-field">
+                <span>Comment (optional)</span>
+                <textarea name="revision_comment" rows="5" placeholder="e.g. Please attach the informed consent form in English, and clarify the sample size calculation in Section 5."></textarea>
               </label>
             </div>
             <div class="acct-modal-actions">
@@ -317,25 +146,25 @@
         </div>
       </div>
 
-      <div class="body-grid">
-        <section class="panel" style="padding:24px 26px;">
+      <div class="sc-detail">
+        <section class="panel">
           <div class="form-section">
             <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> Research Information</h3>
             <div class="field-grid">
-              <div class="field field-wide"><label>Full Title</label><p style="margin:0; font-size:13px; color:var(--text-main);">{{ application.title }}</p></div>
-              <div class="field"><label>Requested Review</label><p style="margin:0; font-size:13px; color:var(--text-main);">{{ application.review_type|default:"Not specified" }}</p></div>
-              <div class="field"><label>Risk Level</label><p style="margin:0; font-size:13px; color:var(--text-main);">{{ application.form_data.riskLevel|default:"Not specified" }}</p></div>
-              <div class="field field-wide"><label>Purpose of the Study</label><p style="margin:0; font-size:13px; color:var(--text-main); line-height:1.6;">{{ application.form_data.studyPurpose|default:"Not provided" }}</p></div>
+              <div class="field field-wide"><label>Full Title</label><p class="sc-field-value">{{ application.title }}</p></div>
+              <div class="field"><label>Requested Review</label><p class="sc-field-value">{{ application.review_type|default:"Not specified" }}</p></div>
+              <div class="field"><label>Risk Level</label><p class="sc-field-value">{{ application.form_data.riskLevel|default:"Not specified" }}</p></div>
+              <div class="field field-wide"><label>Purpose of the Study</label><p class="sc-field-value">{{ application.form_data.studyPurpose|default:"Not provided" }}</p></div>
             </div>
           </div>
 
           <div class="form-section">
             <h3 class="form-section-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg> Principal Investigator</h3>
             <div class="field-grid">
-              <div class="field"><label>Name</label><p style="margin:0; font-size:13px;">{{ application.form_data.piName|default:"Not provided" }}</p></div>
-              <div class="field"><label>Email</label><p style="margin:0; font-size:13px;">{{ application.form_data.piEmail|default:"Not provided" }}</p></div>
-              <div class="field"><label>Institution</label><p style="margin:0; font-size:13px;">{{ application.form_data.piInstitution|default:"Not provided" }}</p></div>
-              <div class="field"><label>Applicant Category</label><p style="margin:0; font-size:13px;">{{ application.form_data.applicantCategory|default:"Not provided" }}</p></div>
+              <div class="field"><label>Name</label><p class="sc-field-value">{{ application.form_data.piName|default:"Not provided" }}</p></div>
+              <div class="field"><label>Email</label><p class="sc-field-value">{{ application.form_data.piEmail|default:"Not provided" }}</p></div>
+              <div class="field"><label>Institution</label><p class="sc-field-value">{{ application.form_data.piInstitution|default:"Not provided" }}</p></div>
+              <div class="field"><label>Applicant Category</label><p class="sc-field-value">{{ application.form_data.applicantCategory|default:"Not provided" }}</p></div>
             </div>
           </div>
 
@@ -347,7 +176,7 @@
               <div class="apply-file-item">
                 <i class="bi bi-file-earmark-text"></i>
                 <span>{{ doc.name }}</span>
-                {% if doc.url %}<a href="{{ doc.url }}" target="_blank" rel="noopener" class="acct-cv-link" style="margin-left:auto;">View</a>{% endif %}
+                {% if doc.url %}<a href="{{ doc.url }}" target="_blank" rel="noopener" class="acct-cv-link sc-doc-link">View</a>{% endif %}
               </div>
               {% endfor %}
             </div>
@@ -356,19 +185,20 @@
             {% endif %}
           </div>
 
-          <details class="form-section">
-            <summary style="cursor:pointer; font-size:13px; font-weight:700; color:var(--text-main);">All submitted answers</summary>
-            <div class="apply-official-grid" style="margin-top:14px;">
+          <details class="form-section sc-answers">
+            <summary class="sc-answers-summary">All submitted answers</summary>
+            <dl class="sc-answers-grid">
               {% for key, value in application.form_data.items %}
               {% if value %}
-              <div class="apply-official-row"><dt>{{ key }}</dt><dd style="white-space:normal; text-align:left;">{{ value }}</dd></div>
+              <div class="sc-answers-row"><dt>{{ key|humanize_key }}</dt><dd>{{ value }}</dd></div>
               {% endif %}
               {% endfor %}
-            </div>
+            </dl>
           </details>
         </section>
       </div>
 
+</div>
 {% endblock %}
 
 {% block extra_js %}

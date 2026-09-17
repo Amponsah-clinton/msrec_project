@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
@@ -6,7 +7,8 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.http import JsonResponse
+from django.db.models import Sum
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -20,8 +22,9 @@ from notifications.services import notify
 from payments import fees
 from payments.models import Payment
 
-from . import storage
-from .models import Application
+from . import notification_feed, storage
+from .models import (Application, POSTAPPROVAL_FIELDS, POSTAPPROVAL_LIST_LABELS,
+                     POSTAPPROVAL_TITLES, PostApprovalSubmission)
 
 # Checkbox groups on the application form where more than one value can be
 # ticked (name="..." repeated across several <input type="checkbox">) --
@@ -186,7 +189,33 @@ def finalize_submission(application, request):
 
 
 def payments_fees(request):
-    return render(request, "dashboards/applicant/payments-fees.html", _fee_schedule_context())
+    """Fees & Invoices. The fee *schedule* half of this page was already
+    live (it reads FeeSetting through _fee_schedule_context); the balance
+    cards and invoice table below it were still hardcoded demo rows, and
+    are now built from this applicant's real Payments plus whatever is
+    still sitting unpaid at the payment gate."""
+    context = _fee_schedule_context()
+
+    payments_qs = Payment.objects.filter(
+        applicant=request.user
+    ).select_related("application").order_by("-created_at")
+
+    outstanding = _outstanding_invoices(request)
+
+    paid_this_year = Payment.objects.filter(
+        applicant=request.user,
+        status=Payment.Status.SUCCESS,
+        paid_at__year=timezone.now().year,
+    ).aggregate(total=Sum("amount"))["total"] or 0
+
+    context.update({
+        "payments": payments_qs,
+        "outstanding": outstanding,
+        "outstanding_total": sum(item["amount"] for item in outstanding),
+        "paid_this_year": paid_this_year,
+        "invoice_count": payments_qs.count() + len(outstanding),
+    })
+    return render(request, "dashboards/applicant/payments-fees.html", context)
 
 
 def _fee_schedule_context():
@@ -638,4 +667,388 @@ def application_detail(request, pk):
         "documents": documents,
         "review_type_label": fees.label_for(application.review_type),
         "progress_steps": _progress_steps(application),
+    })
+
+
+# =====================================================================
+# Notifications
+# =====================================================================
+
+def notifications_page(request):
+    if request.method == "POST":
+        request.user.notify_email_alerts = bool(request.POST.get("notify_email_alerts"))
+        request.user.notify_sms_alerts = bool(request.POST.get("notify_sms_alerts"))
+        request.user.notify_weekly_digest = bool(request.POST.get("notify_weekly_digest"))
+        request.user.save(update_fields=["notify_email_alerts", "notify_sms_alerts", "notify_weekly_digest"])
+        messages.success(request, "Notification preferences updated.")
+        return redirect("applicant_dashboard:notifications")
+
+    items = notification_feed.feed_for(request.user)
+    today = timezone.localdate()
+    yesterday = today - timedelta(days=1)
+    day_groups = {"Today": [], "Yesterday": [], "Earlier": []}
+    for item in items:
+        item_date = timezone.localtime(item.at).date()
+        if item_date == today:
+            day_groups["Today"].append(item)
+        elif item_date == yesterday:
+            day_groups["Yesterday"].append(item)
+        else:
+            day_groups["Earlier"].append(item)
+
+    return render(request, "dashboards/applicant/notifications.html", {
+        "day_groups": [(label, group) for label, group in day_groups.items() if group],
+        "total_count": len(items),
+        "unread_count": sum(1 for item in items if item.unread),
+    })
+
+
+@require_POST
+def notifications_mark_read(request):
+    notification_feed.mark_all_read(request.user)
+    next_url = request.POST.get("next") or reverse("applicant_dashboard:notifications")
+    return redirect(next_url)
+
+
+# =====================================================================
+# Post-Approval: amendments, continuing reviews, progress reports,
+# adverse events, deviations, closure. One model (PostApprovalSubmission)
+# backs all six -- see its docstring in models.py.
+# =====================================================================
+
+# How long before an approved study's clearance expires it counts as "due
+# for renewal" on the Continuing Review page. Not a figure published
+# anywhere else in this codebase -- this feature's own reasonable default.
+CONTINUING_REVIEW_DUE_SOON_DAYS = 60
+
+POSTAPPROVAL_LIST_URL_NAMES = {
+    PostApprovalSubmission.Type.AMENDMENT: "applicant_dashboard:postapproval_amendments",
+    PostApprovalSubmission.Type.CONTINUING_REVIEW: "applicant_dashboard:postapproval_continuing_reviews",
+    PostApprovalSubmission.Type.PROGRESS_REPORT: "applicant_dashboard:postapproval_progress_reports",
+    PostApprovalSubmission.Type.ADVERSE_EVENT: "applicant_dashboard:postapproval_adverse_events",
+    PostApprovalSubmission.Type.DEVIATION: "applicant_dashboard:postapproval_deviations",
+    PostApprovalSubmission.Type.CLOSURE: "applicant_dashboard:postapproval_closure",
+}
+
+_ACTIVE_SUBMISSION_STATUSES = (
+    PostApprovalSubmission.Status.SUBMITTED,
+    PostApprovalSubmission.Status.UNDER_REVIEW,
+    PostApprovalSubmission.Status.ACTION_REQUIRED,
+)
+_DECIDED_SUBMISSION_STATUSES = (PostApprovalSubmission.Status.APPROVED, PostApprovalSubmission.Status.ACKNOWLEDGED)
+
+
+def _postapproval_queryset(request, ptype):
+    return PostApprovalSubmission.objects.filter(
+        applicant=request.user, type=ptype
+    ).select_related("application").order_by("-submitted_at")
+
+
+def postapproval_amendments(request):
+    return render(request, "dashboards/applicant/postapproval-amendments.html", {
+        "submissions": _postapproval_queryset(request, PostApprovalSubmission.Type.AMENDMENT),
+    })
+
+
+def postapproval_progress_reports(request):
+    return render(request, "dashboards/applicant/postapproval-progress-reports.html", {
+        "submissions": _postapproval_queryset(request, PostApprovalSubmission.Type.PROGRESS_REPORT),
+    })
+
+
+def postapproval_deviations(request):
+    return render(request, "dashboards/applicant/postapproval-deviations.html", {
+        "submissions": _postapproval_queryset(request, PostApprovalSubmission.Type.DEVIATION),
+    })
+
+
+def postapproval_adverse_events(request):
+    return render(request, "dashboards/applicant/postapproval-adverse-events.html", {
+        "submissions": _postapproval_queryset(request, PostApprovalSubmission.Type.ADVERSE_EVENT),
+    })
+
+
+def _approved_applications(request):
+    return Application.objects.filter(
+        applicant=request.user, status=Application.Status.APPROVED
+    ).order_by("decided_at")
+
+
+def postapproval_continuing_reviews(request):
+    cards = []
+    for application in _approved_applications(request):
+        latest = PostApprovalSubmission.objects.filter(
+            application=application, type=PostApprovalSubmission.Type.CONTINUING_REVIEW
+        ).order_by("-submitted_at").first()
+        expires_at = application.approval_expires_at
+        days_remaining = (expires_at - timezone.now()).days if expires_at else None
+
+        if latest and latest.status in _ACTIVE_SUBMISSION_STATUSES:
+            stage = 3
+        elif latest and latest.status in _DECIDED_SUBMISSION_STATUSES:
+            stage = 4
+        elif days_remaining is not None and days_remaining <= CONTINUING_REVIEW_DUE_SOON_DAYS:
+            stage = 2
+        else:
+            stage = 1
+
+        cards.append({
+            "application": application, "expires_at": expires_at,
+            "days_remaining": days_remaining, "stage": stage, "latest": latest,
+        })
+    return render(request, "dashboards/applicant/postapproval-continuing-reviews.html", {"cards": cards})
+
+
+def postapproval_closure(request):
+    cards = []
+    for application in _approved_applications(request):
+        latest = PostApprovalSubmission.objects.filter(
+            application=application, type=PostApprovalSubmission.Type.CLOSURE
+        ).order_by("-submitted_at").first()
+
+        if latest and latest.status in _DECIDED_SUBMISSION_STATUSES:
+            stage = 4
+        elif latest:
+            stage = 3
+        else:
+            stage = 1
+
+        cards.append({"application": application, "stage": stage, "latest": latest})
+    return render(request, "dashboards/applicant/postapproval-closure.html", {"cards": cards})
+
+
+def postapproval_new(request, ptype):
+    if ptype not in POSTAPPROVAL_FIELDS:
+        raise Http404("Unknown post-approval submission type.")
+
+    field_defs = POSTAPPROVAL_FIELDS[ptype]
+    list_url_name = POSTAPPROVAL_LIST_URL_NAMES[ptype]
+    # Anything this applicant has ever submitted -- a still-open draft has
+    # no approved protocol yet to file a post-approval item against.
+    applications = Application.objects.filter(applicant=request.user).exclude(status=Application.Status.DRAFT)
+
+    if request.method == "POST":
+        application = get_object_or_404(applications, pk=request.POST.get("application"))
+        form_data = {key: request.POST.get(key, "").strip() for key, *_rest in field_defs}
+        PostApprovalSubmission.objects.create(
+            application=application, applicant=request.user, type=ptype, form_data=form_data,
+        )
+        notify(
+            Notification.Audience.SECRETARIAT,
+            f"{request.user.full_name} filed a {POSTAPPROVAL_TITLES[ptype]} "
+            f"for {application.reference_no or application.title}.",
+            icon=Notification.Icon.INFO,
+        )
+        messages.success(request, f"{POSTAPPROVAL_TITLES[ptype]} submitted.")
+        return redirect(list_url_name)
+
+    return render(request, "dashboards/applicant/postapproval-new.html", {
+        "ptype": ptype,
+        "title": POSTAPPROVAL_TITLES[ptype],
+        "list_label": POSTAPPROVAL_LIST_LABELS[ptype],
+        "field_defs": field_defs,
+        "applications": applications,
+        "list_url_name": list_url_name,
+    })
+
+
+# =====================================================================
+# Documents: submitted files, decision/approval letters, certificates.
+# Decision letters, approval letters and certificates are rendered on
+# demand from the Application record itself (see application_letter
+# below) -- nothing here is an uploaded file the Secretariat has to
+# separately produce and attach.
+# =====================================================================
+
+DECIDED_STATUSES = (
+    Application.Status.REVISIONS_REQUIRED, Application.Status.APPROVED, Application.Status.NOT_APPROVED,
+)
+
+
+def documents_submitted(request):
+    applications = Application.objects.filter(
+        applicant=request.user
+    ).exclude(status=Application.Status.DRAFT).order_by("-created_at")
+    groups = []
+    for application in applications:
+        docs = [{**doc, "url": storage.public_url(doc.get("path"))} for doc in (application.documents or [])]
+        if docs:
+            groups.append({"application": application, "documents": docs})
+    return render(request, "dashboards/applicant/documents-submitted.html", {"groups": groups})
+
+
+def documents_decision_letters(request):
+    applications = Application.objects.filter(
+        applicant=request.user, status__in=DECIDED_STATUSES
+    ).order_by("-updated_at")
+    return render(request, "dashboards/applicant/documents-decision-letters.html", {"applications": applications})
+
+
+def documents_approval_letters(request):
+    applications = Application.objects.filter(
+        applicant=request.user, status=Application.Status.APPROVED
+    ).order_by("-decided_at")
+    return render(request, "dashboards/applicant/documents-approval-letters.html", {"applications": applications})
+
+
+def documents_certificates_receipts(request):
+    certificates = Application.objects.filter(
+        applicant=request.user, status=Application.Status.APPROVED
+    ).order_by("-decided_at")
+    receipts = Payment.objects.filter(
+        applicant=request.user, status=Payment.Status.SUCCESS
+    ).select_related("application").order_by("-paid_at")
+    total_paid = receipts.aggregate(total=Sum("amount"))["total"] or 0
+    return render(request, "dashboards/applicant/documents-certificates-receipts.html", {
+        "certificates": certificates, "receipts": receipts, "total_paid": total_paid,
+    })
+
+
+def application_letter(request, pk, kind):
+    """A decision letter, approval letter, or ethics clearance certificate
+    -- a plain printable page rendered live from the Application record,
+    not a stored file (print-to-PDF from the browser covers "download")."""
+    if kind == "decision":
+        allowed_statuses = DECIDED_STATUSES
+    elif kind in ("approval", "certificate"):
+        allowed_statuses = (Application.Status.APPROVED,)
+    else:
+        raise Http404("Unknown letter type.")
+
+    application = get_object_or_404(
+        Application, pk=pk, applicant=request.user, status__in=allowed_statuses
+    )
+    return render(request, "dashboards/applicant/letter.html", {
+        "application": application,
+        "kind": kind,
+        "review_type_label": fees.label_for(application.review_type),
+    })
+
+
+# =====================================================================
+# Payments: outstanding invoices, history, receipts. All backed by the
+# real Payment/Application records -- "Make Payment" hands off to the
+# same Paystack checkout (application_pay) the application form itself
+# uses, rather than a second, parallel payment form.
+# =====================================================================
+
+def _outstanding_invoices(request):
+    """Applications parked at the payment gate: fully filled in, fee-bearing,
+    and with no successful payment against them yet. This is exactly the set
+    finalize_submission() is waiting on, so it's the honest definition of
+    "you owe MSREC this" -- shared by Make Payment and Fees & Invoices."""
+    paid_application_ids = Payment.objects.filter(
+        applicant=request.user, status=Payment.Status.SUCCESS
+    ).values_list("application_id", flat=True)
+    drafts_awaiting_payment = Application.objects.filter(
+        applicant=request.user, status=Application.Status.DRAFT, completion_pct=100,
+    ).exclude(pk__in=paid_application_ids).order_by("created_at")
+    return [
+        {"application": app, "amount": fees.fee_for(app.review_type)}
+        for app in drafts_awaiting_payment
+        if fees.requires_payment(app.review_type)
+    ]
+
+
+def payments_make(request):
+    return render(request, "dashboards/applicant/payments-make.html", {
+        "outstanding": _outstanding_invoices(request),
+    })
+
+
+def payments_history(request):
+    payments_qs = Payment.objects.filter(applicant=request.user).select_related("application").order_by("-created_at")
+    return render(request, "dashboards/applicant/payments-history.html", {"payments": payments_qs})
+
+
+def payments_receipts(request):
+    payments_qs = Payment.objects.filter(
+        applicant=request.user, status=Payment.Status.SUCCESS
+    ).select_related("application").order_by("-paid_at")
+    return render(request, "dashboards/applicant/payments-receipts.html", {"payments": payments_qs})
+
+
+def payment_receipt(request, pk):
+    payment = get_object_or_404(Payment, pk=pk, applicant=request.user, status=Payment.Status.SUCCESS)
+    return render(request, "dashboards/applicant/receipt.html", {"payment": payment})
+
+
+# =====================================================================
+# Research Team: aggregated from Application.form_data["researchTeam"]
+# (already collected per-application by _collect_form_data) rather than
+# its own table -- the same "one applicant's team" data the application
+# form itself captures, just read back across every one of their studies.
+# =====================================================================
+
+_TEAM_ROLE_KEYWORDS = (
+    ("principal investigator", "pi"),
+    ("co-investigator", "co_investigator"),
+    ("co investigator", "co_investigator"),
+    ("research assistant", "research_assistant"),
+    ("statistician", "research_assistant"),
+)
+
+
+def _team_role_bucket(role_label):
+    role_lower = role_label.lower()
+    for keyword, bucket in _TEAM_ROLE_KEYWORDS:
+        if keyword in role_lower:
+            return bucket
+    return "other"
+
+
+# Honorifics carry no identity -- taking the first letter blindly turns
+# every "Dr. Yaa Mensimah" and "Dr. Kwame Boateng" into an identical "D".
+_HONORIFICS = {"dr", "dr.", "prof", "prof.", "professor", "mr", "mr.",
+               "mrs", "mrs.", "ms", "ms.", "miss", "rev", "rev.", "sir"}
+
+
+def _team_initials(name):
+    words = [w for w in (name or "").split() if w.strip(".").lower() not in _HONORIFICS]
+    letters = [w[0].upper() for w in words if w[:1].isalpha()]
+    if not letters:
+        return (name or "?")[:1].upper() or "?"
+    return "".join(letters[:2])
+
+
+def research_team(request):
+    applications = Application.objects.filter(
+        applicant=request.user
+    ).exclude(status=Application.Status.DRAFT).order_by("-created_at")
+    editable_applications = Application.objects.filter(
+        applicant=request.user,
+        status__in=[Application.Status.DRAFT, Application.Status.REVISIONS_REQUIRED],
+    ).order_by("-updated_at")
+
+    if request.method == "POST":
+        application = get_object_or_404(editable_applications, pk=request.POST.get("application"))
+        name = request.POST.get("name", "").strip()
+        role = request.POST.get("role", "").strip()
+        if not name or not role:
+            messages.error(request, "Name and role are required.")
+            return redirect("applicant_dashboard:research_team")
+        team = list(application.form_data.get("researchTeam", []))
+        team.append({"name": name, "role": role, "institution": request.POST.get("institution", "").strip()})
+        application.form_data["researchTeam"] = team
+        application.save(update_fields=["form_data"])
+        messages.success(request, f"{name} added to {application.title}.")
+        return redirect("applicant_dashboard:research_team")
+
+    rows = []
+    counts = {"pi": 1, "co_investigator": 0, "research_assistant": 0, "other": 0}
+    for application in applications:
+        for member in (application.form_data or {}).get("researchTeam", []):
+            role_label = (member.get("role") or "").strip()
+            if not (member.get("name") or "").strip():
+                continue
+            bucket = _team_role_bucket(role_label)
+            counts[bucket] = counts.get(bucket, 0) + 1
+            rows.append({
+                "name": member.get("name", ""), "role": role_label,
+                "institution": member.get("institution", ""), "application": application,
+                "initials": _team_initials(member.get("name", "")),
+            })
+
+    return render(request, "dashboards/applicant/research-team.html", {
+        "rows": rows, "counts": counts, "editable_applications": editable_applications,
     })

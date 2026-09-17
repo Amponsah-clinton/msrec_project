@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -98,3 +100,164 @@ class Application(models.Model):
         year = (self.submitted_at or self.created_at or timezone.now()).year
         self.reference_no = f"MSREC/{year}/{self.pk:04d}"
         self.save(update_fields=["reference_no"])
+
+    # An approved study's ethical clearance is treated as valid for this
+    # long before it's due for a Continuing Review / needs renewing --
+    # matches the "Valid until" window shown on approval letters and
+    # certificates. Not something MSREC has published a different figure
+    # for anywhere in this codebase, so 2 years is this feature's own
+    # reasonable default, kept in one place so it's easy to change later.
+    APPROVAL_VALIDITY_DAYS = 730
+
+    @property
+    def approval_expires_at(self):
+        if self.status != self.Status.APPROVED or not self.decided_at:
+            return None
+        return self.decided_at + timedelta(days=self.APPROVAL_VALIDITY_DAYS)
+
+
+class PostApprovalSubmission(models.Model):
+    """One post-approval item an applicant files against an approved (or
+    approval-track) study: an amendment, a continuing-review renewal, an
+    annual/progress report, an adverse-event report, a protocol deviation,
+    or a study-closure request. Six different real-world forms that all
+    share the same shape -- who filed it, against which application, a
+    free-form set of type-specific answers, and a status the Secretariat
+    moves along -- so one table (keyed by `type`) backs all six
+    Post-Approval pages, the same reasoning as Application.form_data
+    collapsing ~90 form fields into one jsonb column instead of a table
+    each.
+
+    No dedicated Secretariat/Committee review screen exists yet for these
+    (that's the natural next build) -- for now they're actioned from
+    /admin/ (see applicant_dashboard/admin.py), same as any other admin-
+    managed row. The Secretariat is still notified the moment one is filed
+    (see applicant_dashboard.views.postapproval_new), so nothing here goes
+    unseen in the meantime.
+    """
+
+    class Type(models.TextChoices):
+        AMENDMENT = "amendment", "Amendment"
+        CONTINUING_REVIEW = "continuing_review", "Continuing Review"
+        PROGRESS_REPORT = "progress_report", "Progress Report"
+        ADVERSE_EVENT = "adverse_event", "Adverse Event"
+        DEVIATION = "deviation", "Deviation"
+        CLOSURE = "closure", "Closure"
+
+    class Status(models.TextChoices):
+        SUBMITTED = "submitted", "Submitted"
+        UNDER_REVIEW = "under_review", "Under Review"
+        ACTION_REQUIRED = "action_required", "Action Required"
+        APPROVED = "approved", "Approved"
+        ACKNOWLEDGED = "acknowledged", "Acknowledged"
+
+    application = models.ForeignKey(
+        Application, on_delete=models.CASCADE, related_name="postapproval_submissions"
+    )
+    applicant = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="postapproval_submissions"
+    )
+
+    type = models.CharField(max_length=20, choices=Type.choices)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.SUBMITTED)
+
+    # Type-specific answers, keyed exactly like POSTAPPROVAL_FIELDS[type]
+    # below -- e.g. an adverse_event row has event_type/date_onset/
+    # severity/relatedness/outcome/description; a deviation row has
+    # deviation_type/date_occurred/description/corrective_action.
+    form_data = models.JSONField(blank=True, default=dict)
+
+    secretariat_note = models.TextField(blank=True)
+
+    submitted_at = models.DateTimeField(default=timezone.now)
+    decided_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "postapproval_submissions"
+        ordering = ["-submitted_at"]
+
+    def __str__(self):
+        return f"{self.get_type_display()} — {self.application.reference_no or self.application_id}"
+
+    @property
+    def is_serious(self):
+        """Adverse events only: whether this was filed as serious/unexpected
+        (the severity answer starts with "Serious" -- see POSTAPPROVAL_FIELDS).
+        Drives the red vs neutral card treatment on the Adverse Events page,
+        since a template can't do a substring test on its own."""
+        return (self.form_data or {}).get("severity", "").startswith("Serious")
+
+
+# Drives both the generic Post-Approval submission form (one template,
+# templates/dashboards/applicant/postapproval-new.html) and, where useful,
+# how a type's own list page reads its form_data back out. Order here is
+# the order fields render in.
+#
+# Every entry is a 4-tuple (key, label, widget, choices) -- uniform arity
+# even where `choices` is empty, because the template unpacks all four in
+# one `{% for %}` and Django raises rather than padding a short row.
+POSTAPPROVAL_FIELDS = {
+    PostApprovalSubmission.Type.AMENDMENT: [
+        ("amendment_type", "Amendment Type", "select", [
+            "Protocol / Methodology", "Personnel Change", "Consent Form Update", "Other",
+        ]),
+        ("description", "Description of Change", "textarea", []),
+        ("rationale", "Rationale", "textarea", []),
+    ],
+    PostApprovalSubmission.Type.CONTINUING_REVIEW: [
+        ("summary", "Current Study Status", "textarea", []),
+        ("continued_justification", "Justification for Continuation", "textarea", []),
+    ],
+    PostApprovalSubmission.Type.PROGRESS_REPORT: [
+        ("period", "Reporting Period", "text", []),
+        ("recruitment_status", "Recruitment Status", "textarea", []),
+        ("summary", "Progress Summary", "textarea", []),
+        ("changes", "Any Changes Since Last Report", "textarea", []),
+    ],
+    PostApprovalSubmission.Type.ADVERSE_EVENT: [
+        ("event_type", "Event Type", "text", []),
+        ("date_onset", "Date of Onset", "date", []),
+        ("severity", "Severity", "select", ["Minor & Expected", "Serious & Unexpected"]),
+        ("relatedness", "Relatedness", "select", [
+            "Unrelated", "Possibly Related", "Probably Related", "Definitely Related", "Anticipated Reaction",
+        ]),
+        ("outcome", "Outcome", "text", []),
+        ("description", "Full Report", "textarea", []),
+    ],
+    PostApprovalSubmission.Type.DEVIATION: [
+        ("deviation_type", "Deviation Type", "select", [
+            "Consent Process", "Eligibility Criteria", "Visit Schedule", "Other",
+        ]),
+        ("date_occurred", "Date Occurred", "date", []),
+        ("description", "What Happened", "textarea", []),
+        ("corrective_action", "Corrective Action Taken", "textarea", []),
+    ],
+    PostApprovalSubmission.Type.CLOSURE: [
+        ("completion_date", "Study Completion Date", "date", []),
+        ("final_sample_size", "Final Sample Size", "text", []),
+        ("outstanding_events", "Outstanding Adverse Events / Issues", "textarea", []),
+        ("data_status", "Data Storage / Disposal Status", "textarea", []),
+    ],
+}
+
+POSTAPPROVAL_TITLES = {
+    PostApprovalSubmission.Type.AMENDMENT: "Amendment Request",
+    PostApprovalSubmission.Type.CONTINUING_REVIEW: "Continuing Review",
+    PostApprovalSubmission.Type.PROGRESS_REPORT: "Progress Report",
+    PostApprovalSubmission.Type.ADVERSE_EVENT: "Adverse Event Report",
+    PostApprovalSubmission.Type.CLOSURE: "Closure Request",
+    PostApprovalSubmission.Type.DEVIATION: "Deviation Report",
+}
+
+# What the list page each type belongs to is actually called in the
+# sidebar -- naively pluralising POSTAPPROVAL_TITLES gives "Back to
+# Adverse Event Reports" for a page titled "Adverse Events".
+POSTAPPROVAL_LIST_LABELS = {
+    PostApprovalSubmission.Type.AMENDMENT: "Amendments",
+    PostApprovalSubmission.Type.CONTINUING_REVIEW: "Continuing Reviews",
+    PostApprovalSubmission.Type.PROGRESS_REPORT: "Progress Reports",
+    PostApprovalSubmission.Type.ADVERSE_EVENT: "Adverse Events",
+    PostApprovalSubmission.Type.DEVIATION: "Deviations",
+    PostApprovalSubmission.Type.CLOSURE: "Study Closure",
+}

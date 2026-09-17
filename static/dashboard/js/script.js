@@ -83,6 +83,94 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
+  // ---------------- Topbar search ----------------
+  // Every dashboard ships a topbar search box; until now none of them did
+  // anything when you typed in one. Opt-in exactly like the filter tabs
+  // above: an input marked `data-search` filters the rows of whichever
+  // list is on the page, matching against each row's own text.
+  //
+  // The row selectors below are this design system's list vocabulary --
+  // a page built from these classes gets working search for free, with no
+  // per-page wiring. Hiding uses the `hidden` attribute so it rides on the
+  // global `[hidden]{display:none!important}` rule in style.css (see the
+  // comment there for why that rule has to be global).
+  const SEARCH_ROW_SELECTOR = [
+    ".reviews-table tbody tr",
+    ".doc-row",
+    ".revision-card",
+    ".team-row",
+    ".notif-row",
+    ".receipt-card",
+    ".acct-row",
+    ".app-card",
+  ].join(", ");
+
+  document.querySelectorAll("input[data-search]").forEach((input) => {
+    const content = document.querySelector(".content");
+    if (!content) return;
+
+    const rows = Array.from(content.querySelectorAll(SEARCH_ROW_SELECTOR));
+    if (!rows.length) {
+      // Nothing on this page is searchable — don't leave a live-looking
+      // box that silently does nothing.
+      input.disabled = true;
+      input.placeholder = "Nothing to search on this page";
+      return;
+    }
+
+    // A row that is the table's own "nothing here yet" placeholder must not
+    // be treated as a result, or searching an empty list "finds" it.
+    const isPlaceholder = (row) => row.querySelector("td[colspan]") !== null;
+
+    let emptyNote = null;
+    const ensureEmptyNote = () => {
+      if (emptyNote) return emptyNote;
+      emptyNote = document.createElement("p");
+      emptyNote.className = "search-empty-note";
+      content.appendChild(emptyNote);
+      return emptyNote;
+    };
+
+    const applySearch = () => {
+      const q = input.value.trim().toLowerCase();
+      let shown = 0;
+
+      rows.forEach((row) => {
+        if (isPlaceholder(row)) {
+          row.hidden = q.length > 0;
+          return;
+        }
+        const matches = !q || row.textContent.toLowerCase().includes(q);
+        row.hidden = !matches;
+        if (matches) shown += 1;
+      });
+
+      // Collapse a group heading whose rows have all been filtered away.
+      content.querySelectorAll(".doc-group").forEach((group) => {
+        const groupRows = group.querySelectorAll(".doc-row");
+        group.hidden = groupRows.length > 0 && Array.from(groupRows).every((r) => r.hidden);
+      });
+
+      const note = ensureEmptyNote();
+      if (q && shown === 0) {
+        note.textContent = 'No results for "' + input.value.trim() + '".';
+        note.hidden = false;
+      } else {
+        note.hidden = true;
+      }
+    };
+
+    input.addEventListener("input", applySearch);
+    // Escape clears, which is what people expect from a filter box.
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && input.value) {
+        input.value = "";
+        applySearch();
+        e.stopPropagation();
+      }
+    });
+  });
+
   // Quick action buttons — only swallow the click for still-unwired demo
   // links (href="#"); anything pointing at a real URL should navigate.
   document.querySelectorAll(".qa-btn, .btn-danger, .action-btn, .stat-link, .panel-link").forEach((el) => {

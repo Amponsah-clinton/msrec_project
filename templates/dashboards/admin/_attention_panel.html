@@ -1,0 +1,36 @@
+{% comment %}
+Rendered by {% admin_attention_panel %}. Replaces a "System Notices" panel
+that listed four invented events (a failed-login alert, a completed backup,
+a maintenance window) dated May 2026 -- none of which the platform records,
+and none of which would ever have changed.
+{% endcomment %}
+<section class="panel notices-panel">
+  <div class="panel-header">
+    <h2>Needs Attention</h2>
+  </div>
+  <ul class="notice-list">
+    {% for item in items %}
+    <li>
+      <span class="notice-icon {{ item.tone }}">
+        {% if item.tone == 'warn' %}
+        <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+        {% else %}
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>
+        {% endif %}
+      </span>
+      <div class="notice-body">
+        <p><a href="{% url item.url_name %}{{ item.query }}">{{ item.text }}</a></p>
+      </div>
+    </li>
+    {% empty %}
+    <li>
+      <span class="notice-icon success">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+      </span>
+      <div class="notice-body">
+        <p>No role requests, unscreened applications or unanswered inquiries are outstanding.</p>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</section>

@@ -129,21 +129,52 @@ html, body, .sidebar, .topbar, .panel, .stat-card, .urgent-banner,
    instead of chasing a `.class[hidden]` override per component. */
 [hidden] { display: none !important; }
 
+/* ---------------- Typography ----------------
+   Two faces, each with a job. IBM Plex Sans runs the working interface:
+   it was drawn for dense technical screens, so it stays legible at the
+   12-13px this app uses in tables and sidebars, and it reads as chosen
+   rather than defaulted. IBM Plex Serif carries the title of a page or
+   a panel -- the register a committee that issues approval letters and
+   decision notices should have -- and appears nowhere else, so the
+   serif stays a signal instead of decoration. JetBrains Mono keeps
+   every reference number and figure on a fixed width. */
+
 html, body {
   margin: 0;
   padding: 0;
   background: var(--bg);
   color: var(--text-main);
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
-  font-feature-settings: "cv11", "ss01";
+}
+
+/* Titles only -- a page's masthead and the heading of a content panel.
+   Deliberately NOT applied to card/table/field labels: the serif marks
+   where a new section of the page begins, and loses that job the moment
+   it is used for ordinary UI text. */
+.topbar-title h1,
+.page-head-text h2,
+.panel-header h2,
+.form-section-title,
+.ad-card-header-text h3 {
+  font-family: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  letter-spacing: -0.011em;
 }
 
 .mono, .stat-value, .ref-no, .ref-cell {
   font-family: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   font-feature-settings: normal;
   letter-spacing: -0.02em;
+}
+
+/* Figures in a data table line up in columns instead of drifting by a
+   digit's width -- the detail that separates a real console from a
+   mocked-up one. */
+.reviews-table td,
+.acct-table td,
+table td {
+  font-variant-numeric: tabular-nums;
 }
 
 a { text-decoration: none; color: inherit; }
@@ -174,6 +205,18 @@ svg {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  /* Clearance for the fixed chat launcher (chat-widget.css: right/bottom
+     24px, 60px button). Without it the launcher sits permanently on top
+     of whatever ends up at the bottom-right -- on the applicant dashboard
+     that was the Quick Actions panel, and on every dashboard it covered
+     the footer's Privacy/Terms links. Reserving the band here rather than
+     padding .content keeps the footer clear too. */
+  padding-bottom: 76px;
+}
+
+@media (max-width: 480px) {
+  /* Launcher shrinks to 52px and tucks into a 14px inset down here. */
+  .main { padding-bottom: 60px; }
 }
 
 /* ---------------- Sidebar ---------------- */
@@ -580,6 +623,15 @@ svg {
 }
 .bell-list .notice-body p { padding-right: 14px; }
 .bell-list .notice-date { display: block; margin-top: 4px; font-size: 11px; color: var(--text-faint); }
+
+/* Every live bell row links to the page where that work is done, so the
+   whole row is the target rather than the few words inside it. */
+.bell-list .notice-body a { display: block; color: inherit; }
+
+/* "Nothing outstanding" is a resting state, not a row you can act on --
+   no dot, no hover response. */
+.bell-empty { color: var(--text-sub); }
+.bell-empty:hover { background: transparent; }
 
 .dropdown-footer-link {
   display: block;
@@ -1036,6 +1088,16 @@ svg {
 .page-head-text h2 { margin: 0; font-size: 17px; font-weight: 700; }
 .page-head-text p { margin: 4px 0 0; font-size: 12.5px; color: var(--text-sub); }
 
+/* A page-head reduced to just its action button (the page's title having
+   moved up into the topbar) would otherwise sit left, where the eye reads
+   it as a stray control rather than this page's action.
+   Excludes .page-head-text: a page-head holding only its title block was
+   being pushed to the right margin by this too, which read as a bug
+   rather than as intent (Certificates/Receipts, Decision Letters,
+   Payment History, Receipts, Continuing Reviews, Closure, and the
+   Notifications page whenever it had nothing unread to mark read). */
+.page-head > :only-child:not(.page-head-text) { margin-left: auto; }
+
 .filter-tabs {
   display: flex;
   align-items: center;
@@ -1136,7 +1198,7 @@ svg {
   color: #fff;
   background: var(--teal);
 }
-.btn-primary:hover { background: #128581; }
+.btn-primary:hover { background: color-mix(in srgb, var(--teal), #000 14%); }
 .btn-secondary {
   display: inline-flex;
   align-items: center;
@@ -1533,10 +1595,29 @@ svg {
 .qa-purple { background: var(--purple); }
 .qa-navy   { background: var(--navy); }
 
-.qa-teal:hover   { background: #128581; }
-.qa-blue:hover   { background: #255fce; }
-.qa-purple:hover { background: #6a4be0; }
-.qa-navy:hover   { background: #142038; }
+.qa-teal:hover   { background: color-mix(in srgb, var(--teal), #000 14%); }
+.qa-blue:hover   { background: color-mix(in srgb, var(--blue), #000 14%); }
+.qa-purple:hover { background: color-mix(in srgb, var(--purple), #000 14%); }
+.qa-navy:hover   { background: color-mix(in srgb, var(--navy), #000 14%); }
+
+/* Quiet quick action.
+   A column of four differently-coloured saturated blocks reads as
+   decoration: four equally loud things can't tell you which one matters.
+   This is the alternative treatment -- one filled primary action, the
+   rest as quiet rows that still look clickable. Additive: nothing above
+   changes, so dashboards using the colour variants are untouched. */
+.qa-btn.qa-quiet {
+  background: var(--white);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+}
+.qa-btn.qa-quiet .qa-left svg { color: var(--text-sub); }
+.qa-btn.qa-quiet .qa-chev { color: var(--text-faint); opacity: 1; }
+.qa-btn.qa-quiet:hover {
+  background: var(--hover-bg);
+  border-color: color-mix(in srgb, var(--teal) 40%, var(--border));
+}
+.qa-btn.qa-quiet:hover .qa-left svg { color: var(--teal); }
 
 /* Footer */
 
@@ -1674,6 +1755,14 @@ svg {
 }
 .field-row { display: flex; gap: 12px; }
 .field-row .field-group { flex: 1; }
+
+/* A row holding a single field. Without this the lone field takes `flex: 1`
+   and stretches the whole form width, landing at double the width of every
+   paired field above it -- the input for "Role" ending up twice as wide as
+   the input for "First Name" directly above it. Half the 12px gap is
+   subtracted so this field's right edge lines up with the left column of
+   the paired rows exactly. */
+.field-row .field-group.field-half { flex: 0 1 calc(50% - 6px); }
 
 /* ---------------- Password field: lock icon + show/hide toggle ---------------- */
 .field-password-wrap { position: relative; }
@@ -1974,8 +2063,33 @@ svg {
 .team-contact span { color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .team-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
-.invite-form-grid { display: grid; grid-template-columns: 1.2fr 1.4fr 1fr auto; gap: 14px; align-items: end; }
+/* auto-fit rather than a fixed four-column track: the form gained a
+   Study selector and an Institution field, and a hardcoded column count
+   silently drops the submit button onto a row of its own the moment the
+   field list changes. Fields claim equal columns and wrap as a set; the
+   button sits on the field baseline at its natural width. */
+.invite-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: end;
+}
 .invite-form-grid .field-group { margin-bottom: 0; }
+.invite-form-grid .btn-primary { justify-self: start; }
+
+/* Shown by the topbar search (script.js) when a query matches nothing --
+   without it, filtering everything away just leaves a blank page with no
+   explanation of why. */
+.search-empty-note {
+  margin: 18px 0 0;
+  padding: 26px 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-sub);
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
 
 /* ---------------- Compact summary strip ----------------
    Four numbers in one bordered band. Four separate .stat-cards for counts
@@ -2161,7 +2275,7 @@ svg {
   cursor: pointer;
   transition: background-color 0.15s;
 }
-.thread-send-btn:hover { background: #128581; }
+.thread-send-btn:hover { background: color-mix(in srgb, var(--teal), #000 14%); }
 .thread-send-btn svg { width: 17px; height: 17px; }
 
 /* ---------------- Responsive ---------------- */
@@ -2271,7 +2385,10 @@ svg {
   .fee-stats-grid { grid-template-columns: 1fr; }
   .pay-option { flex-direction: column; align-items: flex-start; gap: 10px; }
   .pay-option-amount { text-align: left; }
+  /* Stacked: flex-basis would now size HEIGHT, so the half-width column
+     rule above has to be handed back to auto. */
   .field-row { flex-direction: column; gap: 0; }
+  .field-row .field-group.field-half { flex: 1 1 auto; }
   .summary-panel { position: static; }
 
   /* Research Team / Institution / Profile & Security / Help & Support */
