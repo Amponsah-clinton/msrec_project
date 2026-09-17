@@ -21,21 +21,47 @@ HOME_FEE_GROUPS = [
 ]
 
 
+def _fee_group_rows(schedule, keys):
+    return [{"label": fees.label_for(key), "fee": schedule.get(key)} for key in keys]
+
+
 def index(request):
     schedule = fees.schedule()
     fee_groups = [
-        {
-            "title": title,
-            "rows": [
-                {"label": fees.label_for(key), "fee": schedule.get(key)}
-                for key in keys
-            ],
-        }
+        {"title": title, "rows": _fee_group_rows(schedule, keys)}
         for title, keys in HOME_FEE_GROUPS
     ]
     return render(request, "pages/index.html", {
         "fee_groups": fee_groups,
         "exemption_fee": schedule.get("exemption"),
+    })
+
+
+# Post-approval item order for the dedicated Fees page -- matches the
+# order they'll eventually appear in the sidebar's Post-Approval
+# Management group (see _secretariat_nav.html), not FeeSetting's own
+# admin-editor order.
+POST_APPROVAL_KEYS = [
+    "minor_amendment", "major_amendment", "continuing_review",
+    "corrected_resubmission", "closure",
+]
+
+
+def fees_schedule(request):
+    # Expedited/Full Committee Review (payments.fees.REVIEW_TYPE_LABELS)
+    # deliberately aren't shown here: a new application is priced by
+    # Application Category, not by review pathway (MSREC assigns the
+    # pathway during screening) -- see fees.fee_for_application(). The
+    # one pathway that DOES carry its own flat rate regardless of
+    # category is Determination/Exemption, called out on its own below.
+    schedule = fees.schedule()
+    return render(request, "pages/fees.html", {
+        "fee_groups": [
+            {"title": title, "rows": _fee_group_rows(schedule, keys)}
+            for title, keys in HOME_FEE_GROUPS
+        ],
+        "exemption_fee": schedule.get("exemption"),
+        "post_approval_rows": _fee_group_rows(schedule, POST_APPROVAL_KEYS),
     })
 
 

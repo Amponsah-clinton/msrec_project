@@ -1,0 +1,217 @@
+/* ==========================================================
+   MSREC — Fees page
+   The dedicated, full version of the homepage's Review Fees teaser --
+   flat cards, one accent (var(--accent-color), the site's own deep
+   institutional green), no gradients, no drop shadows. Reuses the
+   .fee-card/.fee-list component the homepage introduced (kept as its
+   own copy here, not a shared include, so this page never depends on
+   index.css being loaded).
+========================================================== */
+
+.fees-page .main { padding-top: 140px; }
+
+.fees-hero { padding: 20px 0 10px; }
+.fees-hero .section-title p { max-width: 720px; margin-left: auto; margin-right: auto; }
+
+.fees-section { padding: 50px 0; }
+
+.fees-section-head {
+  text-align: center;
+  max-width: 680px;
+  margin: 0 auto 40px;
+}
+.fees-section-head h3 {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--heading-color);
+  margin: 0 0 10px;
+}
+.fees-section-head p {
+  margin: 0;
+  color: color-mix(in srgb, var(--default-color), transparent 30%);
+  font-size: 14.5px;
+  line-height: 1.7;
+}
+
+/* ---------------- Fee card (Application Category groups) ---------------- */
+.fee-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-color);
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 88%);
+  border-radius: 14px;
+  padding: 32px 30px;
+}
+
+.fee-card h3 {
+  margin: 0 0 20px;
+  padding-bottom: 16px;
+  font-size: 17px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--heading-color);
+  border-bottom: 2px solid var(--accent-color);
+}
+
+.fee-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fee-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--default-color), transparent 88%);
+}
+.fee-list li:last-child { border-bottom: none; padding-bottom: 0; }
+
+.fee-list-label {
+  font-size: 14.5px;
+  line-height: 1.4;
+  color: var(--default-color);
+}
+
+.fee-list-amount {
+  flex-shrink: 0;
+  font-family: var(--heading-font);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--accent-color);
+  white-space: nowrap;
+}
+
+/* ---------------- Exemption callout ---------------- */
+.fees-callout-section { padding: 0 0 10px; }
+
+.fees-callout {
+  max-width: 920px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 26px 32px;
+  background: color-mix(in srgb, var(--accent-color), transparent 94%);
+  border: 1px solid color-mix(in srgb, var(--accent-color), transparent 78%);
+  border-radius: 14px;
+}
+.fees-callout-icon {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  color: var(--contrast-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+.fees-callout-copy { flex: 1; min-width: 0; }
+.fees-callout-copy h4 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--heading-color);
+}
+.fees-callout-copy p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--default-color), transparent 25%);
+}
+.fees-callout-amount {
+  flex-shrink: 0;
+  font-family: var(--heading-font);
+  font-weight: 800;
+  font-size: 26px;
+  color: var(--accent-color);
+  white-space: nowrap;
+}
+
+/* ---------------- Post-approval table ---------------- */
+.fees-table-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 88%);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.fees-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.fees-table tr { border-bottom: 1px solid color-mix(in srgb, var(--default-color), transparent 90%); }
+.fees-table tr:last-child { border-bottom: none; }
+.fees-table td {
+  padding: 16px 26px;
+  font-size: 14.5px;
+  color: var(--default-color);
+}
+.fees-table-amount {
+  text-align: right;
+  font-family: var(--heading-font);
+  font-weight: 700;
+  color: var(--accent-color);
+  white-space: nowrap;
+}
+
+/* ---------------- Closing CTA ---------------- */
+.fees-cta {
+  padding: 50px 0 90px;
+}
+.fees-cta-inner {
+  max-width: 920px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 36px 40px;
+  background: var(--accent-color);
+  border-radius: 16px;
+}
+.fees-cta-inner h3 {
+  margin: 0 0 6px;
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--contrast-color);
+}
+.fees-cta-inner p {
+  margin: 0;
+  font-size: 14px;
+  color: color-mix(in srgb, var(--contrast-color), transparent 15%);
+}
+.fees-cta-btn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 28px;
+  border-radius: 50px;
+  background: var(--contrast-color);
+  color: var(--accent-color);
+  font-weight: 700;
+  font-size: 14.5px;
+  font-family: var(--heading-font);
+  transition: 0.3s;
+}
+.fees-cta-btn:hover {
+  background: color-mix(in srgb, var(--contrast-color), transparent 12%);
+  color: var(--accent-color);
+}
+
+@media (max-width: 767.98px) {
+  .fees-page .main { padding-top: 160px; }
+  .fees-callout { flex-wrap: wrap; text-align: center; justify-content: center; padding: 26px 22px; }
+  .fees-callout-amount { width: 100%; text-align: center; }
+  .fees-cta-inner { flex-direction: column; text-align: center; padding: 32px 26px; }
+}

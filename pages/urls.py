@@ -20,6 +20,7 @@ urlpatterns = [
     path("privacy-notice/", TemplateView.as_view(template_name="pages/privacy_notice.html"), name="privacy"),
     path("contact/", views.contact, name="contact"),
     path("apply/", TemplateView.as_view(template_name="pages/apply.html"), name="apply"),
+    path("fees/", views.fees_schedule, name="fees"),
     path("login/", account_views.login_view, name="login"),
     path("signup/", account_views.signup, name="signup"),
     path("logout/", account_views.logout_view, name="logout"),

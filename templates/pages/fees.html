@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Fees | Metascholar Research Ethics Committee{% endblock %}
+{% block description %}The full MSREC review-fee schedule -- what a new application costs by applicant/study category, the flat Determination/Exemption rate, and post-approval fees. Live and admin-maintained, not fixed at launch.{% endblock %}
+{% block body_class %}fees-page{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'assets/css/fees.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <main class="main">
+
+    <!-- ============ HEADER ============ -->
+    <section class="fees-hero section">
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Fees</h2>
+        <p>Review fees fund the administrative cost of independent review &mdash; they are never a condition of approval. Every price below is live and admin-maintained, not fixed at launch.</p>
+      </div>
+    </section>
+
+    <!-- ============ NEW APPLICATION FEES ============ -->
+    <section class="fees-section section">
+      <div class="container" data-aos="fade-up">
+        <div class="fees-section-head">
+          <h3>New Application Fees</h3>
+          <p>Priced by applicant / study category &mdash; not by review pathway. MSREC assigns your study to Determination/Exemption, Expedited or Full Committee review during screening; the category below is what decides what you pay.</p>
+        </div>
+
+        <div class="row g-4">
+          {% for group in fee_groups %}
+          <div class="col-lg-4">
+            <div class="fee-card">
+              <h3>{{ group.title }}</h3>
+              <ul class="fee-list">
+                {% for row in group.rows %}
+                <li>
+                  <span class="fee-list-label">{{ row.label }}</span>
+                  <span class="fee-list-amount">
+                    {% if row.fee and row.fee.requires_payment %}{{ row.fee.currency }} {{ row.fee.amount|floatformat:0 }}{% else %}Free{% endif %}
+                  </span>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ EXEMPTION CALLOUT ============ -->
+    <section class="fees-callout-section">
+      <div class="container" data-aos="fade-up">
+        <div class="fees-callout">
+          <span class="fees-callout-icon"><i class="bi bi-patch-check"></i></span>
+          <div class="fees-callout-copy">
+            <h4>Determination / Exemption Assessment</h4>
+            <p>For studies that may qualify for minimal-risk or exempt status. One flat fee, regardless of applicant category.</p>
+          </div>
+          <span class="fees-callout-amount">
+            {% if exemption_fee %}{{ exemption_fee.currency }} {{ exemption_fee.amount|floatformat:0 }}{% else %}&mdash;{% endif %}
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ POST-APPROVAL FEES ============ -->
+    <section class="fees-section section">
+      <div class="container" data-aos="fade-up">
+        <div class="fees-section-head">
+          <h3>Post-Approval Fees</h3>
+          <p>Once a study holds MSREC approval, these apply to changes, renewals and closure.</p>
+        </div>
+
+        <div class="fees-table-wrap">
+          <table class="fees-table">
+            <tbody>
+              {% for row in post_approval_rows %}
+              <tr>
+                <td>{{ row.label }}</td>
+                <td class="fees-table-amount">
+                  {% if row.fee and row.fee.requires_payment %}{{ row.fee.currency }} {{ row.fee.amount|floatformat:0 }}{% else %}No fee{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CLOSING CTA ============ -->
+    <section class="fees-cta">
+      <div class="container fees-cta-inner" data-aos="fade-up">
+        <div>
+          <h3>Ready to apply?</h3>
+          <p>Start your application and confirm your exact review fee before you pay a cedi.</p>
+        </div>
+        <a href="{% url 'pages:apply' %}" class="fees-cta-btn">Apply Now <i class="bi bi-arrow-right"></i></a>
+      </div>
+    </section>
+
+  </main>
+{% endblock %}
