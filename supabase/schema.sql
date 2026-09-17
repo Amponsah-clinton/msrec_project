@@ -1024,7 +1024,7 @@ on conflict (id) do nothing;
 
 
 -- ---------------------------------------------------------------------
-<<<<<<< HEAD
+
 -- postapproval_submissions
 -- Mirrors applicant_dashboard.models.PostApprovalSubmission. One row per
 -- post-approval item an applicant files against an approved study --
@@ -1072,7 +1072,7 @@ alter table public.postapproval_submissions enable row level security;
 drop policy if exists "service_role full access to postapproval_submissions" on public.postapproval_submissions;
 create policy "service_role full access to postapproval_submissions"
     on public.postapproval_submissions for all
-=======
+
 -- research_team_members
 -- Mirrors applicant_dashboard.models.TeamMember. One row per collaborator
 -- an applicant has added/invited to their research team (Research Team
