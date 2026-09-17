@@ -310,6 +310,66 @@ class PolicyDocument(models.Model):
         return f"{self.title} ({self.get_category_display()})"
 
 
+class ResourceDocument(models.Model):
+    """One item on the public Resource Centre page
+    (templates/pages/resources.html) -- an Application Form, Protocol
+    Template, Consent Template, Reporting Form, Guideline, FAQ or Training
+    entry. One shared table/model for all seven categories (filtered by
+    `category`, rendered into that category's card grid) rather than
+    seven near-identical models. Managed from admin_dashboard's Resources
+    page. File lives in Supabase Storage's public "resources" bucket
+    (pages/resources_storage.py); a row doesn't need a file at all (e.g. a
+    FAQ is just title+description), so file_path is optional.
+    """
+
+    class Category(models.TextChoices):
+        APPLICATION_FORMS = "application_forms", "Application Forms"
+        PROTOCOL_TEMPLATES = "protocol_templates", "Protocol Templates"
+        CONSENT_TEMPLATES = "consent_templates", "Consent Templates"
+        REPORTING_FORMS = "reporting_forms", "Reporting Forms"
+        GUIDELINES = "guidelines", "Guidelines"
+        FAQS = "faqs", "FAQs"
+        TRAINING = "training", "Training"
+
+    category = models.CharField(max_length=20, choices=Category.choices)
+    title = models.CharField(max_length=200)
+    # For most categories, a short blurb shown under the title. For FAQs,
+    # this is the answer body; for Training, the module description.
+    description = models.TextField(blank=True)
+
+    file_path = models.CharField(max_length=255, blank=True)
+    file_size = models.PositiveIntegerField(default=0)
+    # Fallback for a Training entry that just links out to an external
+    # course rather than a file hosted here -- blank means "no link".
+    external_url = models.URLField(blank=True)
+
+    # Unpublishing keeps the record (and any uploaded file) without
+    # showing it on the public page -- same idea as GovernanceMember.is_active.
+    is_published = models.BooleanField(default=True)
+    display_order = models.PositiveSmallIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "resource_documents"
+        ordering = ["category", "display_order", "-created_at"]
+
+    def __str__(self):
+        return f"{self.title} ({self.get_category_display()})"
+
+    @property
+    def file_name(self):
+        return self.file_path.rsplit("/", 1)[-1] if self.file_path else ""
+
+    @property
+    def download_url(self):
+        if not self.file_path:
+            return None
+        from . import resources_storage
+        return resources_storage.public_url(self.file_path)
+
+
 class CommitteeAppointment(models.Model):
     """One appointment/term for a Board or Committee member -- which seat
     they hold, who appointed them, and for how long. Terms & Expiry

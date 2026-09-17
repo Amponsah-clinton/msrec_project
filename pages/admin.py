@@ -1,8 +1,8 @@
 from django import forms
 from django.contrib import admin
 
-from . import documents_storage
-from .models import CommitteeMeeting, Inquiry, MeetingDocument, PolicyDocument
+from . import documents_storage, resources_storage
+from .models import CommitteeMeeting, Inquiry, MeetingDocument, PolicyDocument, ResourceDocument
 
 
 @admin.register(Inquiry)
@@ -88,6 +88,30 @@ class PolicyDocumentAdmin(admin.ModelAdmin):
                 obj.file_size = upload.size
                 if old_path and old_path != object_path:
                     documents_storage.delete_object(old_path)
+                obj.save(update_fields=["file_path", "file_size"])
+        else:
+            super().save_model(request, obj, form, change)
+
+
+@admin.register(ResourceDocument)
+class ResourceDocumentAdmin(admin.ModelAdmin):
+    form = _DocumentUploadForm
+    list_display = ("title", "category", "is_published", "display_order", "updated_at")
+    list_filter = ("category", "is_published")
+    search_fields = ("title", "description")
+    readonly_fields = ("file_path", "file_size")
+
+    def save_model(self, request, obj, form, change):
+        upload = form.cleaned_data.get("upload")
+        if upload:
+            old_path = obj.file_path
+            super().save_model(request, obj, form, change)  # ensures obj.pk exists
+            object_path = resources_storage.upload_document(upload, folder=f"{obj.category}/{obj.pk}")
+            if object_path:
+                obj.file_path = object_path
+                obj.file_size = upload.size
+                if old_path and old_path != object_path:
+                    resources_storage.delete_object(old_path)
                 obj.save(update_fields=["file_path", "file_size"])
         else:
             super().save_model(request, obj, form, change)

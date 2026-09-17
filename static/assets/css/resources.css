@@ -294,11 +294,10 @@ body.resources-page { margin: 0; font-family: var(--default-font); }
   color: var(--accent-color);
   display: flex; align-items: center; justify-content: center;
   font-size: 12px;
-  opacity: 0;
-  transform: translateY(-4px);
+  opacity: 1;
   transition: .18s;
 }
-.res-doc-card:hover .res-doc-download { opacity: 1; transform: translateY(0); }
+.res-doc-card:hover .res-doc-download { background: var(--accent-color); color: #fff; }
 
 .res-doc-card.is-filtered-out { display: none; }
 

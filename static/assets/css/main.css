@@ -331,10 +331,14 @@ h6 {
   background: color-mix(in srgb, var(--accent-color), white 12%);
 }
 
-@media (max-width: 575px) {
+@media (max-width: 767px) {
   .topbar-btn span { display: none; }
   .topbar-btn { padding: 7px 10px; }
   .topbar-btn i { font-size: 14px; }
+}
+
+@media (max-width: 991px) {
+  .header .topbar-actions { gap: 6px; }
 }
 
 .header .branding {

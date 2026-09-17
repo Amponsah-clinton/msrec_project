@@ -12,7 +12,7 @@ urlpatterns = [
     path("about/", TemplateView.as_view(template_name="pages/about.html"), name="about"),
     path("applicants/", TemplateView.as_view(template_name="pages/applicants.html"), name="applicants"),
     path("ethics-review/", TemplateView.as_view(template_name="pages/ethics_review.html"), name="ethics_review"),
-    path("resources/", TemplateView.as_view(template_name="pages/resources.html"), name="resources"),
+    path("resources/", views.resources, name="resources"),
     path("governance/", TemplateView.as_view(template_name="pages/governance.html"), name="governance"),
     path("board-committee/", views.board_committee, name="board_committee"),
     path("verify/", TemplateView.as_view(template_name="pages/verify.html"), name="verify"),

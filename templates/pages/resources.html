@@ -65,6 +65,14 @@
         </div>
 
         <div class="res-doc-grid">
+          {% for doc in resources_by_category.application_forms %}
+          <a class="res-doc-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" {% if doc.download_url_ %}download{% endif %} target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
+            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
+            <span class="res-doc-title">{{ doc.title }}</span>
+            <span class="res-doc-meta">{{ doc.description|default:"Uploaded document" }}</span>
+          </a>
+          {% endfor %}
           <a class="res-doc-card" href="{% url 'pages:apply' %}" data-search="universal research ethics application form">
             <span class="res-doc-download" aria-hidden="true"><i class="bi bi-arrow-right"></i></span>
             <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
@@ -103,6 +111,14 @@
         </div>
 
         <div class="res-doc-grid">
+          {% for doc in resources_by_category.protocol_templates %}
+          <a class="res-doc-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" {% if doc.download_url_ %}download{% endif %} target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
+            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
+            <span class="res-doc-title">{{ doc.title }}</span>
+            <span class="res-doc-meta">{{ doc.description|default:"Uploaded document" }}</span>
+          </a>
+          {% endfor %}
           <a class="res-doc-card" href="#" data-search="full research protocol template">
             <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
             <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
@@ -141,6 +157,14 @@
         </div>
 
         <div class="res-doc-grid">
+          {% for doc in resources_by_category.consent_templates %}
+          <a class="res-doc-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" {% if doc.download_url_ %}download{% endif %} target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
+            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
+            <span class="res-doc-title">{{ doc.title }}</span>
+            <span class="res-doc-meta">{{ doc.description|default:"Uploaded document" }}</span>
+          </a>
+          {% endfor %}
           <a class="res-doc-card" href="#" data-search="informed consent form template adult participants">
             <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
             <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
@@ -179,6 +203,14 @@
         </div>
 
         <div class="res-doc-grid">
+          {% for doc in resources_by_category.reporting_forms %}
+          <a class="res-doc-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" {% if doc.download_url_ %}download{% endif %} target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
+            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
+            <span class="res-doc-title">{{ doc.title }}</span>
+            <span class="res-doc-meta">{{ doc.description|default:"Uploaded document" }}</span>
+          </a>
+          {% endfor %}
           <a class="res-doc-card" href="#" data-search="adverse event serious adverse event report form">
             <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
             <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
@@ -217,6 +249,14 @@
         </div>
 
         <div class="res-doc-grid">
+          {% for doc in resources_by_category.guidelines %}
+          <a class="res-doc-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" {% if doc.download_url_ %}download{% endif %} target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
+            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
+            <span class="res-doc-title">{{ doc.title }}</span>
+            <span class="res-doc-meta">{{ doc.description|default:"Uploaded document" }}</span>
+          </a>
+          {% endfor %}
           <a class="res-doc-card" href="#" data-search="guidance artificial intelligence machine learning research">
             <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
             <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
@@ -267,6 +307,17 @@
         </div>
 
         <div class="res-faq-list">
+          {% for doc in resources_by_category.faqs %}
+          <div class="res-faq-item">
+            <button type="button" class="res-faq-question" data-search="{{ doc.title|lower }}">
+              <span>{{ doc.title }}</span>
+              <i class="bi bi-chevron-down"></i>
+            </button>
+            <div class="res-faq-answer">
+              <p>{{ doc.description }}</p>
+            </div>
+          </div>
+          {% endfor %}
           <div class="res-faq-item">
             <button type="button" class="res-faq-question" data-search="which review pathway applies to my study">
               <span>How do I know which review pathway applies to my study?</span>
@@ -344,6 +395,17 @@
         </div>
 
         <div class="res-training-grid">
+          {% for doc in resources_by_category.training %}
+          <a class="res-training-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+            <span class="res-training-icon"><i class="bi bi-mortarboard-fill"></i></span>
+            <div class="res-training-body">
+              <span class="res-training-tag">{% if doc.download_url_ %}Download{% else %}Online resource{% endif %}</span>
+              <h4>{{ doc.title }}</h4>
+              <p>{{ doc.description }}</p>
+            </div>
+            <span class="res-training-cta">{% if doc.download_url_ %}Download{% else %}Start training{% endif %} <i class="bi bi-arrow-right"></i></span>
+          </a>
+          {% endfor %}
           <a class="res-training-card" href="#" data-search="foundations of research ethics course">
             <span class="res-training-icon"><i class="bi bi-mortarboard-fill"></i></span>
             <div class="res-training-body">

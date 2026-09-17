@@ -26,6 +26,7 @@ from applicant_dashboard.models import Application
 from messaging.access import is_staff_side
 from notifications.emails import send_branded_email
 from pages import documents_storage
+from pages import resources_storage
 from pages import storage as pages_storage
 from pages.models import (
     CommitteeAppointment,
@@ -35,6 +36,7 @@ from pages.models import (
     Inquiry,
     MeetingDocument,
     PolicyDocument,
+    ResourceDocument,
     SiteSettings,
     TrainingRecord,
 )
@@ -1098,6 +1100,110 @@ def board_committee(request):
         "counts": counts,
         "active_tab": active_tab,
         "groups": GovernanceMember.Group.choices,
+    })
+
+
+# ---------------------------------------------------------------------
+# Resources -- the public Resource Centre page's back office. One shared
+# table (pages.models.ResourceDocument) across all seven categories
+# (Application Forms, Protocol Templates, Consent Templates, Reporting
+# Forms, Guidelines, FAQs, Training); this page adds/removes rows and
+# uploads their files to Supabase Storage's "resources" bucket, and
+# templates/pages/resources.html renders whatever's is_published=True.
+# ---------------------------------------------------------------------
+
+RESOURCE_TABS = {c for c, _ in ResourceDocument.Category.choices} | {"all"}
+
+
+def _handle_resource_add(request):
+    category = request.POST.get("category", "")
+    title = request.POST.get("title", "").strip()
+    description = request.POST.get("description", "").strip()
+    external_url = request.POST.get("external_url", "").strip()
+    display_order = request.POST.get("display_order", "").strip()
+
+    if category not in {c for c, _ in ResourceDocument.Category.choices}:
+        messages.error(request, "Choose a valid category.")
+        return
+    if not title:
+        messages.error(request, "Title is required.")
+        return
+
+    resource = ResourceDocument.objects.create(
+        category=category, title=title, description=description, external_url=external_url,
+        display_order=int(display_order) if display_order.isdigit() else 0,
+    )
+
+    upload = request.FILES.get("file")
+    if upload:
+        object_path = resources_storage.upload_document(upload, folder=f"{category}/{resource.pk}")
+        if object_path:
+            resource.file_path = object_path
+            resource.file_size = upload.size
+            resource.save(update_fields=["file_path", "file_size"])
+        else:
+            messages.warning(request, f"\"{title}\" was added, but the file couldn't be uploaded right now.")
+
+    messages.success(request, f"\"{title}\" added to {resource.get_category_display()}.")
+
+
+def _handle_resource_delete(request, resource):
+    if resource.file_path:
+        resources_storage.delete_object(resource.file_path)
+    title = resource.title
+    resource.delete()
+    messages.success(request, f"\"{title}\" removed.")
+
+
+def _handle_resource_toggle(request, resource):
+    resource.is_published = not resource.is_published
+    resource.save(update_fields=["is_published"])
+    messages.success(request, f"\"{resource.title}\" is now {'published' if resource.is_published else 'hidden'}.")
+
+
+@login_required
+@admin_required
+def resources_library(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+        tab = request.POST.get("tab", "all")
+
+        if action == "add":
+            _handle_resource_add(request)
+        else:
+            resource_id = request.POST.get("resource_id", "")
+            if not resource_id.isdigit():
+                messages.error(request, "That request could not be processed.")
+                return redirect(f"{request.path}?tab={tab}")
+            resource = get_object_or_404(ResourceDocument, pk=resource_id)
+
+            if action == "delete":
+                _handle_resource_delete(request, resource)
+            elif action == "toggle":
+                _handle_resource_toggle(request, resource)
+            else:
+                messages.error(request, "That request could not be processed.")
+        return redirect(f"{request.path}?tab={tab}")
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in RESOURCE_TABS:
+        active_tab = "all"
+
+    resources = list(ResourceDocument.objects.all())
+    for resource in resources:
+        resource.download_url_ = resources_storage.public_url(resource.file_path)
+
+    category_counts = [
+        (value, label, sum(1 for r in resources if r.category == value))
+        for value, label in ResourceDocument.Category.choices
+    ]
+
+    return render(request, "dashboards/admin/resources.html", {
+        "resources": resources,
+        "counts_all": len(resources),
+        "category_counts": category_counts,
+        "active_tab": active_tab,
+        "categories": ResourceDocument.Category.choices,
     })
 
 

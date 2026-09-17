@@ -2,8 +2,8 @@ from django.http import JsonResponse
 from django.shortcuts import render
 
 from payments import fees
-from . import storage
-from .models import GovernanceMember, Inquiry
+from . import resources_storage, storage
+from .models import GovernanceMember, Inquiry, ResourceDocument
 
 REASON_VALUES = {value for value, _ in Inquiry.Reason.choices}
 
@@ -114,3 +114,18 @@ def board_committee(request):
         "members": members,
         "counts": counts,
     })
+
+
+def resources(request):
+    """Resource Centre page. Renders admin-uploaded ResourceDocument rows
+    (grouped by category) above the site's own static forms/templates/
+    guidance in each section -- see templates/pages/resources.html."""
+    docs = list(ResourceDocument.objects.filter(is_published=True))
+    for doc in docs:
+        doc.download_url_ = resources_storage.public_url(doc.file_path)
+
+    by_category = {value: [] for value, _label in ResourceDocument.Category.choices}
+    for doc in docs:
+        by_category[doc.category].append(doc)
+
+    return render(request, "pages/resources.html", {"resources_by_category": by_category})

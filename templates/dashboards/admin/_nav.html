@@ -4,8 +4,8 @@ item that should be highlighted:
 
   {% include "dashboards/admin/_nav.html" with active="accounts" %}
 
-Keys: dashboard, accounts, applications, inquiries, board, finance,
-messages, reports, access, settings, profile, help.
+Keys: dashboard, accounts, applications, inquiries, board, resources,
+finance, messages, reports, access, settings, profile, help.
 
 This list used to carry thirteen href="#" destinations across two entire
 submenus (Institutions, Communications) plus placeholder children under
@@ -40,6 +40,11 @@ and all thirteen pages get it.
 <a href="{% url 'admin_dashboard:board_committee' %}" class="nav-item{% if active == 'board' %} active{% endif %}">
   <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
   <span>Board &amp; Committee</span>
+</a>
+
+<a href="{% url 'admin_dashboard:resources_library' %}" class="nav-item{% if active == 'resources' %} active{% endif %}">
+  <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span>
+  <span>Resources</span>
 </a>
 
 <a href="{% url 'admin_dashboard:finance' %}" class="nav-item{% if active == 'finance' %} active{% endif %}">
