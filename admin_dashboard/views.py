@@ -25,10 +25,13 @@ from applicant_dashboard import storage as application_storage
 from applicant_dashboard.models import Application
 from messaging.access import is_staff_side
 from notifications.emails import send_branded_email
+from pages import committee_services
 from pages import documents_storage
 from pages import resources_storage
 from pages import storage as pages_storage
 from pages.models import (
+    GOVERNANCE_TAG_CHOICES,
+    GOVERNANCE_TITLE_CHOICES,
     CommitteeAppointment,
     CommitteeMeeting,
     ConflictDeclaration,
@@ -981,81 +984,6 @@ def help_support(request):
 BOARD_COMMITTEE_TABS = {"all", "board", "committee", "secretariat"}
 
 
-def _handle_governance_add(request):
-    full_name = request.POST.get("full_name", "").strip()
-    role_title = request.POST.get("role_title", "").strip()
-    tag = request.POST.get("tag", "").strip()
-    group = request.POST.get("group", "")
-    display_order = request.POST.get("display_order", "").strip()
-
-    if not full_name or not role_title:
-        messages.error(request, "Name and role/title are required.")
-        return
-    if group not in {c for c, _ in GovernanceMember.Group.choices}:
-        messages.error(request, "Choose a valid group (Board, Committee or Secretariat).")
-        return
-
-    member = GovernanceMember.objects.create(
-        full_name=full_name, role_title=role_title, tag=tag, group=group,
-        display_order=int(display_order) if display_order.isdigit() else 0,
-    )
-
-    photo = request.FILES.get("photo")
-    if photo:
-        object_path = pages_storage.upload_member_photo(photo, member_id=member.pk)
-        if object_path:
-            member.photo_path = object_path
-            member.save(update_fields=["photo_path"])
-        else:
-            messages.warning(request, f"{full_name} was added, but the photo couldn't be uploaded right now.")
-
-    messages.success(request, f"{full_name} added to {member.get_group_display()}.")
-
-
-def _handle_governance_edit(request, member):
-    full_name = request.POST.get("full_name", "").strip()
-    role_title = request.POST.get("role_title", "").strip()
-    tag = request.POST.get("tag", "").strip()
-    group = request.POST.get("group", "")
-    display_order = request.POST.get("display_order", "").strip()
-
-    if not full_name or not role_title:
-        messages.error(request, "Name and role/title are required.")
-        return
-    if group not in {c for c, _ in GovernanceMember.Group.choices}:
-        messages.error(request, "Choose a valid group (Board, Committee or Secretariat).")
-        return
-
-    member.full_name = full_name
-    member.role_title = role_title
-    member.tag = tag
-    member.group = group
-    member.display_order = int(display_order) if display_order.isdigit() else 0
-    member.is_active = bool(request.POST.get("is_active"))
-
-    photo = request.FILES.get("photo")
-    if photo:
-        old_path = member.photo_path
-        object_path = pages_storage.upload_member_photo(photo, member_id=member.pk)
-        if object_path:
-            member.photo_path = object_path
-            if old_path and old_path != object_path:
-                pages_storage.delete_object(old_path)
-        else:
-            messages.warning(request, "The new photo couldn't be uploaded right now -- everything else was saved.")
-
-    member.save()
-    messages.success(request, f"{full_name} updated.")
-
-
-def _handle_governance_delete(request, member):
-    if member.photo_path:
-        pages_storage.delete_object(member.photo_path)
-    name = member.full_name
-    member.delete()
-    messages.success(request, f"{name} removed from the Board & Committee page.")
-
-
 @login_required
 @admin_required
 def board_committee(request):
@@ -1064,7 +992,7 @@ def board_committee(request):
         tab = request.POST.get("tab", "all")
 
         if action == "add":
-            _handle_governance_add(request)
+            committee_services.handle_governance_add(request)
         else:
             member_id = request.POST.get("member_id", "")
             if not member_id.isdigit():
@@ -1073,9 +1001,9 @@ def board_committee(request):
             member = get_object_or_404(GovernanceMember, pk=member_id)
 
             if action == "edit":
-                _handle_governance_edit(request, member)
+                committee_services.handle_governance_edit(request, member)
             elif action == "delete":
-                _handle_governance_delete(request, member)
+                committee_services.handle_governance_delete(request, member)
             else:
                 messages.error(request, "That request could not be processed.")
         return redirect(f"{request.path}?tab={tab}")
@@ -1100,6 +1028,8 @@ def board_committee(request):
         "counts": counts,
         "active_tab": active_tab,
         "groups": GovernanceMember.Group.choices,
+        "title_choices": GOVERNANCE_TITLE_CHOICES,
+        "tag_choices": GOVERNANCE_TAG_CHOICES,
     })
 
 

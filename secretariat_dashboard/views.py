@@ -26,7 +26,14 @@ from payments import services as payment_services
 from pages import committee_services
 from pages import documents_storage
 from pages import storage as pages_storage
-from pages.models import CommitteeAppointment, ConflictDeclaration, GovernanceMember, TrainingRecord
+from pages.models import (
+    GOVERNANCE_TAG_CHOICES,
+    GOVERNANCE_TITLE_CHOICES,
+    CommitteeAppointment,
+    ConflictDeclaration,
+    GovernanceMember,
+    TrainingRecord,
+)
 from reviewer_dashboard.models import ReviewAssignment
 
 from . import reports as reports_data
@@ -1420,6 +1427,8 @@ def committee_members(request):
         "counts": counts,
         "active_tab": active_tab,
         "groups": GovernanceMember.Group.choices,
+        "title_choices": GOVERNANCE_TITLE_CHOICES,
+        "tag_choices": GOVERNANCE_TAG_CHOICES,
     })
 
 

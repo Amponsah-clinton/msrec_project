@@ -150,11 +150,33 @@ class Inquiry(models.Model):
 
 # Titles stripped when deriving avatar initials from a full name (see
 # GovernanceMember.initials) -- "Prof. Kojo Antwi-Boateng" should read as
-# "KA", not "PK".
+# "KA", not "PK". Also the option list for GovernanceMember.title's
+# dropdown on the Add/Edit Board & Committee member form.
+GOVERNANCE_TITLE_CHOICES = [
+    "Prof.", "Dr.", "Mr.", "Mrs.", "Ms.", "Rev.", "Engr.", "Barr.", "Madam",
+]
 _NAME_TITLES = {
     "prof", "prof.", "dr", "dr.", "mr", "mr.", "mrs", "mrs.", "ms", "ms.",
     "rev", "rev.", "barr", "barr.", "madam", "engr", "engr.",
 }
+
+# Option list for GovernanceMember.tag's "Tag / discipline" dropdown --
+# reuses the same research-area taxonomy as the applicant application
+# form (Section 2.1, "Main Research Area") for consistency, plus a couple
+# of governance-specific entries. The form always offers an "Other"
+# option alongside these so anyone whose discipline isn't listed can type
+# their own -- tag itself stays a free-text column, this is just what the
+# dropdown suggests.
+GOVERNANCE_TAG_CHOICES = [
+    "Health & Biomedical Sciences", "Nursing & Allied Health", "Public Health",
+    "Clinical Research", "Pharmaceutical Research", "Social & Behavioral Sciences",
+    "Education", "Business & Management", "Economics", "Agriculture & Food Science",
+    "Environmental Research", "Engineering", "Computer Science & ICT",
+    "Artificial Intelligence & Machine Learning", "Data Science & Big Data",
+    "Cybersecurity & Networking", "Human-Computer Interaction",
+    "Software & Information Systems Development", "Renewable Energy & Energy Systems",
+    "Multidisciplinary Research", "Law & Governance", "Secretariat",
+]
 
 
 class GovernanceMember(models.Model):
@@ -171,6 +193,11 @@ class GovernanceMember(models.Model):
         SECRETARIAT = "secretariat", "Secretariat"
 
     full_name = models.CharField(max_length=150)
+    # Honorific shown before the name (e.g. "Prof.", "Dr.") -- kept
+    # separate from full_name so it can be a dropdown rather than typed
+    # inline; blank means none was set (legacy rows may still carry a
+    # title as part of full_name -- see initials, below).
+    title = models.CharField(max_length=20, blank=True)
     role_title = models.CharField(max_length=150)
     # Short descriptor shown under the role, e.g. "Health & Biomedical
     # Science" for a Committee member or "Secretariat" for admin staff.
@@ -202,6 +229,10 @@ class GovernanceMember(models.Model):
 
     def __str__(self):
         return f"{self.full_name} ({self.get_group_display()})"
+
+    @property
+    def display_name(self):
+        return f"{self.title} {self.full_name}".strip() if self.title else self.full_name
 
     @property
     def initials(self):

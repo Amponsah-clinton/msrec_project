@@ -75,6 +75,7 @@
                data-search="{{ member.full_name|lower }} {{ member.role_title|lower }} {{ member.tag|lower }}"
                data-member-id="{{ member.pk }}"
                data-full-name="{{ member.full_name }}"
+               data-title="{{ member.title }}"
                data-role-title="{{ member.role_title }}"
                data-tag="{{ member.tag }}"
                data-group="{{ member.group }}"
@@ -90,7 +91,7 @@
 
             <div class="acct-info">
               <h4>
-                {{ member.full_name }}
+                {{ member.display_name }}
                 <span class="badge-tag {% if member.group == 'board' %}navy{% elif member.group == 'committee' %}purple{% else %}teal{% endif %}">{{ member.get_group_display }}</span>
                 {% if not member.is_active %}<span class="badge-tag red">Hidden</span>{% endif %}
               </h4>
@@ -146,7 +147,13 @@
 
             <div class="acct-modal-body">
               <div class="acct-form-row">
-                <label>Full name<input type="text" name="full_name" required placeholder="e.g. Prof. Kojo Antwi-Boateng"></label>
+                <label>Title
+                  <select name="title">
+                    <option value="">None</option>
+                    {% for t in title_choices %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                  </select>
+                </label>
+                <label>Full name<input type="text" name="full_name" required placeholder="e.g. Kojo Antwi-Boateng"></label>
               </div>
               <div class="acct-form-row">
                 <label>Role / title<input type="text" name="role_title" required placeholder="e.g. Board Chairperson"></label>
@@ -157,8 +164,17 @@
                 </label>
               </div>
               <div class="acct-form-row">
-                <label>Tag / discipline (optional)<input type="text" name="tag" placeholder="e.g. Health & Biomedical Science"></label>
+                <label>Tag / discipline (optional)
+                  <select name="tag" data-cmt-tag-select>
+                    <option value="">None</option>
+                    {% for t in tag_choices %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                    <option value="__other__">Other...</option>
+                  </select>
+                </label>
                 <label>Display order<input type="number" name="display_order" min="0" value="0"></label>
+              </div>
+              <div class="acct-form-row" data-cmt-tag-other-row hidden>
+                <label class="span-2 cmt-full">Please specify the tag / discipline<input type="text" name="tag_other" data-cmt-tag-other placeholder="e.g. Maritime Law"></label>
               </div>
               <div class="acct-form-row">
                 <label class="span-2 cmt-full">Photo (optional)<input type="file" name="photo" accept="image/*"></label>
@@ -191,6 +207,12 @@
 
             <div class="acct-modal-body">
               <div class="acct-form-row">
+                <label>Title
+                  <select name="title" id="cmMemberEditTitle">
+                    <option value="">None</option>
+                    {% for t in title_choices %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                  </select>
+                </label>
                 <label>Full name<input type="text" name="full_name" id="cmMemberEditFullName" required></label>
               </div>
               <div class="acct-form-row">
@@ -202,8 +224,17 @@
                 </label>
               </div>
               <div class="acct-form-row">
-                <label>Tag / discipline (optional)<input type="text" name="tag" id="cmMemberEditTag"></label>
+                <label>Tag / discipline (optional)
+                  <select name="tag" id="cmMemberEditTag" data-cmt-tag-select>
+                    <option value="">None</option>
+                    {% for t in tag_choices %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                    <option value="__other__">Other...</option>
+                  </select>
+                </label>
                 <label>Display order<input type="number" name="display_order" id="cmMemberEditDisplayOrder" min="0"></label>
+              </div>
+              <div class="acct-form-row" id="cmMemberEditTagOtherRow" data-cmt-tag-other-row hidden>
+                <label class="span-2 cmt-full">Please specify the tag / discipline<input type="text" name="tag_other" id="cmMemberEditTagOther" data-cmt-tag-other placeholder="e.g. Maritime Law"></label>
               </div>
               <div class="acct-form-row">
                 <label class="span-2 cmt-full">Replace photo (optional)<input type="file" name="photo" accept="image/*"></label>
@@ -229,17 +260,44 @@
 <script src="{% static 'dashboard/js/committee.js' %}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+  // Wires a Tag / discipline select to its "Please specify" row -- shared
+  // shape with board-committee-admin.js's bcWireTagOther, scoped to this
+  // template's own data-cmt-* attributes.
+  function wireTagOther(form) {
+    const select = form.querySelector("[data-cmt-tag-select]");
+    const row = form.querySelector("[data-cmt-tag-other-row]");
+    const other = form.querySelector("[data-cmt-tag-other]");
+    if (!select || !row || !other) return;
+    const sync = () => { row.hidden = select.value !== "__other__"; };
+    select.addEventListener("change", sync);
+    sync();
+  }
+  document.querySelectorAll("#cmMemberAddOverlay form, #cmMemberEditOverlay form").forEach(wireTagOther);
+
   document.querySelectorAll("[data-cm-member-edit]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const row = btn.closest(".acct-row");
       if (!row) return;
       document.getElementById("cmMemberEditId").value = row.dataset.memberId;
       document.getElementById("cmMemberEditFullName").value = row.dataset.fullName;
+      document.getElementById("cmMemberEditTitle").value = row.dataset.title || "";
       document.getElementById("cmMemberEditRoleTitle").value = row.dataset.roleTitle;
-      document.getElementById("cmMemberEditTag").value = row.dataset.tag;
       document.getElementById("cmMemberEditGroup").value = row.dataset.group;
       document.getElementById("cmMemberEditDisplayOrder").value = row.dataset.displayOrder;
       document.getElementById("cmMemberEditIsActive").checked = row.dataset.isActive === "1";
+
+      const tagSelect = document.getElementById("cmMemberEditTag");
+      const tagOther = document.getElementById("cmMemberEditTagOther");
+      const tagValue = row.dataset.tag || "";
+      const knownTag = Array.from(tagSelect.options).some((opt) => opt.value === tagValue);
+      if (tagValue && !knownTag) {
+        tagSelect.value = "__other__";
+        tagOther.value = tagValue;
+      } else {
+        tagSelect.value = tagValue;
+        tagOther.value = "";
+      }
+      document.getElementById("cmMemberEditTagOtherRow").hidden = tagSelect.value !== "__other__";
     });
   });
 });

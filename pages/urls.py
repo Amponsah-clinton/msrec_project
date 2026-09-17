@@ -3,12 +3,17 @@ from django.views.generic import TemplateView
 
 from accounts import views as account_views
 
-from . import views
+from . import file_proxy, views
 
 app_name = "pages"
 
 urlpatterns = [
     path("", views.index, name="index"),
+    # Every Storage module's public_url()/create_signed_url() points
+    # here instead of a raw Supabase URL -- see pages/file_proxy.py.
+    # Root-mounted (not under any one dashboard's prefix) since every
+    # app's downloads/images go through this one endpoint.
+    path("files/<str:token>/", file_proxy.serve, name="file_proxy"),
     path("about/", TemplateView.as_view(template_name="pages/about.html"), name="about"),
     path("applicants/", TemplateView.as_view(template_name="pages/applicants.html"), name="applicants"),
     path("ethics-review/", TemplateView.as_view(template_name="pages/ethics_review.html"), name="ethics_review"),

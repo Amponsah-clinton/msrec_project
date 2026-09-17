@@ -27,10 +27,22 @@ def active_governance_members():
 # Committee Members (GovernanceMember)
 # ---------------------------------------------------------------------
 
+def _resolve_tag(request):
+    """The Tag / discipline dropdown submits "__other__" plus a free-text
+    "tag_other" field when someone's discipline isn't in the list --
+    resolve that pair down to the single string GovernanceMember.tag
+    stores."""
+    tag = request.POST.get("tag", "").strip()
+    if tag == "__other__":
+        tag = request.POST.get("tag_other", "").strip()
+    return tag
+
+
 def handle_governance_add(request):
     full_name = request.POST.get("full_name", "").strip()
+    title = request.POST.get("title", "").strip()
     role_title = request.POST.get("role_title", "").strip()
-    tag = request.POST.get("tag", "").strip()
+    tag = _resolve_tag(request)
     group = request.POST.get("group", "")
     display_order = request.POST.get("display_order", "").strip()
 
@@ -42,7 +54,7 @@ def handle_governance_add(request):
         return
 
     member = GovernanceMember.objects.create(
-        full_name=full_name, role_title=role_title, tag=tag, group=group,
+        full_name=full_name, title=title, role_title=role_title, tag=tag, group=group,
         display_order=int(display_order) if display_order.isdigit() else 0,
     )
 
@@ -60,8 +72,9 @@ def handle_governance_add(request):
 
 def handle_governance_edit(request, member):
     full_name = request.POST.get("full_name", "").strip()
+    title = request.POST.get("title", "").strip()
     role_title = request.POST.get("role_title", "").strip()
-    tag = request.POST.get("tag", "").strip()
+    tag = _resolve_tag(request)
     group = request.POST.get("group", "")
     display_order = request.POST.get("display_order", "").strip()
 
@@ -73,6 +86,7 @@ def handle_governance_edit(request, member):
         return
 
     member.full_name = full_name
+    member.title = title
     member.role_title = role_title
     member.tag = tag
     member.group = group

@@ -102,9 +102,9 @@ def delete_object(object_path):
 
 
 def public_url(object_path):
-    """Direct public URL for an object in the "ethics" bucket (public,
-    like "profile"/"application"/"team_member"). Returns None if
-    unconfigured or blank."""
-    if not object_path or not settings.SUPABASE_URL:
-        return None
-    return f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/public/{BUCKET}/{object_path}"
+    """A link to an object in the "ethics" bucket (public, like
+    "profile"/"application"/"team_member"), proxied through this app's
+    own domain (see pages/file_proxy.py) rather than a raw Supabase URL.
+    Returns None if unconfigured or blank."""
+    from . import file_proxy
+    return file_proxy.build_url(BUCKET, object_path)

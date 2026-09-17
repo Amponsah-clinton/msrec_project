@@ -20,7 +20,6 @@ with only DATABASE_URL unset, using SQLite), every function here is a
 no-op that returns None -- signup must never fail because Storage isn't
 configured; the file is just not attached.
 """
-import json
 import logging
 import mimetypes
 import urllib.error
@@ -120,33 +119,13 @@ def delete_object(object_path):
 
 
 def create_signed_url(object_path, *, expires_in=3600):
-    """Return a temporary signed URL for a private object in the
-    "signup" bucket, or None if Storage isn't configured, the object
-    doesn't exist, or the request fails. Used by admin_dashboard's
-    Accounts page to let an admin open an applicant's CV while
-    reviewing a reviewer/committee request."""
-    if not object_path or not _configured():
-        return None
-
-    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/sign/{BUCKET}/{object_path}"
-    req = urllib.request.Request(
-        url,
-        data=f'{{"expiresIn": {int(expires_in)}}}'.encode(),
-        method="POST",
-        headers={
-            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
-            "apikey": settings.SUPABASE_SERVICE_KEY,
-            "Content-Type": "application/json",
-        },
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            payload = json.loads(resp.read())
-    except urllib.error.URLError:
-        logger.exception("Supabase Storage sign failed for %s", object_path)
-        return None
-
-    signed = payload.get("signedURL") or payload.get("signedUrl")
-    if not signed:
-        return None
-    return f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1{signed}"
+    """A time-limited link to a private object in the "signup" bucket,
+    proxied through this app's own domain (see pages/file_proxy.py)
+    rather than a raw Supabase signed URL -- expires_in is enforced by
+    the proxy itself, so Supabase's own /sign endpoint is never even
+    contacted and no Supabase URL is ever handed to the browser. Used by
+    admin_dashboard's Accounts page to let an admin open an applicant's
+    CV while reviewing a reviewer/committee request. Returns None if
+    Storage isn't configured or object_path is blank."""
+    from pages import file_proxy
+    return file_proxy.build_url(BUCKET, object_path, expires_in=expires_in)

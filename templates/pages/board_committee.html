@@ -193,11 +193,11 @@
           {% for member in members %}
           <div class="bc-person" data-group="{{ member.group }}">
             {% if member.photo_url %}
-            <span class="bc-avatar bc-avatar-photo"><img src="{{ member.photo_url }}" alt="{{ member.full_name }}" loading="lazy"></span>
+            <span class="bc-avatar bc-avatar-photo"><img src="{{ member.photo_url }}" alt="{{ member.display_name }}" loading="lazy"></span>
             {% else %}
             <span class="bc-avatar" style="--av-bg:{{ member.avatar_color }};">{{ member.initials }}</span>
             {% endif %}
-            <h4>{{ member.full_name }}</h4>
+            <h4>{{ member.display_name }}</h4>
             <span class="bc-person-role">{{ member.role_title }}</span>
             {% if member.tag %}<span class="bc-person-tag">{{ member.tag }}</span>{% endif %}
           </div>

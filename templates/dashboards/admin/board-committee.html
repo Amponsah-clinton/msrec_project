@@ -37,6 +37,7 @@
                data-search="{{ member.full_name|lower }} {{ member.role_title|lower }} {{ member.tag|lower }}"
                data-member-id="{{ member.pk }}"
                data-full-name="{{ member.full_name }}"
+               data-title="{{ member.title }}"
                data-role-title="{{ member.role_title }}"
                data-tag="{{ member.tag }}"
                data-group="{{ member.group }}"
@@ -52,7 +53,7 @@
 
             <div class="acct-info">
               <h4>
-                {{ member.full_name }}
+                {{ member.display_name }}
                 <span class="badge-tag {% if member.group == 'board' %}navy{% elif member.group == 'committee' %}purple{% else %}teal{% endif %}">{{ member.get_group_display }}</span>
                 {% if not member.is_active %}<span class="badge-tag red">Hidden</span>{% endif %}
               </h4>
@@ -108,7 +109,13 @@
 
             <div class="acct-modal-body">
               <div class="acct-form-row">
-                <label>Full name<input type="text" name="full_name" required placeholder="e.g. Prof. Kojo Antwi-Boateng"></label>
+                <label>Title
+                  <select name="title">
+                    <option value="">None</option>
+                    {% for t in title_choices %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                  </select>
+                </label>
+                <label>Full name<input type="text" name="full_name" required placeholder="e.g. Kojo Antwi-Boateng"></label>
               </div>
               <div class="acct-form-row">
                 <label>Role / title<input type="text" name="role_title" required placeholder="e.g. Board Chairperson"></label>
@@ -119,8 +126,17 @@
                 </label>
               </div>
               <div class="acct-form-row">
-                <label>Tag / discipline (optional)<input type="text" name="tag" placeholder="e.g. Health & Biomedical Science"></label>
+                <label>Tag / discipline (optional)
+                  <select name="tag" data-bc-tag-select>
+                    <option value="">None</option>
+                    {% for t in tag_choices %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                    <option value="__other__">Other...</option>
+                  </select>
+                </label>
                 <label>Display order<input type="number" name="display_order" min="0" value="0"></label>
+              </div>
+              <div class="acct-form-row" data-bc-tag-other-row hidden>
+                <label class="span-2">Please specify the tag / discipline<input type="text" name="tag_other" data-bc-tag-other placeholder="e.g. Maritime Law"></label>
               </div>
               <div class="acct-form-row">
                 <label class="span-2">Photo (optional)<input type="file" name="photo" accept="image/*"></label>
@@ -157,6 +173,12 @@
                 <span>Current photo -- upload a new one below to replace it</span>
               </div>
               <div class="acct-form-row">
+                <label>Title
+                  <select name="title" id="bcEditTitle">
+                    <option value="">None</option>
+                    {% for t in title_choices %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                  </select>
+                </label>
                 <label>Full name<input type="text" name="full_name" id="bcEditFullName" required></label>
               </div>
               <div class="acct-form-row">
@@ -168,8 +190,17 @@
                 </label>
               </div>
               <div class="acct-form-row">
-                <label>Tag / discipline (optional)<input type="text" name="tag" id="bcEditTag"></label>
+                <label>Tag / discipline (optional)
+                  <select name="tag" id="bcEditTag" data-bc-tag-select>
+                    <option value="">None</option>
+                    {% for t in tag_choices %}<option value="{{ t }}">{{ t }}</option>{% endfor %}
+                    <option value="__other__">Other...</option>
+                  </select>
+                </label>
                 <label>Display order<input type="number" name="display_order" id="bcEditDisplayOrder" min="0"></label>
+              </div>
+              <div class="acct-form-row" id="bcEditTagOtherRow" data-bc-tag-other-row hidden>
+                <label class="span-2">Please specify the tag / discipline<input type="text" name="tag_other" id="bcEditTagOther" data-bc-tag-other placeholder="e.g. Maritime Law"></label>
               </div>
               <div class="acct-form-row">
                 <label class="span-2">Replace photo (optional)<input type="file" name="photo" accept="image/*"></label>

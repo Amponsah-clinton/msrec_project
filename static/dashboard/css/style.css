@@ -428,7 +428,15 @@ svg {
 .topbar-title h1 { margin: 0; font-size: 22px; font-weight: 700; color: var(--text-main); }
 .topbar-title p { margin: 2px 0 0; font-size: 13px; color: var(--text-sub); }
 
-.topbar-actions { display: flex; align-items: center; gap: 16px; }
+/* flex: 1 1 auto lets this group absorb the topbar's leftover width itself
+   (rather than relying on .topbar's own justify-content: space-between),
+   and justify-content: flex-end keeps everything -- search box, theme
+   toggle, bell, profile -- pinned to the right edge even once this group
+   wraps onto its own full-width row on a narrow screen. Without this, a
+   wrapped .topbar-actions row sits flush left (flex's default), which is
+   what made the profile avatar look misaligned instead of "far right" on
+   every dashboard below ~900px. */
+.topbar-actions { display: flex; align-items: center; gap: 16px; flex: 1 1 auto; justify-content: flex-end; min-width: 0; }
 
 .search-box {
   display: flex;
@@ -438,8 +446,13 @@ svg {
   border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px 14px;
-  width: 260px;
-  max-width: 40vw;
+  /* Grows to use spare room in the topbar (up to max-width) instead of
+     sitting at a fixed 260px -- a longer, easier target -- but still
+     shrinks first (before the profile/icons ever do) as the topbar
+     narrows, via flex-shrink and the basis below. */
+  flex: 1 1 300px;
+  max-width: 420px;
+  min-width: 0;
 }
 .search-box svg { width: 16px; height: 16px; color: var(--text-faint); flex-shrink: 0; }
 .search-box input {
@@ -505,6 +518,18 @@ svg {
   height: 36px;
   border-radius: 50%;
   object-fit: cover;
+  flex-shrink: 0;
+  box-shadow:
+    0 0 0 2px var(--white),
+    0 1px 2px rgba(16, 24, 40, 0.16);
+  transition: box-shadow .15s ease;
+}
+.profile-btn:hover img,
+.profile-btn.open img {
+  box-shadow:
+    0 0 0 2px var(--white),
+    0 0 0 4px color-mix(in srgb, var(--teal), transparent 65%),
+    0 1px 2px rgba(16, 24, 40, 0.16);
 }
 .profile-btn span { font-size: 13.5px; font-weight: 600; white-space: nowrap; }
 
@@ -548,7 +573,7 @@ svg {
 
 /* ---------------- Dropdowns ---------------- */
 
-.dropdown { position: relative; }
+.dropdown { position: relative; flex-shrink: 0; }
 
 .dropdown-menu {
   position: absolute;
@@ -742,20 +767,23 @@ svg {
   }
 }
 
-/* ---------------- Applicant dashboard: compact topbar layout ----------------
-   On small screens only, the applicant dashboard's search box drops to its
-   own full-width row and the profile trigger pins to the top-right corner,
-   instead of three items competing for one cramped row. Desktop is entirely
-   untouched — this whole thing lives inside the max-width query below, and
-   applicant.html's topbar markup itself is unchanged (plain topbar-title +
-   topbar-actions, identical to every other dashboard).
+/* ---------------- Every dashboard: compact topbar layout ----------------
+   On small screens, the search box drops to its own full-width row and
+   the profile trigger pins to the top-right corner, instead of three
+   items competing for one cramped row. Desktop is entirely untouched —
+   this whole thing lives inside the max-width query below.
 
-   Scoped to just this dashboard via :has() on its (unique) search
-   placeholder text — <header class="topbar"> itself lives once in
-   dashboards/base.html and is shared by every dashboard, so there's no class
-   on the tag itself to key off without a wider template change. */
+   Plain `.topbar` -- <header class="topbar"> lives once in
+   dashboards/base.html and is shared by every dashboard (admin,
+   applicant, reviewer, secretariat, committee, chair all render the same
+   topbar-title + topbar-actions markup, per admin/_topbar.html and each
+   dashboard's own topbar block), so one rule here covers all of them.
+   Previously this was scoped to just the applicant dashboard via a
+   :has() check on one page's search placeholder text, which is why only
+   that one page had a well-aligned mobile topbar and every other
+   dashboard's search box/profile avatar just wrapped left-aligned. */
 @media (max-width: 600px) {
-  .topbar:has(.search-box input[placeholder="Search my applications..."]) {
+  .topbar {
     display: grid;
     grid-template-columns: 1fr auto;
     grid-template-areas:
@@ -765,7 +793,7 @@ svg {
     row-gap: 12px;
     column-gap: 12px;
   }
-  .topbar:has(.search-box input[placeholder="Search my applications..."]) .topbar-title {
+  .topbar-title {
     grid-area: title;
     min-width: 0;
   }
@@ -773,7 +801,7 @@ svg {
      the full topbar width to itself, so long titles ("Not Approved /
      Closed") need to shrink a step to keep to one line instead of wrapping
      under the avatar column. */
-  .topbar:has(.search-box input[placeholder="Search my applications..."]) .topbar-title h1 {
+  .topbar-title h1 {
     font-size: 17px;
     white-space: nowrap;
     overflow: hidden;
@@ -782,16 +810,18 @@ svg {
   /* Unwrap topbar-actions so its children (search box + the profile dropdown
      — theme toggle and notifications have already been moved into the
      profile menu by script.js at this width) become direct grid items and
-     can be placed independently. */
-  .topbar:has(.search-box input[placeholder="Search my applications..."]) .topbar-actions {
+     can be placed independently. A page with no search box (search_id
+     wasn't passed) just leaves the "search" area empty. */
+  .topbar-actions {
     display: contents;
   }
-  .topbar:has(.search-box input[placeholder="Search my applications..."]) .search-box {
+  .topbar .search-box {
     grid-area: search;
     width: 100%;
     max-width: none;
+    flex: none;
   }
-  .topbar:has(.search-box input[placeholder="Search my applications..."]) #profileDropdown {
+  .topbar #profileDropdown {
     grid-area: profile;
     justify-self: end;
   }
@@ -799,8 +829,8 @@ svg {
      before script.js's matchMedia handler re-parents them into the profile
      menu on first paint — harmless once moved, since they're then no longer
      direct children of topbar-actions and this stops matching. */
-  .topbar:has(.search-box input[placeholder="Search my applications..."]) .topbar-actions > .theme-toggle,
-  .topbar:has(.search-box input[placeholder="Search my applications..."]) .topbar-actions > #bellDropdown {
+  .topbar-actions > .theme-toggle,
+  .topbar-actions > #bellDropdown {
     display: none;
   }
 }
@@ -2334,8 +2364,13 @@ svg {
 @media (max-width: 720px) {
   .topbar { padding: 16px 20px 16px 60px; }
   .content { padding: 60px 18px 10px; }
-  .search-box { width: 180px; }
-  .profile-btn span { display: none; }
+  .search-box { flex-basis: 200px; }
+  /* Only the name label collapses on narrow screens -- .avatar-initials is
+     also a <span> (it's the circle itself, shown instead of a photo when
+     the account has none on file), so an unqualified `.profile-btn span`
+     selector here was hiding the avatar circle too, leaving just the lone
+     chevron in the topbar's corner on mobile. */
+  .profile-btn > span:not(.avatar-initials) { display: none; }
 
   .urgent-banner { flex-direction: column; align-items: flex-start; }
   .urgent-due { flex-direction: row; align-items: baseline; gap: 8px; }

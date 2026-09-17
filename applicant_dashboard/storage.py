@@ -13,7 +13,6 @@ here is a no-op that returns None -- a Storage outage or missing config
 must never block someone from submitting their application; the affected
 file is just not attached.
 """
-import json
 import logging
 import mimetypes
 import urllib.error
@@ -131,41 +130,21 @@ def delete_object(object_path):
 
 
 def public_url(object_path):
-    """Direct public URL for an object in the "application" bucket (the
-    bucket is public, unlike "signup"). Returns None if unconfigured."""
-    if not object_path or not settings.SUPABASE_URL:
-        return None
-    return f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/public/{BUCKET}/{object_path}"
+    """A link to an object in the "application" bucket (public, unlike
+    "signup"), proxied through this app's own domain (see
+    pages/file_proxy.py) rather than a raw Supabase URL. Returns None if
+    unconfigured."""
+    from pages import file_proxy
+    return file_proxy.build_url(BUCKET, object_path)
 
 
 def create_signed_url(object_path, *, expires_in=3600):
-    """Temporary signed URL for an object in the "application" bucket, or
-    None if Storage isn't configured, the object doesn't exist, or the
-    request fails. Not usually needed since the bucket is public, but kept
-    for parity with accounts/storage.py in case the bucket is later made
-    private."""
-    if not object_path or not _configured():
-        return None
-
-    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/sign/{BUCKET}/{object_path}"
-    req = urllib.request.Request(
-        url,
-        data=f'{{"expiresIn": {int(expires_in)}}}'.encode(),
-        method="POST",
-        headers={
-            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
-            "apikey": settings.SUPABASE_SERVICE_KEY,
-            "Content-Type": "application/json",
-        },
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            payload = json.loads(resp.read())
-    except urllib.error.URLError:
-        logger.exception("Supabase Storage sign failed for %s", object_path)
-        return None
-
-    signed = payload.get("signedURL") or payload.get("signedUrl")
-    if not signed:
-        return None
-    return f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1{signed}"
+    """A time-limited link to an object in the "application" bucket,
+    proxied the same way public_url() is -- expires_in is enforced by
+    the proxy itself (pages/file_proxy.py), not by Supabase's own signed-
+    URL endpoint, so this never actually contacts Supabase's /sign
+    endpoint or hands the browser a Supabase URL at all. Not usually
+    needed since the bucket is public, but kept for parity with
+    accounts/storage.py in case the bucket is later made private."""
+    from pages import file_proxy
+    return file_proxy.build_url(BUCKET, object_path, expires_in=expires_in)
