@@ -23,6 +23,10 @@ from notifications import services as notification_services
 from notifications.emails import send_branded_email
 from notifications.models import Notification
 from payments import services as payment_services
+from pages import committee_services
+from pages import documents_storage
+from pages import storage as pages_storage
+from pages.models import CommitteeAppointment, ConflictDeclaration, GovernanceMember, TrainingRecord
 from reviewer_dashboard.models import ReviewAssignment
 
 from . import reports as reports_data
@@ -1363,4 +1367,226 @@ def audit_logs(request):
         "counts": counts,
         "active_tab": active_tab,
         "query": query,
+    })
+
+
+# ---------------------------------------------------------------------
+# Committee -- Committee Members, Membership/Appointments, Terms &
+# Expiry, Training and Conflict Records. Same governance tables
+# admin_dashboard's Committee pages read and write (one Board/Committee
+# roster, shared across both dashboards); the write-side logic itself
+# lives in pages.committee_services so the two dashboards can't drift.
+# ---------------------------------------------------------------------
+
+COMMITTEE_MEMBERS_TABS = {"all", "board", "committee", "secretariat"}
+
+
+@login_required
+@staff_required
+def committee_members(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+        tab = request.POST.get("tab", "all")
+
+        if action == "add":
+            committee_services.handle_governance_add(request)
+        else:
+            member = get_object_or_404(GovernanceMember, pk=request.POST.get("member_id", ""))
+            if action == "edit":
+                committee_services.handle_governance_edit(request, member)
+            elif action == "delete":
+                committee_services.handle_governance_delete(request, member)
+            else:
+                messages.error(request, "That request could not be processed.")
+        return redirect(f"{request.path}?tab={tab}")
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in COMMITTEE_MEMBERS_TABS:
+        active_tab = "all"
+
+    members = list(GovernanceMember.objects.all())
+    for member in members:
+        member.photo_url = pages_storage.public_url(member.photo_path)
+
+    counts = {
+        "all": len(members),
+        "board": sum(1 for m in members if m.group == GovernanceMember.Group.BOARD),
+        "committee": sum(1 for m in members if m.group == GovernanceMember.Group.COMMITTEE),
+        "secretariat": sum(1 for m in members if m.group == GovernanceMember.Group.SECRETARIAT),
+    }
+
+    return render(request, "dashboards/secretariat/committee/members.html", {
+        "members": members,
+        "counts": counts,
+        "active_tab": active_tab,
+        "groups": GovernanceMember.Group.choices,
+    })
+
+
+COMMITTEE_APPOINTMENT_TABS = {"all", "active", "renewed", "expired", "terminated"}
+
+
+@login_required
+@staff_required
+def committee_appointments(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+        tab = request.POST.get("tab", "all")
+
+        if action == "add":
+            committee_services.handle_appointment_add(request)
+        else:
+            appointment = get_object_or_404(CommitteeAppointment, pk=request.POST.get("appointment_id", ""))
+            if action == "edit":
+                committee_services.handle_appointment_edit(request, appointment)
+            elif action == "delete":
+                committee_services.handle_appointment_delete(request, appointment)
+            else:
+                messages.error(request, "That request could not be processed.")
+        return redirect(f"{request.path}?tab={tab}")
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in COMMITTEE_APPOINTMENT_TABS:
+        active_tab = "all"
+
+    appointments = list(CommitteeAppointment.objects.select_related("member").all())
+    for appointment in appointments:
+        appointment.letter_url = documents_storage.public_url(appointment.letter_path)
+
+    counts = {"all": len(appointments)}
+    for value, _label in CommitteeAppointment.Status.choices:
+        counts[value] = sum(1 for a in appointments if a.status == value)
+
+    return render(request, "dashboards/secretariat/committee/appointments.html", {
+        "appointments": appointments,
+        "counts": counts,
+        "active_tab": active_tab,
+        "members": committee_services.active_governance_members(),
+        "statuses": CommitteeAppointment.Status.choices,
+    })
+
+
+COMMITTEE_EXPIRY_TABS = {"all", "expiring", "expired", "ongoing"}
+
+
+@login_required
+@staff_required
+def committee_terms_expiry(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+        tab = request.POST.get("tab", "all")
+        appointment = get_object_or_404(CommitteeAppointment, pk=request.POST.get("appointment_id", ""))
+
+        if action == "edit":
+            committee_services.handle_appointment_edit(request, appointment)
+        else:
+            messages.error(request, "That request could not be processed.")
+        return redirect(f"{request.path}?tab={tab}")
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in COMMITTEE_EXPIRY_TABS:
+        active_tab = "all"
+
+    appointments = list(CommitteeAppointment.objects.select_related("member").all())
+    appointments.sort(key=lambda a: (a.end_date is None, a.end_date))
+
+    counts = {
+        "all": len(appointments),
+        "expiring": sum(1 for a in appointments if a.expiry_state == "expiring"),
+        "expired": sum(1 for a in appointments if a.expiry_state == "expired"),
+        "ongoing": sum(1 for a in appointments if a.expiry_state in ("ongoing", "current")),
+    }
+
+    return render(request, "dashboards/secretariat/committee/terms-expiry.html", {
+        "appointments": appointments,
+        "counts": counts,
+        "active_tab": active_tab,
+        "statuses": CommitteeAppointment.Status.choices,
+    })
+
+
+COMMITTEE_TRAINING_TABS = {"all", "current", "expiring", "expired", "ongoing"}
+
+
+@login_required
+@staff_required
+def committee_training(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+        tab = request.POST.get("tab", "all")
+
+        if action == "add":
+            committee_services.handle_training_add(request)
+        else:
+            record = get_object_or_404(TrainingRecord, pk=request.POST.get("record_id", ""))
+            if action == "edit":
+                committee_services.handle_training_edit(request, record)
+            elif action == "delete":
+                committee_services.handle_training_delete(request, record)
+            else:
+                messages.error(request, "That request could not be processed.")
+        return redirect(f"{request.path}?tab={tab}")
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in COMMITTEE_TRAINING_TABS:
+        active_tab = "all"
+
+    records = list(TrainingRecord.objects.select_related("member").all())
+    for record in records:
+        record.certificate_url = documents_storage.public_url(record.certificate_path)
+
+    counts = {
+        "all": len(records),
+        "current": sum(1 for r in records if r.expiry_state == "current"),
+        "expiring": sum(1 for r in records if r.expiry_state == "expiring"),
+        "expired": sum(1 for r in records if r.expiry_state == "expired"),
+        "ongoing": sum(1 for r in records if r.expiry_state == "ongoing"),
+    }
+
+    return render(request, "dashboards/secretariat/committee/training.html", {
+        "records": records,
+        "counts": counts,
+        "active_tab": active_tab,
+        "members": committee_services.active_governance_members(),
+    })
+
+
+COMMITTEE_CONFLICT_TABS = {"all", "pending", "reviewed", "recused", "resolved"}
+
+
+@login_required
+@staff_required
+def committee_conflict_records(request):
+    if request.method == "POST":
+        action = request.POST.get("action")
+        tab = request.POST.get("tab", "all")
+
+        if action == "add":
+            committee_services.handle_conflict_add(request)
+        else:
+            record = get_object_or_404(ConflictDeclaration, pk=request.POST.get("record_id", ""))
+            if action == "edit":
+                committee_services.handle_conflict_edit(request, record)
+            elif action == "delete":
+                committee_services.handle_conflict_delete(request, record)
+            else:
+                messages.error(request, "That request could not be processed.")
+        return redirect(f"{request.path}?tab={tab}")
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in COMMITTEE_CONFLICT_TABS:
+        active_tab = "all"
+
+    records = list(ConflictDeclaration.objects.select_related("member").all())
+
+    counts = {"all": len(records)}
+    for value, _label in ConflictDeclaration.Status.choices:
+        counts[value] = sum(1 for r in records if r.status == value)
+
+    return render(request, "dashboards/secretariat/committee/conflict-records.html", {
+        "records": records,
+        "counts": counts,
+        "active_tab": active_tab,
+        "members": committee_services.active_governance_members(),
+        "statuses": ConflictDeclaration.Status.choices,
     })

@@ -1648,6 +1648,5 @@ alter table public.committee_conflict_declarations enable row level security;
 drop policy if exists "service_role full access to committee_conflict_declarations" on public.committee_conflict_declarations;
 create policy "service_role full access to committee_conflict_declarations"
     on public.committee_conflict_declarations for all
->>>>>>> 9e82dbf56602c998c6309bd331a8d3acee436cea
     to service_role
     using (true) with check (true);

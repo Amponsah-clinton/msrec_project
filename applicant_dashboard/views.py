@@ -23,14 +23,9 @@ from notifications.services import notify
 from payments import fees
 from payments.models import Payment
 
-<<<<<<< HEAD
-from . import notification_feed, storage
+from . import notification_feed, storage, team_storage
 from .models import (Application, POSTAPPROVAL_FIELDS, POSTAPPROVAL_LIST_LABELS,
-                     POSTAPPROVAL_TITLES, PostApprovalSubmission)
-=======
-from . import storage, team_storage
-from .models import Application, TeamMember
->>>>>>> 9e82dbf56602c998c6309bd331a8d3acee436cea
+                     POSTAPPROVAL_TITLES, PostApprovalSubmission, TeamMember)
 
 # Checkbox groups on the application form where more than one value can be
 # ticked (name="..." repeated across several <input type="checkbox">) --

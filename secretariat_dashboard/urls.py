@@ -75,4 +75,9 @@ urlpatterns = [
     path("reviewers/assignment/", views.reviewer_assignment, name="reviewer_assignment"),
     path("reviewers/assignment/counts/", views.reviewer_assignment_counts, name="reviewer_assignment_counts"),
     path("audit-logs/", views.audit_logs, name="audit_logs"),
+    path("committee/members/", views.committee_members, name="committee_members"),
+    path("committee/appointments/", views.committee_appointments, name="committee_appointments"),
+    path("committee/terms-expiry/", views.committee_terms_expiry, name="committee_terms_expiry"),
+    path("committee/training/", views.committee_training, name="committee_training"),
+    path("committee/conflict-records/", views.committee_conflict_records, name="committee_conflict_records"),
 ]

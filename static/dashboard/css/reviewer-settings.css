@@ -54,12 +54,8 @@
 
 .rv-subnav a.active {
   color: #fff;
-<<<<<<< HEAD
   background: var(--navy);
   box-shadow: 0 2px 8px color-mix(in srgb, var(--navy) 30%, transparent);
-=======
-  background: var(--teal);
->>>>>>> 9e82dbf56602c998c6309bd331a8d3acee436cea
 }
 
 @media (max-width: 480px) {

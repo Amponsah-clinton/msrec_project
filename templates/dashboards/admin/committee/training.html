@@ -1,0 +1,331 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Training | MSREC Admin{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/committee.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}
+      <a href="{% url 'admin_dashboard:home' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg></span>
+        <span>Dashboard</span>
+      </a>
+
+      <a href="{% url 'admin_dashboard:accounts' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
+        <span>Users &amp; Roles</span>
+      </a>
+
+      <a href="{% url 'admin_dashboard:inquiries' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+        <span>Inquiries</span>
+      </a>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
+          <span>Applications</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'admin_dashboard:applications' %}" class="nav-sublink">All Applications</a>
+          <a href="#" class="nav-sublink">By Review Pathway</a>
+          <a href="#" class="nav-sublink">By Institution</a>
+          <a href="#" class="nav-sublink">Flagged / Escalated</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="1"/><path d="M9 7h1M9 11h1M9 15h1M14 7h1M14 11h1M14 15h1"/></svg></span>
+          <span>Institutions</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Registered Institutions</a>
+          <a href="#" class="nav-sublink">Verification Requests</a>
+          <a href="#" class="nav-sublink">Institution Admins</a>
+        </div>
+      </div>
+
+      <div class="nav-group open">
+        <button type="button" class="nav-group-toggle" aria-expanded="true">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          <span>Committee</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'admin_dashboard:committee_overview' %}" class="nav-sublink">Committee</a>
+          <a href="{% url 'admin_dashboard:board_committee' %}" class="nav-sublink">Committee Members</a>
+          <a href="{% url 'admin_dashboard:membership_appointments' %}" class="nav-sublink">Membership / Appointments</a>
+          <a href="{% url 'admin_dashboard:terms_expiry' %}" class="nav-sublink">Terms &amp; Expiry</a>
+          <a href="{% url 'admin_dashboard:committee_training' %}" class="nav-sublink active">Training</a>
+          <a href="{% url 'admin_dashboard:conflict_records' %}" class="nav-sublink">Conflict Records</a>
+        </div>
+      </div>
+
+      <a href="{% url 'admin_dashboard:finance' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
+        <span>Finance</span>
+      </a>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+          <span>Communications</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="#" class="nav-sublink">Announcements</a>
+          <a href="#" class="nav-sublink">Email Templates</a>
+          <a href="#" class="nav-sublink">Notification Settings</a>
+        </div>
+      </div>
+
+      <a href="{% url 'admin_dashboard:settings' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
+        <span>System</span>
+      </a>
+
+      <a href="{% url 'admin_dashboard:messages' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+        <span>Messages</span>
+      </a>
+      <a href="{% url 'admin_dashboard:reports_analytics' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg></span>
+        <span>Reports &amp; Analytics</span>
+      </a>
+      <a href="{% url 'admin_dashboard:access_security' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v1"/></svg></span>
+        <span>Access &amp; Security</span>
+      </a>
+      <a href="{% url 'admin_dashboard:profile_security' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
+        <span>Profile &amp; Security</span>
+      </a>
+      <a href="{% url 'admin_dashboard:help_support' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="m4.9 4.9 3.5 3.5M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></span>
+        <span>Help &amp; Support</span>
+      </a>
+
+{% endblock %}
+
+{% block topbar %}
+
+      <div class="topbar-title">
+        <h1>Training</h1>
+        <p>GCP, human subjects protection and conflict-of-interest certifications, tracked to expiry</p>
+      </div>
+      <div class="topbar-actions">
+        <div class="search-box">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          <input type="text" id="trnSearch" placeholder="Search by name, course..." data-cmt-search="#trnList">
+        </div>
+        <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false">
+          <svg class="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+        </button>
+
+        <div class="dropdown" id="profileDropdown">
+          <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
+            <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="dropdown-menu profile-menu" id="profileMenu">
+            <div class="profile-menu-head">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
+              <div>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
+              </div>
+            </div>
+            <a href="{% url 'admin_dashboard:home' %}" class="dropdown-item">
+              <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg>
+              Dashboard
+            </a>
+            <div class="dropdown-divider"></div>
+            <a href="{% url 'pages:logout' %}" class="dropdown-item logout">
+              <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/></svg>
+              Log Out
+            </a>
+          </div>
+        </div>
+      </div>
+
+{% endblock %}
+
+{% block main_content %}
+
+      <section class="panel acct-panel">
+        <div class="cmt-toolbar">
+          <div class="filter-tabs cmt-toolbar-tabs">
+            <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count">{{ counts.all }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'current' %} active{% endif %}" data-filter="current">Current <span class="count">{{ counts.current }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'expiring' %} active{% endif %}" data-filter="expiring">Expiring Soon <span class="count">{{ counts.expiring }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'expired' %} active{% endif %}" data-filter="expired">Expired <span class="count">{{ counts.expired }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'ongoing' %} active{% endif %}" data-filter="ongoing">No Expiry <span class="count">{{ counts.ongoing }}</span></button>
+          </div>
+          <button type="button" class="acct-btn acct-btn-approve" data-open-modal="trnAddOverlay">
+            <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add Training Record
+          </button>
+        </div>
+
+        <div class="acct-list" id="trnList">
+          {% for record in records %}
+          <div class="acct-row" data-filter-item
+               data-filter="{{ record.expiry_state }}"
+               data-search="{{ record.member.full_name|lower }} {{ record.course_title|lower }} {{ record.provider|lower }}"
+               data-record-id="{{ record.pk }}"
+               data-member-id="{{ record.member_id }}"
+               data-course-title="{{ record.course_title }}"
+               data-provider="{{ record.provider }}"
+               data-completed-date="{{ record.completed_date|date:'Y-m-d' }}"
+               data-expiry-date="{{ record.expiry_date|date:'Y-m-d' }}"
+               data-notes="{{ record.notes }}"
+               data-certificate-url="{% if record.certificate_url %}1{% else %}0{% endif %}">
+
+            <span class="acct-avatar cat-committee">{{ record.member.initials }}</span>
+
+            <div class="acct-info">
+              <h4 class="cmt-row-title">
+                {{ record.member.full_name }}
+                <span class="cmt-pill cmt-pill-{{ record.expiry_state }}">
+                  {% if record.expiry_state == "ongoing" %}No expiry
+                  {% elif record.expiry_state == "expired" %}Expired {{ record.expiry_date|date:"d M Y" }}
+                  {% elif record.expiry_state == "expiring" %}Due {{ record.expiry_date|date:"d M Y" }}
+                  {% else %}Valid to {{ record.expiry_date|date:"d M Y" }}{% endif %}
+                </span>
+              </h4>
+              <p>{{ record.course_title }}{% if record.provider %} &middot; {{ record.provider }}{% endif %}</p>
+            </div>
+
+            <div class="acct-meta">
+              <span>{% if record.completed_date %}Completed {{ record.completed_date|date:"d M Y" }}{% else %}Not yet completed{% endif %}</span>
+              {% if record.certificate_url %}<a href="{{ record.certificate_url }}" target="_blank" rel="noopener" class="cmt-doc-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> Certificate</a>{% endif %}
+            </div>
+
+            <div class="acct-actions">
+              <div class="acct-manage">
+                <button type="button" class="acct-btn acct-btn-edit" data-open-modal="trnEditOverlay" data-trn-edit>
+                  <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Edit
+                </button>
+                <form method="post" class="acct-inline-form" data-confirm="Remove this training record for {{ record.member.full_name }}? This cannot be undone." data-confirm-variant="danger" data-confirm-label="Remove">
+                  {% csrf_token %}
+                  <input type="hidden" name="record_id" value="{{ record.pk }}">
+                  <input type="hidden" name="tab" value="{{ active_tab }}">
+                  <input type="hidden" name="action" value="delete">
+                  <button type="submit" class="acct-btn acct-btn-delete">
+                    <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Remove
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty-state">
+            <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="M12 2 2 7l10 5 10-5-10-5Z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg></span>
+            <h3>No training records yet</h3>
+            <p>Log each member's GCP, human subjects protection or conflict-of-interest certification here, with an expiry date if it has one.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <!-- ADD TRAINING MODAL -->
+      <div class="acct-modal-overlay cmt-modal-wide" id="trnAddOverlay" data-modal-overlay hidden>
+        <div class="acct-modal" role="dialog" aria-modal="true" aria-labelledby="trnAddTitle">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add">
+            <input type="hidden" name="tab" value="{{ active_tab }}">
+
+            <div class="acct-modal-head">
+              <h3 id="trnAddTitle">Log a training record</h3>
+              <button type="button" class="icon-btn" data-modal-close aria-label="Close">
+                <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <div class="acct-modal-body">
+              <div class="acct-form-row">
+                <label>Member
+                  <select name="member_id" required>
+                    <option value="">Select a member</option>
+                    {% for m in members %}<option value="{{ m.pk }}">{{ m.full_name }} ({{ m.get_group_display }})</option>{% endfor %}
+                  </select>
+                </label>
+                <label>Course / certification<input type="text" name="course_title" required placeholder="e.g. Good Clinical Practice (GCP)"></label>
+              </div>
+              <div class="acct-form-row">
+                <label>Provider (optional)<input type="text" name="provider" placeholder="e.g. CITI Program"></label>
+              </div>
+              <div class="acct-form-row">
+                <label>Completed on<input type="date" name="completed_date"></label>
+                <label>Expiry date (optional)<input type="date" name="expiry_date"></label>
+              </div>
+              <div class="acct-form-row">
+                <label class="cmt-full">Notes (optional)<textarea name="notes" placeholder="Any context worth keeping with this record"></textarea></label>
+              </div>
+              <div class="acct-form-row">
+                <label class="cmt-full">Certificate (optional)<input type="file" name="certificate" accept=".pdf,.doc,.docx,image/*"></label>
+              </div>
+              <p class="field-hint">Leaving the expiry date blank marks the certification as not expiring. The certificate is saved to Supabase Storage's "ethics" bucket.</p>
+            </div>
+
+            <div class="acct-modal-actions">
+              <button type="button" class="acct-btn acct-btn-cancel" data-modal-close>Cancel</button>
+              <button type="submit" class="acct-btn acct-btn-approve">Save record</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- EDIT TRAINING MODAL -->
+      <div class="acct-modal-overlay cmt-modal-wide" id="trnEditOverlay" data-modal-overlay hidden>
+        <div class="acct-modal" role="dialog" aria-modal="true" aria-labelledby="trnEditTitle">
+          <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="tab" value="{{ active_tab }}">
+            <input type="hidden" name="record_id" id="trnEditRecordId">
+
+            <div class="acct-modal-body">
+              <div class="acct-form-row">
+                <label>Member
+                  <select name="member_id" id="trnEditMemberId" required>
+                    {% for m in members %}<option value="{{ m.pk }}">{{ m.full_name }} ({{ m.get_group_display }})</option>{% endfor %}
+                  </select>
+                </label>
+                <label>Course / certification<input type="text" name="course_title" id="trnEditCourseTitle" required></label>
+              </div>
+              <div class="acct-form-row">
+                <label>Provider (optional)<input type="text" name="provider" id="trnEditProvider"></label>
+              </div>
+              <div class="acct-form-row">
+                <label>Completed on<input type="date" name="completed_date" id="trnEditCompletedDate"></label>
+                <label>Expiry date (optional)<input type="date" name="expiry_date" id="trnEditExpiryDate"></label>
+              </div>
+              <div class="acct-form-row">
+                <label class="cmt-full">Notes (optional)<textarea name="notes" id="trnEditNotes"></textarea></label>
+              </div>
+              <div class="acct-form-row">
+                <label class="cmt-full">Replace certificate (optional)<input type="file" name="certificate" accept=".pdf,.doc,.docx,image/*"></label>
+              </div>
+            </div>
+
+            <div class="acct-modal-actions">
+              <button type="button" class="acct-btn acct-btn-cancel" data-modal-close>Cancel</button>
+              <button type="submit" class="acct-btn acct-btn-approve">Save changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/committee.js' %}"></script>
+{% endblock %}

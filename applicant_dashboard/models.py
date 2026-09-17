@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-from datetime import timedelta
-=======
 import secrets
->>>>>>> 9e82dbf56602c998c6309bd331a8d3acee436cea
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import models
@@ -105,7 +102,6 @@ class Application(models.Model):
         self.reference_no = f"MSREC/{year}/{self.pk:04d}"
         self.save(update_fields=["reference_no"])
 
-<<<<<<< HEAD
     # An approved study's ethical clearance is treated as valid for this
     # long before it's due for a Continuing Review / needs renewing --
     # matches the "Valid until" window shown on approval letters and
@@ -266,7 +262,7 @@ POSTAPPROVAL_LIST_LABELS = {
     PostApprovalSubmission.Type.DEVIATION: "Deviations",
     PostApprovalSubmission.Type.CLOSURE: "Study Closure",
 }
-=======
+
 
 class TeamMember(models.Model):
     """One person on an applicant's research team (Research Team page).
@@ -341,4 +337,3 @@ class TeamMember(models.Model):
         self.invite_token = secrets.token_urlsafe(32)
         self.invited_at = timezone.now()
         self.save(update_fields=["invite_token", "invited_at"])
->>>>>>> 9e82dbf56602c998c6309bd331a8d3acee436cea
