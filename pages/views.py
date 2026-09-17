@@ -1,10 +1,42 @@
 from django.http import JsonResponse
 from django.shortcuts import render
 
+from payments import fees
 from . import storage
 from .models import GovernanceMember, Inquiry
 
 REASON_VALUES = {value for value, _ in Inquiry.Reason.choices}
+
+# Groups the 9 Application Category tiers (payments.fees.
+# APPLICANT_CATEGORY_LABELS) for the homepage's Review Fees section --
+# same three-column rhythm the old hardcoded "Student / Standard /
+# External" pricing cards had, but each column is now a real group of
+# real, live-editable prices instead of three made-up numbers. Keyed
+# here (not read from FeeSetting order) since the homepage's grouping
+# is about applicant *type*, not the admin Finance page's flat list.
+HOME_FEE_GROUPS = [
+    ("Student Researchers", ["ug_diploma", "masters_mphil", "phd"]),
+    ("Ghanaian Researchers", ["gh_independent", "gh_institutional", "gh_consultancy"]),
+    ("International & Clinical", ["intl_student", "intl_funded", "clinical_trial"]),
+]
+
+
+def index(request):
+    schedule = fees.schedule()
+    fee_groups = [
+        {
+            "title": title,
+            "rows": [
+                {"label": fees.label_for(key), "fee": schedule.get(key)}
+                for key in keys
+            ],
+        }
+        for title, keys in HOME_FEE_GROUPS
+    ]
+    return render(request, "pages/index.html", {
+        "fee_groups": fee_groups,
+        "exemption_fee": schedule.get("exemption"),
+    })
 
 
 def contact(request):

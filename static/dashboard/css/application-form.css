@@ -1144,3 +1144,101 @@
   .progress-tracker { padding: 18px; }
   .progress-step { min-width: 76px; }
 }
+
+/* ==========================================================
+   Applicant brand refresh — scoped to .apply-wrap only.
+   The generic dashboard teal (--teal, shared by every other
+   dashboard page and by the 7 other templates that also load this
+   stylesheet -- application_detail, review-application,
+   postapproval-new, application-pay, admin/settings) reads as a
+   default SaaS-template accent with no tie back to MSREC itself.
+   The public site (see templates/pages/contact.html /
+   static/assets/css/main.css) already has a real identity: a deep
+   institutional green, Montserrat/serif headings, pill CTAs, square
+   inputs. This block pulls that identity onto the one page an
+   applicant actually spends real time on, by redeclaring --teal/
+   --teal-light *inside* .apply-wrap -- every existing rule in this
+   file (and any shared component it reuses, like .btn-primary in the
+   category modal) already reads var(--teal), so it re-themes for
+   free with no risk of leaking into the other 7 templates or the
+   dashboard's own sidebar/topbar, neither of which sit inside
+   .apply-wrap. ========================================================== */
+.apply-wrap {
+  --teal: #2a4747;
+  /* #2a4747 is already low-chroma/dark; a 90% white dilution (this
+     file's usual ratio for --teal-light, tuned for the much brighter
+     #159a96) washes out to indistinguishable gray. Less dilution
+     keeps it visibly, not just technically, tinted. */
+  --teal-light: color-mix(in srgb, #2a4747, white 78%);
+}
+:root[data-theme="dark"] .apply-wrap {
+  --teal: #7fb3a3;
+  --teal-light: rgba(127, 179, 163, 0.16);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) .apply-wrap {
+    --teal: #7fb3a3;
+    --teal-light: rgba(127, 179, 163, 0.16);
+  }
+}
+
+/* Headings: the house serif (already the rule for every other major
+   page heading in this product -- see admin-settings.css) instead of
+   the plain sans title this page had, for the same "considered
+   institution, not a generated template" reason. */
+.apply-wrap .apply-intro h1,
+.apply-wrap .apply-section-head h2,
+.apply-wrap .apply-official-head h2,
+.apply-wrap .apply-category-modal-head h3,
+.apply-wrap .signup-confirm h1 {
+  font-family: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+}
+
+/* Category trigger: an orange dashed border (this file's "warning/
+   incomplete" color elsewhere) reads as a broken placeholder rather
+   than a real, required, fee-deciding question -- swap it for the
+   brand accent so "not answered yet" and "answered" are two shades
+   of the same color instead of two unrelated ones, while keeping the
+   dashed-vs-solid distinction that actually carries the state. */
+.apply-wrap .apply-category-trigger {
+  background: color-mix(in srgb, var(--teal), white 85%);
+  border: 1.5px dashed color-mix(in srgb, var(--teal), transparent 30%);
+}
+.apply-wrap .apply-category-trigger:hover {
+  border-color: var(--teal);
+  border-style: solid;
+}
+.apply-wrap .apply-category-trigger-icon { color: var(--teal); }
+.apply-wrap .apply-category-trigger.is-selected {
+  background: var(--teal-light);
+  border: 1.5px solid var(--teal);
+}
+
+/* Chip checkboxes: a little more room per option so a 20-40 item
+   list (Type of Study, Data Collection Methods, ...) reads as a
+   deliberately laid out multi-select rather than every possible
+   value dumped into a dense grid. */
+.apply-wrap .chip-checkbox-grid {
+  grid-template-columns: repeat(auto-fill, minmax(248px, 1fr));
+  gap: 8px;
+}
+.apply-wrap .chip-checkbox-grid .chip-checkbox {
+  padding: 10px 12px;
+  line-height: 1.4;
+}
+
+/* Primary actions: the public site's pill-shaped, solid-accent
+   button (see .php-email-form button[type=submit] in main.css)
+   instead of the dashboard's default softer corner radius, so the
+   one button that actually costs the applicant money/time reads as
+   deliberate and confident. */
+.apply-wrap .btn-create-account,
+.apply-wrap .apply-category-modal-actions .btn-primary {
+  border-radius: 50px;
+  background: var(--teal);
+}
+.apply-wrap .btn-create-account:hover,
+.apply-wrap .apply-category-modal-actions .btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--teal), black 12%);
+}
+.apply-wrap .btn-save-draft { border-radius: 50px; }

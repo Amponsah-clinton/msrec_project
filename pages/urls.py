@@ -8,7 +8,7 @@ from . import views
 app_name = "pages"
 
 urlpatterns = [
-    path("", TemplateView.as_view(template_name="pages/index.html"), name="index"),
+    path("", views.index, name="index"),
     path("about/", TemplateView.as_view(template_name="pages/about.html"), name="about"),
     path("applicants/", TemplateView.as_view(template_name="pages/applicants.html"), name="applicants"),
     path("ethics-review/", TemplateView.as_view(template_name="pages/ethics_review.html"), name="ethics_review"),

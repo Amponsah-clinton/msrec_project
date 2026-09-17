@@ -276,3 +276,115 @@
   .stat-cell { border-left: none !important; padding: 0 !important; }
   .stat-cell:nth-child(n+2) { padding-top: 26px !important; border-top: 1px solid color-mix(in srgb, var(--default-color), transparent 90%); }
 }
+
+/* ==========================================================
+   Review Fees — replaces the three fictional "Student / Standard /
+   External" pricing-card tiers (make-believe $0/$150/$450 numbers)
+   with the real, admin-editable Application Category fee schedule
+   (payments.fees / pages.views.index), grouped into the same
+   three-column layout. Flat cards, one accent, no gradients or the
+   old template's 3D-layered icon circles/scale-up "featured" card.
+========================================================== */
+.fee-card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-color);
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 88%);
+  border-radius: 14px;
+  padding: 36px 32px 32px;
+}
+
+.fee-card h3 {
+  margin: 0 0 22px;
+  padding-bottom: 16px;
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--heading-color);
+  border-bottom: 2px solid var(--accent-color);
+}
+
+.fee-list {
+  list-style: none;
+  margin: 0 0 28px;
+  padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.fee-list li {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--default-color), transparent 88%);
+}
+.fee-list li:last-child { border-bottom: none; padding-bottom: 0; }
+
+.fee-list-label {
+  font-size: 14.5px;
+  line-height: 1.4;
+  color: var(--default-color);
+}
+
+.fee-list-amount {
+  flex-shrink: 0;
+  font-family: var(--heading-font);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--accent-color);
+  white-space: nowrap;
+}
+
+.fee-card-btn {
+  display: inline-block;
+  padding: 10px 36px;
+  border-radius: 50px;
+  background: var(--accent-color);
+  color: var(--contrast-color);
+  font-size: 14.5px;
+  font-weight: 600;
+  font-family: var(--heading-font);
+  border: 1px solid var(--accent-color);
+  transition: 0.3s;
+}
+.fee-card-btn:hover {
+  background: transparent;
+  color: var(--accent-color);
+}
+
+.fee-footnote {
+  max-width: 760px;
+  margin: 36px auto 0;
+  padding: 16px 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: color-mix(in srgb, var(--default-color), transparent 25%);
+  background: color-mix(in srgb, var(--accent-color), transparent 95%);
+  border: 1px solid color-mix(in srgb, var(--accent-color), transparent 82%);
+  border-radius: 10px;
+}
+.fee-footnote i {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--accent-color);
+  font-size: 16px;
+}
+.fee-footnote a {
+  color: var(--accent-color);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 575.98px) {
+  .fee-card { padding: 28px 22px 24px; }
+}

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}MSREC - Metascholar Research Ethics Committee{% endblock %}
+{% block title %}Metascholar Research Ethics Committee{% endblock %}
 {% block description %}Structured ethical review, post-approval oversight and verifiable decisions for researchers and institutions across health, social science, engineering, AI and evidence-synthesis disciplines.{% endblock %}
 {% block body_class %}index-page{% endblock %}
 
@@ -459,64 +459,25 @@
 
         <div class="row g-4">
 
+          {% for group in fee_groups %}
           <div class="col-lg-4">
-            <div class="pricing-item">
-              <h3>Student Applicant</h3>
-              <div class="icon">
-                <i class="bi bi-box"></i>
-              </div>
-              <h4><sup>$</sup>0<span> / review</span></h4>
-              <ul>
-                <li><i class="bi bi-check"></i> <span>Full review pathway included</span></li>
-                <li><i class="bi bi-check"></i> <span>Supervisor sign-off required</span></li>
-                <li><i class="bi bi-check"></i> <span>Waived for Metascholar-affiliated students</span></li>
-                <li class="na"><i class="bi bi-x"></i> <span>Priority scheduling</span></li>
-                <li class="na"><i class="bi bi-x"></i> <span>Dedicated case manager</span></li>
+            <div class="fee-card">
+              <h3>{{ group.title }}</h3>
+              <ul class="fee-list">
+                {% for row in group.rows %}
+                <li>
+                  <span class="fee-list-label">{{ row.label }}</span>
+                  <span class="fee-list-amount">
+                    {% if row.fee and row.fee.requires_payment %}{{ row.fee.currency }} {{ row.fee.amount|floatformat:0 }}{% else %}Free{% endif %}
+                  </span>
+                </li>
+                {% endfor %}
               </ul>
-              <div class="text-center"><a href="{% url 'pages:apply' %}" class="buy-btn">Apply Now</a></div>
+              <div class="text-center"><a href="{% url 'pages:apply' %}" class="fee-card-btn">Apply Now</a></div>
             </div>
-          </div><!-- End Pricing Item -->
+          </div><!-- End Fee Card -->
+          {% endfor %}
 
-          <div class="col-lg-4">
-            <div class="pricing-item featured">
-              <h3>Standard Institutional</h3>
-              <div class="icon">
-                <i class="bi bi-rocket"></i>
-              </div>
-
-              <h4><sup>$</sup>150<span> / review</span></h4>
-              <ul>
-                <li><i class="bi bi-check"></i> <span>Full review pathway included</span></li>
-                <li><i class="bi bi-check"></i> <span>One free amendment</span></li>
-                <li><i class="bi bi-check"></i> <span>Faculty, staff and institutional research</span></li>
-                <li><i class="bi bi-check"></i> <span>Non-refundable administrative fee</span></li>
-                <li><i class="bi bi-check"></i> <span>Never a condition of approval</span></li>
-              </ul>
-              <div class="text-center"><a href="{% url 'pages:apply' %}" class="buy-btn">Apply Now</a></div>
-            </div>
-          </div><!-- End Pricing Item -->
-
-          <div class="col-lg-4">
-            <div class="pricing-item">
-              <h3>External / Industry</h3>
-              <div class="icon">
-                <i class="bi bi-send"></i>
-              </div>
-              <h4><sup>$</sup>450<span> / review</span></h4>
-              <ul>
-                <li><i class="bi bi-check"></i> <span>Full review pathway included</span></li>
-                <li><i class="bi bi-check"></i> <span>Data-sharing agreement review</span></li>
-                <li><i class="bi bi-check"></i> <span>Externally sponsored research</span></li>
-                <li><i class="bi bi-check"></i> <span>Industry-funded research</span></li>
-                <li><i class="bi bi-check"></i> <span>Priority reviewer assignment</span></li>
-              </ul>
-              <div class="text-center"><a href="{% url 'pages:apply' %}" class="buy-btn">Apply Now</a></div>
-            </div>
-          </div><!-- End Pricing Item -->
-
-        </div>
-
-      </div>
 
     </section><!-- /Pricing Section -->
 
