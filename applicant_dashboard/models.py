@@ -40,6 +40,15 @@ class Application(models.Model):
     reference_no = models.CharField(max_length=40, unique=True, blank=True, null=True, default=None)
 
     review_type = models.CharField(max_length=40, blank=True)
+    # Which of the published fee tiers this application is priced under
+    # (student level, funding source, international status, ...) -- see
+    # payments.fees.APPLICANT_CATEGORY_LABELS. Separate from review_type:
+    # review_type is *how* MSREC will review the study (routing), this is
+    # *who*/*what kind of study* is applying, which is what actually
+    # decides the review fee (payments.fees.fee_for_application()),
+    # except for the Determination/Exemption pathway, which charges its
+    # own flat rate regardless of category.
+    applicant_category = models.CharField(max_length=40, blank=True)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.DRAFT)
 
     # Every named field from the form, as posted (see applicant_dashboard.views.application_form).

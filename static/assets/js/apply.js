@@ -273,18 +273,69 @@ document.addEventListener("DOMContentLoaded", () => {
   updateProgress();
 
   /* ============================================================
-     Requested Review — the chip-radios live in .apply-review-request,
-     outside <form> (they sit in the intro block above it), so they never
-     post on their own. Keep the in-form hidden mirror ("requestedReview")
-     in sync so both a real submit and autosave actually carry the value.
+     Application Category — the chips live outside <form> (in the intro
+     block above it, inside a compulsory modal, #applyCategoryModal),
+     mirrored into a hidden in-form field so both a real submit and
+     autosave carry the value. This is what prices the application (see
+     payments.fees.fee_for_application), so it's validated the same way:
+     required before a real Submit, not just visually.
   ============================================================ */
-  const requestedReviewHidden = document.getElementById("requestedReviewHidden");
-  document.querySelectorAll('.apply-review-request input[name="requestedReview"]').forEach((radio) => {
+  const applicantCategoryHidden = document.getElementById("applicantCategoryHidden");
+  const categoryModalOverlay = document.getElementById("applyCategoryModalOverlay");
+  const categoryModalConfirm = document.getElementById("applyCategoryModalConfirm");
+  const categoryTrigger = document.getElementById("applyCategoryTrigger");
+  const categorySelectedLabel = document.getElementById("applyCategorySelectedLabel");
+  const categorySelectedFee = document.getElementById("applyCategorySelectedFee");
+  const categoryRadios = Array.from(document.querySelectorAll('#applyCategoryModal input[name="applicantCategory"]'));
+
+  function openCategoryModal() {
+    if (!categoryModalOverlay) return;
+    categoryModalOverlay.hidden = false;
+    document.body.style.overflow = "hidden";
+    (categoryRadios.find((r) => r.checked) || categoryRadios[0])?.focus();
+  }
+
+  function closeCategoryModal() {
+    if (!categoryModalOverlay) return;
+    categoryModalOverlay.hidden = true;
+    document.body.style.overflow = "";
+  }
+
+  function refreshCategorySummary() {
+    const checked = categoryRadios.find((r) => r.checked);
+    if (categoryModalConfirm) categoryModalConfirm.disabled = !checked;
+    if (!checked) {
+      if (categorySelectedLabel) categorySelectedLabel.textContent = "Select your Application Category";
+      if (categorySelectedFee) categorySelectedFee.textContent = "Required — choose the option that best describes this study/applicant";
+      categoryTrigger?.classList.remove("is-selected");
+      return;
+    }
+    const feeText = checked.closest(".apply-category-option")?.querySelector(".apply-category-option-fee")?.textContent.trim();
+    if (categorySelectedLabel) categorySelectedLabel.textContent = checked.closest(".apply-category-option")?.querySelector(".apply-category-option-label")?.textContent || checked.value;
+    if (categorySelectedFee) categorySelectedFee.textContent = feeText ? `Review fee: ${feeText}` : "";
+    categoryTrigger?.classList.add("is-selected");
+  }
+
+  categoryRadios.forEach((radio) => {
     radio.addEventListener("change", () => {
-      if (requestedReviewHidden) requestedReviewHidden.value = radio.checked ? radio.value : "";
+      if (applicantCategoryHidden) applicantCategoryHidden.value = radio.checked ? radio.value : "";
+      document.getElementById("applyCategoryRequestError")?.classList.remove("show");
+      refreshCategorySummary();
       updateProgress();
     });
   });
+
+  categoryTrigger?.addEventListener("click", openCategoryModal);
+  document.getElementById("applyCategoryModalClose")?.addEventListener("click", closeCategoryModal);
+  categoryModalConfirm?.addEventListener("click", closeCategoryModal);
+  categoryModalOverlay?.addEventListener("click", (e) => {
+    if (e.target === categoryModalOverlay) closeCategoryModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && categoryModalOverlay && !categoryModalOverlay.hidden) closeCategoryModal();
+  });
+
+  refreshCategorySummary();
 
   /* ============================================================
      Restore a draft's saved answers (see application_form view /
@@ -369,6 +420,13 @@ document.addEventListener("DOMContentLoaded", () => {
       /* Malformed/empty draft data shouldn't block a fresh form. */
     }
   }
+
+  // Compulsory: pop the Application Category modal open on arrival
+  // whenever nothing's selected yet -- a fresh application, or a draft
+  // saved before this field existed. Runs after the restore above (which
+  // checks a draft's saved category and fires a real "change" event) so
+  // a draft that already has one on file never gets nagged again.
+  if (!categoryRadios.some((r) => r.checked)) openCategoryModal();
 
   /* ============================================================
      Autosave — a couple of seconds after the applicant stops typing or
@@ -467,7 +525,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function collectFormSnapshot() {
     const data = {};
-    const skip = new Set(["csrfmiddlewaretoken", "requestedReview", "formAction", "application_id", "completionPct"]);
+    const skip = new Set(["csrfmiddlewaretoken", "requestedReview", "applicantCategory", "formAction", "application_id", "completionPct"]);
     const teamFields = new Set(["teamName[]", "teamRole[]", "teamInstitution[]"]);
     const seen = new Set();
 
@@ -578,6 +636,22 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       form.reportValidity();
       return;
+    }
+
+    // The application-category chips live outside <form> (see above), so
+    // form.checkValidity() never sees their own `required` attribute --
+    // enforce it here instead. This is what decides the review fee, so
+    // letting a submit through with nothing selected would risk charging
+    // (or not charging) the wrong amount, not just a cosmetic gap.
+    if (clickedSubmit) {
+      const categoryChecked = document.querySelector('#applyCategoryModal input[name="applicantCategory"]:checked');
+      if (!categoryChecked) {
+        e.preventDefault();
+        document.getElementById("applyCategoryRequestError")?.classList.add("show");
+        document.getElementById("applyCategoryRequest")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        openCategoryModal();
+        return;
+      }
     }
 
     // Record which button this was BEFORE disabling anything below: a

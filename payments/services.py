@@ -13,23 +13,36 @@ from django.utils import timezone
 from . import fees, paystack
 from .models import FeeSetting, Payment
 
-# Display order for the Fee Schedule editor -- matches the order the
-# review-type chips appear in on the application form, not alphabetical.
-FEE_SCHEDULE_ORDER = ["exemption", "expedited", "full", "not-sure"]
+# Display order for the Fee Schedule editor -- review pathway chips, then
+# the application-category tiers (in the order they appear on the
+# application form), then the post-approval items. Not alphabetical.
+FEE_SCHEDULE_ORDER = [
+    "exemption", "expedited", "full",
+    "ug_diploma", "masters_mphil", "phd",
+    "gh_independent", "gh_institutional", "gh_consultancy",
+    "intl_student", "intl_funded", "clinical_trial",
+    "minor_amendment", "major_amendment", "continuing_review",
+    "closure", "corrected_resubmission",
+]
 
 
-def start_checkout(application, review_type):
+def start_checkout(application, review_type, applicant_category=""):
     """Creates the Payment row a checkout page/Paystack transaction will be
     reconciled against. Always a fresh row (not reused across attempts) --
     an abandoned/failed attempt just stays PENDING/FAILED in the ledger
-    rather than being silently overwritten."""
+    rather than being silently overwritten.
+
+    The amount charged comes from fee_for_application(), not review_type
+    alone -- see its docstring for why (category, not just pathway,
+    decides the price outside the Exemption pathway)."""
+    label = fees.label_for("exemption") if review_type == "exemption" else fees.label_for(applicant_category or review_type)
     return Payment.objects.create(
         application=application,
         applicant=application.applicant,
-        purpose=f"{fees.label_for(review_type)} fee",
+        purpose=f"{label} fee",
         review_type=review_type,
         reference=f"MSREC-{uuid.uuid4().hex[:20]}",
-        amount=fees.fee_for(review_type),
+        amount=fees.fee_for_application(review_type, applicant_category),
         currency=fees.CURRENCY,
         status=Payment.Status.PENDING,
     )

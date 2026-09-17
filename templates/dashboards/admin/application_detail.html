@@ -122,6 +122,8 @@
             <div class="field-grid">
               <div class="field field-wide"><label>Full Title</label><p class="field-value">{{ application.title }}</p></div>
               <div class="field"><label>Requested Review</label><p class="field-value">{{ application.review_type_label|default:"Not specified" }}</p></div>
+              <div class="field"><label>Application Category</label><p class="field-value">{{ application.applicant_category_label|default:"Not specified" }}</p></div>
+              <div class="field"><label>Review Fee Charged</label><p class="field-value">{% if application.fee_charged %}GHS {{ application.fee_charged }}{% else %}Free{% endif %}</p></div>
               <div class="field"><label>Risk Level</label><p class="field-value">{{ application.form_data.riskLevel|default:"Not specified" }}</p></div>
               <div class="field field-wide"><label>Purpose of the Study</label><p class="field-value wrap">{{ application.form_data.studyPurpose|default:"Not provided" }}</p></div>
             </div>

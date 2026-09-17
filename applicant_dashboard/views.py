@@ -43,11 +43,12 @@ MULTI_CHECKBOX_FIELDS = {
 TEAM_FIELDS = ("teamName[]", "teamRole[]", "teamInstitution[]")
 
 # Never belongs in form_data: Django's own CSRF field, the requested review
-# type (its own Application.review_type column), and the bookkeeping fields
-# the draft/autosave machinery adds to the same <form> (which application
-# this is, draft-vs-submit, and the client's completion-percentage guess).
+# type and applicant category (their own Application columns), and the
+# bookkeeping fields the draft/autosave machinery adds to the same <form>
+# (which application this is, draft-vs-submit, and the client's
+# completion-percentage guess).
 SKIP_FIELDS = {
-    "csrfmiddlewaretoken", "requestedReview", "formAction",
+    "csrfmiddlewaretoken", "requestedReview", "applicantCategory", "formAction",
     "application_id", "completionPct",
 }
 
@@ -83,6 +84,7 @@ def _apply_posted_fields(application, request):
     any newly-uploaded documents. Doesn't touch status/timestamps -- callers
     decide those since draft-saves and submits treat them differently."""
     application.review_type = request.POST.get("requestedReview", "")
+    application.applicant_category = request.POST.get("applicantCategory", "")
     application.form_data = _collect_form_data(request.POST)
 
     pct = request.POST.get("completionPct")
@@ -113,14 +115,16 @@ def _apply_posted_fields(application, request):
         application.documents = documents
 
 
-def _initial_data_for_template(form_data, review_type):
-    """`requestedReview` never lands in form_data (it's its own column --
-    see SKIP_FIELDS), but apply.js's populateForm() restores everything
-    from one JSON blob, so fold it back in just for that trip to the
-    template."""
+def _initial_data_for_template(form_data, review_type, applicant_category=""):
+    """`requestedReview`/`applicantCategory` never land in form_data
+    (they're their own columns -- see SKIP_FIELDS), but apply.js's
+    populateForm() restores everything from one JSON blob, so fold them
+    back in just for that trip to the template."""
     data = dict(form_data or {})
     if review_type:
         data["requestedReview"] = review_type
+    if applicant_category:
+        data["applicantCategory"] = applicant_category
     return data
 
 
@@ -228,8 +232,14 @@ def _fee_schedule_context():
         "fee_exemption": schedule.get("exemption"),
         "fee_expedited": schedule.get("expedited"),
         "fee_full": schedule.get("full"),
-        "fee_not_sure": schedule.get("not-sure"),
         "fee_schedule_list": [fee for fee in schedule.values() if fee],
+        # The application form's "Application Category" chips -- this is
+        # what actually prices a new application outside the
+        # Determination/Exemption pathway (see fees.fee_for_application).
+        "applicant_categories": [
+            {"key": key, "label": label, "fee": schedule.get(key)}
+            for key, label in fees.APPLICANT_CATEGORY_LABELS.items()
+        ],
     }
 
 
@@ -277,7 +287,8 @@ def application_form(request):
                 {
                     "draft_application": draft,
                     "initial_data": _initial_data_for_template(
-                        _collect_form_data(request.POST), request.POST.get("requestedReview", "")
+                        _collect_form_data(request.POST), request.POST.get("requestedReview", ""),
+                        request.POST.get("applicantCategory", ""),
                     ),
                     **_fee_schedule_context(),
                 },
@@ -292,7 +303,7 @@ def application_form(request):
         # requirement once and for all for this application.
         already_paid = bool(application.pk) and application.payments.filter(status=Payment.Status.SUCCESS).exists()
 
-        if fees.requires_payment(application.review_type) and not already_paid:
+        if fees.requires_payment_for_application(application.review_type, application.applicant_category) and not already_paid:
             # Saved as a draft for now -- finalize_submission() only runs
             # once payments.views.verify has a genuine Paystack success for
             # this application, never from this request directly. That's
@@ -312,7 +323,8 @@ def application_form(request):
     return render(request, "dashboards/applicant/application-form.html", {
         "draft_application": draft,
         "initial_data": _initial_data_for_template(
-            draft.form_data if draft else {}, draft.review_type if draft else ""
+            draft.form_data if draft else {}, draft.review_type if draft else "",
+            draft.applicant_category if draft else "",
         ),
         **_fee_schedule_context(),
     })
@@ -1125,9 +1137,9 @@ def _outstanding_invoices(request):
         applicant=request.user, status=Application.Status.DRAFT, completion_pct=100,
     ).exclude(pk__in=paid_application_ids).order_by("created_at")
     return [
-        {"application": app, "amount": fees.fee_for(app.review_type)}
+        {"application": app, "amount": fees.fee_for_application(app.review_type, app.applicant_category)}
         for app in drafts_awaiting_payment
-        if fees.requires_payment(app.review_type)
+        if fees.requires_payment_for_application(app.review_type, app.applicant_category)
     ]
 
 

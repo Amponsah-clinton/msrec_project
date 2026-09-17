@@ -106,6 +106,143 @@
 }
 .apply-review-request .chip-checkbox-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
 
+/* ---------------- Application Category trigger + modal ----------------
+   The category chips themselves live in a compulsory modal (opened
+   automatically until one is picked -- see apply.js) since this single
+   choice is what actually prices the application; this trigger card is
+   what stays in the page flow, showing the current pick (or nagging that
+   one's still needed) with a way back into the modal to change it. */
+.apply-category-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  background: var(--orange-light, #fef3e8);
+  border: 1.5px dashed var(--orange, #e08a2c);
+  border-radius: var(--radius);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: border-color .15s, background .15s;
+}
+.apply-category-trigger:hover { border-color: color-mix(in srgb, var(--orange, #e08a2c), black 10%); }
+.apply-category-trigger.is-selected {
+  background: var(--teal-light);
+  border: 1.5px solid var(--teal);
+}
+.apply-category-trigger-icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--orange, #e08a2c);
+  font-size: 16px;
+}
+.apply-category-trigger.is-selected .apply-category-trigger-icon { color: var(--teal); }
+.apply-category-trigger-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.apply-category-trigger-text strong { font-size: 13.5px; color: var(--text-main); }
+.apply-category-trigger-text span { font-size: 12px; color: var(--text-sub); }
+.apply-category-trigger-action {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--teal);
+  white-space: nowrap;
+}
+
+.apply-category-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(15, 23, 26, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.apply-category-modal-overlay[hidden] { display: none; }
+.apply-category-modal {
+  width: 100%;
+  max-width: 640px;
+  max-height: min(720px, 90vh);
+  display: flex;
+  flex-direction: column;
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.28);
+  overflow: hidden;
+}
+.apply-category-modal-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--border);
+}
+.apply-category-modal-head h3 { margin: 0 0 4px; font-size: 16px; font-weight: 700; color: var(--text-main); }
+.apply-category-modal-head p { margin: 0; font-size: 12.5px; color: var(--text-sub); line-height: 1.5; }
+.apply-category-modal-close {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--bg);
+  color: var(--text-sub);
+  cursor: pointer;
+}
+.apply-category-modal-close:hover { background: var(--hover-bg); color: var(--text-main); }
+.apply-category-modal-close svg { width: 16px; height: 16px; }
+.apply-category-modal-body { padding: 18px 22px; overflow-y: auto; }
+.apply-category-option-list { display: flex; flex-direction: column; gap: 8px; }
+.apply-category-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.apply-category-option:hover { border-color: color-mix(in srgb, var(--teal), transparent 45%); background: var(--bg); }
+.apply-category-option:has(input:checked) { border-color: var(--teal); background: var(--teal-light); }
+.apply-category-option input {
+  accent-color: var(--teal);
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.apply-category-option-label { flex: 1; font-size: 13px; color: var(--text-main); font-weight: 500; }
+.apply-category-option-fee { flex-shrink: 0; font-size: 13px; font-weight: 700; color: var(--teal); font-family: "JetBrains Mono", ui-monospace, monospace; }
+.apply-category-modal-actions {
+  padding: 16px 22px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+}
+.apply-category-modal-actions .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+@media (max-width: 560px) {
+  .apply-category-trigger { flex-wrap: wrap; }
+  .apply-category-trigger-action { width: 100%; justify-content: flex-end; }
+  .apply-category-option { flex-wrap: wrap; }
+  .apply-category-option-fee { margin-left: 46px; }
+}
+
 /* ---------------- Shell: sidebar + form column ---------------- */
 .apply-shell {
   display: grid;

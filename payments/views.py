@@ -17,14 +17,15 @@ def pay(request, pk):
     application = get_object_or_404(
         Application, pk=pk, applicant=request.user, status=Application.Status.DRAFT
     )
-    if not fees.requires_payment(application.review_type):
-        # Nothing to pay for (fee-exempt pathway, or this application never
-        # went through the payment gate) -- there's no checkout to show.
+    if not fees.requires_payment_for_application(application.review_type, application.applicant_category):
+        # Nothing to pay for (fee-exempt pathway/category, or this
+        # application never went through the payment gate) -- there's no
+        # checkout to show.
         return redirect("applicant_dashboard:application_form")
 
     payment = services.current_pending_payment(application)
     if payment is None:
-        payment = services.start_checkout(application, application.review_type)
+        payment = services.start_checkout(application, application.review_type, application.applicant_category)
 
     return render(request, "dashboards/applicant/application-pay.html", {
         "application": application,

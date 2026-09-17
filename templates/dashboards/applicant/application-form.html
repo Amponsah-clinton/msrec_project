@@ -88,22 +88,57 @@
 
         <div class="reuse-hint">
           <i class="bi bi-info-circle"></i>
-          <span><strong>Applicant Guidance:</strong> Complete the sections that apply to your study. Where a question does not apply, indicate N/A. MSREC will determine the appropriate ethics review category.</span>
+          <span><strong>Applicant Guidance:</strong> Complete the sections that apply to your study. Where a question does not apply, indicate N/A. MSREC will determine the appropriate ethics review pathway during screening.</span>
         </div>
 
-        <div class="apply-review-request" id="applyReviewRequest">
-          <label>Requested Review <span class="req">*</span> <span class="field-hint" style="margin:0 0 0 6px;">(select one)</span></label>
-          <div class="chip-checkbox-grid">
-            <label class="chip-checkbox"><input type="radio" name="requestedReview" value="exemption" required><span>Ethics Determination / Exemption Assessment{% if fee_exemption %}{% if fee_exemption.requires_payment %} &mdash; GHS {{ fee_exemption.amount }}{% else %} &mdash; Free{% endif %}{% endif %}</span></label>
-            <label class="chip-checkbox"><input type="radio" name="requestedReview" value="expedited" required><span>Expedited Review{% if fee_expedited %}{% if fee_expedited.requires_payment %} &mdash; GHS {{ fee_expedited.amount }}{% else %} &mdash; Free{% endif %}{% endif %}</span></label>
-            <label class="chip-checkbox"><input type="radio" name="requestedReview" value="full" required><span>Full Committee Review{% if fee_full %}{% if fee_full.requires_payment %} &mdash; GHS {{ fee_full.amount }}{% else %} &mdash; Free{% endif %}{% endif %}</span></label>
-            <label class="chip-checkbox"><input type="radio" name="requestedReview" value="not-sure" required><span>Not Sure &mdash; MSREC to Determine{% if fee_not_sure %}{% if fee_not_sure.requires_payment %} (GHS {{ fee_not_sure.amount }}){% else %} (Free){% endif %}{% endif %}</span></label>
+        <div class="apply-review-request" id="applyCategoryRequest">
+          <label>Application Category <span class="req">*</span> <span class="field-hint" style="margin:0 0 0 6px;"></span></label>
+
+          <button type="button" class="apply-category-trigger" id="applyCategoryTrigger" aria-haspopup="dialog" aria-controls="applyCategoryModal">
+            <span class="apply-category-trigger-icon"><i class="bi bi-tags"></i></span>
+            <span class="apply-category-trigger-text">
+              <strong id="applyCategorySelectedLabel">Select your Application Category</strong>
+              <span id="applyCategorySelectedFee">Required &mdash; choose the option that best describes this study/applicant</span>
+            </span>
+            <span class="apply-category-trigger-action" id="applyCategoryTriggerAction">Choose <i class="bi bi-chevron-right"></i></span>
+          </button>
+
+          <p class="field-error" id="applyCategoryRequestError">Please select an application category before submitting.</p>
+        </div>
+      </div>
+
+      <!-- ============ APPLICATION CATEGORY MODAL ============
+           Compulsory, since Application Category is the sole thing that
+           decides the review fee (fee_for_application() -- see payments/
+           fees.py). Opens automatically until a category is chosen (see
+           apply.js), and stays reachable afterwards via the "Change"
+           trigger above so a pick can still be corrected before submit. -->
+      <div class="apply-category-modal-overlay" id="applyCategoryModalOverlay" hidden>
+        <div class="apply-category-modal" role="dialog" aria-modal="true" aria-labelledby="applyCategoryModalTitle" id="applyCategoryModal">
+          <div class="apply-category-modal-head">
+            <div>
+              <h3 id="applyCategoryModalTitle">Select Your Application Category</h3>
+              <p>Choose the option that best describes this study/applicant &mdash; this decides your review fee.</p>
+            </div>
+            <button type="button" class="apply-category-modal-close" id="applyCategoryModalClose" aria-label="Close">
+              <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
           </div>
-          <p class="field-error" id="applyReviewRequestError">Please select a requested review type before submitting.</p>
-          <p class="field-hint" style="margin-top:10px;"><i class="bi bi-info-circle"></i>
-            {% for fee in fee_schedule_list %}{% if not forloop.first %} &middot; {% endif %}{{ fee.label }}: {% if fee.requires_payment %}GHS {{ fee.amount }}{% else %}Free{% endif %}{% endfor %}.
-            Fees are paid by card or mobile money via Paystack, before the application is sent for screening. See the <a href="{% url 'applicant_dashboard:payments_fees' %}">Fee Schedule</a> for details.
-          </p>
+          <div class="apply-category-modal-body">
+            <div class="apply-category-option-list">
+              {% for cat in applicant_categories %}
+              <label class="apply-category-option">
+                <input type="radio" name="applicantCategory" value="{{ cat.key }}" required>
+                <span class="apply-category-option-label">{{ cat.label }}</span>
+                <span class="apply-category-option-fee">{% if cat.fee %}{% if cat.fee.requires_payment %}GHS {{ cat.fee.amount }}{% else %}Free{% endif %}{% else %}&mdash;{% endif %}</span>
+              </label>
+              {% endfor %}
+            </div>
+           
+          </div>
+          <div class="apply-category-modal-actions">
+            <button type="button" class="btn-primary" id="applyCategoryModalConfirm" disabled>Confirm Selection</button>
+          </div>
         </div>
       </div>
 
@@ -140,7 +175,7 @@
         <div class="apply-main-col">
           <form id="applyForm" novalidate method="post" enctype="multipart/form-data" action="{% url 'applicant_dashboard:application_form' %}" data-autosave-url="{% url 'applicant_dashboard:application_autosave' %}">
             {% csrf_token %}
-            <input type="hidden" name="requestedReview" id="requestedReviewHidden">
+            <input type="hidden" name="applicantCategory" id="applicantCategoryHidden">
             <input type="hidden" name="application_id" id="applyApplicationId" value="{% if draft_application %}{{ draft_application.pk }}{% endif %}">
             <input type="hidden" name="completionPct" id="applyCompletionPctField" value="0">
             <!-- Authoritative formAction value -- see apply.js's submit handler.
@@ -296,22 +331,6 @@
                 <div class="field"><label for="piOrcid">ORCID, if available</label><input type="text" id="piOrcid" name="piOrcid" placeholder="0000-0000-0000-0000"></div>
               </div>
 
-              <div class="field field-wide" style="margin-top:6px;">
-                <label>Applicant Category</label>
-                <div class="chip-checkbox-grid">
-                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="undergraduate"><span>Undergraduate Student</span></label>
-                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="postgraduate"><span>Postgraduate Student</span></label>
-                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="faculty"><span>Academic / Faculty</span></label>
-                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="independent"><span>Independent Researcher</span></label>
-                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="health"><span>Health Professional</span></label>
-                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="institutional"><span>Institutional Researcher</span></label>
-                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="industry"><span>Industry Researcher</span></label>
-                  <label class="chip-checkbox"><input type="radio" name="applicantCategory" value="other" class="chip-other-trigger" data-other-target="applicantCategoryOther"><span>Other</span></label>
-                </div>
-                <div class="apply-other-wrap" hidden data-other-for="applicantCategoryOther">
-                  <input type="text" placeholder="Please specify" name="applicantCategoryOther">
-                </div>
-              </div>
             </section>
 
             <!-- ============ 4. RESEARCH TEAM ============ -->

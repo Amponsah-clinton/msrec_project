@@ -361,6 +361,14 @@ create table if not exists public.applications (
     reference_no   varchar(40) unique,
 
     review_type    varchar(40) not null default '',
+    -- Which published fee tier this application is priced under (student
+    -- level, funding source, international status, ...) -- separate from
+    -- review_type: review_type is *how* MSREC will review the study,
+    -- this is *what kind of study/applicant* is applying, which is what
+    -- actually decides the review fee (see payments.fees.fee_for_application
+    -- and the fee_settings table below), except for the Determination/
+    -- Exemption pathway, which always charges its own flat rate.
+    applicant_category varchar(40) not null default '',
     status         varchar(20) not null default 'draft'
                    check (status in ('draft', 'submitted', 'under_review', 'revisions_required', 'approved', 'not_approved')),
 
@@ -745,15 +753,35 @@ create policy "service_role full access to payments"
     to service_role
     using (true) with check (true);
 
+-- Forces a hard transaction boundary before touching fee_settings.
+-- Supabase's SQL editor runs a whole pasted script as one implicit
+-- transaction; if `public.fee_settings` already exists from an earlier
+-- `python manage.py migrate` run (with rows already in it), the
+-- combination of everything queued so far in this same transaction and
+-- fee_settings' own foreign key to public.users has been observed to
+-- throw "cannot ALTER TABLE fee_settings because it has pending trigger
+-- events" on the `enable row level security` line below. Committing
+-- here first flushes anything pending from the tables above and starts
+-- fee_settings' own section clean. Harmless no-op (just a notice, not
+-- an error) if the editor isn't wrapping statements in a transaction at
+-- all.
+commit;
+
 -- ---------------------------------------------------------------------
 -- fee_settings
--- Mirrors payments.models.FeeSetting. The live, admin-editable
--- review-fee schedule -- one row per application-form `requestedReview`
--- value. payments/fees.py reads this (never a hardcoded constant) so a
--- price change from the admin Finance page's Fee Schedule editor takes
--- effect immediately, both for what a new checkout actually charges and
--- for what the application form shows an applicant while they're filling
--- it in. Seeded once via payments/migrations/0003_seed_fee_settings.py
+-- Mirrors payments.models.FeeSetting. The live, admin-editable fee
+-- schedule -- really a generic "priced item" table (review_type is its
+-- historical column name): one row per application-form
+-- `requestedReview` value (review pathway), one per `applicantCategory`
+-- value (what actually prices a new application -- see
+-- payments.fees.fee_for_application), and one per post-approval item
+-- (amendments, continuing review, ... -- published prices, not yet
+-- charged anywhere). payments/fees.py reads this (never a hardcoded
+-- constant) so a price change from the admin Finance page's Fee
+-- Schedule editor takes effect immediately, both for what a new
+-- checkout actually charges and for what the application form shows an
+-- applicant while they're filling it in. Seeded via payments/migrations/
+-- 0003_seed_fee_settings.py and 0004_seed_applicant_category_fees.py
 -- with the amounts already published on payments-fees.html; the admin
 -- Finance page is the only way these change from there on.
 -- ---------------------------------------------------------------------
@@ -777,6 +805,69 @@ create policy "service_role full access to fee_settings"
     on public.fee_settings for all
     to service_role
     using (true) with check (true);
+
+-- Seeds the whole published fee schedule in one insert -- the four
+-- original review-pathway fees (matches payments/migrations/
+-- 0003_seed_fee_settings.py), the nine Application Category tiers, and
+-- the five post-approval item prices (matches payments/migrations/
+-- 0004_seed_applicant_category_fees.py) -- needed if you're
+-- provisioning straight from this file rather than via `python manage.py
+-- migrate`. Kept as ONE statement, immediately after fee_settings' own
+-- create table + RLS above, rather than split across two inserts with
+-- a few hundred lines of other tables' DDL running in between them:
+-- that layout is what triggered a "cannot ALTER TABLE fee_settings
+-- because it has pending trigger events" error the first time this was
+-- split, since fee_settings.updated_by_id's foreign key to public.users
+-- queues an internal trigger event that Postgres wants resolved before
+-- any further DDL touches these tables in the same transaction.
+--
+-- updated_at is spelled out explicitly (not left to the column
+-- default): on a table Django's own migration created, `default now()`
+-- is a Python-side (auto_now) default only, never a real Postgres
+-- column DEFAULT, so leaving it out fails with a not-null violation
+-- (same reason site_settings' insert above does it explicitly too).
+-- "Not Sure -- MSREC to Determine" was retired as a selectable review
+-- type (see payments/migrations/0005_retire_not_sure_review_type.py) --
+-- not seeded here, so a fresh provision from this file matches a
+-- Django-migrated database.
+insert into public.fee_settings (review_type, label, amount, currency, updated_at) values
+    ('exemption', 'Ethics Determination / Exemption Assessment', 150.00, 'GHS', now()),
+    ('expedited', 'Expedited Review', 300.00, 'GHS', now()),
+    ('full', 'Full Committee Review', 500.00, 'GHS', now()),
+    ('ug_diploma', 'Undergraduate / Diploma Student Research', 170.00, 'GHS', now()),
+    ('masters_mphil', 'Master''s / MPhil Student Research', 400.00, 'GHS', now()),
+    ('phd', 'PhD / Doctoral Student Research', 500.00, 'GHS', now()),
+    ('gh_independent', 'Ghanaian Independent / Self-Funded Researcher', 600.00, 'GHS', now()),
+    ('gh_institutional', 'Ghanaian Institutional / Funded Research Project', 800.00, 'GHS', now()),
+    ('gh_consultancy', 'Ghanaian Research Consultancy Project', 1000.00, 'GHS', now()),
+    -- Published as US$75 / US$200 / US$500 "or GHS equivalent" -- seeded
+    -- here in GHS at ~15/US$1 rather than processing a second currency
+    -- through Paystack. Update these three from the Finance page as the
+    -- real exchange rate moves.
+    ('intl_student', 'International Student Research', 1125.00, 'GHS', now()),
+    ('intl_funded', 'International / Externally Funded Research', 3000.00, 'GHS', now()),
+    ('clinical_trial', 'Clinical / Interventional Trial', 7500.00, 'GHS', now()),
+    ('minor_amendment', 'Minor Protocol Amendment', 150.00, 'GHS', now()),
+    ('major_amendment', 'Major Protocol Amendment (Substantive Re-Review)', 300.00, 'GHS', now()),
+    ('continuing_review', 'Annual Continuing Review / Renewal', 250.00, 'GHS', now()),
+    ('closure', 'Study Closure / Final Report', 0.00, 'GHS', now()),
+    ('corrected_resubmission', 'Response to Committee Comments / Corrected Resubmission', 0.00, 'GHS', now())
+on conflict (review_type) do nothing;
+
+-- Upgrade path only: if fee_settings already existed with the old
+-- exemption=0 default (from before this fee schedule was published),
+-- the insert above was a no-op for that row (on conflict do nothing) --
+-- fix it up here instead, but only if it's still untouched at 0, so a
+-- price an admin already changed by hand from the Finance page is left
+-- alone.
+update public.fee_settings
+    set amount = 150.00
+    where review_type = 'exemption' and amount = 0;
+
+-- Closes out fee_settings' own section cleanly before the incremental
+-- migrations below start altering other tables (see the commit before
+-- fee_settings' create table above for why).
+commit;
 
 
 -- ==========================================================================
@@ -828,6 +919,23 @@ alter table public.applications
 
 comment on column public.applications.resubmitted_at is 'Set only when the applicant actually fixes and resends after a revision request -- NULL means never resubmitted. This is the "revision was done" indicator.';
 comment on column public.applications.revision_comment is 'The Secretariat''s optional note on what needs fixing -- set each time request_revisions runs, shown on the applicant''s Revisions Required page and in their notification email.';
+
+
+-- ==========================================================================
+-- Incremental migration -- applicant_dashboard.0008_application_applicant_category
+-- Run this block on its own in the Supabase SQL editor if
+-- `public.applications` already exists. Kept right next to 0005 above
+-- (rather than at the end of the file) so every ALTER TABLE on
+-- `applications` runs back-to-back, with nothing else touching a
+-- different table's DDL in between -- interleaving unrelated tables'
+-- DDL with a table's own migrations is what caused a "pending trigger
+-- events" error the first time this was placed at the bottom of the
+-- file. Safe to re-run.
+-- ==========================================================================
+alter table public.applications
+    add column if not exists applicant_category varchar(40) not null default '';
+
+comment on column public.applications.applicant_category is 'Which published fee tier this application is priced under (student level, funding source, international status, ...) -- separate from review_type (how it will be reviewed). Decides the review fee via payments.fees.fee_for_application(), except under the Determination/Exemption pathway, which always charges its own flat rate.';
 
 
 -- ==========================================================================
@@ -883,6 +991,11 @@ alter table public.review_assignments
 
 comment on column public.review_assignments.checklist is 'The 10-row Ethical Review checklist, keyed by ReviewAssignment.CHECKLIST_ITEMS -- each value is satisfactory | needs_revision | na.';
 comment on column public.review_assignments.coi_has_conflict is 'Reviewer Declaration section: whether a conflict of interest was declared for this specific assignment -- see coi_details for the description.';
+
+-- Closes out every incremental ALTER TABLE migration above (users,
+-- applications, review_assignments) before the tables below start
+-- adding their own foreign keys onto public.users/public.applications.
+commit;
 
 
 -- ---------------------------------------------------------------------
@@ -1022,6 +1135,10 @@ insert into public.site_settings (
 )
 on conflict (id) do nothing;
 
+-- Closes out site_settings' own section before postapproval_submissions
+-- below adds its own foreign keys onto public.applications/public.users.
+commit;
+
 
 -- ---------------------------------------------------------------------
 
@@ -1072,7 +1189,11 @@ alter table public.postapproval_submissions enable row level security;
 drop policy if exists "service_role full access to postapproval_submissions" on public.postapproval_submissions;
 create policy "service_role full access to postapproval_submissions"
     on public.postapproval_submissions for all
+    to service_role
+    using (true) with check (true);
 
+
+-- ---------------------------------------------------------------------
 -- research_team_members
 -- Mirrors applicant_dashboard.models.TeamMember. One row per collaborator
 -- an applicant has added/invited to their research team (Research Team
@@ -1334,6 +1455,10 @@ create policy "service_role full access to policy_documents"
     to service_role
     using (true) with check (true);
 
+-- Closes out everything above before the Meetings module's tables start
+-- adding their own foreign keys onto public.users/public.applications.
+commit;
+
 
 -- ==========================================================================
 -- MSREC — Meetings module (Schedule, Calendar, Agenda, Attendance, Quorum,
@@ -1550,6 +1675,11 @@ create policy "service_role full access to meeting_minutes"
     on public.meeting_minutes for all
     to service_role
     using (true) with check (true);
+
+-- Closes out the Meetings module before Committee governance's tables
+-- start adding their own foreign keys onto public.governance_members/
+-- public.users/public.applications.
+commit;
 
 
 -- ==========================================================================

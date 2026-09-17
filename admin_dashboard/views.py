@@ -595,6 +595,8 @@ def application_detail(request, pk):
 
     application.tab = oversight.STATUS_TO_TAB.get(application.status, "all")
     application.review_type_label = fees.label_for(application.review_type)
+    application.applicant_category_label = fees.label_for(application.applicant_category)
+    application.fee_charged = fees.fee_for_application(application.review_type, application.applicant_category)
 
     documents = [
         {**doc, "url": application_storage.public_url(doc.get("path"))}
