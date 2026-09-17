@@ -193,4 +193,28 @@ if not DEBUG:
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
+# ── Logging ─────────────────────────────────────────────────────────────
+# Django's default LOGGING only prints request tracebacks to the console
+# when DEBUG=True (the built-in handler is gated behind a
+# require_debug_true filter) -- with DEBUG=False in production that meant
+# every 500 was caught, converted to the generic error page, and silently
+# discarded instead of showing up in `gunicorn`/Coolify logs. This makes
+# request-handling exceptions print to stdout unconditionally.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+        },
+    },
+    "loggers": {
+        "django.request": {
+            "handlers": ["console"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
+
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
