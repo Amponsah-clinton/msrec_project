@@ -284,43 +284,21 @@
         </div>
 
         <div class="ap-fees-grid">
-          <div class="ap-fee-card">
-            <h3>Student Applicant</h3>
-            <p class="ap-fee-amount">Waived</p>
-            <p class="ap-fee-note">For registered students at Metascholar-affiliated institutions.</p>
+          {% for card in fee_cards %}
+          <div class="ap-fee-card{% if card.featured %} ap-fee-card-featured{% endif %}">
+            {% if card.featured %}<span class="ap-fee-badge">Most common</span>{% endif %}
+            <h3>{{ card.title }}</h3>
+            <p class="ap-fee-amount">
+              {% if not card.amount %}Contact us
+              {% elif card.amount.low == card.amount.high %}{{ card.amount.currency }} {{ card.amount.low|floatformat:0 }}
+              {% else %}{{ card.amount.currency }} {{ card.amount.low|floatformat:0 }}&ndash;{{ card.amount.high|floatformat:0 }}{% endif %}
+            </p>
+            <p class="ap-fee-note">{{ card.note }}</p>
             <ul>
-              <li><i class="bi bi-check2"></i> Full review pathway included</li>
-              <li><i class="bi bi-check2"></i> Supervisor sign-off required</li>
+              {% for bullet in card.bullets %}<li><i class="bi bi-check2"></i> {{ bullet }}</li>{% endfor %}
             </ul>
           </div>
-          <div class="ap-fee-card ap-fee-card-featured">
-            <span class="ap-fee-badge">Most common</span>
-            <h3>Standard Institutional</h3>
-            <p class="ap-fee-amount">$150</p>
-            <p class="ap-fee-note">For faculty, staff and institutional research.</p>
-            <ul>
-              <li><i class="bi bi-check2"></i> Full review pathway included</li>
-              <li><i class="bi bi-check2"></i> One free amendment</li>
-            </ul>
-          </div>
-          <div class="ap-fee-card">
-            <h3>External / Industry</h3>
-            <p class="ap-fee-amount">$450</p>
-            <p class="ap-fee-note">For externally sponsored or industry-funded research.</p>
-            <ul>
-              <li><i class="bi bi-check2"></i> Full review pathway included</li>
-              <li><i class="bi bi-check2"></i> Data-sharing agreement review</li>
-            </ul>
-          </div>
-          <div class="ap-fee-card">
-            <h3>Amendment / Continuing</h3>
-            <p class="ap-fee-amount">$50</p>
-            <p class="ap-fee-note">For changes to an approved study, or annual continuing review.</p>
-            <ul>
-              <li><i class="bi bi-check2"></i> Proportional review only</li>
-              <li><i class="bi bi-check2"></i> No new full submission needed</li>
-            </ul>
-          </div>
+          {% endfor %}
         </div>
       </div>
     </section>

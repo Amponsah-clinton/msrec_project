@@ -26,7 +26,7 @@ decorative one.
   {% if search_id %}
   <div class="search-box">
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-    <input type="search" id="{{ search_id }}" placeholder="{{ search_placeholder }}" aria-label="{{ search_placeholder|default:'Search' }}">
+    <input type="search" id="{{ search_id }}" placeholder="{{ search_placeholder }}" aria-label="{{ search_placeholder|default:'Search' }}" {% if search_value %}value="{{ search_value }}"{% endif %}>
   </div>
   {% endif %}
 

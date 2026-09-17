@@ -4,10 +4,13 @@ applicant-facing checkout flow and the staff-facing Finance pages
 way applicant_dashboard/oversight.py is shared between those two dashboards
 for applications.
 """
+import csv
 import uuid
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
-from django.db.models import Sum
+from django.db.models import Q, Sum
+from django.http import HttpResponse
 from django.utils import timezone
 
 from . import fees, paystack
@@ -119,6 +122,75 @@ def status_counts(qs=None):
 def total_collected(qs=None):
     qs = all_payments() if qs is None else qs
     return qs.filter(status=Payment.Status.SUCCESS).aggregate(total=Sum("amount"))["total"] or 0
+
+
+def parse_filter_date(value):
+    """Parses a Finance page date-range input ("YYYY-MM-DD", what an
+    <input type="date"> submits) into a date, or None for blank/invalid
+    input -- invalid input is treated as "no filter" rather than an error,
+    since this only ever narrows a report, it never blocks anything."""
+    value = (value or "").strip()
+    if not value:
+        return None
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return None
+
+
+def filter_payments(qs, *, query="", date_from=None, date_to=None):
+    """Applies the Finance page's optional search + timeframe filters on
+    top of a payments queryset (usually all_payments()). `query` matches
+    the reference, applicant name/email, application reference number or
+    purpose, case-insensitively. `date_from`/`date_to` are inclusive dates
+    filtering on created_at. Shared by the on-screen list, its summary
+    counts and the CSV export, so all three always agree on which rows are
+    "in view"."""
+    query = (query or "").strip()
+    if query:
+        qs = qs.filter(
+            Q(reference__icontains=query)
+            | Q(purpose__icontains=query)
+            | Q(applicant__first_name__icontains=query)
+            | Q(applicant__last_name__icontains=query)
+            | Q(applicant__email__icontains=query)
+            | Q(application__reference_no__icontains=query)
+        )
+    if date_from:
+        qs = qs.filter(created_at__date__gte=date_from)
+    if date_to:
+        qs = qs.filter(created_at__date__lte=date_to)
+    return qs
+
+
+def export_payments_csv(qs):
+    """Streams the given payments queryset out as a CSV download -- same
+    rows the Finance page is currently showing (see filter_payments), so
+    exporting always matches what's on screen."""
+    response = HttpResponse(content_type="text/csv")
+    filename = f"msrec-payments-{timezone.localdate().isoformat()}.csv"
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+
+    writer = csv.writer(response)
+    writer.writerow([
+        "Reference", "Applicant", "Email", "Application Ref", "Purpose",
+        "Review Type", "Amount", "Currency", "Status", "Created At", "Paid At",
+    ])
+    for payment in qs.select_related("applicant", "application"):
+        writer.writerow([
+            payment.reference,
+            payment.applicant.full_name,
+            payment.applicant.email,
+            payment.application.reference_no if payment.application else "",
+            payment.purpose,
+            payment.review_type,
+            payment.amount,
+            payment.currency,
+            payment.get_status_display(),
+            payment.created_at.strftime("%Y-%m-%d %H:%M"),
+            payment.paid_at.strftime("%Y-%m-%d %H:%M") if payment.paid_at else "",
+        ])
+    return response
 
 
 def fee_schedule_rows():

@@ -12,7 +12,7 @@
 {% endblock %}
 
 {% block topbar %}
-      {% include "dashboards/admin/_topbar.html" with page_title="Finance" page_subtitle="Every application review-fee payment across the platform, verified server-side with Paystack" search_id="financeSearch" search_placeholder="Search by reference, applicant, ref no..." %}
+      {% include "dashboards/admin/_topbar.html" with page_title="Finance" page_subtitle="Every application review-fee payment across the platform, verified server-side with Paystack" search_id="financeSearch" search_placeholder="Search by reference, applicant, ref no..." search_value=query %}
 {% endblock %}
 
 {% block main_content %}
@@ -94,6 +94,25 @@
           <button type="button" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}" data-filter="pending">Pending <span class="count">{{ counts.pending }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'failed' %} active{% endif %}" data-filter="failed">Failed <span class="count">{{ counts.failed }}</span></button>
         </div>
+
+        <form method="get" class="finance-filter-bar" id="financeFilterForm">
+          <input type="hidden" name="tab" value="{{ active_tab }}">
+          <label class="finance-filter-field">
+            <span>From</span>
+            <input type="date" name="date_from" value="{{ date_from }}">
+          </label>
+          <label class="finance-filter-field">
+            <span>To</span>
+            <input type="date" name="date_to" value="{{ date_to }}">
+          </label>
+          <input type="hidden" name="q" id="financeFilterQ" value="{{ query }}">
+          <button type="submit" class="acct-btn acct-btn-cancel">Apply</button>
+          {% if has_active_filters %}<a href="{% url 'admin_dashboard:finance' %}" class="finance-filter-clear">Clear filters</a>{% endif %}
+          <button type="submit" name="export" value="csv" class="acct-btn acct-btn-approve finance-export-btn">
+            <svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+            Export CSV
+          </button>
+        </form>
 
         <div class="table-wrap">
           <table class="reviews-table" id="financeList">

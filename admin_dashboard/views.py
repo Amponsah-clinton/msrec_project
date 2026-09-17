@@ -633,16 +633,33 @@ def finance(request):
     if active_tab not in FINANCE_TABS:
         active_tab = "all"
 
-    base_qs = payment_services.all_payments()
-    counts = payment_services.status_counts(base_qs)
-    total_collected = payment_services.total_collected(base_qs)
+    query = request.GET.get("q", "").strip()
+    date_from_raw = request.GET.get("date_from", "")
+    date_to_raw = request.GET.get("date_to", "")
+    date_from = payment_services.parse_filter_date(date_from_raw)
+    date_to = payment_services.parse_filter_date(date_to_raw)
+
+    scoped_qs = payment_services.filter_payments(
+        payment_services.all_payments(), query=query, date_from=date_from, date_to=date_to,
+    )
+    counts = payment_services.status_counts(scoped_qs)
+    total_collected = payment_services.total_collected(scoped_qs)
+
+    filtered_qs = scoped_qs if active_tab == "all" else scoped_qs.filter(status=active_tab)
+
+    if request.GET.get("export") == "csv":
+        return payment_services.export_payments_csv(filtered_qs)
 
     return render(request, "dashboards/admin/finance.html", {
-        "all_payments": list(base_qs),
+        "all_payments": list(filtered_qs),
         "counts": counts,
         "active_tab": active_tab,
         "total_collected": total_collected,
         "fee_schedule": payment_services.fee_schedule_rows(),
+        "query": query,
+        "date_from": date_from_raw,
+        "date_to": date_to_raw,
+        "has_active_filters": bool(query or date_from_raw or date_to_raw),
     })
 
 

@@ -65,6 +65,61 @@ def fees_schedule(request):
     })
 
 
+# The /applicants/ page's "What review costs" section groups the 9
+# Application Category tiers into the same 4 illustrative cards it's
+# always shown (Student / Standard Institutional / External-Industry /
+# Amendment-Continuing) -- real, live-editable prices from the fee
+# schedule instead of the placeholder $0/$150/$450/$50 the cards used to
+# hardcode. A card spanning more than one category shows the low-high
+# range across them rather than picking one arbitrarily.
+APPLICANTS_FEE_CARDS = [
+    {
+        "title": "Student Applicant",
+        "note": "For registered students at Metascholar-affiliated institutions.",
+        "bullets": ["Full review pathway included", "Supervisor sign-off required"],
+        "featured": False,
+        "keys": ["ug_diploma", "masters_mphil", "phd"],
+    },
+    {
+        "title": "Standard Institutional",
+        "note": "For faculty, staff and institutional research.",
+        "bullets": ["Full review pathway included", "One free amendment"],
+        "featured": True,
+        "keys": ["gh_independent", "gh_institutional"],
+    },
+    {
+        "title": "External / Industry",
+        "note": "For externally sponsored or industry-funded research.",
+        "bullets": ["Full review pathway included", "Data-sharing agreement review"],
+        "featured": False,
+        "keys": ["intl_funded", "clinical_trial"],
+    },
+    {
+        "title": "Amendment / Continuing",
+        "note": "For changes to an approved study, or annual continuing review.",
+        "bullets": ["Proportional review only", "No new full submission needed"],
+        "featured": False,
+        "keys": ["minor_amendment", "continuing_review"],
+    },
+]
+
+
+def _fee_card_range(schedule, keys):
+    amounts = sorted({schedule[k].amount for k in keys if schedule.get(k)})
+    if not amounts:
+        return None
+    return {"currency": fees.CURRENCY, "low": amounts[0], "high": amounts[-1]}
+
+
+def applicants(request):
+    schedule = fees.schedule()
+    fee_cards = [
+        {**card, "amount": _fee_card_range(schedule, card["keys"])}
+        for card in APPLICANTS_FEE_CARDS
+    ]
+    return render(request, "pages/applicants.html", {"fee_cards": fee_cards})
+
+
 def contact(request):
     if request.method == "POST":
         name = request.POST.get("name", "").strip()

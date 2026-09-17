@@ -15,7 +15,7 @@ urlpatterns = [
     # app's downloads/images go through this one endpoint.
     path("files/<str:token>/", file_proxy.serve, name="file_proxy"),
     path("about/", TemplateView.as_view(template_name="pages/about.html"), name="about"),
-    path("applicants/", TemplateView.as_view(template_name="pages/applicants.html"), name="applicants"),
+    path("applicants/", views.applicants, name="applicants"),
     path("ethics-review/", TemplateView.as_view(template_name="pages/ethics_review.html"), name="ethics_review"),
     path("resources/", views.resources, name="resources"),
     path("governance/", TemplateView.as_view(template_name="pages/governance.html"), name="governance"),
