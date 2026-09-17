@@ -10,6 +10,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const tabs = Array.from(nav.querySelectorAll(".report-tab"));
   const sections = Array.from(document.querySelectorAll(".report-section"));
 
+  // The sidebar's Reports & Analytics sublinks all point at this same
+  // page, differing only by #hash -- clicking one while already on the
+  // page is a same-document navigation (no reload), so the only way to
+  // know it happened is the hashchange event below. Without it, every
+  // sublink except the one you loaded the page on looked dead.
+  const sidebarLinks = Array.from(document.querySelectorAll('.nav-sublink[href*="#"]'));
+
   function activate(key) {
     let matched = false;
     tabs.forEach((tab) => {
@@ -21,6 +28,9 @@ document.addEventListener("DOMContentLoaded", () => {
     sections.forEach((section) => {
       section.hidden = section.dataset.reportSection !== key;
     });
+    sidebarLinks.forEach((link) => {
+      link.classList.toggle("active", link.getAttribute("href").endsWith(`#${key}`));
+    });
     if (matched) history.replaceState(null, "", `#${key}`);
   }
 
@@ -28,7 +38,13 @@ document.addEventListener("DOMContentLoaded", () => {
     tab.addEventListener("click", () => activate(tab.dataset.tab));
   });
 
-  const initial = (window.location.hash || "").replace("#", "");
   const validKeys = tabs.map((t) => t.dataset.tab);
+
+  window.addEventListener("hashchange", () => {
+    const key = (window.location.hash || "").replace("#", "");
+    if (validKeys.includes(key)) activate(key);
+  });
+
+  const initial = (window.location.hash || "").replace("#", "");
   activate(validKeys.includes(initial) ? initial : validKeys[0]);
 });

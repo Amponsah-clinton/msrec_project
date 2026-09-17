@@ -1,5 +1,6 @@
 from django.urls import path
 
+from admin_dashboard import views as admin_dashboard_views
 from messaging import views as messaging_views
 
 from . import views
@@ -80,4 +81,12 @@ urlpatterns = [
     path("committee/terms-expiry/", views.committee_terms_expiry, name="committee_terms_expiry"),
     path("committee/training/", views.committee_training, name="committee_training"),
     path("committee/conflict-records/", views.committee_conflict_records, name="committee_conflict_records"),
+    path(
+        "users-access/", admin_dashboard_views.accounts,
+        {"template_name": "dashboards/secretariat/accounts.html"}, name="users_access",
+    ),
+    path(
+        "profile-security/", admin_dashboard_views.profile_security,
+        {"template_name": "dashboards/secretariat/profile-security.html"}, name="profile_security",
+    ),
 ]

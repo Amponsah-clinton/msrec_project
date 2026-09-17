@@ -143,12 +143,19 @@ def _handle_role_decision(request, target, role, action):
         messages.success(request, f"{role.title()} request for {target.full_name} was declined.")
 
 
+def _actor_is_admin(request):
+    return request.user.is_superuser or request.user.role == User.Role.ADMIN
+
+
 def _handle_suspend(request, target, *, suspend):
     if target.pk == request.user.pk:
         messages.error(request, "You can't suspend your own account.")
         return
     if suspend and target.is_superuser:
         messages.error(request, "Superuser accounts can't be suspended from here.")
+        return
+    if target.role == User.Role.ADMIN and not _actor_is_admin(request):
+        messages.error(request, "Only an administrator can suspend an Administrator account.")
         return
 
     target.is_active = not suspend
@@ -212,6 +219,9 @@ def _handle_delete(request, target):
     if target.is_superuser:
         messages.error(request, "Superuser accounts can't be deleted from here.")
         return
+    if target.role == User.Role.ADMIN and not _actor_is_admin(request):
+        messages.error(request, "Only an administrator can delete an Administrator account.")
+        return
     name = target.full_name
     AuditLog.record(request.user, "user.deleted", target=target)
     _cleanup_user_storage(target)
@@ -220,6 +230,10 @@ def _handle_delete(request, target):
 
 
 def _handle_edit(request, target):
+    if target.role == User.Role.ADMIN and not _actor_is_admin(request):
+        messages.error(request, "Only an administrator can edit an Administrator account.")
+        return
+
     email = request.POST.get("email", "").strip().lower()
     confirm_email = request.POST.get("confirm_email", "").strip().lower()
     if not email:
@@ -235,6 +249,9 @@ def _handle_edit(request, target):
     role = request.POST.get("role", target.role)
     if role not in User.Role.values:
         role = target.role
+    if role == User.Role.ADMIN and not _actor_is_admin(request):
+        messages.error(request, "Only an administrator can grant the Administrator role.")
+        return
 
     target.first_name = request.POST.get("first_name", "").strip()
     target.middle_name = request.POST.get("middle_name", "").strip()
@@ -256,7 +273,7 @@ def _handle_edit(request, target):
 
 @login_required
 @admin_or_secretariat_required
-def accounts(request):
+def accounts(request, template_name="dashboards/admin/accounts.html"):
     if request.method == "POST":
         target = get_object_or_404(User, pk=request.POST.get("user_id"))
         action = request.POST.get("action")
@@ -298,7 +315,7 @@ def accounts(request):
     if active_tab not in TABS:
         active_tab = "all"
 
-    return render(request, "dashboards/admin/accounts.html", {
+    return render(request, template_name, {
         "all_users": all_users,
         "counts": counts,
         "active_tab": active_tab,
@@ -928,7 +945,7 @@ def _handle_admin_revoke_session(request):
 
 @login_required
 @admin_or_secretariat_required
-def profile_security(request):
+def profile_security(request, template_name="dashboards/admin/profile-security.html"):
     if request.method == "POST":
         action = request.POST.get("action")
         if action == "update_profile":
@@ -941,10 +958,10 @@ def profile_security(request):
             _handle_admin_revoke_session(request)
         else:
             messages.error(request, "That request could not be processed.")
-        return redirect("admin_dashboard:profile_security")
+        return redirect(request.path)
 
     sessions = active_sessions_for(request.user, current_session_key=request.session.session_key)
-    return render(request, "dashboards/admin/profile-security.html", {"sessions": sessions})
+    return render(request, template_name, {"sessions": sessions})
 
 
 # ---------------------------------------------------------------------

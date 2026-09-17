@@ -97,8 +97,9 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 
 # ── Database ─────────────────────────────────────────────────────────────
-# SQLite by default. Set DATABASE_URL (see .env.example) to switch to the
-# Supabase Postgres instance without touching any code.
+# SQLite by default. Set DATABASE_URL in .env (see .env.example) to point at
+# the Supabase Postgres instance instead -- never hardcode that connection
+# string (it carries the DB password) here, since this file is committed.
 _database_url = os.getenv("DATABASE_URL", "").strip()
 if _database_url:
     DATABASES = {
@@ -146,8 +147,11 @@ else:
 DEFAULT_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "") or os.getenv(
     "DEFAULT_FROM_EMAIL", "MSREC Secretariat <no-reply@msrec.org>"
 )
+# Not wired into any view yet (EMAIL_HOST_PASSWORD above is what SMTP
+# actually uses) -- kept available for future direct use of Resend's API.
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 
-# ── Supabase (available for future use: storage, auth, etc.) ──────────────
+# ── Supabase (storage, etc.) ────────────────────────────────────────────
 # Not wired into any view yet -- these are just read from the environment
 # so the project is ready to use them when needed.
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
