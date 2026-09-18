@@ -1227,7 +1227,19 @@ section,
   height: auto;
 }
 
+.clients .swiper-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Fixed display box so every logo -- the bundled samples and whatever
+   size image an admin uploads from the Settings page -- reads at the
+   same size in the carousel, regardless of its own dimensions. */
 .clients .swiper-slide img {
+  width: 160px;
+  height: 70px;
+  object-fit: contain;
   transition: 0.3s;
 }
 

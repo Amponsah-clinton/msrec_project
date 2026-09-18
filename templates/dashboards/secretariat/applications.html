@@ -72,13 +72,13 @@
              data-filter-item data-filter="{{ application.tab }}"
              data-search="{{ application.reference_no|lower }} {{ application.title|lower }} {{ application.applicant.full_name|lower }}"
              {% if active_tab != 'all' and application.tab != active_tab %}hidden{% endif %}>
-            {% if application.has_completed_review %}<span class="app-card-flag" title="A reviewer has submitted their assessment -- it's ready for your decision"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 13 4 4L19 7"/></svg> Ready for Decision</span>{% endif %}
             <div class="app-card-top">
               <span class="acct-avatar cat-applicants">{{ application.applicant.initials }}</span>
               <div class="app-card-heading">
                 <h4>{{ application.title }}</h4>
                 <p>{{ application.applicant.full_name }}</p>
               </div>
+              {% if application.has_completed_review %}<span class="app-card-flag" title="A reviewer has submitted their assessment -- it's ready for your decision"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 13 4 4L19 7"/></svg> Ready for Decision</span>{% endif %}
             </div>
             <div class="app-card-badges">
               {% if application.tab == 'submitted' %}<span class="badge-tag orange">New</span>

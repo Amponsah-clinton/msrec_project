@@ -3,7 +3,7 @@ from django.shortcuts import render
 
 from payments import fees
 from . import resources_storage, storage
-from .models import GovernanceMember, Inquiry, ResourceDocument
+from .models import ClientLogo, GovernanceMember, Inquiry, ResourceDocument
 
 REASON_VALUES = {value for value, _ in Inquiry.Reason.choices}
 
@@ -31,9 +31,15 @@ def index(request):
         {"title": title, "rows": _fee_group_rows(schedule, keys)}
         for title, keys in HOME_FEE_GROUPS
     ]
+
+    client_logos = list(ClientLogo.objects.all())
+    for logo in client_logos:
+        logo.image_url = storage.public_url(logo.image_path)
+
     return render(request, "pages/index.html", {
         "fee_groups": fee_groups,
         "exemption_fee": schedule.get("exemption"),
+        "client_logos": client_logos,
     })
 
 

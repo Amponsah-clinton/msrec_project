@@ -27,6 +27,7 @@
           <button type="button" class="settings-tab" data-target="footer" role="tab" aria-selected="false">Footer</button>
           <button type="button" class="settings-tab" data-target="contact" role="tab" aria-selected="false">Contact Page</button>
           <button type="button" class="settings-tab" data-target="policy-library" role="tab" aria-selected="false">Policy Library</button>
+          <button type="button" class="settings-tab" data-target="client-logos" role="tab" aria-selected="false">Client Logos</button>
         </div>
 
         <!-- Site Identity -->
@@ -286,6 +287,58 @@
                 {% endfor %}
               </div>
               {% endfor %}
+            </div>
+          </div>
+        </section>
+
+        <!-- Client Logos -->
+        <section class="settings-panel-section" id="client-logos">
+          <div class="panel settings-full-panel">
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> Client Logos</h3>
+
+              <form method="post" enctype="multipart/form-data" class="settings-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_client_logo">
+
+                <div class="field-grid">
+                  <div class="field field-wide">
+                    <label for="logoImage">Logo Image</label>
+                    <input type="file" id="logoImage" name="logo_image" accept="image/*" required>
+                  </div>
+                  <div class="field">
+                    <label for="logoAltText">Name (optional)</label>
+                    <input type="text" id="logoAltText" name="logo_alt_text" maxlength="150" placeholder="e.g. University of Ghana">
+                  </div>
+                  <div class="field">
+                    <label for="logoOrder">Display Order</label>
+                    <input type="number" id="logoOrder" name="logo_display_order" value="0" min="0">
+                  </div>
+                </div>
+
+                <div class="settings-form-actions">
+                  <button type="submit" class="btn-primary">Add Logo</button>
+                </div>
+              </form>
+
+              <div class="client-logo-grid">
+                {% for logo in client_logos %}
+                <div class="client-logo-card">
+                  <div class="client-logo-thumb">
+                    {% if logo.preview_url %}<img src="{{ logo.preview_url }}" alt="{{ logo.alt_text|default:'Client logo' }}">{% endif %}
+                  </div>
+                  <span class="client-logo-name">{{ logo.alt_text|default:"Untitled" }}</span>
+                  <form method="post" data-confirm="Remove this logo from the landing page carousel?" data-confirm-variant="danger">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete_client_logo">
+                    <input type="hidden" name="logo_id" value="{{ logo.pk }}">
+                    <button type="submit" class="btn-secondary" style="padding:6px 12px;font-size:12px;color:var(--red);">Delete</button>
+                  </form>
+                </div>
+                {% empty %}
+                <p class="doc-file-empty">No custom logos yet.</p>
+                {% endfor %}
+              </div>
             </div>
           </div>
         </section>

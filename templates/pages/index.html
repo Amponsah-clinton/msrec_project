@@ -84,7 +84,7 @@
           <div class="about-simple-copy" data-aos="fade-up">
             <span class="about-simple-label">About MSREC</span>
             <h2>A research-governance system, not a certificate service.</h2>
-            <p class="about-simple-lead">An institutional platform for transparent, independent research ethics review &mdash; structured applications, multidisciplinary review, Committee decision-making and post-approval oversight, with confidential research materials protected throughout.</p>
+            <p class="about-simple-lead">An institutional platform for transparent, independent research ethics review: structured applications, multidisciplinary review, Committee decision-making and post-approval oversight, with confidential research materials protected throughout.</p>
 
             <ul class="about-simple-facts">
               <li><i class="bi bi-file-earmark-text"></i> Structured Applications</li>
@@ -148,14 +148,20 @@
             }
           </script>
           <div class="swiper-wrapper align-items-center">
-            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-1.png' %}" class="img-fluid" alt=""></div>
-            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-2.png' %}" class="img-fluid" alt=""></div>
-            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-3.png' %}" class="img-fluid" alt=""></div>
-            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-4.png' %}" class="img-fluid" alt=""></div>
-            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-5.png' %}" class="img-fluid" alt=""></div>
-            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-6.png' %}" class="img-fluid" alt=""></div>
-            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-7.png' %}" class="img-fluid" alt=""></div>
-            <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-8.png' %}" class="img-fluid" alt=""></div>
+            {% if client_logos %}
+              {% for logo in client_logos %}
+              <div class="swiper-slide"><img src="{{ logo.image_url }}" class="img-fluid" alt="{{ logo.alt_text|default:'Client logo' }}"></div>
+              {% endfor %}
+            {% else %}
+              <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-1.png' %}" class="img-fluid" alt=""></div>
+              <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-2.png' %}" class="img-fluid" alt=""></div>
+              <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-3.png' %}" class="img-fluid" alt=""></div>
+              <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-4.png' %}" class="img-fluid" alt=""></div>
+              <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-5.png' %}" class="img-fluid" alt=""></div>
+              <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-6.png' %}" class="img-fluid" alt=""></div>
+              <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-7.png' %}" class="img-fluid" alt=""></div>
+              <div class="swiper-slide"><img src="{% static 'assets/img/clients/client-8.png' %}" class="img-fluid" alt=""></div>
+            {% endif %}
           </div>
         </div>
 
@@ -173,7 +179,7 @@
           <div class="stats-panel-head">
             <span class="stats-panel-label">MSREC at a Glance</span>
             <h3>A review pipeline built for accountability</h3>
-            <p>Every domain, stage and pathway is tracked from first submission through to committee decision &mdash; the numbers below are that pipeline, not marketing copy.</p>
+            <p>Every domain, stage and pathway is tracked from first submission through to committee decision; the numbers below are that pipeline, not marketing copy.</p>
           </div>
 
           <div class="stats-grid">
@@ -225,7 +231,7 @@
           <div class="col-xl-10">
             <div class="text-center">
               <h3>Independent by Design</h3>
-              <p>Review fees fund the administrative cost of independent review &mdash; they are never a condition of approval. Committee members with an actual, potential or perceived conflict of interest must disclose it and be recused.</p>
+              <p>Review fees fund the administrative cost of independent review; they are never a condition of approval. Committee members with an actual, potential or perceived conflict of interest must disclose it and be recused.</p>
               <a class="cta-btn" href="{% url 'pages:board_committee' %}">Our Governance Structure</a>
             </div>
           </div>
@@ -452,7 +458,7 @@
       <!-- Section Title -->
       <div class="container section-title" data-aos="fade-up">
         <h2>Review Fees</h2>
-        <p>Review fees fund the administrative cost of independent review &mdash; they are never a condition of approval.</p>
+        <p>Review fees fund the administrative cost of independent review; they are never a condition of approval.</p>
       </div><!-- End Section Title -->
 
       <div class="container" data-aos="zoom-in" data-aos-delay="100">
@@ -503,7 +509,7 @@
               <div class="faq-item faq-active">
                 <h3><span class="num">1.</span> <span>Do I need ethics review for an online survey?</span></h3>
                 <div class="faq-content">
-                  <p>Possibly. Research type alone does not determine whether formal approval is required &mdash; submit a request so MSREC, not the applicant, can issue a formal determination.</p>
+                  <p>Possibly. Research type alone does not determine whether formal approval is required; submit a request so MSREC, not the applicant, can issue a formal determination.</p>
                 </div>
                 <i class="faq-toggle bi bi-chevron-right"></i>
               </div><!-- End Faq item-->
@@ -535,7 +541,7 @@
               <div class="faq-item">
                 <h3><span class="num">5.</span> <span>How long does a decision take?</span></h3>
                 <div class="faq-content">
-                  <p>Timelines depend on the assigned pathway &mdash; ethics determination, expedited review or full Committee review &mdash; and on the completeness of the submission and reviewer availability.</p>
+                  <p>Timelines depend on the assigned pathway (ethics determination, expedited review or full Committee review) and on the completeness of the submission and reviewer availability.</p>
                 </div>
                 <i class="faq-toggle bi bi-chevron-right"></i>
               </div><!-- End Faq item-->

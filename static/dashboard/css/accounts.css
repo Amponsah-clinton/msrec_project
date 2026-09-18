@@ -225,38 +225,34 @@
   transform: translateY(-2px);
 }
 
-/* Corner ribbon that flags a reviewer's finished assessment -- the one
-   signal on this grid that means "there's a decision waiting on you",
-   so it needs to read before anything else on the card does. */
+/* Flags a reviewer's finished assessment -- the one signal on this
+   grid that means "there's a decision waiting on you", so it needs to
+   read before anything else on the card does. A normal flex item next
+   to the title (not an overlay) so it can never sit on top of the text,
+   however many lines the title wraps to at any card width. */
 .app-card-flag {
-  position: absolute;
-  top: 12px;
-  right: -30px;
-  transform: rotate(40deg);
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 34px;
+  padding: 3px 9px;
+  margin-top: 1px;
+  border-radius: 999px;
   background: linear-gradient(135deg, var(--teal), #0d7c78);
   color: #fff;
-  font-size: 10.5px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: .2px;
   white-space: nowrap;
+  flex-shrink: 0;
   box-shadow: 0 2px 6px rgba(21, 154, 150, 0.35);
 }
-.app-card-flag svg { width: 11px; height: 11px; flex-shrink: 0; }
+.app-card-flag svg { width: 10px; height: 10px; flex-shrink: 0; }
 
 .app-card-top {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding-right: 8px;
-}
-/* The corner ribbon above cuts diagonally across this same top-right
-   area -- give the title extra clearance so it never sits under it. */
-.app-card-flag + .app-card-top {
-  padding-right: 60px;
 }
 .app-card-top .acct-avatar { margin-top: 1px; }
 .app-card-heading { min-width: 0; flex: 1; }

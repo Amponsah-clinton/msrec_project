@@ -13,6 +13,11 @@ urlpatterns = [
     path("applications/counts/", views.applications_counts, name="applications_counts"),
     path("applications/reviewer-deadline/", views.set_reviewer_deadline, name="set_reviewer_deadline"),
     path("applications/<int:pk>/", views.application_detail, name="application_detail"),
+    path("review-pathways/<str:pathway>/", views.review_pathway, name="review_pathway"),
+    path("post-approval/complaints/", views.post_approval_complaints, name="post_approval_complaints"),
+    path("post-approval/<str:ptype>/", views.post_approval, name="post_approval"),
+    path("document-letters/<str:doc_type>/", views.document_letters, name="document_letters"),
+    path("document-letters/<str:doc_type>/<int:pk>/", views.document_letter_view, name="document_letter_view"),
     path("finance/", views.finance, name="finance"),
     # Same shared staff inbox as admin_dashboard's (messaging.access.
     # is_staff_side already treats Secretariat and Admin as one "staff

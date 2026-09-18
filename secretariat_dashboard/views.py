@@ -12,7 +12,13 @@ from accounts import storage as accounts_storage
 from accounts.models import AuditLog, RoleApprovalLog, User
 from applicant_dashboard import oversight
 from applicant_dashboard import storage as application_storage
-from applicant_dashboard.models import Application
+from applicant_dashboard.models import (
+    POSTAPPROVAL_FIELDS,
+    POSTAPPROVAL_LIST_LABELS,
+    POSTAPPROVAL_TITLES,
+    Application,
+    PostApprovalSubmission,
+)
 from communications import services as communications_services
 from communications.emails_preview import render_template_preview
 from communications.models import Announcement, AudienceChoices, EmailTemplate, Reminder
@@ -22,6 +28,7 @@ from messaging.access import is_staff_side
 from notifications import services as notification_services
 from notifications.emails import send_branded_email
 from notifications.models import Notification
+from payments import fees
 from payments import services as payment_services
 from pages import committee_services
 from pages import documents_storage
@@ -32,6 +39,7 @@ from pages.models import (
     CommitteeAppointment,
     ConflictDeclaration,
     GovernanceMember,
+    Inquiry,
     TrainingRecord,
 )
 from reviewer_dashboard.models import ReviewAssignment
@@ -202,6 +210,364 @@ def set_reviewer_deadline(request):
     note += " and they've been notified by email." if emailed else " (the notification email couldn't be sent)."
     messages.success(request, note)
     return redirect(redirect_url)
+
+
+# One entry per "Review Pathways" sidebar link/URL -- the pathway an
+# application is actually reviewed under (Application.review_type),
+# which MSREC assigns during screening rather than the applicant
+# choosing it (see applicant_dashboard.models.Application.
+# fee_for_application's docstring). Order matches the sidebar.
+PATHWAY_META = {
+    "exemption": {
+        "label": "Determination / Exemption",
+        "short_label": "Determination",
+        "description": (
+            "For submissions where the first question is whether formal ethical review is even "
+            "required, or whether the study's risk profile qualifies it for exemption. This is a "
+            "flat-rate, fastest-turnaround pathway -- a Secretariat determination, not a full review."
+        ),
+        "criteria": [
+            "No more than minimal risk to participants",
+            "Uses only existing, de-identified data, or purely observational methods",
+            "Falls within a category MSREC's policy recognizes as exempt",
+        ],
+        "icon": '<path d="m5 13 4 4L19 7"/>',
+    },
+    "expedited": {
+        "label": "Expedited Review",
+        "short_label": "Expedited",
+        "description": (
+            "For minimal-risk studies that meet MSREC's expedited criteria. One or two assigned "
+            "reviewers evaluate it directly, without waiting on a full Committee meeting -- same "
+            "assessment domains as a full review, on a shorter clock."
+        ),
+        "criteria": [
+            "Minimal risk, with a well-established, low-risk methodology",
+            "No vulnerable populations without an already-approved safeguard",
+            "No more than minor changes to a previously approved protocol",
+        ],
+        "icon": '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z"/>',
+    },
+    "full": {
+        "label": "Full Committee Review",
+        "short_label": "Full Committee",
+        "description": (
+            "For studies presenting more than minimal risk, or raising complex ethical, privacy or "
+            "vulnerability considerations. Requires deliberation and a quorate decision at a "
+            "scheduled Committee meeting, not a single reviewer's sign-off."
+        ),
+        "criteria": [
+            "More than minimal risk, or a vulnerable participant population",
+            "Novel, sensitive or ethically complex methodology",
+            "Anything the Secretariat isn't confident qualifies for a faster pathway",
+        ],
+        "icon": '<circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M22 21v-2a4 4 0 0 0-3-3.85"/>',
+    },
+}
+
+
+def _pathway_card_list(qs):
+    applications_list = list(qs.order_by("-submitted_at"))
+    for application in applications_list:
+        application.tab = oversight.STATUS_TO_TAB.get(application.status, "all")
+    return applications_list
+
+
+@login_required
+@staff_required
+def review_pathway(request, pathway):
+    meta = PATHWAY_META.get(pathway)
+    if meta is None:
+        return HttpResponse(status=404)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        application = get_object_or_404(oversight.staff_queryset(), pk=request.POST.get("application_id"))
+        if action == "assign_pathway":
+            application.review_type = pathway
+            application.save(update_fields=["review_type"])
+            AuditLog.record(
+                request.user, "application.assign_pathway", target=application,
+                description=f"Routed to {meta['label']}",
+            )
+            messages.success(request, f'"{application.title}" was routed to {meta["label"]}.')
+        elif action == "unassign_pathway":
+            application.review_type = ""
+            application.save(update_fields=["review_type"])
+            AuditLog.record(
+                request.user, "application.assign_pathway", target=application,
+                description="Pathway assignment cleared",
+            )
+            messages.success(request, f'"{application.title}" was moved back to awaiting assignment.')
+        else:
+            messages.error(request, "That request could not be processed.")
+        return redirect("secretariat_dashboard:review_pathway", pathway=pathway)
+
+    base_qs = oversight.staff_queryset()
+    unassigned_applications = _pathway_card_list(base_qs.filter(review_type=""))
+    assigned_applications = _pathway_card_list(base_qs.filter(review_type=pathway))
+
+    return render(request, "dashboards/secretariat/review_pathway.html", {
+        "pathway": pathway,
+        "meta": meta,
+        "unassigned_applications": unassigned_applications,
+        "assigned_applications": assigned_applications,
+        "unassigned_count": len(unassigned_applications),
+        "assigned_count": len(assigned_applications),
+    })
+
+
+# ---------------------------------------------------------------------
+# Post-Approval Management
+# ---------------------------------------------------------------------
+
+# The one form_data field, if any, worth its own column on a type's list
+# page -- everything else only shows up inside the Review modal. Mirrors
+# what the applicant-side list pages already single out (e.g.
+# postapproval-amendments.html's "Amendment Type" column).
+POSTAPPROVAL_HIGHLIGHT = {
+    PostApprovalSubmission.Type.AMENDMENT: ("amendment_type", "Type"),
+    PostApprovalSubmission.Type.PROGRESS_REPORT: ("period", "Period"),
+    PostApprovalSubmission.Type.ADVERSE_EVENT: ("severity", "Severity"),
+    PostApprovalSubmission.Type.DEVIATION: ("deviation_type", "Type"),
+    PostApprovalSubmission.Type.CLOSURE: ("completion_date", "Completed"),
+}
+
+
+@login_required
+@staff_required
+def post_approval(request, ptype):
+    if ptype not in PostApprovalSubmission.Type.values:
+        return HttpResponse(status=404)
+
+    type_title = POSTAPPROVAL_TITLES[ptype]
+
+    if request.method == "POST":
+        submission = get_object_or_404(PostApprovalSubmission, pk=request.POST.get("submission_id"), type=ptype)
+        new_status = request.POST.get("status")
+        if new_status not in PostApprovalSubmission.Status.values:
+            messages.error(request, "Choose a valid status.")
+            return redirect("secretariat_dashboard:post_approval", ptype=ptype)
+
+        submission.status = new_status
+        submission.secretariat_note = request.POST.get("secretariat_note", "").strip()
+        update_fields = ["status", "secretariat_note"]
+        if new_status in (PostApprovalSubmission.Status.APPROVED, PostApprovalSubmission.Status.ACKNOWLEDGED):
+            submission.decided_at = timezone.now()
+            update_fields.append("decided_at")
+        submission.save(update_fields=update_fields)
+
+        AuditLog.record(
+            request.user, "application.postapproval_status", target=submission.application,
+            description=f"{type_title} set to {submission.get_status_display()}",
+        )
+        messages.success(request, f'{type_title} for "{submission.application.title}" set to {submission.get_status_display()}.')
+        return redirect("secretariat_dashboard:post_approval", ptype=ptype)
+
+    field_defs = POSTAPPROVAL_FIELDS[ptype]
+    highlight_key, highlight_label = POSTAPPROVAL_HIGHLIGHT.get(ptype, (None, None))
+
+    submissions = list(
+        PostApprovalSubmission.objects.filter(type=ptype)
+        .select_related("application", "applicant").order_by("-submitted_at")
+    )
+    counts = {"all": len(submissions)}
+    for status_key, _label in PostApprovalSubmission.Status.choices:
+        counts[status_key] = 0
+    for submission in submissions:
+        counts[submission.status] += 1
+        submission.detail_rows = [
+            {"label": label, "value": submission.form_data.get(key, "")}
+            for key, label, _widget, _choices in field_defs
+        ]
+        submission.highlight_value = submission.form_data.get(highlight_key, "") if highlight_key else ""
+
+    return render(request, "dashboards/secretariat/post_approval.html", {
+        "ptype": ptype,
+        "type_label": POSTAPPROVAL_LIST_LABELS[ptype],
+        "type_title": type_title,
+        "submissions": submissions,
+        "counts": counts,
+        "status_choices": PostApprovalSubmission.Status.choices,
+        "highlight_label": highlight_label,
+    })
+
+
+_CONCERN_REASONS = [Inquiry.Reason.COMPLAINTS, Inquiry.Reason.ETHICS_CONCERNS]
+
+
+@login_required
+@staff_required
+def post_approval_complaints(request):
+    if request.method == "POST":
+        concern = get_object_or_404(Inquiry.objects.filter(reason__in=_CONCERN_REASONS), pk=request.POST.get("inquiry_id"))
+        action = request.POST.get("action")
+
+        if action == "reply":
+            reply_message = request.POST.get("reply_message", "").strip()
+            if not reply_message:
+                messages.error(request, "Write a reply message before sending.")
+            else:
+                concern.reply_message = reply_message
+                concern.replied_at = timezone.now()
+                concern.replied_by = request.user
+                concern.status = Inquiry.Status.RESOLVED
+                concern.resolved_at = concern.replied_at
+                concern.save(update_fields=["reply_message", "replied_at", "replied_by", "status", "resolved_at"])
+                emailed = send_branded_email(
+                    subject=f"Re: Your message to MSREC ({concern.get_reason_display()})",
+                    to=concern.email,
+                    heading=f"Hi {concern.name},",
+                    paragraphs=[reply_message],
+                    quote_label=f"Your original message ({concern.created_at:%d %b %Y})",
+                    quote_text=concern.message,
+                    preheader=reply_message[:120],
+                )
+                if emailed:
+                    messages.success(request, f"Reply sent to {concern.name} ({concern.email}).")
+                else:
+                    messages.error(request, f"Reply saved, but the email to {concern.email} couldn't be sent -- check the email settings.")
+        elif action == "resolve":
+            concern.status = Inquiry.Status.RESOLVED
+            concern.resolved_at = timezone.now()
+            concern.save(update_fields=["status", "resolved_at"])
+            messages.success(request, "Marked as resolved.")
+        elif action == "reopen":
+            concern.status = Inquiry.Status.NEW
+            concern.resolved_at = None
+            concern.save(update_fields=["status", "resolved_at"])
+            messages.success(request, "Reopened.")
+        else:
+            messages.error(request, "That request could not be processed.")
+        return redirect("secretariat_dashboard:post_approval_complaints")
+
+    concerns = list(
+        Inquiry.objects.filter(reason__in=_CONCERN_REASONS).select_related("replied_by").order_by("-created_at")
+    )
+    counts = {"all": len(concerns), "new": 0, "resolved": 0}
+    for concern in concerns:
+        counts[concern.status] += 1
+
+    return render(request, "dashboards/secretariat/post_approval_complaints.html", {
+        "concerns": concerns,
+        "counts": counts,
+    })
+
+
+# ---------------------------------------------------------------------
+# Document Templates -- read-only, printable letters generated live
+# from the record they describe, the same "no stored file, print-to-
+# PDF covers download" approach applicant_dashboard.application_letter
+# already uses for an applicant's own copy of a decision/approval
+# letter (see templates/dashboards/applicant/letter.html). These pages
+# are how the Secretariat browses and reprints any letter ever
+# generated, across every applicant -- not a separate editable-
+# template system with its own content to maintain.
+# ---------------------------------------------------------------------
+
+DOCUMENT_LETTER_META = {
+    "decision": {
+        "label": "Decision Letters",
+        "note": "Every reviewed application's decision letter -- approved, not approved, or revisions required.",
+    },
+    "approval": {
+        "label": "Approval Letters",
+        "note": "The formal approval letter for every approved study.",
+    },
+    "amendment": {
+        "label": "Amendment Letters",
+        "note": "The outcome letter for every decided amendment request.",
+    },
+    "continuing_review": {
+        "label": "Continuing Review Letters",
+        "note": "The outcome letter for every decided continuing review.",
+    },
+    "closure": {
+        "label": "Closure Letters",
+        "note": "The acknowledgement letter for every decided study closure.",
+    },
+}
+
+_DECISION_LETTER_STATUSES = (
+    Application.Status.REVISIONS_REQUIRED, Application.Status.APPROVED, Application.Status.NOT_APPROVED,
+)
+_POSTAPPROVAL_LETTER_STATUSES = (
+    PostApprovalSubmission.Status.ACTION_REQUIRED,
+    PostApprovalSubmission.Status.APPROVED,
+    PostApprovalSubmission.Status.ACKNOWLEDGED,
+)
+
+
+@login_required
+@staff_required
+def document_letters(request, doc_type):
+    meta = DOCUMENT_LETTER_META.get(doc_type)
+    if meta is None:
+        return HttpResponse(status=404)
+
+    if doc_type in ("decision", "approval"):
+        statuses = _DECISION_LETTER_STATUSES if doc_type == "decision" else (Application.Status.APPROVED,)
+        applications = list(oversight.staff_queryset().filter(status__in=statuses).order_by("-decided_at"))
+        rows = [
+            {
+                "pk": a.pk, "ref_no": a.reference_no, "study_title": a.title,
+                "applicant_name": a.applicant.full_name,
+                "letter_date": a.decided_at or a.revision_requested_at,
+                "status_display": a.get_status_display(),
+            }
+            for a in applications
+        ]
+    else:
+        submissions = list(
+            PostApprovalSubmission.objects.filter(type=doc_type, status__in=_POSTAPPROVAL_LETTER_STATUSES)
+            .select_related("application", "applicant").order_by("-decided_at")
+        )
+        rows = [
+            {
+                "pk": s.pk, "ref_no": s.application.reference_no, "study_title": s.application.title,
+                "applicant_name": s.applicant.full_name, "letter_date": s.decided_at,
+                "status_display": s.get_status_display(),
+            }
+            for s in submissions
+        ]
+
+    return render(request, "dashboards/secretariat/document_letters.html", {
+        "doc_type": doc_type,
+        "meta": meta,
+        "rows": rows,
+    })
+
+
+@login_required
+@staff_required
+def document_letter_view(request, doc_type, pk):
+    meta = DOCUMENT_LETTER_META.get(doc_type)
+    if meta is None:
+        return HttpResponse(status=404)
+
+    if doc_type in ("decision", "approval"):
+        statuses = _DECISION_LETTER_STATUSES if doc_type == "decision" else (Application.Status.APPROVED,)
+        application = get_object_or_404(oversight.staff_queryset(), pk=pk, status__in=statuses)
+        return render(request, "dashboards/secretariat/letter.html", {
+            "doc_type": doc_type,
+            "meta": meta,
+            "application": application,
+            "submission": None,
+            "letter_date": application.decided_at or application.revision_requested_at,
+            "review_type_label": fees.label_for(application.review_type),
+        })
+
+    submission = get_object_or_404(
+        PostApprovalSubmission.objects.select_related("application", "applicant"),
+        pk=pk, type=doc_type, status__in=_POSTAPPROVAL_LETTER_STATUSES,
+    )
+    return render(request, "dashboards/secretariat/letter.html", {
+        "doc_type": doc_type,
+        "meta": meta,
+        "submission": submission,
+        "letter_date": submission.decided_at,
+        "application": submission.application,
+    })
 
 
 @login_required

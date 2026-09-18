@@ -1,0 +1,229 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}{{ meta.label }} | MSREC Secretariat{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'dashboard/css/letter.css' %}">{% endblock %}
+
+{% block nav_content %}
+{% include "dashboards/_secretariat_nav.html" %}
+{% endblock %}
+
+{% block topbar %}
+      <div class="topbar-title">
+        <h1>
+          {% if doc_type == 'approval' %}Approval Letter
+          {% elif doc_type == 'amendment' %}Amendment Outcome Letter
+          {% elif doc_type == 'continuing_review' %}Continuing Review Outcome Letter
+          {% elif doc_type == 'closure' %}Study Closure Letter
+          {% else %}Decision Letter{% endif %}
+        </h1>
+        <p>{{ application.reference_no|default:"Reference pending" }}</p>
+      </div>
+      <div class="topbar-actions">
+        <button type="button" class="btn-secondary" onclick="window.print()">
+          <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+          Print / Save PDF
+        </button>
+
+        <div class="dropdown no-print" id="profileDropdown">
+          <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
+            <svg viewBox="0 0 24 24" class="chev"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div class="dropdown-menu profile-menu" id="profileMenu">
+            <div class="profile-menu-head">
+              {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="avatar-initials">{{ request.user.initials }}</span>{% endif %}
+              <div>
+                <strong>{{ request.user.full_name }}</strong>
+                <span>{{ request.user.email }}</span>
+              </div>
+            </div>
+            <div class="dropdown-divider"></div>
+            <a href="{% url 'pages:logout' %}" class="dropdown-item logout">
+              <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+              Log Out
+            </a>
+          </div>
+        </div>
+      </div>
+{% endblock %}
+
+{% block main_content %}
+
+      <a href="{% url 'secretariat_dashboard:document_letters' doc_type=doc_type %}" class="back-link no-print">
+        <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+        Back to {{ meta.label }}
+      </a>
+
+      <article class="letter">
+
+        <header class="letter-head">
+          <img class="letter-logo" src="{% if site_settings.logo_url %}{{ site_settings.logo_url }}{% else %}{% static 'assets/img/logo1.png' %}{% endif %}" alt="">
+          <div class="letter-org">
+            <h1>{{ site_settings.site_name|default:"MSREC" }}</h1>
+            {% if site_settings.footer_address %}
+              <p class="letter-org-address">{{ site_settings.footer_address|linebreaksbr }}</p>
+            {% else %}
+              <p>Metascholar Research Ethics Committee</p>
+            {% endif %}
+          </div>
+        </header>
+
+        <div class="letter-meta">
+          <span class="mono">{{ application.reference_no|default:"Reference pending" }}</span>
+          <span>{{ letter_date|date:"d F Y" }}</span>
+        </div>
+
+        <div class="letter-body">
+          <p class="letter-to">
+            {{ application.applicant.full_name }}<br>
+            {% if application.applicant.department %}{{ application.applicant.department }}<br>{% endif %}
+            {% if application.applicant.institution %}{{ application.applicant.institution }}{% endif %}
+          </p>
+
+          <p class="letter-subject">
+            RE:
+            {% if doc_type == 'approval' %}Ethical Approval
+            {% elif doc_type == 'amendment' %}Outcome of Amendment Request
+            {% elif doc_type == 'continuing_review' %}Outcome of Continuing Review
+            {% elif doc_type == 'closure' %}Study Closure
+            {% else %}Outcome of Ethics Review{% endif %}
+            &mdash; {{ application.title }}
+          </p>
+
+          <p>Dear {{ application.applicant.full_name }},</p>
+
+          {% if doc_type == 'decision' or doc_type == 'approval' %}
+
+            {% if application.status == 'approved' %}
+            <p>
+              I write on behalf of the {{ site_settings.site_name|default:"MSREC" }} to confirm that your application,
+              submitted under reference <strong>{{ application.reference_no }}</strong>, has been reviewed
+              under the <strong>{{ review_type_label }}</strong> pathway and has been <strong>approved</strong>.
+            </p>
+            <p>
+              This approval takes effect from {{ application.decided_at|date:"d F Y" }} and remains valid until
+              {{ application.approval_expires_at|date:"d F Y" }}. The applicant may proceed with the study as described
+              in the approved protocol.
+            </p>
+            <p>
+              Approval is granted on the understanding that MSREC will be notified before any amendment to the
+              protocol takes effect, that adverse events and protocol deviations are reported promptly, that
+              continuing review documentation is submitted before the expiry date above, and that the Committee is
+              notified on completion or early termination of the study.
+            </p>
+            {% elif application.status == 'not_approved' %}
+            <p>
+              I write on behalf of the {{ site_settings.site_name|default:"MSREC" }} regarding the application
+              submitted under reference <strong>{{ application.reference_no }}</strong>, reviewed under the
+              <strong>{{ review_type_label }}</strong> pathway.
+            </p>
+            <p>
+              Following its review, the Committee was unable to grant ethical approval for the study as presented,
+              and the application is recorded as <strong>not approved</strong> as of
+              {{ application.decided_at|date:"d F Y" }}.
+            </p>
+            <p>
+              This decision does not prevent the applicant from submitting a revised application addressing the
+              Committee's concerns.
+            </p>
+            {% else %}
+            <p>
+              I write on behalf of the {{ site_settings.site_name|default:"MSREC" }} regarding the application
+              submitted under reference <strong>{{ application.reference_no }}</strong>, reviewed under the
+              <strong>{{ review_type_label }}</strong> pathway.
+            </p>
+            <p>
+              The Committee has completed its review and requires <strong>revisions</strong> before a final
+              determination can be made. The points to be addressed are set out below.
+            </p>
+            {% if application.revision_comment %}
+            <blockquote class="letter-quote">{{ application.revision_comment|linebreaksbr }}</blockquote>
+            {% endif %}
+            <p>
+              The applicant should revise the application accordingly and resubmit it through the portal. The
+              Committee will resume its review once the revised submission is received.
+            </p>
+            {% endif %}
+
+          {% else %}
+
+            {% if submission.status == 'action_required' %}
+            <p>
+              I write on behalf of the {{ site_settings.site_name|default:"MSREC" }} regarding the
+              {% if doc_type == 'amendment' %}amendment request{% elif doc_type == 'continuing_review' %}continuing review submission{% else %}closure request{% endif %}
+              filed against reference <strong>{{ application.reference_no }}</strong> on {{ submission.submitted_at|date:"d F Y" }}.
+            </p>
+            <p>
+              The Committee has reviewed this submission and requires further information before a determination can
+              be made. The points to be addressed are set out below.
+            </p>
+            {% if submission.secretariat_note %}
+            <blockquote class="letter-quote">{{ submission.secretariat_note|linebreaksbr }}</blockquote>
+            {% endif %}
+            <p>
+              Please respond through the portal so the Committee can resume its review of this submission.
+            </p>
+            {% else %}
+              {% if doc_type == 'amendment' %}
+              <p>
+                I write on behalf of the {{ site_settings.site_name|default:"MSREC" }} to confirm that the amendment
+                request filed against reference <strong>{{ application.reference_no }}</strong> on
+                {{ submission.submitted_at|date:"d F Y" }} has been <strong>approved</strong>.
+              </p>
+              <p>
+                The applicant may implement the described change with effect from {{ submission.decided_at|date:"d F Y" }}.
+                All other conditions of the original approval continue to apply.
+              </p>
+              {% elif doc_type == 'continuing_review' %}
+              <p>
+                I write on behalf of the {{ site_settings.site_name|default:"MSREC" }} to confirm that the continuing
+                review submitted against reference <strong>{{ application.reference_no }}</strong> on
+                {{ submission.submitted_at|date:"d F Y" }} has been reviewed and the study's approval is
+                <strong>confirmed to continue</strong>{% if application.approval_expires_at %} until {{ application.approval_expires_at|date:"d F Y" }}{% endif %}.
+              </p>
+              <p>
+                All conditions of the original approval, including future continuing review and reporting
+                obligations, continue to apply.
+              </p>
+              {% else %}
+              <p>
+                I write on behalf of the {{ site_settings.site_name|default:"MSREC" }} to acknowledge the closure of
+                the study under reference <strong>{{ application.reference_no }}</strong>, as notified on
+                {{ submission.submitted_at|date:"d F Y" }} and recorded as closed on
+                {{ submission.decided_at|date:"d F Y" }}.
+              </p>
+              <p>
+                No further post-approval obligations apply to this study. The Secretariat thanks the research team
+                for their compliance throughout the life of the approval.
+              </p>
+              {% endif %}
+              {% if submission.secretariat_note %}
+              <blockquote class="letter-quote">{{ submission.secretariat_note|linebreaksbr }}</blockquote>
+              {% endif %}
+            {% endif %}
+
+          {% endif %}
+
+          <p>Yours sincerely,</p>
+
+          <div class="letter-sign">
+            <span class="letter-sign-line"></span>
+            <strong>The Secretariat</strong>
+            <span>{{ site_settings.site_name|default:"MSREC" }}</span>
+          </div>
+        </div>
+
+        <footer class="letter-foot">
+          <p>
+            This document was generated from the {{ site_settings.site_name|default:"MSREC" }} portal on
+            {% now "d F Y" %} and reflects the current recorded status of reference
+            {{ application.reference_no|default:"&mdash;" }}. Its authenticity can be confirmed with the
+            Secretariat{% if site_settings.contact_secretariat_email %} at {{ site_settings.contact_secretariat_email }}{% endif %}.
+          </p>
+        </footer>
+
+      </article>
+
+{% endblock %}

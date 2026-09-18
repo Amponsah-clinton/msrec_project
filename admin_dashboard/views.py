@@ -32,6 +32,7 @@ from pages import storage as pages_storage
 from pages.models import (
     GOVERNANCE_TAG_CHOICES,
     GOVERNANCE_TITLE_CHOICES,
+    ClientLogo,
     CommitteeAppointment,
     CommitteeMeeting,
     ConflictDeclaration,
@@ -1787,6 +1788,37 @@ def _handle_settings_delete_policy_document(request, site):
     messages.success(request, f'"{title}" was deleted.')
 
 
+def _handle_settings_add_client_logo(request, site):
+    upload = request.FILES.get("logo_image")
+    if not upload:
+        messages.error(request, "Choose an image to upload.")
+        return
+    if not (upload.content_type or "").startswith("image/"):
+        messages.error(request, "The client logo must be an image file.")
+        return
+
+    logo = ClientLogo.objects.create(
+        alt_text=request.POST.get("logo_alt_text", "").strip(),
+        display_order=request.POST.get("logo_display_order") or 0,
+    )
+    object_path = pages_storage.upload_client_logo(upload, logo_id=logo.pk)
+    if object_path:
+        logo.image_path = object_path
+        logo.save(update_fields=["image_path"])
+        messages.success(request, "Client logo added to the landing page carousel.")
+    else:
+        logo.delete()
+        messages.error(request, "That image couldn't be processed or uploaded -- try a different file.")
+
+
+def _handle_settings_delete_client_logo(request, site):
+    logo = get_object_or_404(ClientLogo, pk=request.POST.get("logo_id"))
+    if logo.image_path:
+        pages_storage.delete_object(logo.image_path)
+    logo.delete()
+    messages.success(request, "Client logo removed from the landing page carousel.")
+
+
 @login_required
 @admin_or_secretariat_required
 def site_settings(request):
@@ -1805,6 +1837,8 @@ def site_settings(request):
             "add_policy_document": _handle_settings_add_policy_document,
             "edit_policy_document": _handle_settings_edit_policy_document,
             "delete_policy_document": _handle_settings_delete_policy_document,
+            "add_client_logo": _handle_settings_add_client_logo,
+            "delete_client_logo": _handle_settings_delete_client_logo,
         }.get(request.POST.get("action"))
         if handler:
             handler(request, site)
@@ -1832,6 +1866,10 @@ def site_settings(request):
     if edit_policy_id:
         editing_policy = get_object_or_404(PolicyDocument, pk=edit_policy_id)
 
+    client_logos = list(ClientLogo.objects.all())
+    for logo in client_logos:
+        logo.preview_url = pages_storage.public_url(logo.image_path)
+
     return render(request, "dashboards/admin/settings.html", {
         "site": site,
         "logo_url": pages_storage.public_url(site.logo_path),
@@ -1844,4 +1882,5 @@ def site_settings(request):
         "policy_categories": PolicyDocument.Category.choices,
         "policy_groups": policy_groups,
         "editing_policy": editing_policy,
+        "client_logos": client_logos,
     })

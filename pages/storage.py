@@ -116,6 +116,79 @@ def upload_site_logo(uploaded_file):
     return object_path
 
 
+# Every carousel slide on the landing page's Clients section is displayed
+# at this exact box (see .clients .swiper-slide img in main.css) --
+# double that CSS size so retina screens don't upscale a blurry image.
+# upload_client_logo() below letterboxes whatever an admin uploads onto a
+# transparent canvas of this size, so one oversized or oddly-cropped logo
+# can never throw off the carousel's row height.
+CLIENT_LOGO_SIZE = (320, 140)
+
+
+def _fit_client_logo(uploaded_file):
+    """Return PNG bytes of `uploaded_file` letterboxed onto a transparent
+    CLIENT_LOGO_SIZE canvas, preserving its own aspect ratio. Raises on a
+    file Pillow can't read as an image -- callers should catch that."""
+    from io import BytesIO
+
+    from PIL import Image, ImageOps
+
+    image = Image.open(uploaded_file)
+    image = ImageOps.exif_transpose(image).convert("RGBA")
+    fitted = ImageOps.contain(image, CLIENT_LOGO_SIZE)
+    canvas = Image.new("RGBA", CLIENT_LOGO_SIZE, (0, 0, 0, 0))
+    offset = ((CLIENT_LOGO_SIZE[0] - fitted.width) // 2, (CLIENT_LOGO_SIZE[1] - fitted.height) // 2)
+    canvas.paste(fitted, offset, fitted)
+
+    buffer = BytesIO()
+    canvas.save(buffer, format="PNG", optimize=True)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+def upload_client_logo(uploaded_file, *, logo_id):
+    """Upload/replace one Clients-carousel logo (ClientLogo.image_path),
+    resizing it to CLIENT_LOGO_SIZE first (see _fit_client_logo() above)
+    so it displays at the same size as every other slide regardless of
+    what was uploaded. Fixed "clients/<id>/logo.png" path -- re-uploading
+    always overwrites the previous image (via x-upsert). Returns the
+    object path on success, or None if Storage isn't configured, the
+    file isn't a readable image, or the upload failed.
+    """
+    if not uploaded_file or not _configured():
+        return None
+
+    try:
+        image_bytes = _fit_client_logo(uploaded_file)
+    except Exception:
+        logger.exception("Could not process client logo upload")
+        return None
+
+    object_path = f"clients/{logo_id}/logo.png"
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{object_path}"
+    req = urllib.request.Request(
+        url,
+        data=image_bytes,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+            "apikey": settings.SUPABASE_SERVICE_KEY,
+            "Content-Type": "image/png",
+            "x-upsert": "true",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            if resp.status not in (200, 201):
+                logger.warning("Supabase Storage upload of %s returned status %s", object_path, resp.status)
+                return None
+    except urllib.error.URLError:
+        logger.exception("Supabase Storage upload failed for %s", object_path)
+        return None
+
+    return object_path
+
+
 def delete_object(object_path):
     """Delete one object from the "profile" bucket (used when a member's
     photo is replaced with a different extension, or the member is

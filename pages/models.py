@@ -244,6 +244,41 @@ class GovernanceMember(models.Model):
         return (first + last).upper() or "?"
 
 
+class ClientLogo(models.Model):
+    """One logo in the landing page's scrolling "Clients" carousel
+    (templates/pages/index.html, #clients section) -- added, reordered
+    and removed from admin_dashboard's Settings page (Client Logos tab),
+    so the carousel can be updated without anyone touching a template or
+    the bundled static/assets/img/clients/client-N.png files.
+
+    If no ClientLogo rows exist, the public page falls back to that
+    bundled set of 8 -- same "blank means use the bundled default" idea
+    as SiteSettings.logo_path above.
+    """
+
+    # Object path inside Supabase Storage's public "profile" bucket (see
+    # pages/storage.py's upload_client_logo()) under "clients/<id>/".
+    # upload_client_logo() always letterboxes the image onto storage.
+    # CLIENT_LOGO_SIZE before it's saved, so every slide in the carousel
+    # reads at the same size regardless of what an admin uploads.
+    image_path = models.CharField(max_length=255)
+    alt_text = models.CharField(max_length=150, blank=True)
+
+    # Lower sorts first -- lets an admin control carousel order without
+    # relying on upload order.
+    display_order = models.PositiveSmallIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "client_logos"
+        ordering = ["display_order", "created_at"]
+
+    def __str__(self):
+        return self.alt_text or f"Client logo #{self.pk}"
+
+
 class CommitteeMeeting(models.Model):
     """One scheduled Full Committee / REC meeting -- shown on the
     Reviewer dashboard's Upcoming Meetings page. Managed from Django
