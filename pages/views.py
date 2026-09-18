@@ -85,14 +85,14 @@ APPLICANTS_FEE_CARDS = [
         "note": "For faculty, staff and institutional research.",
         "bullets": ["Full review pathway included", "One free amendment"],
         "featured": True,
-        "keys": ["gh_independent", "gh_institutional"],
+        "keys": ["gh_independent", "gh_institutional", "gh_consultancy"],
     },
     {
         "title": "External / Industry",
         "note": "For externally sponsored or industry-funded research.",
         "bullets": ["Full review pathway included", "Data-sharing agreement review"],
         "featured": False,
-        "keys": ["intl_funded", "clinical_trial"],
+        "keys": ["intl_student", "intl_funded", "clinical_trial"],
     },
     {
         "title": "Amendment / Continuing",

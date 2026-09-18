@@ -2270,7 +2270,6 @@ svg {
 .messages-list .message-row:last-child { border-bottom: none; }
 .message-row:hover { background: var(--hover-bg); }
 .message-row.active { background: var(--teal-light); }
-.message-row.active::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--teal); }
 .message-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
 .message-avatar.initials { display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; color: #fff; }
 .message-row-body { flex: 1; min-width: 0; }

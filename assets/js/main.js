@@ -42,6 +42,64 @@
   }
 
   /**
+   * Homepage discipline-category rotator — every 4 seconds, swaps the
+   * four "Health & Biomedical / Social & Education / AI, ICT & Systems /
+   * Data & Evidence" icon cards for the next set of disciplines MSREC
+   * reviews, fading the icon and label together (same rhythm as the
+   * hero headline rotator above).
+   */
+  const catSlotCount = 4;
+  const catIcons = [];
+  const catTitles = [];
+  for (let i = 0; i < catSlotCount; i++) {
+    const iconBox = document.getElementById('catIcon' + i);
+    const titleLink = document.getElementById('catTitle' + i);
+    if (iconBox) catIcons.push(iconBox.querySelector('i'));
+    if (titleLink) catTitles.push(titleLink);
+  }
+
+  if (catIcons.length === catSlotCount && catTitles.length === catSlotCount) {
+    const catFrames = [
+      [
+        { icon: 'bi-heart-pulse', label: 'Health & Biomedical' },
+        { icon: 'bi-people', label: 'Social & Education' },
+        { icon: 'bi-cpu', label: 'AI, ICT & Systems' },
+        { icon: 'bi-database', label: 'Data & Evidence' }
+      ],
+      [
+        { icon: 'bi-tree', label: 'Environmental & Agricultural' },
+        { icon: 'bi-emoji-smile', label: 'Behavioural & Psychology' },
+        { icon: 'bi-gear', label: 'Engineering & Technology' },
+        { icon: 'bi-shield-plus', label: 'Public Health & Policy' }
+      ],
+      [
+        { icon: 'bi-capsule', label: 'Clinical & Biomedical Trials' },
+        { icon: 'bi-globe2', label: 'Community & Development' },
+        { icon: 'bi-shield-lock', label: 'Cybersecurity & Digital Systems' },
+        { icon: 'bi-bar-chart', label: 'Evidence Synthesis & Reviews' }
+      ]
+    ];
+    let catFrameIndex = 0;
+
+    setInterval(() => {
+      catIcons.forEach((el) => el.parentElement.classList.add('is-swapping'));
+      catTitles.forEach((el) => el.classList.add('is-swapping'));
+
+      setTimeout(() => {
+        catFrameIndex = (catFrameIndex + 1) % catFrames.length;
+        const frame = catFrames[catFrameIndex];
+
+        frame.forEach((item, i) => {
+          catIcons[i].className = 'bi ' + item.icon;
+          catTitles[i].textContent = item.label;
+          catIcons[i].parentElement.classList.remove('is-swapping');
+          catTitles[i].classList.remove('is-swapping');
+        });
+      }, 450);
+    }, 4000);
+  }
+
+  /**
    * Apply .scrolled class to the body as the page is scrolled down
    */
   function toggleScrolled() {

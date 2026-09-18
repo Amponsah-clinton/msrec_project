@@ -1093,6 +1093,24 @@ section,
   filter: blur(4px);
 }
 
+.cat-rotator-icon,
+.cat-rotator-title {
+  display: inline-block;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  filter: blur(0);
+  transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    filter 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.cat-rotator-icon.is-swapping,
+.cat-rotator-title.is-swapping {
+  opacity: 0;
+  transform: translateY(-10px) scale(0.96);
+  filter: blur(3px);
+}
+
 .hero p {
   color: color-mix(in srgb, var(--default-color), transparent 40%);
   font-weight: 400;

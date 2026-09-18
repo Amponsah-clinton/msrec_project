@@ -253,6 +253,11 @@
   gap: 10px;
   padding-right: 8px;
 }
+/* The corner ribbon above cuts diagonally across this same top-right
+   area -- give the title extra clearance so it never sits under it. */
+.app-card-flag + .app-card-top {
+  padding-right: 60px;
+}
 .app-card-top .acct-avatar { margin-top: 1px; }
 .app-card-heading { min-width: 0; flex: 1; }
 .app-card-heading h4 {
