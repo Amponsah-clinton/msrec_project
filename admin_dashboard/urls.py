@@ -1,6 +1,7 @@
 from django.urls import path
 
 from messaging import views as messaging_views
+from secretariat_dashboard import views as secretariat_views
 
 from . import views
 
@@ -38,4 +39,12 @@ urlpatterns = [
     path("committee/training/", views.training, name="committee_training"),
     path("committee/conflict-records/", views.conflict_records, name="conflict_records"),
     path("settings/", views.site_settings, name="settings"),
+    # Same underlying AuditLog table and categorization secretariat_dashboard's
+    # own Audit Logs page already uses (see that module's audit_logs()) --
+    # reused here with just this dashboard's own template, the same
+    # "one view, two branded dashboards" idea as the messages views above.
+    path(
+        "audit-logs/", secretariat_views.audit_logs,
+        {"template_name": "dashboards/admin/audit-logs.html"}, name="audit_logs",
+    ),
 ]

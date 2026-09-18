@@ -42,8 +42,10 @@ from pages.models import (
     PolicyDocument,
     ResourceDocument,
     SiteSettings,
+    Testimonial,
     TrainingRecord,
 )
+from secretariat_dashboard.views import _audit_log_category
 from payments import fees
 from payments import services as payment_services
 from reviewer_dashboard import storage as reviewer_storage
@@ -448,9 +450,14 @@ def home(request):
         .count()
     )
 
+    recent_activity = list(AuditLog.objects.select_related("actor").order_by("-created_at")[:6])
+    for log in recent_activity:
+        log.category = _audit_log_category(log.action)
+
     return render(request, "dashboards/admin.html", {
         "page_subtitle": f"Welcome back, {request.user.first_name}",
         "application_counts": application_counts,
+        "recent_activity": recent_activity,
         # "Active" means still moving through the pipeline. application_counts
         # ["all"] is every non-draft application ever, decided ones included,
         # so it overstates the live workload it was being used to label.
@@ -1819,6 +1826,73 @@ def _handle_settings_delete_client_logo(request, site):
     messages.success(request, "Client logo removed from the landing page carousel.")
 
 
+def _handle_settings_add_testimonial(request, site):
+    org_name = request.POST.get("testimonial_org_name", "").strip()
+    quote = request.POST.get("testimonial_quote", "").strip()
+    if not org_name or not quote:
+        messages.error(request, "Give the testimonial an organization name and a quote.")
+        return
+
+    upload = request.FILES.get("testimonial_image")
+    if upload and not (upload.content_type or "").startswith("image/"):
+        messages.error(request, "The testimonial photo must be an image file.")
+        return
+
+    testimonial = Testimonial.objects.create(
+        org_name=org_name,
+        subtitle=request.POST.get("testimonial_subtitle", "").strip(),
+        quote=quote,
+        display_order=request.POST.get("testimonial_display_order") or 0,
+    )
+    if upload:
+        object_path = pages_storage.upload_testimonial_image(upload, testimonial_id=testimonial.pk)
+        if object_path:
+            testimonial.image_path = object_path
+            testimonial.save(update_fields=["image_path"])
+        else:
+            messages.warning(request, "Testimonial saved, but the photo couldn't be processed or uploaded -- try again.")
+    messages.success(request, "Testimonial added to the landing page carousel.")
+
+
+def _handle_settings_edit_testimonial(request, site):
+    testimonial = get_object_or_404(Testimonial, pk=request.POST.get("testimonial_id"))
+    org_name = request.POST.get("testimonial_org_name", "").strip()
+    quote = request.POST.get("testimonial_quote", "").strip()
+    if not org_name or not quote:
+        messages.error(request, "Give the testimonial an organization name and a quote.")
+        return
+
+    testimonial.org_name = org_name
+    testimonial.subtitle = request.POST.get("testimonial_subtitle", "").strip()
+    testimonial.quote = quote
+    testimonial.display_order = request.POST.get("testimonial_display_order") or 0
+
+    upload = request.FILES.get("testimonial_image")
+    if upload:
+        if not (upload.content_type or "").startswith("image/"):
+            messages.error(request, "The testimonial photo must be an image file.")
+            return
+        old_path = testimonial.image_path
+        object_path = pages_storage.upload_testimonial_image(upload, testimonial_id=testimonial.pk)
+        if object_path:
+            testimonial.image_path = object_path
+            if old_path and old_path != object_path:
+                pages_storage.delete_object(old_path)
+        else:
+            messages.warning(request, "Details saved, but the replacement photo upload failed -- try again.")
+    testimonial.save()
+    messages.success(request, f'"{org_name}" was updated.')
+
+
+def _handle_settings_delete_testimonial(request, site):
+    testimonial = get_object_or_404(Testimonial, pk=request.POST.get("testimonial_id"))
+    if testimonial.image_path:
+        pages_storage.delete_object(testimonial.image_path)
+    org_name = testimonial.org_name
+    testimonial.delete()
+    messages.success(request, f'"{org_name}" was removed from the landing page carousel.')
+
+
 @login_required
 @admin_or_secretariat_required
 def site_settings(request):
@@ -1839,6 +1913,9 @@ def site_settings(request):
             "delete_policy_document": _handle_settings_delete_policy_document,
             "add_client_logo": _handle_settings_add_client_logo,
             "delete_client_logo": _handle_settings_delete_client_logo,
+            "add_testimonial": _handle_settings_add_testimonial,
+            "edit_testimonial": _handle_settings_edit_testimonial,
+            "delete_testimonial": _handle_settings_delete_testimonial,
         }.get(request.POST.get("action"))
         if handler:
             handler(request, site)
@@ -1870,6 +1947,15 @@ def site_settings(request):
     for logo in client_logos:
         logo.preview_url = pages_storage.public_url(logo.image_path)
 
+    testimonials = list(Testimonial.objects.all())
+    for testimonial in testimonials:
+        testimonial.preview_url = pages_storage.public_url(testimonial.image_path)
+
+    editing_testimonial = None
+    edit_testimonial_id = request.GET.get("edit_testimonial")
+    if edit_testimonial_id:
+        editing_testimonial = get_object_or_404(Testimonial, pk=edit_testimonial_id)
+
     return render(request, "dashboards/admin/settings.html", {
         "site": site,
         "logo_url": pages_storage.public_url(site.logo_path),
@@ -1883,4 +1969,6 @@ def site_settings(request):
         "policy_groups": policy_groups,
         "editing_policy": editing_policy,
         "client_logos": client_logos,
+        "testimonials": testimonials,
+        "editing_testimonial": editing_testimonial,
     })

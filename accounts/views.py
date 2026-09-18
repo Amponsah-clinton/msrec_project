@@ -79,7 +79,7 @@ def _send_role_pending_email(user):
             f"You don't have applicant access, since you didn't request it — this account exists "
             f"solely for your {roles_text} request. We'll email you as soon as it's been decided."
         )
-    send_branded_email(
+    return send_branded_email(
         subject=f"MSREC — your {roles_text} request has been received",
         to=user.email,
         heading="We've received your request",
@@ -94,12 +94,14 @@ def _send_role_pending_email(user):
 
 
 def _send_reset_code(user):
-    """Issues a fresh PasswordResetCode and emails it. Returns the code
-    row so callers (forgot_password / the resend action in
-    reset_password) can reset the session's attempt counter against it."""
+    """Issues a fresh PasswordResetCode and emails it. Returns (code_row,
+    emailed) -- callers (forgot_password / the resend action in
+    reset_password) use the code row to reset the session's attempt
+    counter, and `emailed` to tell the user the truth about whether the
+    code actually went out instead of assuming delivery succeeded."""
     code_obj = PasswordResetCode.issue_for(user)
     minutes = int(PasswordResetCode.TTL.total_seconds() // 60)
-    send_branded_email(
+    emailed = send_branded_email(
         subject="MSREC — your password reset code",
         to=user.email,
         heading="Reset your password",
@@ -113,7 +115,7 @@ def _send_reset_code(user):
         quote_text=code_obj.code,
         preheader="Your MSREC password reset code",
     )
-    return code_obj
+    return code_obj, emailed
 
 
 def forgot_password(request):
@@ -138,7 +140,14 @@ def forgot_password(request):
                 messages.success(request, f"You already have a code on its way to {email} — enter it below.")
                 return redirect("pages:reset_password")
             request.session[PASSWORD_RESET_ATTEMPTS_KEY] = 0
-            _send_reset_code(user)
+            _, emailed = _send_reset_code(user)
+            if not emailed:
+                messages.error(
+                    request,
+                    "We found your account, but couldn't send the reset code email right now. "
+                    "Please try again in a moment or contact the Secretariat for help.",
+                )
+                return redirect("pages:reset_password")
         else:
             request.session[PASSWORD_RESET_ATTEMPTS_KEY] = 0
 
@@ -161,14 +170,22 @@ def reset_password(request):
         user = User.objects.filter(email=email).first()
 
         if action == "resend":
+            emailed = True
             if user is not None:
                 last_code = user.password_reset_codes.first()
                 if last_code and last_code.is_valid and timezone.now() - last_code.created_at < PasswordResetCode.RESEND_COOLDOWN:
                     messages.error(request, "Please wait a minute before requesting another code.")
                     return redirect("pages:reset_password")
-                _send_reset_code(user)
+                _, emailed = _send_reset_code(user)
             request.session[PASSWORD_RESET_ATTEMPTS_KEY] = 0
-            messages.success(request, f"A new code has been sent to {email}.")
+            if emailed:
+                messages.success(request, f"A new code has been sent to {email}.")
+            else:
+                messages.error(
+                    request,
+                    "We couldn't send a new code right now. Please try again in a moment or "
+                    "contact the Secretariat for help.",
+                )
             return redirect("pages:reset_password")
 
         attempts = request.session.get(PASSWORD_RESET_ATTEMPTS_KEY, 0)
@@ -309,22 +326,26 @@ def signup(request):
             request.session["login_at"] = timezone.now().isoformat()
 
             if user.has_pending_requests:
-                _send_role_pending_email(user)
+                emailed = _send_role_pending_email(user)
                 role_labels = [User.Role(role).label for role in user.requested_roles]
                 roles_text = " and ".join(role_labels)
+                confirmation_note = (
+                    "we've emailed you a confirmation, and we'll notify you again as soon as it's reviewed."
+                    if emailed else
+                    "we couldn't send the confirmation email right now, but your request has been recorded "
+                    "and we'll notify you as soon as it's reviewed."
+                )
                 if user.wants_applicant:
                     messages.success(
                         request,
                         f"Welcome to MSREC! Your account is ready. Your {roles_text} request is "
-                        "pending admin approval — we've emailed you a confirmation, and we'll notify "
-                        "you again as soon as it's reviewed.",
+                        f"pending admin approval — {confirmation_note}",
                     )
                 else:
                     messages.success(
                         request,
                         f"Welcome to MSREC! Your {roles_text} request has been submitted and is pending "
-                        "admin approval — we've emailed you a confirmation, and we'll notify you again "
-                        "as soon as it's reviewed.",
+                        f"admin approval — {confirmation_note}",
                     )
             else:
                 messages.success(request, "Welcome to MSREC! Your account has been created.")

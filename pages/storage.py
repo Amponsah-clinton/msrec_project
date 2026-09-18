@@ -189,6 +189,77 @@ def upload_client_logo(uploaded_file, *, logo_id):
     return object_path
 
 
+# Every card in the "Grounded in Recognized Standards" carousel displays
+# its photo at 90px wide, circular (see .testimonials .testimonial-img in
+# main.css) -- double-plus that for retina screens. upload_testimonial_image()
+# below center-crops whatever an admin uploads onto this square so every
+# card's avatar reads at the same size and framing.
+TESTIMONIAL_IMAGE_SIZE = (240, 240)
+
+
+def _fit_testimonial_image(uploaded_file):
+    """Return JPEG bytes of `uploaded_file` center-cropped to fill a
+    TESTIMONIAL_IMAGE_SIZE square -- a circular headshot needs the frame
+    fully covered (unlike a logo, which is letterboxed onto transparency),
+    so this uses ImageOps.fit rather than _fit_client_logo's contain.
+    Raises on a file Pillow can't read as an image -- callers should catch
+    that."""
+    from io import BytesIO
+
+    from PIL import Image, ImageOps
+
+    image = Image.open(uploaded_file)
+    image = ImageOps.exif_transpose(image).convert("RGB")
+    fitted = ImageOps.fit(image, TESTIMONIAL_IMAGE_SIZE, method=Image.LANCZOS)
+
+    buffer = BytesIO()
+    fitted.save(buffer, format="JPEG", quality=88, optimize=True)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+def upload_testimonial_image(uploaded_file, *, testimonial_id):
+    """Upload/replace one testimonial card's photo (Testimonial.image_path),
+    cropping it to TESTIMONIAL_IMAGE_SIZE first (see _fit_testimonial_image()
+    above). Fixed "testimonials/<id>/photo.jpg" path -- re-uploading always
+    overwrites the previous image (via x-upsert). Returns the object path
+    on success, or None if Storage isn't configured, the file isn't a
+    readable image, or the upload failed.
+    """
+    if not uploaded_file or not _configured():
+        return None
+
+    try:
+        image_bytes = _fit_testimonial_image(uploaded_file)
+    except Exception:
+        logger.exception("Could not process testimonial image upload")
+        return None
+
+    object_path = f"testimonials/{testimonial_id}/photo.jpg"
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{object_path}"
+    req = urllib.request.Request(
+        url,
+        data=image_bytes,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+            "apikey": settings.SUPABASE_SERVICE_KEY,
+            "Content-Type": "image/jpeg",
+            "x-upsert": "true",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            if resp.status not in (200, 201):
+                logger.warning("Supabase Storage upload of %s returned status %s", object_path, resp.status)
+                return None
+    except urllib.error.URLError:
+        logger.exception("Supabase Storage upload failed for %s", object_path)
+        return None
+
+    return object_path
+
+
 def delete_object(object_path):
     """Delete one object from the "profile" bucket (used when a member's
     photo is replaced with a different extension, or the member is

@@ -12,6 +12,7 @@ from django.utils import timezone
 from accounts.models import AuditLog, User
 from accounts.sessions import active_sessions_for
 from applicant_dashboard import storage as application_storage
+from notifications import services as notification_services
 from notifications.models import Notification
 from notifications.services import notify
 from pages import documents_storage
@@ -116,6 +117,8 @@ def dashboard_home(request):
         "pending_coi_count": len(pending_coi),
         "urgent_assignment": urgent,
         "open_assignments": open_assignments,
+        "notifications": notification_services.for_user(request.user, Notification.Audience.REVIEWER, limit=6),
+        "unread_count": notification_services.unread_count(request.user, Notification.Audience.REVIEWER),
     })
 
 

@@ -28,6 +28,7 @@
 {% block vendor_css %}{% endblock %}
 
 <link href="{% static 'assets/css/main.css' %}" rel="stylesheet">
+<link href="{% static 'assets/css/site-search.css' %}" rel="stylesheet">
 {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -48,6 +49,10 @@
             <i class="bi bi-file-earmark-text"></i>
             <span>Apply</span>
           </a>
+          <button type="button" id="siteSearchToggle" class="topbar-btn topbar-btn-ghost" aria-haspopup="dialog" aria-controls="siteSearchOverlay" aria-label="Search the site">
+            <i class="bi bi-search"></i>
+            <span>Search</span>
+          </button>
           <a href="{% url 'pages:login' %}" class="topbar-btn topbar-btn-solid">
             <i class="bi bi-box-arrow-in-right"></i>
             <span>Sign In</span>
@@ -76,6 +81,95 @@
       </div>
     </div>
   </header>
+
+  <!-- ============ SITE SEARCH ============ -->
+  <div class="site-search-overlay" id="siteSearchOverlay" hidden>
+    <div class="site-search-panel" role="dialog" aria-modal="true" aria-label="Search MSREC">
+      <div class="site-search-bar">
+        <i class="bi bi-search"></i>
+        <input type="text" id="siteSearchInput" placeholder="Search the site&hellip; pages, ethics review, resources, fees" autocomplete="off" spellcheck="false">
+        <button type="button" id="siteSearchClose" class="site-search-close" aria-label="Close search">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+      <div class="site-search-results" id="siteSearchResults">
+      </div>
+      <div class="site-search-footer">
+        <span class="site-search-hintkeys">
+          <span><kbd>&uarr;</kbd><kbd>&darr;</kbd> to navigate</span>
+          <span><kbd>&crarr;</kbd> to open</span>
+          <span><kbd>Esc</kbd> to close</span>
+        </span>
+        <button type="button" id="siteSearchCancel" class="site-search-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="application/json" id="siteSearchIndex">
+    [
+      {"title": "Home", "url": "{% url 'pages:index' %}", "breadcrumb": "Home", "icon": "bi-house", "keywords": "landing page overview msrec metascholar research ethics committee"},
+      {"title": "Apply for Review", "url": "{% url 'pages:index' %}#hero", "breadcrumb": "Home → Hero", "icon": "bi-send", "keywords": "apply verify approval clarity independence accountability"},
+      {"title": "About MSREC", "url": "{% url 'pages:index' %}#about", "breadcrumb": "Home → About", "icon": "bi-info-circle", "keywords": "institutional platform transparent independent research ethics review structured applications"},
+      {"title": "Partner Institutions", "url": "{% url 'pages:index' %}#clients", "breadcrumb": "Home → Clients", "icon": "bi-building", "keywords": "clients partners institutions logos universities"},
+      {"title": "By the Numbers", "url": "{% url 'pages:index' %}#stats", "breadcrumb": "Home → Stats", "icon": "bi-bar-chart", "keywords": "statistics workflow stages assessment domains decision categories submission types"},
+      {"title": "Review Fees", "url": "{% url 'pages:index' %}#call-to-action", "breadcrumb": "Home → Review Fees", "icon": "bi-cash-coin", "keywords": "review fees administrative cost conflict of interest committee members disclose"},
+      {"title": "What We Review", "url": "{% url 'pages:index' %}#services", "breadcrumb": "Home → What We Review", "icon": "bi-grid", "keywords": "health biomedical social education ai ict systems data evidence disciplines"},
+      {"title": "Testimonials", "url": "{% url 'pages:index' %}#testimonials", "breadcrumb": "Home → Testimonials", "icon": "bi-chat-quote", "keywords": "testimonials researcher feedback experience reviews"},
+      {"title": "Fee Schedule Preview", "url": "{% url 'pages:index' %}#pricing", "breadcrumb": "Home → Pricing", "icon": "bi-tags", "keywords": "student standard institutional external industry amendment continuing pricing cards"},
+      {"title": "Frequently Asked Questions", "url": "{% url 'pages:index' %}#faq", "breadcrumb": "Home → FAQ", "icon": "bi-question-circle", "keywords": "faq frequently asked questions determination exemption timelines pathway"},
+
+      {"title": "About MSREC (page)", "url": "{% url 'pages:about' %}", "breadcrumb": "About", "icon": "bi-info-circle", "keywords": "about msrec metascholar research ethics committee overview"},
+      {"title": "Overview", "url": "{% url 'pages:about' %}#ab-overview", "breadcrumb": "About → Overview", "icon": "bi-info-circle", "keywords": "who we are mandate mission overview"},
+      {"title": "Guiding Principles", "url": "{% url 'pages:about' %}#ab-principles", "breadcrumb": "About → Principles", "icon": "bi-compass", "keywords": "principles independence integrity respect beneficence justice"},
+      {"title": "Governance (About)", "url": "{% url 'pages:about' %}#ab-governance", "breadcrumb": "About → Governance", "icon": "bi-diagram-3", "keywords": "governance structure oversight accountability"},
+
+      {"title": "For Applicants", "url": "{% url 'pages:applicants' %}", "breadcrumb": "Applicants", "icon": "bi-file-earmark-text", "keywords": "applicants requirements fees review pathway who can apply what to prepare"},
+      {"title": "Start an Application", "url": "{% url 'pages:applicants' %}#apply-cta", "breadcrumb": "Applicants → Start", "icon": "bi-send", "keywords": "start application apply now requirements"},
+
+      {"title": "Ethics Review", "url": "{% url 'pages:ethics_review' %}", "breadcrumb": "Ethics Review", "icon": "bi-shield-check", "keywords": "ethics review process how msrec reviews a protocol"},
+      {"title": "The End-to-End Workflow", "url": "{% url 'pages:ethics_review' %}#er-workflow", "breadcrumb": "Ethics Review → Workflow", "icon": "bi-diagram-3", "keywords": "workflow stages submission screening review decision post-approval"},
+      {"title": "Administrative Screening", "url": "{% url 'pages:ethics_review' %}#er-screening", "breadcrumb": "Ethics Review → Screening", "icon": "bi-clipboard-check", "keywords": "administrative screening completeness scope check secretariat"},
+      {"title": "Reviewer Assignment", "url": "{% url 'pages:ethics_review' %}#er-assignment", "breadcrumb": "Ethics Review → Assignment", "icon": "bi-person-check", "keywords": "reviewer assignment conflict of interest expertise workload"},
+      {"title": "Assessment Domains", "url": "{% url 'pages:ethics_review' %}#er-domains", "breadcrumb": "Ethics Review → Domains", "icon": "bi-list-check", "keywords": "assessment domains scientific value risk benefit consent privacy vulnerability ai funding"},
+      {"title": "Decision Categories", "url": "{% url 'pages:ethics_review' %}#er-decisions", "breadcrumb": "Ethics Review → Decisions", "icon": "bi-signpost-split", "keywords": "decision categories approved modifications required deferred not approved"},
+      {"title": "Appeals & Researcher Responses", "url": "{% url 'pages:ethics_review' %}#er-appeals", "breadcrumb": "Ethics Review → Appeals", "icon": "bi-arrow-left-right", "keywords": "appeals responding to modifications formal appeals policy"},
+      {"title": "Committee Meetings", "url": "{% url 'pages:ethics_review' %}#er-meetings", "breadcrumb": "Ethics Review → Meetings", "icon": "bi-calendar-week", "keywords": "committee meetings quorum recusal minutes decision"},
+      {"title": "Post-Approval Management", "url": "{% url 'pages:ethics_review' %}#er-post-approval", "breadcrumb": "Ethics Review → Post-Approval", "icon": "bi-graph-up-arrow", "keywords": "amendments continuing review progress reports deviations adverse events closure"},
+
+      {"title": "Resource Centre", "url": "{% url 'pages:resources' %}", "breadcrumb": "Resources", "icon": "bi-folder2-open", "keywords": "resources forms templates guidelines faqs training downloads"},
+      {"title": "Application Forms", "url": "{% url 'pages:resources' %}#res-application-forms", "breadcrumb": "Resources → Application Forms", "icon": "bi-file-earmark-text", "keywords": "application forms universal research ethics application"},
+      {"title": "Protocol Templates", "url": "{% url 'pages:resources' %}#res-protocol-templates", "breadcrumb": "Resources → Protocol Templates", "icon": "bi-file-earmark-ruled", "keywords": "protocol templates study design"},
+      {"title": "Consent Templates", "url": "{% url 'pages:resources' %}#res-consent-templates", "breadcrumb": "Resources → Consent Templates", "icon": "bi-file-earmark-check", "keywords": "consent templates informed consent forms"},
+      {"title": "Reporting Forms", "url": "{% url 'pages:resources' %}#res-reporting-forms", "breadcrumb": "Resources → Reporting Forms", "icon": "bi-file-earmark-bar-graph", "keywords": "reporting forms adverse event deviation progress report closure"},
+      {"title": "Guidelines", "url": "{% url 'pages:resources' %}#res-guidelines", "breadcrumb": "Resources → Guidelines", "icon": "bi-journal-text", "keywords": "guidelines ethics guidance sop"},
+      {"title": "FAQs (Resources)", "url": "{% url 'pages:resources' %}#res-faqs", "breadcrumb": "Resources → FAQs", "icon": "bi-question-circle", "keywords": "frequently asked questions resources"},
+      {"title": "Training", "url": "{% url 'pages:resources' %}#res-training", "breadcrumb": "Resources → Training", "icon": "bi-mortarboard", "keywords": "training gcp human subjects protection certification"},
+
+      {"title": "Governance", "url": "{% url 'pages:governance' %}", "breadcrumb": "Governance", "icon": "bi-diagram-3", "keywords": "governance charter policies sops fees reports"},
+      {"title": "Charter", "url": "{% url 'pages:governance' %}#gov-charter", "breadcrumb": "Governance → Charter", "icon": "bi-file-earmark-text", "keywords": "charter constitution mandate"},
+      {"title": "Policies", "url": "{% url 'pages:governance' %}#gov-policies", "breadcrumb": "Governance → Policies", "icon": "bi-journal-bookmark", "keywords": "policies ethics policy library"},
+      {"title": "Standard Operating Procedures", "url": "{% url 'pages:governance' %}#gov-sops", "breadcrumb": "Governance → SOPs", "icon": "bi-list-ol", "keywords": "sops standard operating procedures"},
+      {"title": "Fee Schedule (Governance)", "url": "{% url 'pages:governance' %}#gov-fees", "breadcrumb": "Governance → Fees", "icon": "bi-cash-coin", "keywords": "fees governance published fee schedule"},
+      {"title": "Annual Reports", "url": "{% url 'pages:governance' %}#gov-reports", "breadcrumb": "Governance → Reports", "icon": "bi-file-earmark-bar-graph", "keywords": "annual reports transparency reports"},
+
+      {"title": "Board & Committee", "url": "{% url 'pages:board_committee' %}", "breadcrumb": "Board & Committee", "icon": "bi-people", "keywords": "board committee members governance"},
+      {"title": "Structure", "url": "{% url 'pages:board_committee' %}#bc-structure", "breadcrumb": "Board & Committee → Structure", "icon": "bi-diagram-3", "keywords": "structure board committee secretariat"},
+      {"title": "Composition", "url": "{% url 'pages:board_committee' %}#bc-composition", "breadcrumb": "Board & Committee → Composition", "icon": "bi-people", "keywords": "composition membership disciplines"},
+      {"title": "Responsibilities", "url": "{% url 'pages:board_committee' %}#bc-responsibilities", "breadcrumb": "Board & Committee → Responsibilities", "icon": "bi-clipboard-check", "keywords": "responsibilities duties roles"},
+      {"title": "Secretariat", "url": "{% url 'pages:board_committee' %}#bc-secretariat", "breadcrumb": "Board & Committee → Secretariat", "icon": "bi-person-badge", "keywords": "secretariat staff day to day operations"},
+      {"title": "Meeting Schedule & Quorum", "url": "{% url 'pages:board_committee' %}#bc-meetings", "breadcrumb": "Board & Committee → Meetings", "icon": "bi-calendar-week", "keywords": "meeting schedule quorum format calendar"},
+      {"title": "Member Profiles", "url": "{% url 'pages:board_committee' %}#bc-profiles", "breadcrumb": "Board & Committee → Profiles", "icon": "bi-person-lines-fill", "keywords": "member profiles board committee secretariat people"},
+
+      {"title": "Verify Approval", "url": "{% url 'pages:verify' %}", "breadcrumb": "Verify Approval", "icon": "bi-patch-check", "keywords": "verify approval number verification code qr scan certificate authenticity"},
+      {"title": "Fee Schedule", "url": "{% url 'pages:fees' %}", "breadcrumb": "Fees", "icon": "bi-cash-coin", "keywords": "fees pricing cost schedule student ghanaian international clinical exemption"},
+      {"title": "Apply for Review", "url": "{% url 'pages:apply' %}", "breadcrumb": "Apply", "icon": "bi-send", "keywords": "apply submit new application start review"},
+      {"title": "Contact", "url": "{% url 'pages:contact' %}", "breadcrumb": "Contact", "icon": "bi-envelope", "keywords": "contact secretariat email phone complaints ethics concerns inquiries application support"},
+      {"title": "Sign In", "url": "{% url 'pages:login' %}", "breadcrumb": "Sign In", "icon": "bi-box-arrow-in-right", "keywords": "login sign in account access dashboard"},
+      {"title": "Create Account", "url": "{% url 'pages:signup' %}", "breadcrumb": "Sign Up", "icon": "bi-person-plus", "keywords": "sign up register create account applicant reviewer committee"},
+      {"title": "Terms of Use", "url": "{% url 'pages:terms' %}", "breadcrumb": "Terms of Use", "icon": "bi-file-text", "keywords": "terms of use conditions legal"},
+      {"title": "Privacy Notice", "url": "{% url 'pages:privacy' %}", "breadcrumb": "Privacy Notice", "icon": "bi-shield-lock", "keywords": "privacy notice data protection policy"}
+    ]
+  </script>
 
   {% block content %}{% endblock %}
 
@@ -187,6 +281,7 @@
   <script src="{% static 'assets/vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
   {% block vendor_js %}{% endblock %}
   <script src="{% static 'assets/js/main.js' %}"></script>
+  <script src="{% static 'assets/js/site-search.js' %}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

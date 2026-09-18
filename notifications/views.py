@@ -1,6 +1,7 @@
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.views.decorators.http import require_POST
 
 from messaging.access import is_staff_side
@@ -43,3 +44,56 @@ def open_notification(request, audience, pk):
     notification = Notification.objects.filter(pk=pk, audience=audience).first()
     target = notification.get_absolute_url() if notification else None
     return redirect(target or request.META.get("HTTP_REFERER") or "/")
+
+
+# Where "Back to dashboard" on the generic list page (below) should point,
+# and which dashboard's polling script re-fetches this audience's feed --
+# one entry per Audience that actually has a live topbar bell today.
+_DASHBOARD_HOME_URL_NAME = {
+    Notification.Audience.REVIEWER: "reviewer_dashboard:home",
+    Notification.Audience.CHAIR: "chair_dashboard:home",
+    Notification.Audience.COMMITTEE: "committee_dashboard:home",
+    Notification.Audience.SECRETARIAT: "secretariat_dashboard:home",
+}
+
+
+def _serialize(request, notification):
+    return {
+        "id": notification.pk,
+        "icon": notification.icon,
+        "message": notification.message,
+        "url": reverse("notifications:open", args=[notification.audience, notification.pk]),
+        "created_at": notification.created_at.isoformat(),
+        "is_read": notification.is_read,
+    }
+
+
+@login_required
+def feed(request, audience):
+    """Polled by static/dashboard/js/notif-bell.js so a role's topbar bell
+    reflects new Notification rows within one poll interval instead of
+    only on the next full page load."""
+    if not _authorized(request.user, audience):
+        return HttpResponseForbidden()
+    items = services.for_user(request.user, audience, limit=8)
+    return JsonResponse({
+        "count": services.unread_count(request.user, audience),
+        "items": [_serialize(request, n) for n in items],
+    })
+
+
+@login_required
+def list_page(request, audience):
+    """A minimal "view all" page for roles that don't already have one of
+    their own (Secretariat has a fuller composer/list at
+    secretariat_dashboard:notifications_page; Applicant has its own
+    derived-feed page) -- just the full history for this audience, newest
+    first, inside the same dashboard chrome."""
+    if not _authorized(request.user, audience):
+        return HttpResponseForbidden()
+    home_url_name = _DASHBOARD_HOME_URL_NAME.get(audience, "pages:index")
+    return render(request, "notifications/list.html", {
+        "audience": audience,
+        "notifications": services.for_user(request.user, audience, limit=100),
+        "home_url": reverse(home_url_name),
+    })

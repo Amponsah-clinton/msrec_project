@@ -1722,7 +1722,7 @@ def _audit_log_category(action):
 
 @login_required
 @staff_required
-def audit_logs(request):
+def audit_logs(request, template_name="dashboards/secretariat/audit-logs.html"):
     active_tab = request.GET.get("tab", "all")
     if active_tab not in AUDIT_LOG_CATEGORIES:
         active_tab = "all"
@@ -1752,7 +1752,7 @@ def audit_logs(request):
     for log in page:
         log.category = _audit_log_category(log.action)
 
-    return render(request, "dashboards/secretariat/audit-logs.html", {
+    return render(request, template_name, {
         "page": page,
         "counts": counts,
         "active_tab": active_tab,

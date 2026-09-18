@@ -279,6 +279,43 @@ class ClientLogo(models.Model):
         return self.alt_text or f"Client logo #{self.pk}"
 
 
+class Testimonial(models.Model):
+    """One card in the landing page's "Grounded in Recognized Standards"
+    carousel (templates/pages/index.html, #testimonials section) -- added,
+    edited and removed from admin_dashboard's Settings page (Testimonials
+    tab), so the carousel's quotes and photos can be updated without
+    anyone touching a template or the bundled static/assets/img/
+    testimonials/testimonials-N.jpg files.
+
+    If no Testimonial rows exist, the public page falls back to that
+    bundled set of 5 hardcoded cards -- same "blank means use the bundled
+    default" idea as ClientLogo above.
+    """
+
+    org_name = models.CharField(max_length=150)
+    subtitle = models.CharField(max_length=200, blank=True)
+    quote = models.TextField()
+
+    # Object path inside Supabase Storage's public "profile" bucket (see
+    # pages/storage.py's upload_testimonial_image()) under
+    # "testimonials/<id>/". Blank means no photo was uploaded yet.
+    image_path = models.CharField(max_length=255, blank=True)
+
+    # Lower sorts first -- lets an admin control carousel order without
+    # relying on creation order.
+    display_order = models.PositiveSmallIntegerField(default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "testimonials"
+        ordering = ["display_order", "created_at"]
+
+    def __str__(self):
+        return self.org_name
+
+
 class CommitteeMeeting(models.Model):
     """One scheduled Full Committee / REC meeting -- shown on the
     Reviewer dashboard's Upcoming Meetings page. Managed from Django

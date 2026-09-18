@@ -188,6 +188,11 @@ _urlpatterns = [
         name="notifications_mark_read",
     ),
     path(
+        "notifications/feed/",
+        views.notifications_feed,
+        name="notifications_feed",
+    ),
+    path(
         "research-team/",
         views.research_team,
         name="research_team",

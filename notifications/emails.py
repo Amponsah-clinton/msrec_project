@@ -10,8 +10,12 @@ Lives in `notifications` because sending an email is just another channel
 for "tell a user something happened" -- the same idea as
 notifications.services.notify(), one layer down.
 """
+import logging
+
 from django.core.mail import EmailMultiAlternatives
 from django.utils.html import escape
+
+logger = logging.getLogger(__name__)
 
 LOGO_URL = "https://res.cloudinary.com/dmqizfpyz/image/upload/v1789467077/logo1_oozjis.png"
 
@@ -180,7 +184,10 @@ def send_branded_email(*, subject, to, heading, paragraphs, cta_text=None,
     try:
         sent = message.send(fail_silently=fail_silently)
     except Exception:
+        logger.exception("Failed to send email %r to %r", subject, recipient_list)
         if not fail_silently:
             raise
         sent = 0
+    if not sent:
+        logger.warning("Email %r to %r was not sent (0 messages delivered)", subject, recipient_list)
     return bool(sent)

@@ -28,6 +28,7 @@
           <button type="button" class="settings-tab" data-target="contact" role="tab" aria-selected="false">Contact Page</button>
           <button type="button" class="settings-tab" data-target="policy-library" role="tab" aria-selected="false">Policy Library</button>
           <button type="button" class="settings-tab" data-target="client-logos" role="tab" aria-selected="false">Client Logos</button>
+          <button type="button" class="settings-tab" data-target="testimonials" role="tab" aria-selected="false">Testimonials</button>
         </div>
 
         <!-- Site Identity -->
@@ -337,6 +338,77 @@
                 </div>
                 {% empty %}
                 <p class="doc-file-empty">No custom logos yet.</p>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Testimonials -->
+        <section class="settings-panel-section" id="testimonials">
+          <div class="panel settings-full-panel">
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Testimonials</h3>
+              <p class="section-note">The "Grounded in Recognized Standards" carousel on the public homepage. Photos are saved to Supabase Storage's "profile" bucket.</p>
+
+              <form method="post" enctype="multipart/form-data" class="settings-form">
+                {% csrf_token %}
+                {% if editing_testimonial %}
+                  <input type="hidden" name="action" value="edit_testimonial">
+                  <input type="hidden" name="testimonial_id" value="{{ editing_testimonial.pk }}">
+                {% else %}
+                  <input type="hidden" name="action" value="add_testimonial">
+                {% endif %}
+
+                <div class="field-grid">
+                  <div class="field">
+                    <label for="testimonialOrgName">Organization</label>
+                    <input type="text" id="testimonialOrgName" name="testimonial_org_name" value="{{ editing_testimonial.org_name|default:'' }}" placeholder="e.g. World Health Organization" required>
+                  </div>
+                  <div class="field">
+                    <label for="testimonialSubtitle">Subtitle</label>
+                    <input type="text" id="testimonialSubtitle" name="testimonial_subtitle" value="{{ editing_testimonial.subtitle|default:'' }}" placeholder="e.g. Ethics Review Standards, 2011">
+                  </div>
+                  <div class="field">
+                    <label for="testimonialOrder">Display Order</label>
+                    <input type="number" id="testimonialOrder" name="testimonial_display_order" value="{{ editing_testimonial.display_order|default:0 }}" min="0">
+                  </div>
+                  <div class="field field-wide">
+                    <label for="testimonialQuote">Quote</label>
+                    <textarea id="testimonialQuote" name="testimonial_quote" rows="3" placeholder="The quoted standard or principle shown on the card" required>{{ editing_testimonial.quote|default:"" }}</textarea>
+                  </div>
+                  <div class="field field-wide">
+                    <label for="testimonialImage">{% if editing_testimonial %}Replace Photo (optional){% else %}Photo{% endif %}</label>
+                    <input type="file" id="testimonialImage" name="testimonial_image" accept="image/*"{% if not editing_testimonial %} required{% endif %}>
+                    {% if editing_testimonial.image_path %}<p class="field-hint">Leave blank to keep the current photo.</p>{% endif %}
+                  </div>
+                </div>
+
+                <div class="settings-form-actions">
+                  {% if editing_testimonial %}<a href="{% url 'admin_dashboard:settings' %}#testimonials" class="btn-secondary">Cancel</a>{% endif %}
+                  <button type="submit" class="btn-primary">{% if editing_testimonial %}Save Changes{% else %}Add Testimonial{% endif %}</button>
+                </div>
+              </form>
+
+              <div class="client-logo-grid">
+                {% for testimonial in testimonials %}
+                <div class="client-logo-card">
+                  <div class="client-logo-thumb">
+                    {% if testimonial.preview_url %}<img src="{{ testimonial.preview_url }}" alt="{{ testimonial.org_name }}">{% endif %}
+                  </div>
+                  <span class="client-logo-name">{{ testimonial.org_name }}</span>
+                  <div class="policy-doc-actions">
+                    <a href="{% url 'admin_dashboard:settings' %}?edit_testimonial={{ testimonial.pk }}#testimonials" class="btn-secondary" style="padding:6px 12px;font-size:12px;">Edit</a>
+                    <form method="post" data-confirm="Remove &quot;{{ testimonial.org_name }}&quot; from the landing page carousel?" data-confirm-variant="danger">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete_testimonial">
+                      <input type="hidden" name="testimonial_id" value="{{ testimonial.pk }}">
+                      <button type="submit" class="btn-secondary" style="padding:6px 12px;font-size:12px;color:var(--red);">Delete</button>
+                    </form>
+                  </div>
+                </div>
+                {% empty %}
+                <p class="doc-file-empty">No custom testimonials yet -- the homepage shows its 5 default cards.</p>
                 {% endfor %}
               </div>
             </div>

@@ -142,6 +142,32 @@
           </div>
         </section>
 
+        <!-- RECENT PLATFORM ACTIVITY -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Recent Platform Activity</h2>
+            <a href="{% url 'admin_dashboard:audit_logs' %}" class="panel-link">View all</a>
+          </div>
+          <ul class="notice-list">
+            {% for log in recent_activity %}
+            <li>
+              <span class="notice-icon {% if log.category == 'applications' %}info{% elif log.category == 'reviews' %}success{% elif log.category == 'roles' %}success{% else %}warn{% endif %}">
+                {% if log.category == 'applications' %}<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+                {% elif log.category == 'reviews' %}<svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+                {% elif log.category == 'roles' %}<svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/></svg>
+                {% else %}<svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>{% endif %}
+              </span>
+              <div class="notice-body">
+                <p><strong>{{ log.actor.full_name|default:"System" }}</strong> {{ log.action }}{% if log.target_label %} &middot; {{ log.target_label }}{% endif %}</p>
+              </div>
+              <span class="notice-date">{{ log.created_at|date:"j M Y" }}</span>
+            </li>
+            {% empty %}
+            <li><div class="notice-body"><p>Nothing yet &mdash; account changes, application decisions and role approvals will show up here.</p></div></li>
+            {% endfor %}
+          </ul>
+        </section>
+
         <!-- RIGHT COLUMN -->
         <div class="side-col">
 

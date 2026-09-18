@@ -117,40 +117,38 @@
           <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
         </button>
 
-        <div class="dropdown" id="bellDropdown">
+        <div class="dropdown" id="bellDropdown" data-notif-feed-url="{% url 'notifications:feed' 'committee' %}">
           <button class="icon-btn bell-btn" id="bellBtn" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
             <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-            <span class="badge">5</span>
+            <span class="badge"{% if not unread_count %} hidden{% endif %}>{{ unread_count }}</span>
           </button>
           <div class="dropdown-menu bell-menu" id="bellMenu">
             <div class="dropdown-head">
               <h4>Notifications</h4>
-              <button class="mark-read" type="button">Mark all as read</button>
+              <form method="post" action="{% url 'notifications:mark_all_read' 'committee' %}"{% if not unread_count %} hidden{% endif %}>
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{% url 'committee_dashboard:home' %}">
+                <button class="mark-read" type="submit">Mark all as read</button>
+              </form>
             </div>
             <ul class="bell-list">
-              <li class="unread">
-                <span class="notice-icon cal"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+              {% for n in notifications %}
+              <li class="{% if not n.is_read %}unread{% endif %}">
+                <span class="notice-icon {{ n.icon }}">
+                  {% if n.icon == 'success' %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+                  {% elif n.icon == 'warn' %}<svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+                  {% else %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>{% endif %}
+                </span>
                 <div class="notice-body">
-                  <p>Meeting packet for 29 May 2026 full committee meeting is ready.</p>
-                  <span class="notice-date">21 May 2026</span>
+                  <p><a href="{% url 'notifications:open' 'committee' n.pk %}">{{ n.message }}</a></p>
+                  <span class="notice-date">{{ n.created_at|date:"j M Y, g:i A" }}</span>
                 </div>
               </li>
-              <li class="unread">
-                <span class="notice-icon warn"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></span>
-                <div class="notice-body">
-                  <p>3 protocols await your decision vote.</p>
-                  <span class="notice-date">19 May 2026</span>
-                </div>
-              </li>
-              <li class="unread">
-                <span class="notice-icon info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg></span>
-                <div class="notice-body">
-                  <p>Updated Committee Policies document published.</p>
-                  <span class="notice-date">14 May 2026</span>
-                </div>
-              </li>
+              {% empty %}
+              <li class="notice-empty"><div class="notice-body"><p>No notifications yet.</p></div></li>
+              {% endfor %}
             </ul>
-            <a href="#" class="dropdown-footer-link">View all notifications</a>
+            <a href="{% url 'notifications:list' 'committee' %}" class="dropdown-footer-link">View all notifications</a>
           </div>
         </div>
 

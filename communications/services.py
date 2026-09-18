@@ -3,6 +3,8 @@ notification (and, optionally, emails) once its remind_at has arrived.
 Kept separate from views.py so it can be called opportunistically from
 more than one page without either importing the other's view functions.
 """
+import logging
+
 from django.utils import timezone
 
 from accounts.models import User
@@ -11,6 +13,8 @@ from notifications.emails import send_branded_email
 from notifications.models import Notification
 
 from .models import AudienceChoices, Reminder
+
+logger = logging.getLogger(__name__)
 
 # A Reminder's audience is a superset of Notification's (it also allows
 # "all"), so only the role-shaped values translate directly into a bell
@@ -50,15 +54,23 @@ def dispatch_reminder(reminder):
         )
 
     if reminder.send_email:
+        failed_recipients = []
         for user in recipients:
             if not user.email:
                 continue
-            send_branded_email(
+            ok = send_branded_email(
                 subject=reminder.title,
                 to=user.email,
                 heading=reminder.title,
                 paragraphs=[f"Hi {user.first_name},", reminder.message],
                 preheader=reminder.title,
+            )
+            if not ok:
+                failed_recipients.append(user.email)
+        if failed_recipients:
+            logger.warning(
+                "Reminder %s (%r): email failed for %d of %d recipients: %s",
+                reminder.pk, reminder.title, len(failed_recipients), len(recipients), failed_recipients,
             )
 
     reminder.status = Reminder.Status.SENT

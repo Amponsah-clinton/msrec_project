@@ -1,0 +1,80 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Audit Logs | MSREC Admin{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/audit-logs.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}
+      {% include "dashboards/admin/_nav.html" with active="audit_logs" %}
+{% endblock %}
+
+{% block topbar %}
+      {% include "dashboards/admin/_topbar.html" with page_title="Audit Logs" page_subtitle="Who did what, to what, and when -- account changes, application decisions, reviewer assignments and role approvals across the whole platform" %}
+{% endblock %}
+
+{% block main_content %}
+
+      <section class="panel acct-panel">
+        <div class="audit-toolbar">
+          <div class="filter-tabs acct-tabs" data-plain-tabs="true" style="margin:0;">
+            <a href="?tab=all" class="filter-tab{% if active_tab == 'all' %} active{% endif %}">All <span class="count">{{ counts.all }}</span></a>
+            <a href="?tab=users" class="filter-tab{% if active_tab == 'users' %} active{% endif %}">Users <span class="count">{{ counts.users }}</span></a>
+            <a href="?tab=applications" class="filter-tab{% if active_tab == 'applications' %} active{% endif %}">Applications <span class="count">{{ counts.applications }}</span></a>
+            <a href="?tab=reviews" class="filter-tab{% if active_tab == 'reviews' %} active{% endif %}">Reviews <span class="count">{{ counts.reviews }}</span></a>
+            <a href="?tab=roles" class="filter-tab{% if active_tab == 'roles' %} active{% endif %}">Role Decisions <span class="count">{{ counts.roles }}</span></a>
+          </div>
+          <form method="get" class="search-box audit-search">
+            <input type="hidden" name="tab" value="{{ active_tab }}">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" name="q" value="{{ query }}" placeholder="Search by person, action, or target&hellip;">
+          </form>
+        </div>
+
+        <div class="audit-list">
+          {% for log in page %}
+          <div class="audit-row audit-row-{{ log.category }}">
+            <span class="audit-row-icon">
+              {% if log.category == 'users' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M19 8v6M22 11h-6"/></svg>
+              {% elif log.category == 'applications' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+              {% elif log.category == 'reviews' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+              {% elif log.category == 'roles' %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M16 3.5a4 4 0 0 1 0 7.6"/></svg>
+              {% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg>
+              {% endif %}
+            </span>
+            <div class="audit-row-body">
+              <p class="audit-row-line">
+                <strong>{{ log.actor.full_name|default:"System" }}</strong>
+                <span class="audit-row-action">{{ log.action }}</span>
+                {% if log.target_label %}<strong>{{ log.target_label }}</strong>{% endif %}
+              </p>
+              {% if log.description %}<p class="audit-row-desc">{{ log.description }}</p>{% endif %}
+            </div>
+            <span class="audit-row-time">{{ log.created_at|date:"d M Y, g:i A" }}</span>
+          </div>
+          {% empty %}
+          <div class="empty-state">
+            <span class="empty-icon"><svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/></svg></span>
+            <h3>No activity recorded{% if query %} for "{{ query }}"{% endif %}</h3>
+            <p>Account changes, application decisions, reviewer assignments and role approvals will show up here as they happen.</p>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+        <div class="audit-pagination">
+          {% if page.has_previous %}
+          <a href="?tab={{ active_tab }}&amp;q={{ query }}&amp;page={{ page.previous_page_number }}" class="acct-btn acct-btn-edit">Previous</a>
+          {% endif %}
+          <span class="field-hint">Page {{ page.number }} of {{ page.paginator.num_pages }}</span>
+          {% if page.has_next %}
+          <a href="?tab={{ active_tab }}&amp;q={{ query }}&amp;page={{ page.next_page_number }}" class="acct-btn acct-btn-edit">Next</a>
+          {% endif %}
+        </div>
+        {% endif %}
+      </section>
+
+{% endblock %}

@@ -218,6 +218,16 @@ LOGGING = {
             "level": "ERROR",
             "propagate": False,
         },
+        # notifications.emails.send_branded_email logs every delivery
+        # failure (bad SMTP creds, Resend down, etc.) here -- previously
+        # those exceptions were swallowed by fail_silently=True with
+        # nothing printed anywhere, so a broken mail config had zero
+        # visible trace in production.
+        "notifications": {
+            "handlers": ["console"],
+            "level": "WARNING",
+            "propagate": False,
+        },
     },
 }
 

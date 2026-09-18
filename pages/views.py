@@ -3,7 +3,7 @@ from django.shortcuts import render
 
 from payments import fees
 from . import resources_storage, storage
-from .models import ClientLogo, GovernanceMember, Inquiry, ResourceDocument
+from .models import ClientLogo, GovernanceMember, Inquiry, ResourceDocument, Testimonial
 
 REASON_VALUES = {value for value, _ in Inquiry.Reason.choices}
 
@@ -36,10 +36,15 @@ def index(request):
     for logo in client_logos:
         logo.image_url = storage.public_url(logo.image_path)
 
+    testimonials = list(Testimonial.objects.all())
+    for testimonial in testimonials:
+        testimonial.image_url = storage.public_url(testimonial.image_path)
+
     return render(request, "pages/index.html", {
         "fee_groups": fee_groups,
         "exemption_fee": schedule.get("exemption"),
         "client_logos": client_logos,
+        "testimonials": testimonials,
     })
 
 

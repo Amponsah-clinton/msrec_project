@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from django.contrib import messages
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
@@ -901,6 +902,28 @@ def notifications_mark_read(request):
     notification_feed.mark_all_read(request.user)
     next_url = request.POST.get("next") or reverse("applicant_dashboard:notifications")
     return redirect(next_url)
+
+
+@login_required
+def notifications_feed(request):
+    """Polled by static/dashboard/js/notif-bell.js so the applicant bell
+    picks up new application/payment events without a page reload -- the
+    JSON counterpart to notifications_page's derived feed."""
+    items = notification_feed.feed_for(request.user, limit=8)
+    return JsonResponse({
+        "count": notification_feed.unread_count(request.user),
+        "items": [
+            {
+                "id": index,
+                "icon": item.icon,
+                "message": item.message,
+                "url": item.url,
+                "created_at": item.at.isoformat(),
+                "is_read": not item.unread,
+            }
+            for index, item in enumerate(items)
+        ],
+    })
 
 
 # =====================================================================
