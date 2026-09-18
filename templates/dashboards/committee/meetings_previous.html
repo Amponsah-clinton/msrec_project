@@ -1,0 +1,48 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Previous Meetings | MSREC Committee{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="previous" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Previous Meetings" subtitle="Your meeting history" %}{% endblock %}
+
+{% block main_content %}
+<div class="mm-page-head">
+  <div>
+    <h2>Previous Meetings</h2>
+    <p>Every past or cancelled session you were invited to. Open one to revisit its agenda and your notes.</p>
+  </div>
+</div>
+
+<section class="mm-summary">
+  <div class="stat-card"><p class="stat-label">Past sessions</p><p class="stat-value">{{ meetings|length }}</p></div>
+  <div class="stat-card"><p class="stat-label">Completed</p><p class="stat-value">{{ completed_count }}</p></div>
+  <div class="stat-card"><p class="stat-label">Attended by you</p><p class="stat-value">{{ attended_count }}</p></div>
+  <div class="stat-card"><p class="stat-label">Cancelled</p><p class="stat-value">{{ cancelled_count }}</p></div>
+</section>
+
+{% if meetings %}
+<div class="mm-toolbar">
+  <label class="mm-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="search" id="mmSearch" placeholder="Search previous meetings…" aria-label="Search meetings"></label>
+</div>
+<div class="mm-list" id="mmList">
+  {% for m in meetings %}{% include "dashboards/committee/_meeting_card.html" with past=True %}{% endfor %}
+</div>
+<div class="mm-empty" id="mmNoMatch" hidden>
+  <div class="mm-empty-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+  <h3>No meetings match</h3><p>Try a different search.</p>
+</div>
+{% else %}
+<section class="panel"><div class="mm-empty">
+  <div class="mm-empty-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
+  <h3>No previous meetings yet</h3>
+  <p>Once a meeting you were invited to has taken place, it moves here.</p>
+</div></section>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'dashboard/js/member-meetings.js' %}"></script>{% endblock %}

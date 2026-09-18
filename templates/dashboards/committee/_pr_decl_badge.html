@@ -1,0 +1,2 @@
+{# Declaration status pill. Expects `p` (a protocol row from protocol_views). #}
+<span class="pr-badge {% if p.status == 'clear' or p.status == 'cleared' %}green{% elif p.status == 'pending' or p.status == 'none' %}orange{% elif p.status == 'recused' %}red{% endif %}">{{ p.status_label }}</span>

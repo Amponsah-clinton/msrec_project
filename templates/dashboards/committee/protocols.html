@@ -1,0 +1,95 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Protocols for Committee Review | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/protocol-review.css' %}">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="protocols" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Protocols for Committee Review" subtitle="Studies placed on your meeting agendas" %}{% endblock %}
+
+{% block main_content %}
+<div class="mm-page-head">
+  <div>
+    <h2>Protocols for Committee Review</h2>
+    <p>Every protocol on the agenda of a meeting you are invited to. Declare any conflict of interest first, then read the protocol, the reviewers' recommendations and join the discussion.</p>
+  </div>
+</div>
+
+<section class="mm-summary">
+  <div class="stat-card"><p class="stat-label">Protocols to review</p><p class="stat-value">{{ total }}</p></div>
+  <div class="stat-card"><p class="stat-label">Awaiting my declaration</p><p class="stat-value" style="{% if needs_declaration %}color:var(--orange){% endif %}">{{ needs_declaration }}</p></div>
+  <div class="stat-card"><p class="stat-label">Reviewer reports in</p><p class="stat-value">{{ reviews_in_count }}</p></div>
+  <div class="stat-card"><p class="stat-label">Discussion posts</p><p class="stat-value">{{ discussion_total }}</p></div>
+</section>
+
+{% if protocols %}
+<div class="mm-toolbar">
+  <label class="mm-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="search" id="mmSearch" placeholder="Search by title, reference or investigator…" aria-label="Search protocols"></label>
+  <div class="mm-filters" id="mmFilters" role="group" aria-label="Filter protocols">
+    <button type="button" class="active" data-type="all">All ({{ total }})</button>
+    <button type="button" data-type="none">Needs declaration ({{ needs_declaration }})</button>
+    <button type="button" data-type="ok">Can participate ({{ participating }})</button>
+    <button type="button" data-type="blocked">Recused / pending ({{ recused_count }})</button>
+  </div>
+</div>
+
+<div class="pr-list" id="mmList">
+  {% for p in protocols %}
+  <article class="pr-card{% if p.is_recused %} is-locked{% endif %}" data-type="{% if p.status == 'none' %}none{% elif p.can_participate %}ok{% else %}blocked{% endif %}" data-search="{{ p.title|lower }} {{ p.ref|lower }} {{ p.pi_name|lower }} {{ p.institution|lower }}">
+    <div>
+      <div class="pr-card-top">
+        <span class="pr-ref">{{ p.ref }}</span>
+        <span class="mm-chip teal">{{ p.review_type }}</span>
+        {% include "dashboards/committee/_pr_decl_badge.html" %}
+      </div>
+      <h3><a href="{% url 'committee_dashboard:protocol_detail' p.pk %}">{{ p.title }}</a></h3>
+      <div class="pr-card-meta">
+        {% if p.pi_name %}<span><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>{{ p.pi_name }}{% if p.institution %}, {{ p.institution }}{% endif %}</span>{% endif %}
+        <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>{{ p.meeting.title }} &middot; {{ p.meeting.scheduled_at|date:"j M Y" }}</span>
+      </div>
+      <div class="pr-steps">
+        <a class="pr-step {% if p.status == 'clear' or p.status == 'cleared' %}done{% elif p.status == 'recused' %}bad{% else %}warn{% endif %}" href="{% url 'committee_dashboard:conflicts' %}">
+          <span class="ic">{% if p.status == 'clear' or p.status == 'cleared' %}<svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>{% elif p.status == 'recused' %}<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>{% else %}<svg viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01"/></svg>{% endif %}</span>
+          {% if p.status == 'none' %}Declaration needed{% else %}{{ p.status_label }}{% endif %}
+        </a>
+        {% if not p.is_recused %}
+        <a class="pr-step {% if p.reviews_in and p.reviews_in >= p.reviews_assigned %}done{% elif p.reviews_in %}live{% endif %}" href="{% url 'committee_dashboard:recommendations' %}#p{{ p.pk }}">
+          <span class="ic"><svg viewBox="0 0 24 24">{% if p.reviews_in %}<path d="m5 12 5 5 9-10"/>{% else %}<circle cx="12" cy="12" r="1.5"/>{% endif %}</svg></span>
+          {% if p.reviews_assigned %}Reviews {{ p.reviews_in }}/{{ p.reviews_assigned }}{% else %}No reviewers yet{% endif %}
+        </a>
+        <a class="pr-step {% if p.post_count %}live{% endif %}" href="{% url 'committee_dashboard:deliberation_thread' p.pk %}">
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5Z"/></svg></span>
+          {% if p.post_count %}{{ p.post_count }} post{{ p.post_count|pluralize }}{% else %}No discussion yet{% endif %}
+        </a>
+        {% endif %}
+      </div>
+    </div>
+    <div class="pr-card-side">
+      {% if p.is_recused %}<span class="pr-muted">Details hidden while recused</span>
+      {% else %}<span class="pr-badge {{ p.consensus_badge }}">{{ p.consensus }}</span>{% endif %}
+      <a href="{% url 'committee_dashboard:protocol_detail' p.pk %}" class="btn-primary">{% if p.is_recused %}View{% else %}Review protocol{% endif %}</a>
+    </div>
+  </article>
+  {% endfor %}
+</div>
+<div class="mm-empty" id="mmNoMatch" hidden>
+  <div class="mm-empty-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+  <h3>No protocols match</h3><p>Try a different search or filter.</p>
+</div>
+{% else %}
+<section class="panel"><div class="mm-empty">
+  <div class="mm-empty-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></div>
+  <h3>No protocols to review yet</h3>
+  <p>Protocols appear here once the Secretariat places them on the agenda of a meeting you are invited to. You will be notified when that happens.</p>
+  <a href="{% url 'committee_dashboard:agenda' %}" class="btn-secondary" style="margin-top:8px">View meeting agenda</a>
+</div></section>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'dashboard/js/member-meetings.js' %}"></script>{% endblock %}

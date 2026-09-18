@@ -1,0 +1,66 @@
+/* ==========================================================
+   MSREC Committee member — Governance Documents
+   Charter / Terms of Reference / SOPs / Committee Policies.
+   Loaded with member-meetings.css (reuses .mm-page-head, .mm-toolbar,
+   .mm-search, .mm-chip, .mm-empty). style.css tokens only -> theming is
+   automatic. Prefix: gd-
+========================================================== */
+
+[hidden] { display: none !important; }
+
+.gd-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+.gd-tab {
+  display: inline-flex; align-items: center; gap: 10px; padding: 10px 16px; border-radius: 10px;
+  background: var(--white); border: 1px solid var(--border); font-size: 13.5px; font-weight: 600;
+  color: var(--text-sub); transition: border-color .15s, color .15s, background .15s;
+}
+.gd-tab:hover { border-color: color-mix(in srgb, var(--teal) 40%, var(--border)); color: var(--text-main); }
+.gd-tab.active { background: var(--teal); border-color: var(--teal); color: #fff; }
+.gd-tab-count {
+  min-width: 22px; padding: 1px 7px; border-radius: 100px; text-align: center; font-size: 11.5px; font-weight: 700;
+  font-family: "JetBrains Mono", ui-monospace, monospace; background: var(--gray-light); color: var(--gray);
+}
+.gd-tab.active .gd-tab-count { background: rgba(255, 255, 255, .22); color: #fff; }
+.gd-count { font-size: 12.5px; color: var(--text-faint); font-weight: 600; }
+
+.gd-list { display: flex; flex-direction: column; gap: 14px; }
+.gd-card {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 20px; align-items: center;
+  padding: 18px 22px; background: var(--white); border: 1px solid var(--border); border-radius: 12px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.gd-card:hover { border-color: color-mix(in srgb, var(--teal) 35%, var(--border)); box-shadow: 0 8px 22px rgba(16, 24, 40, .07); }
+
+.gd-file {
+  width: 56px; height: 64px; border-radius: 10px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  background: var(--gray-light); color: var(--gray);
+}
+.gd-file svg { width: 22px; height: 22px; }
+.gd-file span { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 10px; font-weight: 700; letter-spacing: .04em; }
+.gd-file.pdf { background: var(--red-light);    color: var(--red); }
+.gd-file.doc { background: var(--blue-light);   color: var(--blue); }
+.gd-file.xls { background: var(--green-light);  color: var(--green); }
+.gd-file.ppt { background: var(--orange-light); color: var(--orange); }
+
+.gd-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.gd-title h3 { margin: 0; font-size: 15.5px; font-weight: 700; line-height: 1.4; }
+.gd-new {
+  display: inline-flex; align-items: center; padding: 2px 9px; border-radius: 100px; font-size: 11px; font-weight: 700;
+  letter-spacing: .05em; text-transform: uppercase; background: var(--teal); color: #fff;
+}
+.gd-desc { margin: 6px 0 0; font-size: 13.5px; line-height: 1.6; color: var(--text-sub); max-width: 78ch; }
+.gd-meta { display: flex; gap: 6px 18px; flex-wrap: wrap; margin-top: 10px; font-size: 12.5px; color: var(--text-faint); }
+.gd-meta span { display: inline-flex; align-items: center; gap: 6px; }
+.gd-meta svg { width: 14px; height: 14px; }
+.gd-actions .btn-primary { padding: 9px 20px; font-size: 13px; }
+.gd-actions .btn-primary svg { width: 16px; height: 16px; }
+
+@media (max-width: 700px) {
+  .gd-card { grid-template-columns: auto 1fr; gap: 14px; padding: 16px; }
+  .gd-actions { grid-column: 1 / -1; }
+  .gd-file { width: 46px; height: 54px; }
+}
+@media print {
+  .sidebar, .topbar, .menu-toggle, .footer, .gd-tabs, .mm-toolbar, .gd-actions, .flash-messages { display: none !important; }
+}

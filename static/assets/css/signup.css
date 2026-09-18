@@ -336,26 +336,68 @@ body.signup-page { margin: 0; font-family: var(--default-font); }
 .tag-input input[type="text"]:focus { outline: none; box-shadow: none; }
 
 /* ---------------- Chip checkboxes (Committee Expertise Category) ---------------- */
+/* Two-class selectors so they outrank the generic `.field label` / `.field input`
+   rules (these grids live inside a .field) that otherwise inject block display,
+   a bottom margin, 100% width and 11px/14px padding into every chip. */
 .chip-checkbox-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 6px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 10px 12px;
+  margin-top: 8px;
 }
-.chip-checkbox {
-  display: inline-flex;
+.chip-checkbox-grid .chip-checkbox {
+  display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 9px 14px;
+  gap: 12px;
+  margin: 0;
+  padding: 11px 16px;
   border: 1.5px solid #e1e8e6;
-  border-radius: 50px;
-  font-size: 13px;
+  border-radius: 12px;
+  font-size: 13.5px;
   font-weight: 600;
+  line-height: 1.35;
   color: #43514f;
+  background: transparent;
   cursor: pointer;
   transition: .2s;
 }
-.chip-checkbox input { accent-color: var(--accent-color); width: 15px; height: 15px; }
+.chip-checkbox-grid .chip-checkbox:hover { border-color: color-mix(in srgb, var(--accent-color), transparent 55%); }
+.chip-checkbox-grid .chip-checkbox input {
+  appearance: none;
+  -webkit-appearance: none;
+  box-sizing: border-box;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  border: 1.5px solid #b9c4c1;
+  border-radius: 5px;
+  background: #fff;
+  position: relative;
+  cursor: pointer;
+  transition: .15s;
+}
+.chip-checkbox-grid .chip-checkbox input:checked {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+}
+.chip-checkbox-grid .chip-checkbox input:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.chip-checkbox-grid .chip-checkbox input:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+  box-shadow: none;
+}
 .chip-checkbox:has(input:checked),
 .chip-checkbox.checked {
   border-color: var(--accent-color);
@@ -504,6 +546,19 @@ body.signup-page { margin: 0; font-family: var(--default-font); }
   background: #eef6f4;
   color: var(--heading-color);
   border: 1px solid color-mix(in srgb, var(--accent-color) 25%, transparent);
+  opacity: 1;
+  max-height: 80px;
+  overflow: hidden;
+  transition: opacity 0.35s ease, max-height 0.35s ease, margin 0.35s ease, padding 0.35s ease;
+}
+/* Auto-dismissed 4s after page load -- see assets/js/auth-alerts.js */
+.signup-message.is-dismissing {
+  opacity: 0;
+  max-height: 0;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-width: 0;
 }
 .signup-message.error {
   background: #fdecea;

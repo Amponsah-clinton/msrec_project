@@ -13,6 +13,11 @@
 
 {% block extra_css %}
 <link href="{% static 'assets/css/index.css' %}" rel="stylesheet">
+<!-- Reuses the /applicants/ page's Fees band design (.ap-fees-band /
+     .ap-fee-card) for this page's own Review Fees section, so the two
+     pages tell one consistent fee story instead of two differently
+     styled ones. -->
+<link href="{% static 'assets/css/applicants.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -475,35 +480,34 @@
     <!-- Pricing Section -->
     <section id="pricing" class="pricing section">
 
-      <!-- Section Title -->
-      <div class="container section-title" data-aos="fade-up">
-        <h2>Review Fees</h2>
-        <p>Review fees fund the administrative cost of independent review; they are never a condition of approval.</p>
-      </div><!-- End Section Title -->
+      <div class="container ap-fees-band" data-aos="zoom-in" data-aos-delay="100">
+        <div class="ap-fees-overlay" aria-hidden="true"></div>
+        <div class="ap-fees-content">
+          <div class="ap-section-head ap-section-head-light">
+            <span class="section-label section-label-light">Fees</span>
+            <h2>Review Fees</h2>
+            <p>Fees fund the administrative cost of independent review &mdash; they are never a condition of approval.</p>
+          </div>
 
-      <div class="container" data-aos="zoom-in" data-aos-delay="100">
-
-        <div class="row g-4">
-
-          {% for group in fee_groups %}
-          <div class="col-lg-4">
-            <div class="fee-card">
-              <h3>{{ group.title }}</h3>
-              <ul class="fee-list">
-                {% for row in group.rows %}
-                <li>
-                  <span class="fee-list-label">{{ row.label }}</span>
-                  <span class="fee-list-amount">
-                    {% if row.fee and row.fee.requires_payment %}{{ row.fee.currency }} {{ row.fee.amount|floatformat:0 }}{% else %}Free{% endif %}
-                  </span>
-                </li>
-                {% endfor %}
+          <div class="ap-fees-grid">
+            {% for card in fee_cards %}
+            <div class="ap-fee-card{% if card.featured %} ap-fee-card-featured{% endif %}">
+              {% if card.featured %}<span class="ap-fee-badge">Most common</span>{% endif %}
+              <h3>{{ card.title }}</h3>
+              <p class="ap-fee-amount">
+                {% if not card.amount %}Contact us
+                {% elif card.amount.low == card.amount.high %}{{ card.amount.currency }} {{ card.amount.low|floatformat:0 }}
+                {% else %}{{ card.amount.currency }} {{ card.amount.low|floatformat:0 }}&ndash;{{ card.amount.high|floatformat:0 }}{% endif %}
+              </p>
+              <p class="ap-fee-note">{{ card.note }}</p>
+              <ul>
+                {% for bullet in card.bullets %}<li><i class="bi bi-check2"></i> {{ bullet }}</li>{% endfor %}
               </ul>
-              <div class="text-center"><a href="{% url 'pages:apply' %}" class="fee-card-btn">Apply Now</a></div>
             </div>
-          </div><!-- End Fee Card -->
-          {% endfor %}
-
+            {% endfor %}
+          </div>
+        </div>
+      </div>
 
     </section><!-- /Pricing Section -->
 

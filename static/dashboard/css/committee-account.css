@@ -1,0 +1,213 @@
+/* ---------------------------------------------------------------------
+   MSREC Committee -- Notifications / Profile & Committee Appointment /
+   Security. Sits on top of reviewer-settings.css + reviewer-identity.css
+   (the shared "settings pages" design system: hairline borders, serif
+   headings, tinted icon chips) and only adds what is specific to the
+   Committee pages. Same house rules as the rest of the dashboards: no
+   gradients, no colour painted at a card edge, theme tokens only so
+   dark mode follows for free.
+--------------------------------------------------------------------- */
+
+.topbar-title h1 {
+  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+}
+
+.cm-scope .rv-hero-stat strong small { font-size: 13px; font-weight: 600; color: var(--text-faint); margin-left: 1px; }
+
+/* ---------------- shared side-panel header ---------------- */
+.cm-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.cm-side-head h2 { margin: 0 !important; }
+.cm-pct { font-size: 15px; font-weight: 800; color: var(--teal); }
+
+.cm-sub-label {
+  margin: 20px 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+/* ---------------- Notifications ---------------- */
+.cm-feed { padding: 4px 20px 12px; }
+.cm-feed .notif-day-label { margin: 20px 0 10px; }
+.cm-notif-msg { margin: 0; font-size: 13.5px; line-height: 1.5; }
+.cm-notif-msg a { color: var(--text-sub); font-weight: 500; }
+.cm-scope .notif-row.unread .cm-notif-msg a { color: var(--text-main); font-weight: 600; }
+.cm-notif-msg a:hover { color: var(--teal); }
+
+.cm-empty, .cm-unlinked { text-align: center; padding: 44px 24px; }
+.cm-unlinked { padding: 18px 8px 8px; }
+.cm-empty h3, .cm-unlinked h3 { margin: 12px 0 6px; font-size: 16px; }
+.cm-empty p, .cm-unlinked p { margin: 0 auto; max-width: 42ch; font-size: 13px; line-height: 1.6; color: var(--text-sub); }
+.cm-empty-ico {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: var(--teal-light);
+  color: var(--teal);
+  border: 1px solid color-mix(in srgb, var(--teal) 22%, transparent);
+}
+.cm-empty-ico svg { width: 24px; height: 24px; }
+.cm-empty-filter { text-align: center; color: var(--text-faint); font-size: 13px; padding: 26px 0; margin: 0; }
+
+.cm-mini-meeting {
+  display: grid;
+  grid-template-columns: 46px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+  color: inherit;
+}
+.cm-mini-meeting:first-of-type { border-top: 0; padding-top: 2px; }
+.cm-mini-meeting:hover strong { color: var(--teal); }
+.cm-mini-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  border-radius: 11px;
+  background: var(--purple-light);
+  color: var(--purple);
+  border: 1px solid color-mix(in srgb, var(--purple) 20%, transparent);
+  line-height: 1.1;
+}
+.cm-mini-date b { font-size: 16px; }
+.cm-mini-date i { font-style: normal; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.cm-mini-body { min-width: 0; }
+.cm-mini-body strong { display: block; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cm-mini-body em { display: block; font-style: normal; font-size: 11.5px; color: var(--text-sub); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ---------------- Committee appointment ---------------- */
+.cm-seat-kicker {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--purple);
+}
+.cm-seat h3 {
+  margin: 4px 0 10px;
+  font-family: "Fraunces", Georgia, serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.cm-seat-status { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+
+.cm-term-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--gray-light);
+  overflow: hidden;
+}
+.cm-term-bar span { display: block; height: 100%; border-radius: 999px; background: var(--teal); }
+.cm-strength { margin-top: 2px; }
+.cm-term-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 7px;
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+.cm-term-legend b { color: var(--text-sub); font-weight: 700; }
+
+.cm-facts { margin: 16px 0 0; display: grid; gap: 0; }
+.cm-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+}
+.cm-facts dt { color: var(--text-sub); font-weight: 500; }
+.cm-facts dd { margin: 0; font-weight: 600; text-align: right; }
+.cm-letter { margin-top: 14px; width: 100%; justify-content: center; }
+
+.cm-history { list-style: none; margin: 0; padding: 0; }
+.cm-history li { display: flex; gap: 12px; padding: 0 0 14px; position: relative; }
+.cm-history li:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 14px;
+  bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+.cm-dot { width: 9px; height: 9px; margin-top: 4px; border-radius: 50%; background: var(--teal); flex-shrink: 0; }
+.cm-history strong { display: block; font-size: 13px; }
+.cm-history em { display: block; font-style: normal; font-size: 11.5px; color: var(--text-sub); margin-top: 2px; }
+
+.cm-approval {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--green-light);
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid color-mix(in srgb, var(--green) 20%, transparent);
+}
+.cm-approval svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+.cm-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
+}
+.cm-row:first-of-type { border-top: 0; padding-top: 2px; }
+.cm-row .rv-ico { width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cm-row .rv-ico svg { width: 15px; height: 15px; }
+.cm-row-body { flex: 1; min-width: 0; }
+.cm-row-body strong { display: block; font-size: 13px; }
+.cm-row-body em { display: block; font-style: normal; font-size: 11.5px; color: var(--text-sub); margin-top: 2px; }
+
+/* ---------------- Security ---------------- */
+.cm-pw-wrap { position: relative; }
+.cm-pw-wrap .field-input { padding-right: 44px; }
+.cm-pw-toggle {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-faint);
+  cursor: pointer;
+}
+.cm-pw-toggle:hover { color: var(--teal); background: var(--hover-bg); }
+.cm-pw-toggle svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cm-pw-toggle .eye-off { display: none; }
+.cm-pw-toggle[aria-pressed="true"] .eye { display: none; }
+.cm-pw-toggle[aria-pressed="true"] .eye-off { display: block; }
+
+.cm-signout-all { margin-top: 14px; }
+.cm-signout-all .btn-secondary { width: 100%; justify-content: center; color: var(--red); }

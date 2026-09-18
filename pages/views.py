@@ -27,10 +27,6 @@ def _fee_group_rows(schedule, keys):
 
 def index(request):
     schedule = fees.schedule()
-    fee_groups = [
-        {"title": title, "rows": _fee_group_rows(schedule, keys)}
-        for title, keys in HOME_FEE_GROUPS
-    ]
 
     client_logos = list(ClientLogo.objects.all())
     for logo in client_logos:
@@ -41,7 +37,12 @@ def index(request):
         testimonial.image_url = storage.public_url(testimonial.image_path)
 
     return render(request, "pages/index.html", {
-        "fee_groups": fee_groups,
+        # Same "What review costs" cards as the /applicants/ page's Fees
+        # band -- the homepage's Review Fees section now reuses that
+        # design (and its data) instead of the plainer fee_groups list it
+        # used to render, so a visitor sees one consistent fee story
+        # wherever they land.
+        "fee_cards": _applicants_fee_cards(schedule),
         "exemption_fee": schedule.get("exemption"),
         "client_logos": client_logos,
         "testimonials": testimonials,
@@ -122,13 +123,16 @@ def _fee_card_range(schedule, keys):
     return {"currency": fees.CURRENCY, "low": amounts[0], "high": amounts[-1]}
 
 
-def applicants(request):
-    schedule = fees.schedule()
-    fee_cards = [
+def _applicants_fee_cards(schedule):
+    return [
         {**card, "amount": _fee_card_range(schedule, card["keys"])}
         for card in APPLICANTS_FEE_CARDS
     ]
-    return render(request, "pages/applicants.html", {"fee_cards": fee_cards})
+
+
+def applicants(request):
+    schedule = fees.schedule()
+    return render(request, "pages/applicants.html", {"fee_cards": _applicants_fee_cards(schedule)})
 
 
 def contact(request):

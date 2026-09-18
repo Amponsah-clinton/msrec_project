@@ -210,6 +210,17 @@ class GovernanceMember(models.Model):
     # avatar in this app.
     photo_path = models.CharField(max_length=255, blank=True)
 
+    # The login account this seat belongs to, if any -- what lets a
+    # Committee member's own dashboard (Profile & Committee Appointment)
+    # pull *their* appointment, training and conflict records instead of
+    # guessing from a name. Optional: plenty of Board/Secretariat people
+    # on the public page never sign in. Set from /admin/ (or the SQL
+    # backfill in supabase/committee_dashboard.sql), never inferred.
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="governance_seat",
+    )
+
     # Lower sorts first within a group; ties break on full_name. Lets an
     # admin put a Chairperson above ordinary members without relying on
     # alphabetical luck.
@@ -382,16 +393,24 @@ class MeetingDocument(models.Model):
 
 
 class PolicyDocument(models.Model):
-    """One MSREC SOP / Reviewer Guidance / Ethics Guideline document,
-    shown on the Reviewer dashboard's three Policies & Guidance pages
-    (filtered by `category`, each its own URL -- not tabs on one page).
-    Same public "ethics" bucket as MeetingDocument.
+    """One MSREC governance document -- an SOP, Reviewer Guidance, Ethics
+    Guideline, or one of the Committee's Charter / Terms of Reference /
+    Committee Policies -- filtered by `category` on the Reviewer dashboard's
+    Policies & Guidance pages and the Committee dashboard's Governance
+    Documents pages (each category its own URL, not tabs on one page).
+    Admins add them from Settings -> Policy Library; they appear on the
+    matching dashboard page with no further step. SOPs are read by both
+    the reviewer and committee dashboards. Same public "ethics" bucket as
+    MeetingDocument.
     """
 
     class Category(models.TextChoices):
         SOP = "sop", "MSREC SOP"
         GUIDANCE = "guidance", "Reviewer Guidance"
         ETHICS = "ethics", "Ethics Guideline"
+        CHARTER = "charter", "Committee Charter"
+        TERMS = "terms_of_reference", "Committee Terms of Reference"
+        COMMITTEE_POLICY = "committee_policy", "Committee Policy"
 
     category = models.CharField(max_length=20, choices=Category.choices)
     title = models.CharField(max_length=200)

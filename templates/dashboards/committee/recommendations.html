@@ -1,0 +1,114 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Reviewer Recommendations | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/protocol-review.css' %}">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="recommendations" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Reviewer Recommendations" subtitle="What the assigned reviewers concluded" %}{% endblock %}
+
+{% block main_content %}
+<div class="mm-page-head">
+  <div>
+    <h2>Reviewer Recommendations</h2>
+    <p>The independent reviewers' completed assessments for each protocol on your agendas &mdash; their recommendation, reasoning, key concerns and the ethical checklist. The committee makes the final decision.</p>
+  </div>
+</div>
+
+<section class="mm-summary">
+  <div class="stat-card"><p class="stat-label">Protocols with reviews</p><p class="stat-value">{{ with_reviews }}</p></div>
+  <div class="stat-card"><p class="stat-label">Unanimous approval</p><p class="stat-value" style="color:var(--green)">{{ unanimous_approve }}</p></div>
+  <div class="stat-card"><p class="stat-label">Split opinions</p><p class="stat-value" style="{% if split_count %}color:var(--orange){% endif %}">{{ split_count }}</p></div>
+  <div class="stat-card"><p class="stat-label">Awaiting reviews</p><p class="stat-value">{{ awaiting_count }}</p></div>
+</section>
+
+{% if protocols %}
+<div class="mm-toolbar">
+  <label class="mm-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="search" id="mmSearch" placeholder="Search by title or reference…" aria-label="Search protocols"></label>
+  <div class="pr-tally-legend" style="margin:0">
+    {% for label, badge in rec_legend %}<span><i class="pr-seg-{{ badge }}"></i>{{ label }}</span>{% endfor %}
+  </div>
+</div>
+
+<div id="mmList">
+  {% for p in protocols %}
+    {% if p.is_recused %}
+    <div class="pr-rec" style="padding:18px 22px;display:flex;gap:12px;align-items:center" data-search="{{ p.ref|lower }}">
+      <span class="pr-badge red">Recused</span><span class="pr-ref">{{ p.ref }}</span>
+      <span class="pr-muted">Reviewer recommendations are hidden because you recused yourself from this protocol.</span>
+    </div>
+    {% else %}
+    <details class="pr-rec" id="p{{ p.pk }}" data-search="{{ p.title|lower }} {{ p.ref|lower }}"{% if p.reviews_in == 1 %} open{% endif %}>
+      <summary>
+        <div>
+          <div class="pr-rec-title">
+            <span class="pr-ref">{{ p.ref }}</span>
+            <span class="pr-badge {{ p.consensus_badge }}">{{ p.consensus }}</span>
+          </div>
+          <h3>{{ p.title }}</h3>
+          <div class="pr-muted" style="margin-top:4px">{{ p.meeting.title }} &middot; {{ p.meeting.scheduled_at|date:"j M Y" }} &middot; {{ p.reviews_in }} of {{ p.reviews_assigned }} report{{ p.reviews_assigned|pluralize }} in</div>
+        </div>
+        <div class="pr-rec-summary-side">
+          {% if p.tally %}
+          <div class="lbl"><span>{{ p.reviews_in }} recommendation{{ p.reviews_in|pluralize }}</span></div>
+          <div class="pr-tally-bar">{% for t in p.tally %}<span class="pr-seg-{{ t.badge }}" style="width:{{ t.pct }}%" title="{{ t.label }}: {{ t.count }}"></span>{% endfor %}</div>
+          {% else %}<div class="pr-muted">No completed reports yet</div>{% endif %}
+        </div>
+        <svg class="chev" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+      </summary>
+
+      {% if p.recs %}
+      <div class="pr-rec-body">
+        {% for a in p.recs %}
+        <article class="pr-rev">
+          <header class="pr-rev-head">
+            <span class="pr-avatar">{{ a.reviewer.initials }}</span>
+            <div class="who"><strong>{{ a.reviewer.full_name }}</strong><small>Reviewer{% if a.completed_at %} &middot; submitted {{ a.completed_at|date:"j M Y" }}{% endif %}</small></div>
+            <span class="pr-badge {{ a.rec_badge }}">{{ a.rec_short }}</span>
+          </header>
+          {% if a.recommendation_reason %}<div class="pr-block"><h4>Reasoning</h4><p>{{ a.recommendation_reason }}</p></div>{% endif %}
+          {% if a.key_concerns %}<div class="pr-block concern"><h4>Key concerns</h4><p>{{ a.key_concerns }}</p></div>{% endif %}
+          {% if a.review_notes %}<div class="pr-block"><h4>Notes</h4><p>{{ a.review_notes }}</p></div>{% endif %}
+          <details>
+            <summary>Ethical checklist{% if a.needs_revision_count %} &middot; {{ a.needs_revision_count }} need{{ a.needs_revision_count|pluralize:"s," }} revision{% endif %}</summary>
+            <div class="pr-checks" style="margin-top:10px">
+              {% for row in a.check_rows %}
+              <div class="pr-check"><span class="d {{ row.badge }}"></span><span class="lbl">{{ row.label }}</span><span class="v {{ row.badge }}">{{ row.text }}</span></div>
+              {% endfor %}
+            </div>
+          </details>
+        </article>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div style="padding:0 22px 20px;display:flex;gap:10px;flex-wrap:wrap">
+        <a class="btn-secondary" href="{% url 'committee_dashboard:protocol_detail' p.pk %}">View protocol</a>
+        <a class="btn-primary" href="{% url 'committee_dashboard:deliberation_thread' p.pk %}">Discuss</a>
+      </div>
+    </details>
+    {% endif %}
+  {% endfor %}
+</div>
+<div class="mm-empty" id="mmNoMatch" hidden>
+  <div class="mm-empty-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+  <h3>No protocols match</h3><p>Try a different search.</p>
+</div>
+{% else %}
+<section class="panel"><div class="mm-empty">
+  <div class="mm-empty-icon"><svg viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2Z"/></svg></div>
+  <h3>No recommendations to show</h3>
+  <p>Reviewer recommendations appear here for protocols placed on the agenda of a meeting you are invited to.</p>
+</div></section>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/member-meetings.js' %}"></script>
+<script src="{% static 'dashboard/js/protocol-review.js' %}"></script>
+{% endblock %}

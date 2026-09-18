@@ -1,0 +1,19 @@
+{# Three-way RSVP. Expects `m` (meeting with .my_part) and optionally `next` for the post-save redirect. #}
+{% if m.my_part %}
+<div class="mm-rsvp" role="group" aria-label="Your response to {{ m.title }}">
+  {% with current=m.my_part.rsvp_status %}
+  <form method="post" action="{% url 'committee_dashboard:meeting_rsvp' m.pk %}">{% csrf_token %}
+    <input type="hidden" name="status" value="accepted"><input type="hidden" name="next" value="{{ next|default:request.get_full_path }}">
+    <button type="submit" class="accepted{% if current == 'accepted' %} on{% endif %}" aria-pressed="{% if current == 'accepted' %}true{% else %}false{% endif %}"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>Attend</button>
+  </form>
+  <form method="post" action="{% url 'committee_dashboard:meeting_rsvp' m.pk %}">{% csrf_token %}
+    <input type="hidden" name="status" value="tentative"><input type="hidden" name="next" value="{{ next|default:request.get_full_path }}">
+    <button type="submit" class="tentative{% if current == 'tentative' %} on{% endif %}" aria-pressed="{% if current == 'tentative' %}true{% else %}false{% endif %}"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .8-1 1.5M12 17h.01"/></svg>Maybe</button>
+  </form>
+  <form method="post" action="{% url 'committee_dashboard:meeting_rsvp' m.pk %}">{% csrf_token %}
+    <input type="hidden" name="status" value="declined"><input type="hidden" name="next" value="{{ next|default:request.get_full_path }}">
+    <button type="submit" class="declined{% if current == 'declined' %} on{% endif %}" aria-pressed="{% if current == 'declined' %}true{% else %}false{% endif %}"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>Decline</button>
+  </form>
+  {% endwith %}
+</div>
+{% endif %}

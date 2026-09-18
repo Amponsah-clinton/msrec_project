@@ -1,0 +1,129 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}{{ p.ref }} | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/protocol-review.css' %}">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="protocols" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Protocol Review" subtitle=p.ref %}{% endblock %}
+
+{% block main_content %}
+<a class="pr-crumb" href="{% url 'committee_dashboard:protocols' %}"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>All protocols</a>
+
+<section class="pr-hero">
+  <div class="pr-hero-top">
+    <span class="pr-ref">{{ p.ref }}</span>
+    <span class="mm-chip teal">{{ p.review_type }}</span>
+    {% include "dashboards/committee/_pr_decl_badge.html" %}
+    {% if not p.is_recused %}<span class="pr-badge {{ p.consensus_badge }}">{{ p.consensus }}</span>{% endif %}
+  </div>
+  <h2>{{ p.title }}</h2>
+  <div class="mm-meta">
+    {% if p.pi_name %}<span><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>{{ p.pi_name }}{% if p.institution %}, {{ p.institution }}{% endif %}</span>{% endif %}
+    <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><a href="{% url 'committee_dashboard:agenda' %}?meeting={{ p.meeting.pk }}">{{ p.meeting.title }}</a> &middot; {{ p.meeting.scheduled_at|date:"j M Y, g:i A" }}</span>
+  </div>
+</section>
+
+{% if p.is_recused %}
+<section class="panel"><div class="pr-locked">
+  <div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+  <h3>You are recused from this protocol</h3>
+  <p>To protect the review's independence, the protocol details, reviewer recommendations and the committee's discussion are hidden from you. You will not take part in the decision on this study.</p>
+  <a href="{% url 'committee_dashboard:conflicts' %}" class="btn-secondary" style="margin-top:6px">View my declaration</a>
+</div></section>
+{% else %}
+
+<div class="pr-grid">
+  <div class="pr-stack">
+    <section class="panel">
+      <h2>At a glance</h2>
+      {% if facts %}
+      <dl class="pr-facts">{% for label, value in facts %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}</dl>
+      {% else %}<p class="pr-muted" style="margin:0">The applicant has not filled in these details.</p>{% endif %}
+      {% if flags %}
+      <div class="pr-flags">{% for label, yes in flags %}<span class="pr-flag{% if yes %} yes{% endif %}">{{ label }}: {% if yes %}Yes{% else %}No{% endif %}</span>{% endfor %}</div>
+      {% endif %}
+    </section>
+
+    {% if sections %}
+    <section class="panel">
+      <h2>Study summary</h2>
+      {% for label, text in sections %}
+      <div class="pr-section"><h3>{{ label }}</h3><p>{{ text }}</p></div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <section class="panel">
+      <h2>Submitted documents ({{ documents|length }})</h2>
+      {% if documents %}
+      <div class="pr-docs">
+        {% for doc in documents %}
+        <div class="pr-doc">
+          <span class="ic"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span>
+          <span class="nm" title="{{ doc.name }}">{{ doc.name }}</span>
+          {% if doc.url %}<a class="btn-secondary" href="{{ doc.url }}" target="_blank" rel="noopener noreferrer">Open</a>{% endif %}
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}<p class="pr-muted" style="margin:0">No documents were attached to this application.</p>{% endif %}
+    </section>
+
+    <section class="panel">
+      <h2>Reviewer recommendations</h2>
+      {% if p.tally %}
+      <div class="pr-tally-bar" role="img" aria-label="{{ p.consensus }}">{% for t in p.tally %}<span class="pr-seg-{{ t.badge }}" style="width:{{ t.pct }}%"></span>{% endfor %}</div>
+      <div class="pr-tally-legend">{% for t in p.tally %}<span><i class="pr-seg-{{ t.badge }}"></i>{{ t.label }} &middot; {{ t.count }}</span>{% endfor %}</div>
+      <a href="{% url 'committee_dashboard:recommendations' %}#p{{ p.pk }}" class="btn-secondary" style="margin-top:16px">Read the full reviews</a>
+      {% else %}
+      <p class="pr-muted" style="margin:0">{% if p.reviews_assigned %}{{ p.reviews_assigned }} reviewer{{ p.reviews_assigned|pluralize }} assigned; no completed reports yet.{% else %}No reviewers have been assigned yet.{% endif %}</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside class="pr-side">
+    <section class="panel">
+      <h2>My conflict declaration</h2>
+      <div class="pr-decl {{ p.status }}">
+        <span class="ic">
+          {% if p.status == 'clear' or p.status == 'cleared' %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg>
+          {% else %}<svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/><path d="M12 8v4M12 16h.01"/></svg>{% endif %}
+        </span>
+        <div>
+          <strong>{{ p.status_label }}</strong>
+          {% if p.status == 'none' %}<p>You must declare whether you have a conflict of interest before joining the discussion.</p>
+          {% elif p.status == 'clear' %}<p>You declared no conflict of interest on this protocol.</p>
+          {% elif p.status == 'cleared' %}<p>The Chair has cleared you to take part despite your declared conflict.</p>
+          {% elif p.status == 'pending' %}<p>Your declared conflict is with the Chair. You cannot post to the discussion until it is decided.</p>{% endif %}
+          <a href="{% url 'committee_dashboard:conflicts' %}" class="btn-secondary pr-full">{% if p.status == 'none' %}Declare now{% else %}Manage declaration{% endif %}</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Discussion</h2>
+      {% for post in latest_posts %}
+      <div class="pr-mini-post">
+        <span class="pr-avatar sm">{{ post.author.initials }}</span>
+        <div class="t"><strong>{{ post.author.full_name }}</strong> <span class="pr-kind {{ post.kind }}" style="margin-left:4px">{{ post.get_kind_display }}</span><p>{{ post.body }}</p></div>
+      </div>
+      {% empty %}<p class="pr-muted" style="margin:0 0 14px">No one has posted yet. Start the discussion.</p>{% endfor %}
+      <a href="{% url 'committee_dashboard:deliberation_thread' p.pk %}" class="btn-primary pr-full" style="margin-top:6px">Open discussion{% if p.post_count %} ({{ p.post_count }}){% endif %}</a>
+    </section>
+
+    <section class="panel">
+      <h2>Meeting</h2>
+      <div class="mm-side-row" style="border-top:0;padding-top:0">
+        <div class="mm-datebox sm"><span class="mon">{{ p.meeting.scheduled_at|date:"M" }}</span><span class="day">{{ p.meeting.scheduled_at|date:"d" }}</span></div>
+        <div><a class="t" href="{% url 'committee_dashboard:agenda' %}?meeting={{ p.meeting.pk }}">{{ p.meeting.title }}</a><small>{{ p.meeting.scheduled_at|date:"D, g:i A" }} &middot; {{ p.item.duration_minutes }} min slot</small></div>
+      </div>
+    </section>
+  </aside>
+</div>
+{% endif %}
+{% endblock %}

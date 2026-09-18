@@ -215,3 +215,26 @@ class Decision(models.Model):
     @property
     def total_votes(self):
         return self.votes_for + self.votes_against + self.votes_abstain
+
+
+class AgendaItemNote(models.Model):
+    """A committee member's own working notes on one agenda item, plus
+    whether they've marked it "prepared". Private to that member -- one
+    row per (agenda item, user), never shown to other participants.
+    """
+
+    agenda_item = models.ForeignKey(AgendaItem, on_delete=models.CASCADE, related_name="member_notes")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="agenda_notes")
+
+    note = models.TextField(blank=True)
+    is_reviewed = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "meeting_agenda_notes"
+        unique_together = [("agenda_item", "user")]
+
+    def __str__(self):
+        return f"{self.user} — {self.agenda_item}"

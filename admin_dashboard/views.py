@@ -1758,6 +1758,25 @@ def _handle_settings_add_policy_document(request, site):
             messages.warning(request, f'"{title}" was saved, but the file upload failed -- try again from here.')
     messages.success(request, f'"{title}" was added to {document.get_category_display()}.')
 
+    # Committee-facing categories appear on the matching Governance Documents
+    # page straight away (that page just reads this table); this also puts a
+    # line in the committee's notification bell so members notice.
+    committee_page = {
+        PolicyDocument.Category.CHARTER: "committee_dashboard:doc_charter",
+        PolicyDocument.Category.TERMS: "committee_dashboard:doc_terms",
+        PolicyDocument.Category.SOP: "committee_dashboard:doc_sops",
+        PolicyDocument.Category.COMMITTEE_POLICY: "committee_dashboard:doc_policies",
+    }.get(category)
+    if committee_page:
+        from notifications import services as notification_services
+        from notifications.models import Notification
+
+        notification_services.notify(
+            Notification.Audience.COMMITTEE,
+            f"New governance document published: “{title}”.",
+            icon=Notification.Icon.INFO, link_url_name=committee_page,
+        )
+
 
 def _handle_settings_edit_policy_document(request, site):
     document = get_object_or_404(PolicyDocument, pk=request.POST.get("document_id"))

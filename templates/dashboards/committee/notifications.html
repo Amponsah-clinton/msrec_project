@@ -1,0 +1,181 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Notifications | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/reviewer-settings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/reviewer-identity.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/committee-account.css' %}">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="notifications" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Notifications" subtitle="Committee announcements, meeting invites and decisions awaiting you" %}{% endblock %}
+
+{% block main_content %}
+<div class="rv-scope cm-scope">
+
+  <div class="page-head">
+    <div class="page-head-text">
+      <h2>Notifications</h2>
+      <p>Everything addressed to the Committee, in one place &mdash; and how you would like to hear about it.</p>
+    </div>
+    <form method="post" action="{% url 'notifications:mark_all_read' 'committee' %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      <button type="submit" class="btn-secondary"{% if not unread_count %} disabled{% endif %}>
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+        Mark all as read
+      </button>
+    </form>
+  </div>
+
+  {% include "dashboards/committee/_account_subnav.html" with active="notifications" %}
+
+  <div class="rv-kpi-strip">
+    <div class="rv-kpi">
+      <div class="rv-kpi-top"><span class="rv-ico blue"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span></div>
+      <p class="rv-kpi-value">{{ total_count }}</p>
+      <p class="rv-kpi-label">Committee notifications</p>
+    </div>
+    <div class="rv-kpi">
+      <div class="rv-kpi-top"><span class="rv-ico orange"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>{% if unread_count %}<span class="rv-kpi-trend orange">New</span>{% endif %}</div>
+      <p class="rv-kpi-value">{{ unread_count }}</p>
+      <p class="rv-kpi-label">Unread</p>
+    </div>
+    <div class="rv-kpi">
+      <div class="rv-kpi-top"><span class="rv-ico purple"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span></div>
+      <p class="rv-kpi-value">{{ upcoming_count }}</p>
+      <p class="rv-kpi-label">Upcoming meetings</p>
+    </div>
+    <div class="rv-kpi">
+      <div class="rv-kpi-top"><span class="rv-ico red"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></span>{% if pending_rsvp_count %}<span class="rv-kpi-trend red">Reply</span>{% endif %}</div>
+      <p class="rv-kpi-value">{{ pending_rsvp_count }}</p>
+      <p class="rv-kpi-label">Meetings awaiting your RSVP</p>
+    </div>
+  </div>
+
+  <div class="body-grid">
+    <section class="panel" style="padding:0;">
+      <div class="rv-notif-toolbar">
+        <div class="filter-tabs" data-filters-target="#cmFeed" style="margin:0;">
+          <button type="button" class="filter-tab active" data-filter="all">All <span class="count">{{ feed_count }}</span></button>
+          <button type="button" class="filter-tab" data-filter="alert">Alerts <span class="count">{{ alert_count }}</span></button>
+          <button type="button" class="filter-tab" data-filter="update">Updates <span class="count">{{ update_count }}</span></button>
+        </div>
+        <label class="rv-unread-toggle">
+          <input type="checkbox" data-cm-unread-toggle> Unread only
+        </label>
+      </div>
+
+      <div id="cmFeed" class="cm-feed">
+        {% for label, items in grouped_feed %}
+        <div class="doc-group">
+          <p class="notif-day-label">{{ label }}</p>
+          <div class="notif-list">
+            {% for n in items %}
+            <div class="notif-row{% if not n.is_read %} unread{% endif %}" data-filter-item data-filter="{{ n.category }}">
+              <span class="notif-icon {{ n.icon }}">
+                {% if n.icon == 'success' %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+                {% elif n.icon == 'warn' %}<svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+                {% else %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>{% endif %}
+              </span>
+              <div class="notif-body">
+                <p class="cm-notif-msg"><a href="{% url 'notifications:open' 'committee' n.pk %}">{{ n.message }}</a></p>
+                <span class="notif-time">{{ n.created_at|date:"j M Y" }} &middot; {{ n.created_at|date:"g:i A" }}</span>
+              </div>
+              {% if not n.is_read %}<span class="notif-dot" title="Unread"></span>{% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% empty %}
+        <div class="cm-empty">
+          <span class="cm-empty-ico"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+          <h3>You&rsquo;re all caught up</h3>
+          <p>Announcements, meeting invitations and decision requests for the Committee will appear here.</p>
+        </div>
+        {% endfor %}
+        <p class="cm-empty-filter" id="cmFeedNoMatch" hidden>Nothing matches this filter.</p>
+      </div>
+    </section>
+
+    <aside class="side-col">
+      <section class="panel actions-panel">
+        <div class="cm-side-head">
+          <h2>Your next meetings</h2>
+          <a href="{% url 'committee_dashboard:meetings_upcoming' %}" class="panel-link">View all</a>
+        </div>
+        {% for p in upcoming_invites %}
+        <a class="cm-mini-meeting" href="{% url 'committee_dashboard:agenda' %}?meeting={{ p.meeting.pk }}">
+          <span class="cm-mini-date"><b>{{ p.meeting.scheduled_at|date:"d" }}</b><i>{{ p.meeting.scheduled_at|date:"M" }}</i></span>
+          <span class="cm-mini-body">
+            <strong>{{ p.meeting.title }}</strong>
+            <em>{{ p.meeting.scheduled_at|date:"D, g:i A" }}{% if p.meeting.location %} &middot; {{ p.meeting.location }}{% endif %}</em>
+          </span>
+          <span class="badge-tag {% if p.rsvp_status == 'accepted' %}green{% elif p.rsvp_status == 'declined' %}red{% elif p.rsvp_status == 'tentative' %}orange{% else %}purple{% endif %}">{{ p.get_rsvp_status_display }}</span>
+        </a>
+        {% empty %}
+        <p class="field-hint" style="margin:0;">No meetings scheduled for you yet.</p>
+        {% endfor %}
+      </section>
+
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_notification_prefs">
+
+        <section class="panel actions-panel">
+          <h2>Delivery preferences</h2>
+          <div class="settings-row">
+            <div class="settings-row-text"><strong>Email alerts</strong><span>Announcements and decisions sent to {{ request.user.email }}.</span></div>
+            <label class="switch"><input type="checkbox" name="notify_email" {% if request.user.notify_email_alerts %}checked{% endif %}><span class="switch-track"></span></label>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-text"><strong>Meeting invitations</strong><span>An email whenever the Secretariat schedules a session.</span></div>
+            <label class="switch"><input type="checkbox" name="notify_meeting_invites" {% if notify_meeting_invites %}checked{% endif %}><span class="switch-track"></span></label>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-text"><strong>Decision requests</strong><span>When your vote or sign-off is needed.</span></div>
+            <label class="switch"><input type="checkbox" name="notify_decision_requests" {% if notify_decision_requests %}checked{% endif %}><span class="switch-track"></span></label>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-text"><strong>SMS alerts</strong><span>Only for meetings starting within 24 hours.</span></div>
+            <label class="switch"><input type="checkbox" name="notify_sms" {% if request.user.notify_sms_alerts %}checked{% endif %}><span class="switch-track"></span></label>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-text"><strong>Weekly digest</strong><span>A Monday summary of what is open for you.</span></div>
+            <label class="switch"><input type="checkbox" name="notify_weekly_digest" {% if request.user.notify_weekly_digest %}checked{% endif %}><span class="switch-track"></span></label>
+          </div>
+        </section>
+
+        <section class="panel actions-panel" style="margin-top:22px;">
+          <h2>Quiet hours</h2>
+          <p class="field-hint" style="margin:-6px 0 14px;">Pause SMS overnight. Email is unaffected.</p>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="cmQuietFrom">From</label>
+              <input type="time" class="field-input" id="cmQuietFrom" name="quiet_hours_from" value="{{ quiet_hours_from }}">
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="cmQuietTo">To</label>
+              <input type="time" class="field-input" id="cmQuietTo" name="quiet_hours_to" value="{{ quiet_hours_to }}">
+            </div>
+          </div>
+          <div class="form-actions" style="margin-top:18px;">
+            <button class="btn-primary" type="submit" style="width:100%; justify-content:center;">Save preferences</button>
+          </div>
+        </section>
+      </form>
+    </aside>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/committee-account.js' %}"></script>
+{% endblock %}

@@ -33,7 +33,7 @@
 
       <div class="info-card">
         <svg viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></svg>
-        <p>Review fees fund the independent administrative cost of ethics review &mdash; they are never a condition of approval. Fees are invoiced once a study is confirmed for <strong>Expedited</strong> or <strong>Full Committee Review</strong>; Ethics Determination and Exemption requests are fee&#8209;exempt.</p>
+        <p>Review fees fund the independent administrative cost of ethics review &mdash; they are never a condition of approval. {% if fee_exemption and fee_exemption.requires_payment %}Fees are invoiced once a study is confirmed for a review pathway &mdash; <strong>Ethics Determination / Exemption</strong>, <strong>Expedited</strong> and <strong>Full Committee Review</strong> each carry their own fee below.{% else %}Fees are invoiced once a study is confirmed for <strong>Expedited</strong> or <strong>Full Committee Review</strong>; Ethics Determination and Exemption requests are fee&#8209;exempt.{% endif %}</p>
       </div>
 
       <section class="fee-stats-grid">

@@ -248,7 +248,7 @@
                   </div>
                   <div class="field field-wide">
                     <label for="policyDescription">Description</label>
-                    <textarea id="policyDescription" name="policy_description" rows="2" placeholder="Optional -- shown under the title on the reviewer's page">{{ editing_policy.description|default:"" }}</textarea>
+                    <textarea id="policyDescription" name="policy_description" rows="2" placeholder="Optional -- shown under the title on the reviewer or committee dashboard page">{{ editing_policy.description|default:"" }}</textarea>
                   </div>
                   <div class="field field-wide">
                     <label for="policyFile">{% if editing_policy %}Replace File (optional){% else %}File{% endif %}</label>
@@ -349,7 +349,6 @@
           <div class="panel settings-full-panel">
             <div class="form-section">
               <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Testimonials</h3>
-              <p class="section-note">The "Grounded in Recognized Standards" carousel on the public homepage. Photos are saved to Supabase Storage's "profile" bucket.</p>
 
               <form method="post" enctype="multipart/form-data" class="settings-form">
                 {% csrf_token %}

@@ -1,0 +1,249 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Security | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/reviewer-settings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/reviewer-identity.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/committee-account.css' %}">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="security" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Security" subtitle="Password, two-step sign-in and the devices signed in to your account" %}{% endblock %}
+
+{% block main_content %}
+<div class="rv-scope cm-scope">
+
+  <div class="page-head">
+    <div class="page-head-text">
+      <h2>Security</h2>
+      <p>Committee members see confidential protocols &mdash; keep this account locked down.</p>
+    </div>
+  </div>
+
+  {% include "dashboards/committee/_account_subnav.html" with active="security" %}
+
+  <section class="rv-card" style="margin-bottom:22px;">
+    <div class="rv-score-card">
+      <div class="rv-donut" style="--pct:{{ security_score }};">
+        <div class="rv-donut-center">
+          <span class="rv-donut-value">{{ security_score }}</span>
+          <span class="rv-donut-caption">{{ security_score_label }}</span>
+        </div>
+      </div>
+      <div class="rv-score-list">
+        <div class="rv-score-item ok">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+          Password protected <span class="rv-hint">{% if password_changed_at %}Changed {{ password_changed_at|timesince }} ago{% else %}Set at signup{% endif %}</span>
+        </div>
+        {% if has_2fa %}
+        <div class="rv-score-item ok">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+          Two-step sign-in enabled <span class="rv-hint">Good</span>
+        </div>
+        {% else %}
+        <div class="rv-score-item warn">
+          <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+          Two-step sign-in is off <span class="rv-hint">Action recommended</span>
+        </div>
+        {% endif %}
+        <div class="rv-score-item {% if request.user.notify_new_signin %}ok{% else %}warn{% endif %}">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+          New sign-in alerts {% if request.user.notify_new_signin %}on{% else %}off{% endif %} <span class="rv-hint">{% if request.user.notify_new_signin %}Good{% else %}Recommended{% endif %}</span>
+        </div>
+        <div class="rv-score-item {% if other_session_count %}warn{% else %}ok{% endif %}">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+          {{ sessions|length }} active session{{ sessions|length|pluralize }} <span class="rv-hint">{% if other_session_count %}{{ other_session_count }} other device{{ other_session_count|pluralize }}{% else %}This device only{% endif %}</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="body-grid">
+    <section class="rv-card rv-card-pad">
+
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_password">
+        <div class="rv-section-title"><span class="rv-ico teal"><svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span> Change password</div>
+        <p class="rv-section-sub">Use at least 8 characters with a mix of upper/lowercase letters, numbers and symbols.</p>
+
+        <div class="rv-pw-panel">
+          <div class="field-group">
+            <label class="field-label" for="cmCurrentPw">Current password</label>
+            <div class="cm-pw-wrap">
+              <input type="password" class="field-input" id="cmCurrentPw" name="current_password" placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;" autocomplete="current-password">
+              <button type="button" class="cm-pw-toggle" data-cm-pw-toggle="cmCurrentPw" aria-label="Show password" aria-pressed="false">
+                <svg class="eye" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                <svg class="eye-off" viewBox="0 0 24 24"><path d="M17.9 17.9A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a19.8 19.8 0 0 1 5.1-5.9M9.9 5.2A10 10 0 0 1 12 5c7 0 11 7 11 7a19.7 19.7 0 0 1-3.2 4.2M1 1l22 22"/></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="rv-pw-divider"></div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="cmNewPw">New password</label>
+              <div class="cm-pw-wrap">
+                <input type="password" class="field-input" id="cmNewPw" name="new_password" placeholder="At least 8 characters" autocomplete="new-password" data-rv-strength-input>
+                <button type="button" class="cm-pw-toggle" data-cm-pw-toggle="cmNewPw" aria-label="Show password" aria-pressed="false">
+                  <svg class="eye" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="eye-off" viewBox="0 0 24 24"><path d="M17.9 17.9A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a19.8 19.8 0 0 1 5.1-5.9M9.9 5.2A10 10 0 0 1 12 5c7 0 11 7 11 7a19.7 19.7 0 0 1-3.2 4.2M1 1l22 22"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="cmConfirmPw">Confirm new password</label>
+              <div class="cm-pw-wrap">
+                <input type="password" class="field-input" id="cmConfirmPw" name="confirm_password" placeholder="Re-enter new password" autocomplete="new-password" data-rv-confirm-input>
+                <button type="button" class="cm-pw-toggle" data-cm-pw-toggle="cmConfirmPw" aria-label="Show password" aria-pressed="false">
+                  <svg class="eye" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <svg class="eye-off" viewBox="0 0 24 24"><path d="M17.9 17.9A10.9 10.9 0 0 1 12 19c-7 0-11-7-11-7a19.8 19.8 0 0 1 5.1-5.9M9.9 5.2A10 10 0 0 1 12 5c7 0 11 7 11 7a19.7 19.7 0 0 1-3.2 4.2M1 1l22 22"/></svg>
+                </button>
+              </div>
+              <p class="rv-pw-match" data-rv-match hidden>
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+                <span>Passwords match</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="rv-strength" data-rv-strength data-score="0">
+            <div class="rv-strength-top">
+              <div class="rv-strength-bars"><i></i><i></i><i></i><i></i></div>
+              <span class="rv-strength-pill" data-rv-strength-pill>Enter a new password</span>
+            </div>
+            <ul class="rv-pw-requirements">
+              <li data-rv-req="length"><span class="rv-pw-req-ico"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>At least 8 characters</li>
+              <li data-rv-req="case"><span class="rv-pw-req-ico"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>Upper &amp; lowercase letters</li>
+              <li data-rv-req="number"><span class="rv-pw-req-ico"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>At least one number</li>
+              <li data-rv-req="symbol"><span class="rv-pw-req-ico"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>At least one symbol</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-secondary" type="reset">Cancel</button>
+          <button class="btn-primary" type="submit">Update password</button>
+        </div>
+      </form>
+
+      <form method="post">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_security_prefs">
+
+        <div class="form-section" style="margin-top:30px;">
+          <div class="rv-section-title"><span class="rv-ico blue"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/><path d="M9 12l2 2 4-4"/></svg></span> Two-step sign-in</div>
+          <p class="rv-section-sub">Add a second step at sign-in so a stolen password alone can&rsquo;t open your account.</p>
+
+          <div class="rv-2fa-grid">
+            <label class="rv-2fa-card {% if request.user.two_factor_app %}is-on{% endif %}">
+              <div class="rv-2fa-top">
+                <span class="rv-2fa-ico"><svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
+                <span class="switch"><input type="checkbox" name="two_factor_app" {% if request.user.two_factor_app %}checked{% endif %}><span class="switch-track"></span></span>
+              </div>
+              <h4>Authenticator app</h4>
+              <p>Generate login codes with Google Authenticator or Authy.</p>
+            </label>
+            <label class="rv-2fa-card {% if two_factor_email %}is-on{% endif %}">
+              <div class="rv-2fa-top">
+                <span class="rv-2fa-ico" style="background:var(--green-light); color:var(--green);"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></span>
+                <span class="switch"><input type="checkbox" name="two_factor_email" {% if two_factor_email %}checked{% endif %}><span class="switch-track"></span></span>
+              </div>
+              <h4>Email code</h4>
+              <p>A one-time code is sent to {{ request.user.email }} at sign-in.</p>
+            </label>
+            <label class="rv-2fa-card {% if request.user.two_factor_sms %}is-on{% endif %}">
+              <div class="rv-2fa-top">
+                <span class="rv-2fa-ico"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span>
+                <span class="switch"><input type="checkbox" name="two_factor_sms" {% if request.user.two_factor_sms %}checked{% endif %}><span class="switch-track"></span></span>
+              </div>
+              <h4>SMS backup code</h4>
+              <p>A text-message code if you can&rsquo;t reach your authenticator.</p>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-section" style="margin-top:30px; margin-bottom:0;">
+          <div class="rv-section-title"><span class="rv-ico orange"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span> Sign-in alerts</div>
+          <div class="settings-row">
+            <div class="settings-row-text"><strong>Email me on a new sign-in</strong><span>Know straight away when your account is opened from a new device.</span></div>
+            <label class="switch"><input type="checkbox" name="notify_new_signin" {% if request.user.notify_new_signin %}checked{% endif %}><span class="switch-track"></span></label>
+          </div>
+          <div class="settings-row">
+            <div class="settings-row-text"><strong>Verify sign-ins from a new country</strong><span>Require an email check for logins from somewhere you don&rsquo;t usually sign in.</span></div>
+            <label class="switch"><input type="checkbox" name="block_unrecognised_countries" {% if block_unrecognised_countries %}checked{% endif %}><span class="switch-track"></span></label>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn-primary" type="submit">Save security settings</button>
+        </div>
+      </form>
+    </section>
+
+    <aside class="side-col">
+      <section class="panel actions-panel">
+        <div class="cm-side-head"><h2>Signed-in devices</h2></div>
+        {% for session in sessions %}
+        <div class="session-row">
+          <span class="rv-session-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg></span>
+          <div class="session-info">
+            <strong>{{ session.os }} &middot; {{ session.browser }}{% if session.is_current %} <span class="badge-tag green">This device</span>{% endif %}</strong>
+            <span>{% if session.ip %}{{ session.ip }} &middot; {% endif %}{% if session.is_current %}Active now{% elif session.login_at %}Signed in {{ session.login_at|timesince }} ago{% else %}Session active{% endif %}</span>
+          </div>
+          {% if not session.is_current %}
+          <form method="post" class="session-revoke-form" data-confirm="Sign this device out? It will lose access immediately." data-confirm-variant="danger" data-confirm-label="Sign out">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="revoke_session">
+            <input type="hidden" name="session_key" value="{{ session.key }}">
+            <button class="btn-secondary session-revoke" type="submit">Sign out</button>
+          </form>
+          {% endif %}
+        </div>
+        {% empty %}
+        <p class="field-hint">No active sessions.</p>
+        {% endfor %}
+
+        {% if other_session_count %}
+        <form method="post" class="cm-signout-all" data-confirm="Sign out all {{ other_session_count }} other device{{ other_session_count|pluralize }}? You will stay signed in here." data-confirm-variant="danger" data-confirm-label="Sign them out">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="revoke_other_sessions">
+          <button class="btn-secondary" type="submit">Sign out all other devices</button>
+        </form>
+        {% endif %}
+      </section>
+
+      <section class="panel actions-panel">
+        <div class="cm-side-head"><h2>Recent account activity</h2></div>
+        <div class="rv-timeline">
+          {% for row in activity %}
+          <div class="rv-tl-item{% if row.tone == 'fail' %} fail{% endif %}">
+            <span class="rv-tl-dot"></span>
+            <div class="rv-tl-body">
+              <strong>{{ row.label }}</strong>
+              {% if row.detail %}<span class="rv-tl-meta">{{ row.detail }}</span>{% endif %}
+            </div>
+            <span class="rv-tl-time">{{ row.at|timesince }} ago</span>
+          </div>
+          {% empty %}
+          <p class="field-hint" style="margin:0;">Nothing recorded yet. Password, profile and device changes will show up here.</p>
+          {% endfor %}
+        </div>
+      </section>
+    </aside>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/reviewer-settings.js' %}"></script>
+<script src="{% static 'dashboard/js/committee-account.js' %}"></script>
+{% endblock %}

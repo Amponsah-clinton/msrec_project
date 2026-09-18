@@ -1,0 +1,64 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Meeting Calendar | MSREC Committee{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="calendar" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Meeting Calendar" subtitle="A month-by-month view of your sessions" %}{% endblock %}
+
+{% block main_content %}
+<div class="mm-page-head">
+  <div>
+    <h2>Meeting Calendar</h2>
+    <p>Sessions you are invited to, laid out by day. Select a meeting to open its agenda.</p>
+  </div>
+</div>
+
+<div class="body-grid">
+  <section class="panel">
+    <div class="mm-cal-head">
+      <h2>{{ month_label }} <span class="mm-chip" style="margin-left:8px;vertical-align:middle">{{ month_meeting_count }} meeting{{ month_meeting_count|pluralize }}</span></h2>
+      <div class="mm-cal-nav">
+        <a href="?year={{ prev_year }}&amp;month={{ prev_month }}" aria-label="Previous month"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></a>
+        <a href="?year={{ today_year }}&amp;month={{ today_month }}">Today</a>
+        <a href="?year={{ next_year }}&amp;month={{ next_month }}" aria-label="Next month"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></a>
+      </div>
+    </div>
+    <div class="mm-cal">
+      <div class="mm-cal-wd">Sun</div><div class="mm-cal-wd">Mon</div><div class="mm-cal-wd">Tue</div><div class="mm-cal-wd">Wed</div><div class="mm-cal-wd">Thu</div><div class="mm-cal-wd">Fri</div><div class="mm-cal-wd">Sat</div>
+      {% for week in weeks %}{% for cell in week %}
+      <div class="mm-cal-cell{% if not cell.day %} empty{% endif %}{% if cell.is_today %} today{% endif %}">
+        {% if cell.day %}<span class="num">{{ cell.day }}</span>
+          {% for m in cell.meetings %}
+          <a href="{% url 'committee_dashboard:agenda' %}?meeting={{ m.pk }}" class="mm-cal-chip {{ m.status }}" title="{{ m.title }} — {{ m.scheduled_at|date:'g:i A' }}"><span class="t">{{ m.scheduled_at|date:"g:iA" }}</span>{{ m.title }}</a>
+          {% endfor %}
+        {% endif %}
+      </div>
+      {% endfor %}{% endfor %}
+    </div>
+  </section>
+
+  <div class="side-col">
+    <section class="panel">
+      <div class="panel-header"><h2>Coming up</h2></div>
+      {% for m in upcoming_meetings %}
+      <div class="mm-side-row">
+        <div class="mm-datebox sm"><span class="mon">{{ m.scheduled_at|date:"M" }}</span><span class="day">{{ m.scheduled_at|date:"d" }}</span></div>
+        <div><a class="t" href="{% url 'committee_dashboard:agenda' %}?meeting={{ m.pk }}">{{ m.title }}</a><small>{{ m.scheduled_at|date:"D, g:i A" }} &middot; {{ m.get_meeting_type_display }}</small></div>
+      </div>
+      {% empty %}<p style="color:var(--text-faint);font-size:13px;margin:0">Nothing scheduled.</p>{% endfor %}
+    </section>
+    <section class="panel">
+      <div class="panel-header"><h2>Legend</h2></div>
+      <div class="mm-legend">
+        <span class="mm-cal-chip" style="display:inline-block">Scheduled</span>
+        <span class="mm-cal-chip completed" style="display:inline-block">Completed</span>
+        <span class="mm-cal-chip cancelled" style="display:inline-block">Cancelled</span>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

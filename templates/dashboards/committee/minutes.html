@@ -1,0 +1,102 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Meeting Minutes | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/committee-minutes.css' %}">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="minutes" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Meeting Minutes" subtitle="The official record of each meeting, as written by the Secretariat" %}{% endblock %}
+
+{% block main_content %}
+{% if not meeting %}
+<section class="panel"><div class="mm-empty">
+  <div class="mm-empty-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></div>
+  <h3>No minutes yet</h3>
+  <p>When you take part in a meeting and the Secretary records its minutes, they will appear here. Drafts show up as soon as the Secretary saves them.</p>
+  <a href="{% url 'committee_dashboard:meetings_upcoming' %}" class="btn-secondary" style="margin-top:8px">View your meetings</a>
+</div></section>
+{% else %}
+<div class="mn-layout">
+  <aside class="panel mn-list">
+    <div class="mn-list-head">
+      <h2>Records</h2>
+      <span>{{ finalised_count }} final &middot; {{ draft_count }} draft</span>
+    </div>
+    {% for m in meetings %}
+    <a class="mn-item{% if m.pk == meeting.pk %} active{% endif %}" href="?meeting={{ m.pk }}">
+      <span class="mn-item-date"><b>{{ m.scheduled_at|date:"d" }}</b><i>{{ m.scheduled_at|date:"M Y" }}</i></span>
+      <span class="mn-item-body">
+        <strong>{{ m.title }}</strong>
+        <em>{% if m.minutes.is_finalized %}Finalised{% else %}Draft{% endif %}{% if m.my_part and m.my_part.attended %} &middot; You attended{% endif %}</em>
+      </span>
+    </a>
+    {% endfor %}
+  </aside>
+
+  <article class="panel mn-doc" data-meeting="{{ meeting.pk }}" data-stamp="{{ meeting.minutes.updated_at|date:'c' }}" data-status-url="{% url 'committee_dashboard:minutes_status' meeting.pk %}">
+    <div class="mn-banner" id="mnBanner" hidden>
+      <span>The Secretary has saved changes to these minutes.</span>
+      <a href="?meeting={{ meeting.pk }}" class="btn-secondary">Refresh</a>
+    </div>
+
+    <header class="mn-head">
+      <div class="mn-badges">
+        <span class="mm-chip teal">{{ meeting.get_meeting_type_display }}</span>
+        {% if meeting.minutes.is_finalized %}<span class="mm-pill completed">Finalised</span>{% else %}<span class="mm-pill pending">Draft</span>{% endif %}
+      </div>
+      <h2>{{ meeting.title }}</h2>
+      <p class="mn-when">{{ meeting.scheduled_at|date:"l, j F Y" }} &middot; {{ meeting.scheduled_at|date:"g:i A" }} &ndash; {{ meeting.ends_at|date:"g:i A" }}{% if meeting.location %} &middot; {{ meeting.location }}{% endif %}</p>
+    </header>
+
+    <dl class="mn-facts">
+      <div><dt>Chair</dt><dd>{% if meeting.chair %}{{ meeting.chair.get_full_name|default:meeting.chair.email }}{% else %}Not set{% endif %}</dd></div>
+      <div><dt>Recorded by</dt><dd>{% if meeting.minutes.recorded_by %}{{ meeting.minutes.recorded_by.get_full_name|default:meeting.minutes.recorded_by.email }}{% else %}Secretariat{% endif %}</dd></div>
+      <div><dt>Last saved</dt><dd>{{ meeting.minutes.updated_at|date:"j M Y, g:i A" }}</dd></div>
+      <div><dt>{% if meeting.minutes.is_finalized %}Finalised{% else %}Status{% endif %}</dt><dd>{% if meeting.minutes.is_finalized %}{{ meeting.minutes.finalized_at|date:"j M Y, g:i A" }}{% else %}Awaiting sign-off{% endif %}</dd></div>
+      <div><dt>Your attendance</dt><dd>{% if meeting.my_part and meeting.my_part.attended %}Present{% elif meeting.my_part %}Invited ({{ meeting.my_part.get_rsvp_status_display }}){% else %}-{% endif %}</dd></div>
+    </dl>
+
+    {% if not meeting.minutes.is_finalized %}
+    <p class="mn-note">This is a working draft and may still change until the Secretary finalises it.</p>
+    {% endif %}
+
+    <div class="mn-body">
+      {% for lines in blocks %}
+      <p>{% for line in lines %}{{ line }}{% if not forloop.last %}<br>{% endif %}{% endfor %}</p>
+      {% empty %}
+      <p class="mn-empty">The Secretary has not written anything yet.</p>
+      {% endfor %}
+    </div>
+
+    {% if decisions %}
+    <section class="mn-decisions">
+      <h3>Decisions recorded</h3>
+      {% for d in decisions %}
+      <div class="mn-decision">
+        <div>
+          <strong>{{ d.title }}</strong>
+          {% if d.details %}<em>{{ d.details }}</em>{% endif %}
+        </div>
+        <div class="mn-decision-side">
+          <span class="mm-chip teal">{{ d.get_outcome_display }}</span>
+          {% if d.total_votes %}<small>{{ d.votes_for }} for &middot; {{ d.votes_against }} against &middot; {{ d.votes_abstain }} abstain</small>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    <div class="mn-actions">
+      <button type="button" class="btn-secondary" onclick="window.print()">Print</button>
+    </div>
+  </article>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'dashboard/js/committee-minutes.js' %}"></script>{% endblock %}

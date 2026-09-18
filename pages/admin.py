@@ -2,7 +2,10 @@ from django import forms
 from django.contrib import admin
 
 from . import documents_storage, resources_storage
-from .models import CommitteeMeeting, Inquiry, MeetingDocument, PolicyDocument, ResourceDocument
+from .models import (
+    CommitteeAppointment, CommitteeMeeting, GovernanceMember, Inquiry, MeetingDocument, PolicyDocument,
+    ResourceDocument,
+)
 
 
 @admin.register(Inquiry)
@@ -115,3 +118,23 @@ class ResourceDocumentAdmin(admin.ModelAdmin):
                 obj.save(update_fields=["file_path", "file_size"])
         else:
             super().save_model(request, obj, form, change)
+
+
+class CommitteeAppointmentInline(admin.TabularInline):
+    model = CommitteeAppointment
+    extra = 0
+    fields = ("seat_title", "appointed_by", "start_date", "end_date", "status")
+
+
+@admin.register(GovernanceMember)
+class GovernanceMemberAdmin(admin.ModelAdmin):
+    """The place to link a roster entry to the login account that holds
+    the seat (`user`) -- what makes a Committee member's own Profile &
+    Committee Appointment page show their appointment. The day-to-day
+    add/edit/photo flow stays on the Board & Committee pages."""
+
+    list_display = ("full_name", "group", "role_title", "user", "is_active")
+    list_filter = ("group", "is_active")
+    search_fields = ("full_name", "role_title", "user__email")
+    raw_id_fields = ("user",)
+    inlines = [CommitteeAppointmentInline]

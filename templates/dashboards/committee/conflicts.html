@@ -1,0 +1,141 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Conflict &amp; Recusal | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/protocol-review.css' %}">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="conflicts" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Conflict & Recusal" subtitle="Declare conflicts of interest before you review" %}{% endblock %}
+
+{% block main_content %}
+<div class="mm-page-head">
+  <div>
+    <h2>Conflict &amp; Recusal</h2>
+    <p>Before you read or discuss a protocol, tell the committee whether you have a conflict of interest in it. Every protocol needs a declaration from you, even if the answer is &ldquo;none&rdquo;.</p>
+  </div>
+</div>
+
+<section class="pr-policy">
+  <span class="ic"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/><path d="M12 8v4M12 16h.01"/></svg></span>
+  <div>
+    <h3>When should you declare a conflict?</h3>
+    <p>Declare if anything could reasonably make your judgement of this study seem less than impartial, for example:</p>
+    <ul>
+      <li>You or a close relative has a financial interest in the study, its sponsor or its outcome;</li>
+      <li>You supervise, or are supervised by, or closely collaborate with the investigators;</li>
+      <li>You work in the same department or institution as the study team.</li>
+    </ul>
+    <p style="margin-top:8px">If you <strong>recuse</strong> yourself you step back from the protocol entirely. If you ask the <strong>Chair to decide</strong>, you stay out of the discussion until they rule.</p>
+  </div>
+</section>
+
+<section class="mm-summary">
+  <div class="stat-card"><p class="stat-label">Awaiting my declaration</p><p class="stat-value" style="{% if awaiting_count %}color:var(--orange){% endif %}">{{ awaiting_count }}</p></div>
+  <div class="stat-card"><p class="stat-label">No conflict</p><p class="stat-value" style="color:var(--green)">{{ clear_count }}</p></div>
+  <div class="stat-card"><p class="stat-label">Conflicts declared</p><p class="stat-value">{{ conflict_count }}</p></div>
+  <div class="stat-card"><p class="stat-label">Recused</p><p class="stat-value" style="{% if recused_count %}color:var(--red){% endif %}">{{ recused_count }}</p></div>
+</section>
+
+{% if awaiting %}
+<div class="pr-section-title"><h2>Awaiting your declaration</h2><span class="n">{{ awaiting_count }}</span></div>
+{% for p in awaiting %}
+<div class="pr-decl-row needs">
+  <div>
+    <div class="pr-card-top"><span class="pr-ref">{{ p.ref }}</span><span class="mm-chip teal">{{ p.review_type }}</span></div>
+    <h3><a href="{% url 'committee_dashboard:protocol_detail' p.pk %}">{{ p.title }}</a></h3>
+    <div class="pr-card-meta">
+      {% if p.pi_name %}<span><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>{{ p.pi_name }}{% if p.institution %}, {{ p.institution }}{% endif %}</span>{% endif %}
+      <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>{{ p.meeting.title }} &middot; {{ p.meeting.scheduled_at|date:"j M Y" }}</span>
+    </div>
+  </div>
+  <div class="pr-decl-actions">
+    <form method="post" action="{% url 'committee_dashboard:conflict_declare' p.pk %}">{% csrf_token %}
+      <input type="hidden" name="has_conflict" value="0">
+      <button type="submit" class="btn-primary">I have no conflict</button>
+    </form>
+    <button type="button" class="pr-btn-warn" data-declare data-app="{{ p.pk }}" data-ref="{{ p.ref }}" data-title="{{ p.title }}">Declare a conflict</button>
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<div class="pr-section-title"><h2>My declarations</h2>{% if declared %}<span class="n" style="background:var(--teal-light);color:var(--teal)">{{ declared|length }}</span>{% endif %}</div>
+{% if declared %}
+{% for p in declared %}
+<div class="pr-decl-row">
+  <div>
+    <div class="pr-card-top"><span class="pr-ref">{{ p.ref }}</span>{% include "dashboards/committee/_pr_decl_badge.html" %}{% if p.decl.has_conflict %}<span class="mm-chip orange">{{ p.decl.get_conflict_type_display }}</span>{% endif %}</div>
+    <h3><a href="{% url 'committee_dashboard:protocol_detail' p.pk %}">{{ p.title }}</a></h3>
+    <div class="pr-card-meta">
+      <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>{{ p.meeting.title }} &middot; {{ p.meeting.scheduled_at|date:"j M Y" }}</span>
+      <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Declared {{ p.decl.updated_at|date:"j M Y, g:i A" }}</span>
+    </div>
+    {% if p.decl.has_conflict and p.decl.description %}<p class="pr-decl-desc">{{ p.decl.description }}</p>{% endif %}
+  </div>
+  <div class="pr-decl-actions">
+    {% if p.status == 'cleared' and p.decl.has_conflict %}
+      <span class="pr-muted">Decided by the Chair</span>
+    {% else %}
+      <button type="button" class="btn-secondary" data-declare data-app="{{ p.pk }}" data-ref="{{ p.ref }}" data-title="{{ p.title }}"
+        data-type="{{ p.decl.conflict_type }}" data-desc="{{ p.decl.description }}" data-recuse="{% if p.decl.wants_recusal %}1{% else %}0{% endif %}">{% if p.decl.has_conflict %}Edit conflict{% else %}Declare a conflict{% endif %}</button>
+      {% if p.decl.has_conflict %}
+      <form method="post" action="{% url 'committee_dashboard:conflict_declare' p.pk %}" data-confirm="Withdraw your conflict and declare no conflict instead?">{% csrf_token %}
+        <input type="hidden" name="has_conflict" value="0">
+        <button type="submit" class="pr-linkbtn">Withdraw</button>
+      </form>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+{% endfor %}
+{% else %}
+<section class="panel"><div class="mm-empty" style="padding:36px 20px">
+  <div class="mm-empty-icon"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/><path d="m9 12 2 2 4-4"/></svg></div>
+  <h3>No declarations yet</h3>
+  <p>{% if awaiting %}Start with the protocols above.{% else %}When protocols are placed on your agenda, you will declare here.{% endif %}</p>
+</div></section>
+{% endif %}
+
+<dialog class="pr-dialog" id="declareDialog" aria-labelledby="declareTitle">
+  <form method="post" id="declareForm" data-action-template="{% url 'committee_dashboard:conflict_declare' 0 %}">
+    {% csrf_token %}
+    <input type="hidden" name="has_conflict" value="1">
+    <input type="hidden" name="next" value="{{ request.path }}">
+    <div class="pr-dialog-head">
+      <h3 id="declareTitle">Declare a conflict of interest</h3>
+      <p><span class="pr-ref" id="declareRef"></span> &middot; <span id="declareStudy"></span></p>
+    </div>
+    <div class="pr-dialog-body">
+      <div class="pr-field">
+        <label class="lbl" for="declareType">Type of conflict</label>
+        <select name="conflict_type" id="declareType" required>
+          <option value="">Choose…</option>
+          {% for value, label in conflict_types %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="pr-field">
+        <label class="lbl" for="declareDesc">Describe the conflict</label>
+        <textarea name="description" id="declareDesc" maxlength="2000" required placeholder="Who is involved, what the relationship is, and why it could affect your judgement."></textarea>
+      </div>
+      <div class="pr-field">
+        <span class="lbl" style="display:block;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-faint);margin-bottom:6px">What would you like to do?</span>
+        <div class="pr-choices">
+          <label class="pr-choice"><input type="radio" name="action" value="recuse" checked><div><strong>Recuse myself</strong><span>I step back from this protocol completely. Its details, reviews and discussion are hidden from me.</span></div></label>
+          <label class="pr-choice"><input type="radio" name="action" value="chair"><div><strong>Ask the Chair to decide</strong><span>I stay out of the discussion until the Chair rules on whether I may take part.</span></div></label>
+        </div>
+      </div>
+    </div>
+    <div class="pr-dialog-foot">
+      <button type="button" class="btn-secondary" data-close-dialog>Cancel</button>
+      <button type="submit" class="btn-primary">Submit declaration</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'dashboard/js/protocol-review.js' %}"></script>{% endblock %}

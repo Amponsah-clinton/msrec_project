@@ -1,0 +1,338 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Profile &amp; Committee Appointment | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/reviewer-settings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/reviewer-identity.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/committee-account.css' %}">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="profile" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Profile & Committee Appointment" subtitle="Your credentials, expertise and the seat you hold on the Committee" %}{% endblock %}
+
+{% block main_content %}
+<div class="rv-scope cm-scope">
+
+  <div class="page-head">
+    <div class="page-head-text">
+      <h2>Profile &amp; Committee Appointment</h2>
+      <p>Keep your credentials current, and see the seat, term and training the Secretariat has on record for you.</p>
+    </div>
+  </div>
+
+  {% include "dashboards/committee/_account_subnav.html" with active="profile" %}
+
+  <div class="rv-hero">
+    <div class="rv-hero-band"></div>
+    <div class="rv-hero-body">
+      <div class="rv-hero-avatar-wrap">
+        {% if profile_photo_url %}<img class="rv-hero-avatar" src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}">{% else %}<span class="rv-hero-avatar avatar-initials">{{ request.user.initials }}</span>{% endif %}
+        <span class="rv-hero-status" title="Approved Committee member"></span>
+      </div>
+      <div class="rv-hero-info">
+        <h3 class="rv-hero-name">{{ request.user.full_name }} <span class="badge-tag purple">Committee Member</span></h3>
+        <p class="rv-hero-role">{{ request.user.position|default:"Committee Member" }}{% if request.user.institution %} &middot; {{ request.user.institution }}{% endif %}</p>
+        <div class="rv-hero-meta">
+          <span><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg> {{ request.user.email }}</span>
+          {% if request.user.orcid %}<span><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/></svg> ORCID {{ request.user.orcid }}</span>{% endif %}
+          <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Member since {% if approval %}{{ approval.created_at|date:"M Y" }}{% else %}{{ request.user.date_joined|date:"M Y" }}{% endif %}</span>
+        </div>
+      </div>
+      <div class="rv-hero-stats">
+        <div class="rv-hero-stat"><strong>{{ stats.meetings_attended }}<small>/{{ stats.meetings_invited }}</small></strong><span>Meetings attended</span></div>
+        <div class="rv-hero-stat"><strong>{{ training|length }}</strong><span>Training records</span></div>
+        <div class="rv-hero-stat"><strong>{{ completeness }}%</strong><span>Profile complete</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="body-grid">
+    <div class="rv-card-stack">
+
+      {# Single save target for every profile field; fields reference it via form="cmProfileForm" so the avatar's own forms never nest inside another form. #}
+      <form method="post" id="cmProfileForm">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="update_profile">
+      </form>
+
+      <section class="rv-card">
+        <div class="rv-card-header">
+          <span class="rv-ico teal"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
+          <div class="rv-card-header-text">
+            <h3>Personal information</h3>
+            <p>How your name and contact details appear to the Secretariat and fellow members.</p>
+          </div>
+        </div>
+        <div class="rv-card-body">
+          <div class="avatar-edit-row" style="margin-bottom:20px;">
+            {% if profile_photo_url %}<img src="{{ profile_photo_url }}" alt="{{ request.user.full_name }}" id="avatarPreview">{% else %}<span class="avatar-initials avatar-initials-lg" id="avatarPreview">{{ request.user.initials }}</span>{% endif %}
+            <div class="avatar-edit-actions">
+              <form method="post" enctype="multipart/form-data" id="avatarUploadForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_avatar">
+                <input type="file" name="avatar" accept="image/png,image/jpeg,image/webp" hidden id="avatarInput">
+                <button class="btn-secondary" type="button" id="changePhotoBtn">Change photo</button>
+              </form>
+              {% if request.user.profile_photo_path %}
+              <form method="post" id="avatarRemoveForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="remove_avatar">
+                <button class="btn-secondary" type="submit">Remove</button>
+              </form>
+              {% endif %}
+            </div>
+            <p class="avatar-edit-hint">JPG, PNG or WEBP. Stored in your Supabase profile bucket.</p>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="cmTitle">Title</label>
+              <select class="field-input" id="cmTitle" name="title" form="cmProfileForm">
+                <option value="">Select title</option>
+                {% for t in title_choices %}<option value="{{ t }}"{% if request.user.title == t %} selected{% endif %}>{{ t }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="cmFirst">First name</label>
+              <input type="text" class="field-input" id="cmFirst" name="first_name" value="{{ request.user.first_name }}" form="cmProfileForm" required>
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="cmLast">Last name</label>
+              <input type="text" class="field-input" id="cmLast" name="last_name" value="{{ request.user.last_name }}" form="cmProfileForm" required>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="cmPhone">Phone number</label>
+              <input type="text" class="field-input" id="cmPhone" name="phone" value="{{ request.user.phone }}" form="cmProfileForm">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="cmEmail">Email address</label>
+              <input type="email" class="field-input" id="cmEmail" name="email" value="{{ request.user.email }}" form="cmProfileForm" required>
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="cmOrcid">ORCID iD</label>
+              <input type="text" class="field-input" id="cmOrcid" name="orcid" value="{{ request.user.orcid }}" form="cmProfileForm" placeholder="0000-0000-0000-0000">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="cmCountry">Country of residence</label>
+              <input type="text" class="field-input" id="cmCountry" name="country_residence" value="{{ request.user.country_residence }}" form="cmProfileForm">
+            </div>
+            <div class="field-group"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="rv-card">
+        <div class="rv-card-header">
+          <span class="rv-ico blue"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5Z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></span>
+          <div class="rv-card-header-text">
+            <h3>Professional background</h3>
+            <p>Used to balance the Committee&rsquo;s expertise on each protocol.</p>
+          </div>
+        </div>
+        <div class="rv-card-body">
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="cmPosition">Current position</label>
+              <input type="text" class="field-input" id="cmPosition" name="position" value="{{ request.user.position }}" form="cmProfileForm">
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="cmInstitution">Institution / organization</label>
+              <input type="text" class="field-input" id="cmInstitution" name="institution" value="{{ request.user.institution }}" form="cmProfileForm">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="cmDepartment">Department</label>
+              <input type="text" class="field-input" id="cmDepartment" name="department" value="{{ request.user.department }}" form="cmProfileForm">
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="cmYears">Years of professional experience</label>
+              <input type="number" class="field-input" id="cmYears" name="years" min="0" max="80" value="{{ data.committeeYears }}" form="cmProfileForm">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="cmRegistration">Professional registration</label>
+              <input type="text" class="field-input" id="cmRegistration" name="registration" value="{{ data.committeeRegistration }}" form="cmProfileForm">
+            </div>
+            <div class="field-group">
+              <label class="field-label" for="cmTraining">Ethics / governance training</label>
+              <input type="text" class="field-input" id="cmTraining" name="training" value="{{ data.committeeTraining }}" form="cmProfileForm">
+            </div>
+          </div>
+          <div class="field-row">
+            <div class="field-group">
+              <label class="field-label" for="cmEthicsExp">Research ethics experience</label>
+              <select class="field-input" id="cmEthicsExp" name="ethics_experience" form="cmProfileForm">
+                <option value="">Select an answer</option>
+                <option value="yes"{% if data.committeeEthicsExperience == "yes" %} selected{% endif %}>Yes</option>
+                <option value="no"{% if data.committeeEthicsExperience == "no" %} selected{% endif %}>No</option>
+              </select>
+            </div>
+            <div class="field-group"></div>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="cmEthicsDetails">Ethics experience &mdash; details</label>
+            <textarea class="field-input" id="cmEthicsDetails" name="ethics_details" rows="3" form="cmProfileForm">{{ data.committeeEthicsDetails }}</textarea>
+          </div>
+          <div class="field-group">
+            <label class="field-label" for="cmBackground">Professional background</label>
+            <textarea class="field-input" id="cmBackground" name="background" rows="3" form="cmProfileForm">{{ data.committeeBackground }}</textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="rv-card">
+        <div class="rv-card-header">
+          <span class="rv-ico purple"><svg viewBox="0 0 24 24"><path d="m12 3 2.5 5.5L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.5-.5L12 3Z"/></svg></span>
+          <div class="rv-card-header-text">
+            <h3>Expertise &amp; biography</h3>
+            <p>The categories you sit for on the Committee, and a short bio for the roster.</p>
+          </div>
+        </div>
+        <div class="rv-card-body">
+          <div class="rv-pill-check">
+            {% for value, label in expertise_choices %}
+            <label><input type="checkbox" name="expertise" value="{{ value }}" form="cmProfileForm"{% if value in chosen_expertise %} checked{% endif %}><span><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span> {{ label }}</label>
+            {% endfor %}
+          </div>
+          <div class="field-group" style="margin-top:18px;">
+            <label class="field-label" for="cmBio">Short biography</label>
+            <textarea class="field-input" id="cmBio" name="bio" rows="4" form="cmProfileForm">{{ data.committeeBio }}</textarea>
+          </div>
+        </div>
+        <div class="rv-card-actions">
+          <button class="btn-primary" type="submit" form="cmProfileForm">Save profile</button>
+        </div>
+      </section>
+    </div>
+
+    <aside class="side-col">
+
+      <section class="panel actions-panel cm-appt">
+        <div class="cm-side-head"><h2>Committee appointment</h2></div>
+
+        {% if seat %}
+          {% if current_appointment %}
+          <div class="cm-seat">
+            <span class="cm-seat-kicker">{{ seat.get_group_display }} seat</span>
+            <h3>{{ current_appointment.seat_title }}</h3>
+            <div class="cm-seat-status">
+              <span class="badge-tag {% if current_appointment.status == 'active' or current_appointment.status == 'renewed' %}green{% elif current_appointment.status == 'expired' %}red{% else %}orange{% endif %}">{{ current_appointment.get_status_display }}</span>
+              {% if current_appointment.expiry_state == 'expiring' %}<span class="badge-tag orange">Expires in {{ current_appointment.days_to_expiry }} day{{ current_appointment.days_to_expiry|pluralize }}</span>
+              {% elif current_appointment.expiry_state == 'ongoing' %}<span class="badge-tag blue">Open-ended term</span>{% endif %}
+            </div>
+
+            {% if current_appointment.term_pct != None %}
+            <div class="cm-term" aria-label="Term progress">
+              <div class="cm-term-bar"><span style="width:{{ current_appointment.term_pct }}%"></span></div>
+              <div class="cm-term-legend"><span>{{ current_appointment.start_date|date:"j M Y" }}</span><b>{{ current_appointment.term_pct }}% of term</b><span>{{ current_appointment.end_date|date:"j M Y" }}</span></div>
+            </div>
+            {% endif %}
+
+            <dl class="cm-facts">
+              <div><dt>Role</dt><dd>{{ seat.role_title }}</dd></div>
+              {% if seat.tag %}<div><dt>Discipline</dt><dd>{{ seat.tag }}</dd></div>{% endif %}
+              <div><dt>Term starts</dt><dd>{{ current_appointment.start_date|date:"j F Y" }}</dd></div>
+              <div><dt>Term ends</dt><dd>{% if current_appointment.end_date %}{{ current_appointment.end_date|date:"j F Y" }}{% else %}Until further notice{% endif %}</dd></div>
+              {% if current_appointment.appointed_by %}<div><dt>Appointed by</dt><dd>{{ current_appointment.appointed_by }}</dd></div>{% endif %}
+            </dl>
+            {% if current_appointment.letter_url %}
+            <a class="btn-secondary cm-letter" href="{{ current_appointment.letter_url }}" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+              Appointment letter
+            </a>
+            {% endif %}
+          </div>
+          {% else %}
+          <div class="cm-seat">
+            <span class="cm-seat-kicker">{{ seat.get_group_display }} seat</span>
+            <h3>{{ seat.role_title }}</h3>
+            <p class="field-hint" style="margin:6px 0 0;">Your seat is on the roster, but the Secretariat hasn&rsquo;t recorded a term for it yet.</p>
+          </div>
+          {% endif %}
+
+          {% if appointments|length > 1 %}
+          <p class="cm-sub-label">Appointment history</p>
+          <ol class="cm-history">
+            {% for a in appointments %}
+            <li><span class="cm-dot"></span><div><strong>{{ a.seat_title }}</strong><em>{{ a.start_date|date:"M Y" }} &ndash; {% if a.end_date %}{{ a.end_date|date:"M Y" }}{% else %}present{% endif %} &middot; {{ a.get_status_display }}</em></div></li>
+            {% endfor %}
+          </ol>
+          {% endif %}
+        {% else %}
+          <div class="cm-unlinked">
+            <span class="cm-empty-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+            <h3>No seat linked yet</h3>
+            <p>Your account isn&rsquo;t connected to a seat on the Committee roster, so no term or training can be shown. Ask the Secretariat to link it &mdash; it takes one field on the roster record.</p>
+          </div>
+        {% endif %}
+
+        {% if approval %}
+        <div class="cm-approval">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+          <span>Committee access approved {{ approval.created_at|date:"j M Y" }}{% if approval.acted_by %} by {{ approval.acted_by.full_name }}{% endif %}</span>
+        </div>
+        {% endif %}
+      </section>
+
+      <section class="panel actions-panel">
+        <div class="cm-side-head"><h2>Profile strength</h2><b class="cm-pct">{{ completeness }}%</b></div>
+        <div class="cm-term-bar cm-strength"><span style="width:{{ completeness }}%"></span></div>
+        <p class="field-hint" style="margin:10px 0 0;">{% if completeness == 100 %}Everything the Secretariat needs is on file.{% else %}Add a photo, ORCID, experience and a short bio to reach 100%.{% endif %}</p>
+      </section>
+
+      {% if seat %}
+      <section class="panel actions-panel">
+        <div class="cm-side-head"><h2>Training &amp; certification</h2></div>
+        {% for t in training %}
+        <div class="cm-row">
+          <span class="rv-ico green"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5-10-5Z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></svg></span>
+          <div class="cm-row-body">
+            <strong>{{ t.course_title }}</strong>
+            <em>{% if t.provider %}{{ t.provider }} &middot; {% endif %}{% if t.completed_date %}Completed {{ t.completed_date|date:"M Y" }}{% else %}Scheduled{% endif %}</em>
+          </div>
+          {% if t.expiry_state == 'expired' %}<span class="badge-tag red">Expired</span>{% elif t.expiry_state == 'expiring' %}<span class="badge-tag orange">Expiring</span>{% elif t.expiry_state == 'current' %}<span class="badge-tag green">Current</span>{% endif %}
+        </div>
+        {% empty %}
+        <p class="field-hint" style="margin:0;">No training recorded yet.</p>
+        {% endfor %}
+      </section>
+
+      <section class="panel actions-panel">
+        <div class="cm-side-head"><h2>Conflict declarations</h2></div>
+        {% for c in conflicts %}
+        <div class="cm-row">
+          <span class="rv-ico orange"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></span>
+          <div class="cm-row-body">
+            <strong>{{ c.related_to|default:"Declaration" }}</strong>
+            <em>{{ c.date_declared|date:"j M Y" }}</em>
+          </div>
+          <span class="badge-tag {% if c.status == 'resolved' %}green{% elif c.status == 'recused' %}purple{% else %}orange{% endif %}">{{ c.get_status_display }}</span>
+        </div>
+        {% empty %}
+        <p class="field-hint" style="margin:0;">No conflicts declared on record.</p>
+        {% endfor %}
+      </section>
+      {% endif %}
+    </aside>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/committee-account.js' %}"></script>
+{% endblock %}

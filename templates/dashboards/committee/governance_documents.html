@@ -1,0 +1,82 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}{{ config.title }} | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/governance-docs.css' %}">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active=page|add:"_doc" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Governance Documents" subtitle=config.title %}{% endblock %}
+
+{% block main_content %}
+<div class="mm-page-head">
+  <div>
+    <h2>{{ config.title }}</h2>
+    <p>{{ config.blurb }}</p>
+  </div>
+</div>
+
+<nav class="gd-tabs" aria-label="Governance document types">
+  {% for t in tabs %}
+  <a href="{% if t.key == 'charter' %}{% url 'committee_dashboard:doc_charter' %}{% elif t.key == 'terms' %}{% url 'committee_dashboard:doc_terms' %}{% elif t.key == 'sops' %}{% url 'committee_dashboard:doc_sops' %}{% else %}{% url 'committee_dashboard:doc_policies' %}{% endif %}"
+     class="gd-tab{% if t.key == page %} active{% endif %}"{% if t.key == page %} aria-current="page"{% endif %}>
+    <span class="gd-tab-title">{{ t.title }}</span>
+    <span class="gd-tab-count">{{ t.count }}</span>
+  </a>
+  {% endfor %}
+</nav>
+
+{% if documents %}
+<div class="mm-toolbar">
+  <label class="mm-search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="search" id="mmSearch" placeholder="Search {{ config.title|lower }}…" aria-label="Search documents"></label>
+  <span class="gd-count">{{ documents|length }} document{{ documents|length|pluralize }}{% if new_count %} &middot; {{ new_count }} new{% endif %}</span>
+</div>
+
+<div class="gd-list" id="mmList">
+  {% for doc in documents %}
+  <article class="gd-card" data-search="{{ doc.title|lower }} {{ doc.description|lower }} {{ doc.version|lower }}">
+    <div class="gd-file {{ doc.kind_class }}" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+      <span>{{ doc.kind_label }}</span>
+    </div>
+    <div class="gd-body">
+      <div class="gd-title">
+        <h3>{{ doc.title }}</h3>
+        {% if doc.version %}<span class="mm-chip">{{ doc.version }}</span>{% endif %}
+        {% if doc.is_new %}<span class="gd-new">New</span>{% elif doc.is_updated %}<span class="mm-chip blue">Updated</span>{% endif %}
+      </div>
+      {% if doc.description %}<p class="gd-desc">{{ doc.description }}</p>{% endif %}
+      <div class="gd-meta">
+        <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Added {{ doc.created_at|date:"j M Y" }}</span>
+        {% if doc.is_updated or doc.updated_at.date != doc.created_at.date %}<span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Updated {{ doc.updated_at|date:"j M Y" }}</span>{% endif %}
+        {% if doc.file_size %}<span><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0-4-4m4 4 4-4M5 21h14"/></svg>{{ doc.file_size|filesizeformat }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="gd-actions">
+      {% if doc.download_url %}
+      <a class="btn-primary" href="{{ doc.download_url }}" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" width="16" height="16"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>Open</a>
+      {% else %}<span class="mm-chip orange">File not attached yet</span>{% endif %}
+    </div>
+  </article>
+  {% endfor %}
+</div>
+<div class="mm-empty" id="mmNoMatch" hidden>
+  <div class="mm-empty-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></div>
+  <h3>No documents match</h3><p>Try a different search.</p>
+</div>
+{% else %}
+<section class="panel"><div class="mm-empty">
+  <div class="mm-empty-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></div>
+  <h3>Nothing here yet</h3>
+  <p>{{ config.empty }} When the MSREC administrator publishes one, it will appear on this page automatically and you will be notified.</p>
+</div></section>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'dashboard/js/member-meetings.js' %}"></script>{% endblock %}

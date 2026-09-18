@@ -1,0 +1,15 @@
+{# The three account pages' shared tab strip. Expects `active`: notifications | profile | security. #}
+<nav class="rv-subnav" aria-label="Account">
+  <a href="{% url 'committee_dashboard:notifications' %}"{% if active == 'notifications' %} class="active"{% endif %}>
+    <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    <span class="rv-tab-label">Notifications</span>
+  </a>
+  <a href="{% url 'committee_dashboard:profile' %}"{% if active == 'profile' %} class="active"{% endif %}>
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>
+    <span class="rv-tab-label">Profile &amp; Appointment</span>
+  </a>
+  <a href="{% url 'committee_dashboard:security' %}"{% if active == 'security' %} class="active"{% endif %}>
+    <svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/></svg>
+    <span class="rv-tab-label">Security</span>
+  </a>
+</nav>

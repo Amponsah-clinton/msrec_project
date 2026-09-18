@@ -1,0 +1,169 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Meeting Agenda | MSREC Committee{% endblock %}
+
+{% block extra_css %}<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="agenda" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Meeting Agenda" subtitle="What will be discussed, and your preparation" %}{% endblock %}
+
+{% block main_content %}
+{% if not meeting %}
+<section class="panel"><div class="mm-empty">
+  <div class="mm-empty-icon"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 3V2h6v1"/><path d="M9 9h6M9 13h6M9 17h4"/></svg></div>
+  <h3>No agenda to show yet</h3>
+  <p>Once the Secretariat invites you to a meeting, its agenda will appear here so you can read and prepare ahead of the session.</p>
+  <a href="{% url 'committee_dashboard:home' %}" class="btn-secondary" style="margin-top:8px">Back to dashboard</a>
+</div></section>
+{% else %}
+
+<form method="get" class="mm-picker" id="mmPicker">
+  <span class="mm-picker-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+  <select name="meeting" id="mmMeetingSelect" aria-label="Choose a meeting">
+    {% for m in meetings %}<option value="{{ m.pk }}"{% if m.pk == meeting.pk %} selected{% endif %}>{{ m.scheduled_at|date:"j M Y" }} — {{ m.title }}{% if m.status == 'cancelled' %} (cancelled){% endif %}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit" class="btn-secondary">Go</button></noscript>
+  <span class="hint">{{ meetings|length }} meeting{{ meetings|length|pluralize }} you are invited to</span>
+</form>
+
+<section class="mm-agenda-head">
+  <div class="mm-datebox{% if meeting.status != 'scheduled' %} is-past{% endif %}{% if meeting.status == 'cancelled' %} is-cancelled{% endif %}">
+    <span class="mon">{{ meeting.scheduled_at|date:"M" }}</span>
+    <span class="day">{{ meeting.scheduled_at|date:"d" }}</span>
+    <span class="dow">{{ meeting.scheduled_at|date:"D" }} &middot; {{ meeting.scheduled_at|date:"Y" }}</span>
+  </div>
+  <div>
+    <div class="mm-card-title" style="margin-bottom:6px">
+      <span class="mm-chip teal">{{ meeting.get_meeting_type_display }}</span>
+      {% if meeting.is_live %}<span class="mm-pill live">Live now</span>
+      {% else %}<span class="mm-pill {{ meeting.status }}">{{ meeting.get_status_display }}</span>{% endif %}
+    </div>
+    <h2>{{ meeting.title }}</h2>
+    {% if meeting.description %}<p class="sub">{{ meeting.description }}</p>{% else %}<p class="sub"></p>{% endif %}
+    <div class="mm-meta">
+      <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>{{ meeting.scheduled_at|date:"g:i A" }} &ndash; {{ meeting.ends_at|date:"g:i A" }}</span>
+      {% if meeting.mode != 'virtual' and meeting.location %}<span><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>{{ meeting.location }}</span>{% endif %}
+      <span><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>{{ items|length }} item{{ items|length|pluralize }} &middot; {{ protocol_count }} protocol{{ protocol_count|pluralize }}</span>
+    </div>
+  </div>
+  {% if items and can_take_notes %}
+  <div class="mm-progress">
+    <div class="mm-ring" id="mmRing" style="--p: {{ reviewed_pct }}"><span id="mmRingPct">{{ reviewed_pct }}%</span></div>
+    <p><strong><span id="mmReviewedCount">{{ reviewed_count }}</span> of {{ items|length }} prepared</strong>Mark each item once you have read it.</p>
+  </div>
+  {% endif %}
+</section>
+
+<div class="mm-agenda-grid">
+  <div>
+    {% if not notes_available %}
+    <div class="mm-warn"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg><span>Personal notes are switched off until the notes table has been created in Supabase (run <strong>supabase/committee_agenda_notes.sql</strong>). The agenda itself is fully available.</span></div>
+    {% endif %}
+    {% if meeting.status == 'cancelled' %}
+    <div class="mm-warn" style="background:var(--red-light);color:var(--red)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15 9-6 6M9 9l6 6"/></svg><span>This meeting has been cancelled. The agenda is shown for reference only.</span></div>
+    {% endif %}
+
+    {% if items %}
+    <ol class="mm-timeline" style="list-style:none;margin:0;padding:0">
+      {% for item in items %}
+      <li class="mm-item{% if item.is_reviewed %} is-reviewed{% endif %}" id="item-{{ item.pk }}">
+        <span class="mm-item-num"><span class="n">{{ item.number }}</span><svg class="tick" viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg></span>
+        <div class="mm-item-card">
+          <div class="mm-item-top">
+            <div>
+              <div class="mm-item-time"><span>{{ item.starts|date:"g:i A" }} &ndash; {{ item.ends|date:"g:i A" }}</span><span class="dur">{{ item.duration_minutes }} min</span></div>
+              <h3>{{ item.title }}</h3>
+            </div>
+            <span class="mm-pill {% if item.status == 'discussed' %}completed{% elif item.status == 'deferred' %}tentative{% else %}scheduled{% endif %}">{{ item.get_status_display }}</span>
+          </div>
+          {% if item.description %}<p class="mm-item-desc">{{ item.description }}</p>{% endif %}
+          {% if item.presenter or item.application %}
+          <div class="mm-item-tags">
+            {% if item.application %}<span class="mm-chip purple" title="{{ item.application.title }}"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>{{ item.application.reference_no|default:"Protocol" }} &middot; {{ item.application.title|truncatechars:60 }}</span>{% endif %}
+            {% if item.presenter %}<span class="mm-chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>Presenter: {{ item.presenter }}</span>{% endif %}
+          </div>
+          {% endif %}
+
+          {% if can_take_notes %}
+          <form method="post" class="mm-notes" action="{% url 'committee_dashboard:agenda_note_save' item.pk %}" data-note-form>
+            {% csrf_token %}
+            <div class="mm-notes-head">
+              <label for="note-{{ item.pk }}"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>My notes</label>
+              <span class="mm-saved" data-status aria-live="polite"></span>
+            </div>
+            <textarea id="note-{{ item.pk }}" name="note" maxlength="5000" placeholder="Questions, concerns or points to raise on this item…">{{ item.my_note }}</textarea>
+            <div class="mm-notes-foot">
+              <span class="mm-notes-note"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Only you can see your notes.</span>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <button type="submit" class="btn-secondary mm-save-btn">Save note</button>
+                <button type="submit" name="is_reviewed" value="{% if item.is_reviewed %}0{% else %}1{% endif %}" class="mm-toggle" data-toggle-reviewed aria-pressed="{% if item.is_reviewed %}true{% else %}false{% endif %}">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 4.5-5"/></svg><span data-toggle-label>{% if item.is_reviewed %}Prepared{% else %}Mark as prepared{% endif %}</span>
+                </button>
+              </div>
+            </div>
+          </form>
+          {% endif %}
+        </div>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+    <section class="panel"><div class="mm-empty">
+      <div class="mm-empty-icon"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg></div>
+      <h3>The agenda hasn't been published yet</h3>
+      <p>The Secretariat hasn't added any items to this meeting. Check back closer to the date — you'll be notified when it's released.</p>
+    </div></section>
+    {% endif %}
+  </div>
+
+  <aside class="mm-side">
+    {% if can_rsvp %}
+    <section class="panel">
+      <h2>Your response</h2>
+      <span class="mm-rsvp-label">Current: <span class="mm-pill {{ meeting.my_part.rsvp_status }}" style="margin-left:6px">{{ meeting.my_part.get_rsvp_status_display }}</span></span>
+      {% include "dashboards/committee/_rsvp.html" with m=meeting %}
+    </section>
+    {% endif %}
+
+    <section class="panel">
+      <h2>Meeting details</h2>
+      <dl class="mm-facts">
+        <div><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><div><dt>Date</dt><dd>{{ meeting.scheduled_at|date:"l, j F Y" }}</dd></div></div>
+        <div><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><dt>Time</dt><dd>{{ meeting.scheduled_at|date:"g:i A" }} &ndash; {{ meeting.ends_at|date:"g:i A" }} ({{ meeting.duration_minutes }} min)</dd></div></div>
+        <div><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg><div><dt>Format</dt><dd>{{ meeting.get_mode_display }}{% if meeting.mode != 'virtual' and meeting.location %} &middot; {{ meeting.location }}{% endif %}</dd></div></div>
+        {% if meeting.chair %}<div><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg><div><dt>Chair</dt><dd>{{ meeting.chair.full_name }}</dd></div></div>{% endif %}
+        {% if meeting.quorum_required %}<div><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg><div><dt>Quorum</dt><dd>{{ meeting.quorum_required }} voting member{{ meeting.quorum_required|pluralize }}</dd></div></div>{% endif %}
+        <div><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg><div><dt>Agenda time</dt><dd>{{ total_minutes }} min planned{% if over_time %} <span class="mm-chip orange" style="margin-left:4px">exceeds meeting length</span>{% endif %}</dd></div></div>
+      </dl>
+      {% if meeting.mode != 'in_person' and meeting.meeting_link and meeting.status == 'scheduled' %}
+      <a href="{{ meeting.meeting_link }}" target="_blank" rel="noopener noreferrer" class="btn-primary mm-join"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>Join meeting</a>
+      {% endif %}
+      <button type="button" class="btn-secondary mm-join" onclick="window.print()"><svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg>Print agenda</button>
+    </section>
+
+    <section class="panel">
+      <h2>Participants ({{ participants|length }})</h2>
+      <div class="mm-rsvp-tally">
+        <span class="mm-pill accepted">{{ rsvp_counts.accepted|default:0 }} attending</span>
+        <span class="mm-pill tentative">{{ rsvp_counts.tentative|default:0 }} maybe</span>
+        <span class="mm-pill pending">{{ rsvp_counts.pending|default:0 }} awaiting</span>
+        <span class="mm-pill declined">{{ rsvp_counts.declined|default:0 }} declined</span>
+      </div>
+      <ul class="mm-roster">
+        {% for p in participants %}
+        <li>
+          <span class="av">{{ p.user.initials }}</span>
+          <span class="who"><strong>{{ p.user.full_name }}{% if p.user_id == request.user.pk %} (you){% endif %}</strong><small>{{ p.get_role_at_meeting_display }}</small></span>
+          <span class="dot {{ p.rsvp_status }}" title="{{ p.get_rsvp_status_display }}"></span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </aside>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}<script src="{% static 'dashboard/js/member-meetings.js' %}"></script>{% endblock %}
