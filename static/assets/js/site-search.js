@@ -44,7 +44,7 @@
   }
 
   function renderHint() {
-    resultsEl.innerHTML = '<p class="site-search-hint">Start typing to search the site &mdash; pages, applicant guidance, ethics review, resources, governance and more.</p>';
+    resultsEl.innerHTML = '<p class="site-search-hint"></p>';
     activeIndex = -1;
   }
 
