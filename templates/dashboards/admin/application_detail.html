@@ -114,15 +114,17 @@
               </p>
               <div class="field field-wide">
                 <label>Committee members</label>
-                <div class="chip-checkbox-grid">
-                  {% for member in committee_members %}
-                  <label class="chip-checkbox">
-                    <input type="checkbox" name="committee_members" value="{{ member.pk }}">
-                    <span>{{ member.full_name }}</span>
-                  </label>
-                  {% empty %}
-                  <p class="field-hint">No approved Committee members yet.</p>
-                  {% endfor %}
+                <div class="ms-picker" data-ms-picker data-ms-placeholder="Select committee members" data-ms-search-placeholder="Search members...">
+                  <div class="chip-checkbox-grid" data-ms-source>
+                    {% for member in committee_members %}
+                    <label class="chip-checkbox">
+                      <input type="checkbox" name="committee_members" value="{{ member.pk }}">
+                      <span>{{ member.full_name }}</span>
+                    </label>
+                    {% empty %}
+                    <p class="field-hint">No approved Committee members yet.</p>
+                    {% endfor %}
+                  </div>
                 </div>
               </div>
               <div class="field-grid">
@@ -248,4 +250,5 @@
 
 {% block extra_js %}
 <script src="{% static 'dashboard/js/generic-modal.js' %}"></script>
+<script src="{% static 'dashboard/js/ms-picker.js' %}"></script>
 {% endblock %}

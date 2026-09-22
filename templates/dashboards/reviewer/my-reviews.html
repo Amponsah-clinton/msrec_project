@@ -210,6 +210,11 @@
             </div>
             {% elif assignment.tab_value == 'completed' %}
             <div class="app-card-foot">
+              {% if assignment.certificate_id %}
+              <a href="{% url 'reviewer_dashboard:certificate_download' assignment.pk %}" target="_blank" rel="noopener" class="app-card-view app-card-view-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="m9 13-2 8 5-3 5 3-2-8"/></svg> Certificate
+              </a>
+              {% endif %}
               <a href="{% url 'reviewer_dashboard:review_application' assignment.pk %}" class="app-card-view">
                 View submission <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
               </a>

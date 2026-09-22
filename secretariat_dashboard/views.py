@@ -608,7 +608,7 @@ def _handle_refer_committee(request, application):
     if scheduled_at and timezone.is_naive(scheduled_at):
         scheduled_at = timezone.make_aware(scheduled_at)
     ok, note, _meeting = oversight.refer_to_committee(
-        application,
+        request, application,
         member_ids=member_ids,
         platform=request.POST.get("platform", "").strip(),
         meeting_link=request.POST.get("meeting_link", "").strip(),
@@ -618,6 +618,65 @@ def _handle_refer_committee(request, application):
         actor=request.user,
     )
     (messages.success if ok else messages.error)(request, note)
+
+
+def _handle_award_certificate(request, application):
+    """Awards (or, if already awarded, re-sends) a Peer Review Certificate
+    for one completed ReviewAssignment -- the "Award Certificate" button
+    under Reviewer Assessments on this page. Idempotent on the
+    certificate_id/certificate_awarded_at/certificate_awarded_by fields:
+    clicking it again after an award just re-renders and re-sends the
+    same certificate (e.g. the reviewer says the email never arrived),
+    it never issues a second, different certificate_id for the same
+    assignment."""
+    assignment_id = request.POST.get("assignment_id", "")
+    if not assignment_id.isdigit():
+        messages.error(request, "That request could not be processed.")
+        return
+    assignment = get_object_or_404(
+        ReviewAssignment.objects.select_related("reviewer", "application"),
+        pk=assignment_id, application=application, status=ReviewAssignment.Status.COMPLETED,
+    )
+
+    is_new = not assignment.certificate_id
+    if is_new:
+        assignment.certificate_id = f"MSREC/CERT/{assignment.pk:05d}"
+        assignment.certificate_awarded_at = timezone.now()
+        assignment.certificate_awarded_by = request.user
+        assignment.save(update_fields=["certificate_id", "certificate_awarded_at", "certificate_awarded_by"])
+        AuditLog.record(
+            request.user, "review.certificate_awarded", target=assignment,
+            description=f"Awarded certificate {assignment.certificate_id} to {assignment.reviewer.full_name}.",
+        )
+
+    from reviewer_dashboard.certificate import render_review_certificate_pdf
+    pdf_bytes = render_review_certificate_pdf(assignment)
+    filename = f"MSREC-Certificate-{assignment.certificate_id.replace('/', '-')}.pdf"
+
+    login_url = request.build_absolute_uri(reverse("pages:login"))
+    reviewer = assignment.reviewer
+    emailed = send_branded_email(
+        subject=f"Your MSREC Peer Review Certificate — {assignment.certificate_id}",
+        to=reviewer.email,
+        heading="Your certificate is ready",
+        paragraphs=[
+            f"Hi {reviewer.full_name},",
+            "Thank you for completing a peer review for MSREC — your Certificate of Appreciation "
+            "is attached to this email, and is also available any time from your Reviewer dashboard.",
+            f"Certificate ID: {assignment.certificate_id}",
+        ],
+        cta_text="View on My Dashboard",
+        cta_url=login_url,
+        preheader="Your MSREC peer review certificate is ready.",
+        attachments=[(filename, pdf_bytes, "application/pdf")],
+    )
+
+    if is_new:
+        note = f"Certificate {assignment.certificate_id} awarded to {reviewer.full_name}."
+    else:
+        note = f"Certificate {assignment.certificate_id} re-sent to {reviewer.full_name}."
+    note += " Emailed successfully." if emailed else " (the email couldn't be sent -- check email settings)."
+    (messages.success if emailed else messages.warning)(request, note)
 
 
 @login_required
@@ -630,6 +689,9 @@ def application_detail(request, pk):
         if action == "refer_committee":
             _handle_refer_committee(request, application)
             return redirect("secretariat_dashboard:application_detail", pk=application.pk)
+        if action == "award_certificate":
+            _handle_award_certificate(request, application)
+            return redirect(f"{reverse('secretariat_dashboard:application_detail', args=[application.pk])}#reviewer-assessments")
 
         comment = request.POST.get("revision_comment", "")
         ok, note = oversight.apply_transition(application, action, comment=comment, actor=request.user)

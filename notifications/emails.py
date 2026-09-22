@@ -163,12 +163,17 @@ def render_email_text(*, heading, paragraphs, cta_text=None, cta_url=None,
 
 def send_branded_email(*, subject, to, heading, paragraphs, cta_text=None,
                         cta_url=None, quote_label=None, quote_text=None,
-                        preheader="", fail_silently=True):
+                        preheader="", fail_silently=True, attachments=None):
     """Sends one branded email (HTML + plain-text fallback) to `to`
     (a single address, or a list of addresses). Returns True/False --
     callers should reflect that in whatever they tell the person who
     triggered the send, rather than assuming delivery succeeded just
-    because fail_silently swallowed the exception."""
+    because fail_silently swallowed the exception.
+
+    `attachments` -- optional list of (filename, content_bytes, mimetype)
+    tuples, e.g. a generated certificate PDF (see reviewer_dashboard/
+    certificate.py's award_certificate view). Rare enough across the app
+    that every other caller just omits it."""
     recipient_list = [to] if isinstance(to, str) else list(to)
     text_body = render_email_text(
         heading=heading, paragraphs=paragraphs, cta_text=cta_text, cta_url=cta_url,
@@ -181,6 +186,8 @@ def send_branded_email(*, subject, to, heading, paragraphs, cta_text=None,
 
     message = EmailMultiAlternatives(subject=subject, body=text_body, to=recipient_list)
     message.attach_alternative(html_body, "text/html")
+    for filename, content, mimetype in (attachments or []):
+        message.attach(filename, content, mimetype)
     try:
         sent = message.send(fail_silently=fail_silently)
     except Exception:

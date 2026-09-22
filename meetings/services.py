@@ -28,12 +28,19 @@ def _meeting_lines(meeting):
     return lines
 
 
-def send_meeting_invites(meeting, *, participants=None, kind="invitation"):
+def send_meeting_invites(meeting, *, participants=None, kind="invitation", cta_text=None, cta_url=None):
     """Emails every participant of `meeting` (or just `participants`, for
     a targeted resend) a branded notice, and posts one bell Notification
     per role represented so the relevant dashboards show it too. `kind`
     is either "invitation" (newly scheduled), "update" (rescheduled /
     details changed) or "cancellation".
+
+    `cta_text`/`cta_url` add a button to the email -- used by
+    applicant_dashboard.oversight.refer_to_committee to link straight to
+    the application a deliberation meeting is about
+    (committee_dashboard:protocol_detail), so an invited member can open
+    and read it before the meeting instead of hunting for it after
+    logging in. Optional and unused by plain (non-application) meetings.
 
     Returns the number of emails actually sent.
     """
@@ -60,11 +67,18 @@ def send_meeting_invites(meeting, *, participants=None, kind="invitation"):
         if kind != "cancellation":
             paragraphs.extend(_meeting_lines(meeting))
             paragraphs.append(f"Your role: {participant.get_role_at_meeting_display()}.")
+            if cta_url:
+                paragraphs.append(
+                    "Please take a few minutes to review the material below before the meeting "
+                    "so we can make the most of the time together."
+                )
         ok = send_branded_email(
             subject=heading,
             to=user.email,
             heading=heading,
             paragraphs=paragraphs,
+            cta_text=cta_text if kind != "cancellation" else None,
+            cta_url=cta_url if kind != "cancellation" else None,
             preheader=heading,
         )
         if ok:

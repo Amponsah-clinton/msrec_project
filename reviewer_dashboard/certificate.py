@@ -1,12 +1,16 @@
-"""Renders the Membership Certificate PDF for a confirmed Committee member --
-committee_dashboard.account_views.certificate_download is the only caller.
-Only ever called for a user with membership_ethics_id set (see
-accounts.models.User.approve_role, which is the one place that gets issued),
-so callers must check that themselves before rendering.
+"""Renders the Peer Review Certificate PDF for one completed ReviewAssignment
+-- reviewer_dashboard.account_views.certificate_download (self-serve) and
+secretariat_dashboard.views._handle_award_certificate (the Secretariat's
+"Award Certificate" button, which is what actually sets certificate_id/
+certificate_awarded_at in the first place -- see accounts.models.User for
+the equivalent Committee membership certificate) are the only callers.
+Only ever called for an assignment with certificate_id set, so callers
+must check that themselves before rendering.
 
-Built with reportlab's platypus layer directly, the same approach as
-reviewer_dashboard/pdf.py, and reusing its exact colour tokens so this reads
-as the same product rather than a bolted-on export.
+Built with reportlab's platypus layer directly, the same approach and
+exact colour tokens as committee_dashboard/certificate.py, so a reviewer's
+certificate reads as the same product as a committee member's rather than
+a differently-branded export.
 """
 from io import BytesIO
 
@@ -18,10 +22,10 @@ from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer,
 
 # Same wine/gold palette as templates/certificates/award_certificate.html's
 # :root custom properties -- this simpler reportlab rendering (used only
-# for the PDF attached to a committee-approval email, if one is ever
-# added; the dashboard's "Certificate" link opens that exact HTML design
-# instead, see certificate_download's docstring in account_views.py) is
-# still styled to match rather than reverting to the old navy/teal theme.
+# for the PDF attached to the award email; the dashboard's "Certificate"
+# link opens that exact HTML design instead, see certificate_download's
+# docstring) is still styled to match rather than reverting to the old
+# navy/teal report theme.
 WINE = colors.HexColor("#7b0b0d")
 GOLD_DEEP = colors.HexColor("#9b6900")
 GOLD_LIGHT = colors.HexColor("#f6efdd")
@@ -46,10 +50,6 @@ def _styles():
         "eyebrow": ParagraphStyle(
             "eyebrow", fontName="Helvetica-Bold", fontSize=11, leading=14, textColor=GOLD_DEEP,
             alignment=1, spaceAfter=6,
-        ),
-        "cert_title": ParagraphStyle(
-            "cert_title", fontName="Helvetica-Bold", fontSize=28, leading=32, textColor=WINE,
-            alignment=1, spaceAfter=4,
         ),
         "cert_sub": ParagraphStyle(
             "cert_sub", fontName="Helvetica", fontSize=10.5, leading=15, textColor=TEXT_SUB,
@@ -85,7 +85,8 @@ def _styles():
 def _border_frame(canvas, doc):
     """Double-rule border that reads as "certificate" rather than "report",
     drawn straight on the canvas rather than as a Table so it doesn't
-    consume any flowable width/height budget."""
+    consume any flowable width/height budget -- identical treatment to
+    committee_dashboard/certificate.py's membership certificate."""
     canvas.saveState()
     outer = 0.9 * cm
     canvas.setStrokeColor(GOLD)
@@ -100,22 +101,24 @@ def _border_frame(canvas, doc):
     canvas.setFillColor(TEXT_FAINT)
     canvas.drawCentredString(
         PAGE_SIZE[0] / 2, outer - 0.05 * cm,
-        "Verify this certificate's Membership Ethics ID with the MSREC Secretariat.",
+        "Verify this certificate's ID with the MSREC Secretariat.",
     )
     canvas.restoreState()
 
 
-def render_membership_certificate_pdf(member):
-    """Returns the rendered PDF as raw bytes for one confirmed Committee
-    member (an accounts.models.User with membership_ethics_id set)."""
+def render_review_certificate_pdf(assignment):
+    """Returns the rendered PDF as raw bytes for one completed
+    ReviewAssignment that has already been issued a certificate_id."""
     styles = _styles()
+    reviewer = assignment.reviewer
+    application = assignment.application
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer, pagesize=PAGE_SIZE,
         topMargin=PAGE_MARGIN + 0.6 * cm, bottomMargin=PAGE_MARGIN + 0.6 * cm,
         leftMargin=PAGE_MARGIN + 0.6 * cm, rightMargin=PAGE_MARGIN + 0.6 * cm,
-        title=f"MSREC Membership Certificate - {member.membership_ethics_id}",
+        title=f"MSREC Peer Review Certificate - {assignment.certificate_id}",
     )
 
     story = []
@@ -126,24 +129,25 @@ def render_membership_certificate_pdf(member):
     story.append(HRFlowable(width="100%", thickness=1, color=BORDER))
     story.append(Spacer(1, 22))
 
-    story.append(Paragraph("CERTIFICATE OF MEMBERSHIP", styles["eyebrow"]))
-    story.append(Paragraph("This certifies that", styles["cert_sub"]))
-    story.append(Paragraph(member.full_name, styles["recipient"]))
+    story.append(Paragraph("CERTIFICATE OF APPRECIATION", styles["eyebrow"]))
+    story.append(Paragraph("Presented to", styles["cert_sub"]))
+    story.append(Paragraph(reviewer.full_name, styles["recipient"]))
 
-    role_title = (member.committee_profile or {}).get("committeePosition") or member.position or "Committee Member"
+    ref = application.reference_no or f"Application #{application.pk}"
     story.append(Paragraph(
-        f"has been confirmed as a member of the Metascholar Research Ethics Committee, "
-        f"serving as <b>{role_title}</b>, and is recognised as being in good standing "
-        f"with MSREC's governing charter and code of research ethics conduct.",
+        f"in recognition of your time and expertise in completing an independent ethical "
+        f"review for the Metascholar Research Ethics Committee, under reference <b>{ref}</b>. "
+        f"Your contribution supports MSREC's commitment to rigorous, independent research "
+        f"ethics oversight.",
         styles["body_center"],
     ))
     story.append(Spacer(1, 22))
 
     meta = Table(
         [[
-            [Paragraph("MEMBERSHIP ETHICS ID", styles["label"]), Paragraph(member.membership_ethics_id, styles["value"])],
-            [Paragraph("CONFIRMED ON", styles["label"]),
-             Paragraph(member.membership_confirmed_at.strftime("%d %B %Y") if member.membership_confirmed_at else "—", styles["value"])],
+            [Paragraph("CERTIFICATE ID", styles["label"]), Paragraph(assignment.certificate_id, styles["value"])],
+            [Paragraph("AWARDED ON", styles["label"]),
+             Paragraph(assignment.certificate_awarded_at.strftime("%d %B %Y") if assignment.certificate_awarded_at else "—", styles["value"])],
         ]],
         colWidths=[doc.width / 2, doc.width / 2],
     )

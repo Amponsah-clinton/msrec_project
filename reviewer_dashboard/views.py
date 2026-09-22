@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -445,6 +445,48 @@ def review_application_pdf(request, assignment_id):
     response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
+
+
+@login_required
+@reviewer_required
+def certificate_download(request, assignment_id):
+    """Shows a reviewer's own Peer Review Certificate as a full-page,
+    print-ready HTML certificate (its own "Print / Save as PDF" button
+    covers getting a file, via the browser's native print-to-PDF rather
+    than a server-rendered one -- see templates/certificates/
+    award_certificate.html's docstring-equivalent comment for why). Only
+    exists once the Secretariat has actually awarded one (see
+    secretariat_dashboard.views._handle_award_certificate, the only place
+    certificate_id gets set), so this 404s otherwise -- same pk + reviewer
+    scoping as review_application_pdf above. The PDF *attached to the
+    award email* is a separate, simpler reportlab rendering (see
+    reviewer_dashboard/certificate.py) -- generating this exact HTML
+    design server-side would need a system HTML-to-PDF engine (WeasyPrint
+    + GTK3) this Windows dev box doesn't have installed."""
+    assignment = get_object_or_404(
+        ReviewAssignment.objects.select_related("application", "reviewer"),
+        pk=assignment_id, reviewer=request.user, status=ReviewAssignment.Status.COMPLETED,
+    )
+    if not assignment.certificate_id:
+        raise Http404("No certificate has been awarded for this review yet.")
+
+    ref = assignment.application.reference_no or f"Application #{assignment.application_id}"
+    return render(request, "certificates/award_certificate.html", {
+        "cert_title": "Certificate",
+        "cert_subtitle": "of Appreciation",
+        "recipient_name": assignment.reviewer.full_name,
+        "message": (
+            f"In recognition of your time and expertise in completing an independent<br>"
+            f"ethical review for MSREC, under reference {ref}"
+        ),
+        "cert_id": assignment.certificate_id,
+        "issued_on": assignment.certificate_awarded_at,
+        "left_name": "Secretariat",
+        "left_role": "MSREC Secretariat",
+        "right_name": "Chair",
+        "right_role": "MSREC Committee Chair",
+        "back_url": reverse("reviewer_dashboard:my_reviews"),
+    })
 
 
 # ---------------------------------------------------------------------

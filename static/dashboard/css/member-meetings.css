@@ -227,7 +227,7 @@
 
 .mm-agenda-head {
   padding: 22px 24px; margin-bottom: 22px; background: var(--white);
-  border: 1px solid var(--border); border-radius: 14px; border-left: 4px solid var(--teal);
+  border: 1px solid var(--border); border-radius: 14px;
   display: grid; grid-template-columns: auto 1fr auto; gap: 22px; align-items: center;
 }
 .mm-agenda-head .mm-datebox { width: 74px; }

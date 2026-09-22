@@ -10,8 +10,9 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.http import Http404, HttpResponse
+from django.http import Http404
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils import timezone
 
 from accounts.models import AuditLog, RoleApprovalLog, User
@@ -23,7 +24,6 @@ from notifications.models import Notification
 from pages import documents_storage
 from pages.models import GovernanceMember
 
-from .certificate import render_membership_certificate_pdf
 from .views import committee_required
 
 
@@ -272,20 +272,39 @@ def profile(request):
 @login_required
 @committee_required
 def certificate_download(request):
-    """Streams the requesting committee member's own Membership Certificate
-    PDF -- membership_ethics_id is only ever set by User.approve_role once
-    the Secretariat/an admin confirms the Committee request (see
+    """Shows the requesting committee member's own Membership Certificate
+    as a full-page, print-ready HTML certificate (its own "Print / Save as
+    PDF" button covers getting a file, via the browser's native
+    print-to-PDF -- see templates/certificates/award_certificate.html).
+    membership_ethics_id is only ever set by User.approve_role once the
+    Secretariat/an admin confirms the Committee request (see
     accounts.models.User.approve_role), so a 404 here means "not confirmed
-    yet" rather than a broken link."""
+    yet" rather than a broken link. The PDF attached to the approval email
+    is a separate, simpler reportlab rendering (see
+    committee_dashboard/certificate.py) -- generating this exact HTML
+    design server-side would need a system HTML-to-PDF engine (WeasyPrint
+    + GTK3) this Windows dev box doesn't have installed."""
     user = request.user
     if not user.membership_ethics_id:
         raise Http404("No membership certificate has been issued for this account yet.")
 
-    pdf_bytes = render_membership_certificate_pdf(user)
-    response = HttpResponse(pdf_bytes, content_type="application/pdf")
-    filename = f"MSREC-Membership-Certificate-{user.membership_ethics_id.replace('/', '-')}.pdf"
-    response["Content-Disposition"] = f'inline; filename="{filename}"'
-    return response
+    role_title = (user.committee_profile or {}).get("committeePosition") or user.position or "Committee Member"
+    return render(request, "certificates/award_certificate.html", {
+        "cert_title": "Certificate",
+        "cert_subtitle": "of Membership",
+        "recipient_name": user.full_name,
+        "message": (
+            f"In recognition of your confirmed membership of the Metascholar Research<br>"
+            f"Ethics Committee, serving as {role_title}, in good standing with MSREC's governing charter"
+        ),
+        "cert_id": user.membership_ethics_id,
+        "issued_on": user.membership_confirmed_at,
+        "left_name": "Secretariat",
+        "left_role": "MSREC Secretariat",
+        "right_name": "Chair",
+        "right_role": "MSREC Committee Chair",
+        "back_url": reverse("committee_dashboard:profile"),
+    })
 
 
 # ---------------------------------------------------------------------

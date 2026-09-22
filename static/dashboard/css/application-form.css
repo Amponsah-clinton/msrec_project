@@ -575,6 +575,108 @@
 .chip-checkbox-grid .chip-checkbox input:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
 .chip-checkbox-grid .chip-checkbox input:disabled { cursor: not-allowed; opacity: .55; }
 
+/* ---------------- Searchable multi-select ("ms-picker", see ms-picker.js) ----------------
+   Progressively enhances a .chip-checkbox-grid[data-ms-source] into a compact
+   dropdown: a control showing current picks as removable chips, and a panel
+   with a search box + scrollable checkbox list. Used by the Committee
+   members picker in the Refer to Committee modal. */
+.ms-picker { position: relative; }
+.ms-picker-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: border-color .15s;
+}
+.ms-picker-control:hover,
+.ms-picker.is-open .ms-picker-control { border-color: var(--teal); }
+.ms-picker-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+.ms-picker-placeholder { color: var(--text-faint); font-size: 13px; padding: 3px 2px; }
+.ms-picker-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 6px 4px 10px;
+  border-radius: 999px;
+  background: var(--teal-light);
+  color: var(--text-main);
+  font-size: 12px;
+  font-weight: 600;
+  max-width: 100%;
+}
+.ms-picker-chip button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--teal);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+  flex-shrink: 0;
+}
+.ms-picker-chip button:hover { background: color-mix(in srgb, var(--teal) 20%, transparent); }
+.ms-picker-caret { display: inline-flex; flex-shrink: 0; color: var(--text-faint); transition: transform .15s; }
+.ms-picker-caret svg { width: 16px; height: 16px; }
+.ms-picker.is-open .ms-picker-caret { transform: rotate(180deg); }
+
+.ms-picker-panel {
+  margin-top: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--white);
+  overflow: hidden;
+}
+.ms-picker-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ms-picker-search svg { width: 14px; height: 14px; color: var(--text-faint); flex-shrink: 0; }
+.ms-picker-search input {
+  border: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-main);
+  width: 100%;
+  background: transparent;
+}
+/* Compound selector (beats the base .chip-checkbox-grid's `display: grid`
+   regardless of stylesheet order) -- the picker's list keeps the
+   chip-checkbox-grid class for styling (see ms-picker.js) but needs to
+   lay out as a single scrollable column, not a multi-column grid. */
+.ms-picker-list.chip-checkbox-grid {
+  display: flex;
+  flex-direction: column;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 6px;
+  margin-top: 0;
+  gap: 2px;
+}
+/* Border only, not background -- the checked/hover highlight
+   (var(--teal-light), from the base .chip-checkbox-grid rules) must keep
+   winning, so this deliberately never sets background. */
+.ms-picker-list.chip-checkbox-grid .chip-checkbox { border-color: transparent; width: 100%; }
+.ms-picker-empty { padding: 16px 10px; text-align: center; font-size: 12.5px; color: var(--text-faint); }
+
 .apply-other-wrap { margin-top: 8px; max-width: 420px; }
 .apply-other-wrap input {
   width: 100%;

@@ -157,7 +157,7 @@ def send_decision_email(request, application, action):
     )
 
 
-def refer_to_committee(application, *, member_ids, platform, meeting_link, scheduled_at,
+def refer_to_committee(request, application, *, member_ids, platform, meeting_link, scheduled_at,
                         duration_minutes=90, info="", actor=None):
     """Schedules a deliberation meeting for `application` and invites the
     chosen Committee members to it -- the Secretariat's "set up a
@@ -178,6 +178,9 @@ def refer_to_committee(application, *, member_ids, platform, meeting_link, sched
     _protocol_rows, which derives a member's visible protocols entirely
     from "am I a participant on a meeting whose agenda includes this
     application" -- no separate "assignment" concept to maintain here).
+    The invitation email links straight to that page (committee_dashboard:
+    protocol_detail) so a member can actually open and read the
+    application before the meeting, not just be told a meeting exists.
 
     Returns (ok, message, meeting-or-None).
     """
@@ -193,9 +196,7 @@ def refer_to_committee(application, *, member_ids, platform, meeting_link, sched
         return False, "Choose a meeting date and time.", None
 
     label = application.reference_no or application.title or f"Application #{application.pk}"
-    description = f'Committee deliberation on "{application.title}" ({label}).'
-    if platform:
-        description += f" Platform: {platform}."
+    description = f'Committee deliberation on "{application.title}" ({label}), via {platform or "the link below"}.'
     if info:
         description += f"\n\n{info}"
 
@@ -233,7 +234,12 @@ def refer_to_committee(application, *, member_ids, platform, meeting_link, sched
             ),
         )
 
-    emailed = send_meeting_invites(meeting, kind="invitation")
+    review_url = request.build_absolute_uri(
+        reverse("committee_dashboard:protocol_detail", kwargs={"pk": application.pk})
+    )
+    emailed = send_meeting_invites(
+        meeting, kind="invitation", cta_text="Review the Application", cta_url=review_url,
+    )
     plural = "s" if len(members) != 1 else ""
     note = f"Referred to {len(members)} committee member{plural} for deliberation."
     note += f" {emailed} notified by email." if emailed else " (the invitation emails couldn't be sent)."

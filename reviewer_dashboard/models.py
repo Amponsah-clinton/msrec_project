@@ -93,6 +93,18 @@ class ReviewAssignment(models.Model):
     documents_comment = models.TextField(blank=True)
     recommendation_reason = models.TextField(blank=True)
 
+    # Set once the Secretariat/Admin clicks "Award Certificate" on a
+    # completed assessment (see reviewer_dashboard.certificate and
+    # secretariat_dashboard.views._handle_award_certificate). Null means
+    # no certificate has been issued for this specific review yet -- a
+    # reviewer's other completed assignments each get their own.
+    certificate_id = models.CharField(max_length=40, blank=True)
+    certificate_awarded_at = models.DateTimeField(null=True, blank=True)
+    certificate_awarded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="review_certificates_awarded",
+    )
+
     class Meta:
         db_table = "review_assignments"
         ordering = ["-assigned_at"]
