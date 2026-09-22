@@ -214,7 +214,7 @@
             </div>
             <div class="rv-score-item ok">
               <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
-              {{ sessions|length }} active session{{ sessions|length|pluralize }} <span class="rv-hint">{% if sessions|length == 1 %}This device{% else %}Across devices{% endif %}</span>
+              {{ sessions_total }} active session{{ sessions_total|pluralize }} <span class="rv-hint">{% if sessions_total == 1 %}This device{% else %}Across devices{% endif %}</span>
             </div>
           </div>
         </div>
@@ -359,6 +359,7 @@
                 {% csrf_token %}
                 <input type="hidden" name="action" value="revoke_session">
                 <input type="hidden" name="session_key" value="{{ session.key }}">
+                <input type="hidden" name="next" value="{{ request.path }}">
                 <button class="btn-secondary session-revoke" type="submit">Revoke</button>
               </form>
               {% endif %}
@@ -366,6 +367,9 @@
             {% empty %}
             <p class="field-hint">No other active sessions.</p>
             {% endfor %}
+            {% if sessions_total > 5 %}
+            <a href="{% url 'reviewer_dashboard:all_sessions' %}" class="dropdown-footer-link">View all {{ sessions_total }} sessions</a>
+            {% endif %}
           </section>
 
           <section class="panel actions-panel">

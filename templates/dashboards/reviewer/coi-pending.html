@@ -150,7 +150,7 @@
 
         <div class="app-card-grid">
           {% for assignment in assignments %}
-          <div class="coi-card {% if assignment.due_urgency == 'danger' %}accent-red{% elif assignment.due_urgency == 'warn' %}accent-amber{% endif %}">
+          <div class="coi-card">
             <div class="coi-card-top">
               <div class="coi-card-who">
                 <span class="coi-card-avatar">{{ assignment.application.applicant.initials }}</span>

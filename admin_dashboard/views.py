@@ -22,6 +22,7 @@ from accounts.models import AuditLog, RoleApprovalLog, User
 from accounts.sessions import active_sessions_for, describe_user_agent
 from applicant_dashboard import oversight
 from applicant_dashboard import storage as application_storage
+from applicant_dashboard.application_pdf import render_application_pdf as application_pdf_render
 from applicant_dashboard.models import Application
 from applicant_dashboard.views import (
     _apply_posted_fields, _fee_schedule_context, _initial_data_for_template,
@@ -626,7 +627,7 @@ def application_detail(request, pk):
             return redirect("admin_dashboard:application_detail", pk=application.pk)
 
         comment = request.POST.get("revision_comment", "")
-        ok, note = oversight.apply_transition(application, action, comment=comment, actor=request.user)
+        ok, note = oversight.apply_transition(application, action, comment=comment, actor=request.user, request=request)
         if ok and action == "request_revisions":
             emailed = oversight.send_revisions_requested_email(request, application)
             note += " Applicant notified by email." if emailed else " (the notification email couldn't be sent)."
@@ -651,6 +652,21 @@ def application_detail(request, pk):
         "documents": documents,
         **_committee_referral_context(application),
     })
+
+
+@login_required
+@admin_required
+def application_pdf(request, pk):
+    """Admin equivalent of secretariat_dashboard.views.application_pdf --
+    same shared applicant_dashboard.application_pdf.render_application_pdf
+    renderer, just gated by admin_required."""
+    application = get_object_or_404(oversight.staff_queryset(), pk=pk)
+    pdf_bytes = application_pdf_render(application)
+    ref = application.reference_no or f"application-{application.pk}"
+    filename = f"MSREC Application - {ref}.pdf".replace("/", "-")
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 @login_required

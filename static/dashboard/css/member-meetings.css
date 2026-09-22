@@ -56,6 +56,9 @@
 .mm-pill.cancelled { background: var(--red-light);    color: var(--red); }
 .mm-pill.live { background: var(--red-light); color: var(--red); }
 .mm-pill.live::before { animation: mm-pulse 1.4s ease-in-out infinite; }
+.mm-pill.overdue  { background: var(--red-light);    color: var(--red); }
+.mm-pill.due-soon { background: var(--orange-light); color: var(--orange); }
+.mm-pill.on-track { background: var(--teal-light);   color: var(--teal); }
 @keyframes mm-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(1.5); } }
 
 .mm-chip {
@@ -115,9 +118,7 @@
   position: relative; display: grid; grid-template-columns: auto 1fr auto; gap: 22px;
   align-items: center; padding: 22px 24px; margin-bottom: 22px;
   background: var(--white); border: 1px solid var(--border); border-radius: 14px;
-  border-left: 4px solid var(--teal);
 }
-.mm-hero.is-live { border-left-color: var(--red); }
 .mm-hero .mm-datebox { width: 74px; }
 .mm-hero .mm-datebox .day { font-size: 30px; }
 .mm-hero-kicker { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }

@@ -66,6 +66,11 @@ class ReviewAssignment(models.Model):
 
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.NEW)
     due_date = models.DateField(null=True, blank=True)
+    # Set the first time reviewer_dashboard.reminders sends this reviewer a
+    # "3 days left" nudge -- once and only once per assignment, so an
+    # opportunistic check (see that module's docstring) that runs on every
+    # dashboard visit can't re-send the same email all three days.
+    deadline_reminder_sent_at = models.DateTimeField(null=True, blank=True)
 
     assigned_at = models.DateTimeField(auto_now_add=True)
     accepted_at = models.DateTimeField(null=True, blank=True)

@@ -18,7 +18,7 @@ from collections import defaultdict
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.db import DatabaseError
-from django.db.models import Count, Prefetch
+from django.db.models import Count, F, Prefetch
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -152,6 +152,43 @@ def home_context(request):
         "awaiting_rsvp_count": len(awaiting),
         "previous_count": len(previous),
         "recent_meetings": previous[:3],
+        **_my_review_assignments_context(request),
+    }
+
+
+def _my_review_assignments_context(request):
+    """A Committee member's own open peer-review assignments (they're
+    pooled into the same reviewer pool as plain Reviewers -- see
+    secretariat_dashboard._approved_reviewers's docstring), soonest
+    deadline first, for the dashboard's "My Assigned Applications" panel.
+    Also where the opportunistic "3 days left" deadline reminder gets its
+    chance to fire for this member -- see reviewer_dashboard.reminders for
+    why this is opportunistic rather than a scheduled job, and why calling
+    it here alongside reviewer_dashboard's own dashboard and Secretariat's
+    Reviewer Assignment page is safe (each assignment is only ever
+    reminded once)."""
+    from reviewer_dashboard.models import ReviewAssignment
+    from reviewer_dashboard.reminders import send_due_soon_reminders
+
+    send_due_soon_reminders(request)
+
+    today = timezone.localdate()
+    my_reviews = list(
+        ReviewAssignment.objects.filter(
+            reviewer=request.user,
+            status__in=[ReviewAssignment.Status.NEW, ReviewAssignment.Status.ACCEPTED],
+        )
+        .select_related("application")
+        .order_by(F("due_date").asc(nulls_last=True), "assigned_at")
+    )
+    for assignment in my_reviews:
+        if assignment.due_date:
+            assignment.days_to_deadline = (assignment.due_date - today).days
+        else:
+            assignment.days_to_deadline = None
+    return {
+        "my_review_assignments": my_reviews[:5],
+        "my_review_assignments_total": len(my_reviews),
     }
 
 

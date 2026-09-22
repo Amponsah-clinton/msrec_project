@@ -13,6 +13,7 @@ from accounts import storage as accounts_storage
 from accounts.models import AuditLog, RoleApprovalLog, User
 from applicant_dashboard import oversight
 from applicant_dashboard import storage as application_storage
+from applicant_dashboard.application_pdf import render_application_pdf as application_pdf_render
 from applicant_dashboard.views import (
     _apply_posted_fields, _fee_schedule_context, _initial_data_for_template,
 )
@@ -704,7 +705,7 @@ def application_detail(request, pk):
             return redirect(f"{reverse('secretariat_dashboard:application_detail', args=[application.pk])}#reviewer-assessments")
 
         comment = request.POST.get("revision_comment", "")
-        ok, note = oversight.apply_transition(application, action, comment=comment, actor=request.user)
+        ok, note = oversight.apply_transition(application, action, comment=comment, actor=request.user, request=request)
         if ok and action == "request_revisions":
             emailed = oversight.send_revisions_requested_email(request, application)
             note += " Applicant notified by email." if emailed else " (the notification email couldn't be sent)."
@@ -736,6 +737,23 @@ def application_detail(request, pk):
         "reviewers": _approved_reviewers(),
         **_committee_referral_context(application),
     })
+
+
+@login_required
+@staff_required
+def application_pdf(request, pk):
+    """Downloadable PDF of the full application record -- everything on
+    application_detail.html's Research Information/PI/Documents/etc.
+    sections plus every other form field, laid out with the same design
+    language as the reviewer's Ethical Review Assessment PDF (see
+    applicant_dashboard.application_pdf)."""
+    application = get_object_or_404(oversight.staff_queryset(), pk=pk)
+    pdf_bytes = application_pdf_render(application)
+    ref = application.reference_no or f"application-{application.pk}"
+    filename = f"MSREC Application - {ref}.pdf".replace("/", "-")
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
 
 
 @login_required
@@ -1071,6 +1089,17 @@ def reviewer_assignment(request):
             # would if no one had ever been assigned, so it's immediately
             # eligible again wherever Assign Reviewer is offered.
             assignment.delete()
+            # Withdrawing this one might have been the *only* thing keeping
+            # the application at Under Review -- if nothing else (open or
+            # already-completed) is left reviewing it, it's not honestly
+            # "under review" anymore, so it goes back to New rather than
+            # sitting in the Under Review tab with zero reviewers attached
+            # to it. A completed assignment left behind means real reviewer
+            # input already exists, so that case is deliberately excluded.
+            still_reviewing = ReviewAssignment.objects.filter(application=application).exists()
+            if not still_reviewing and application.status == Application.Status.UNDER_REVIEW:
+                application.status = Application.Status.SUBMITTED
+                application.save(update_fields=["status"])
             suffix = "They've been notified by email." if emailed else "(the notification email couldn't be sent)."
             messages.success(
                 request,
@@ -1084,6 +1113,9 @@ def reviewer_assignment(request):
     active_tab = request.GET.get("tab", "assign")
     if active_tab not in REVIEWER_ASSIGNMENT_TABS:
         active_tab = "assign"
+
+    from reviewer_dashboard.reminders import send_due_soon_reminders
+    send_due_soon_reminders(request)
 
     reviewers = list(_approved_reviewers())
     needs_assignment = list(_needs_assignment_qs())

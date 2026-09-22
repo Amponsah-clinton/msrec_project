@@ -11,6 +11,7 @@ urlpatterns = [
     path("my-reviews/respond/", views.respond_to_assignment, name="respond_to_assignment"),
     path("my-reviews/<int:assignment_id>/review/", views.review_application, name="review_application"),
     path("my-reviews/<int:assignment_id>/review/pdf/", views.review_application_pdf, name="review_application_pdf"),
+    path("my-reviews/<int:assignment_id>/application-pdf/", views.review_application_info_pdf, name="review_application_info_pdf"),
     path("my-reviews/<int:assignment_id>/certificate/", views.certificate_download, name="certificate_download"),
     path("coi/pending/", views.coi_pending, name="coi_pending"),
     path("coi/previous/", views.coi_previous, name="coi_previous"),
@@ -22,4 +23,5 @@ urlpatterns = [
     path("notifications/", views.notifications, name="notifications"),
     path("profile/", views.profile_expertise, name="profile_expertise"),
     path("security/", views.security, name="security"),
+    path("security/sessions/", views.all_sessions, name="all_sessions"),
 ]

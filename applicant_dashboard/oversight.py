@@ -44,7 +44,7 @@ def staff_queryset():
     return Application.objects.exclude(status=Application.Status.DRAFT).select_related("applicant")
 
 
-def apply_transition(application, action, *, comment="", actor=None):
+def apply_transition(application, action, *, comment="", actor=None, request=None):
     """Applies one of STATUS_ACTIONS to `application` and saves it.
     Returns (ok, message) -- ok=False (with an error message) if `action`
     isn't a recognized transition.
@@ -60,7 +60,11 @@ def apply_transition(application, action, *, comment="", actor=None):
     `actor` is whichever staff user (Secretariat or Admin -- both call
     this same helper) made the decision, purely for the audit trail;
     omitting it just skips logging rather than erroring, so existing
-    callers that predate the audit log don't need updating."""
+    callers that predate the audit log don't need updating.
+
+    `request` is only used to build the login link in the email sent to
+    any reviewer whose open assignment gets auto-withdrawn below (see
+    _withdraw_open_assignments) -- omitting it just skips that email."""
     transition = STATUS_ACTIONS.get(action)
     if not transition:
         return False, "That request could not be processed."
@@ -81,7 +85,60 @@ def apply_transition(application, action, *, comment="", actor=None):
     application.save(update_fields=update_fields)
     if actor is not None:
         AuditLog.record(actor, f"application.{action}", target=application)
+
+    # A reviewer's still-open (not yet completed) assignment stops making
+    # sense the moment the application leaves review this way -- sent back
+    # to the applicant for revisions, or already decided -- so it's cleared
+    # here rather than left dangling on that reviewer's My Reviews list for
+    # a study that isn't actually awaiting their input anymore. Referring
+    # to Committee deliberately does NOT go through here (see
+    # refer_to_committee below): a reviewer's in-progress assessment is
+    # still live input the Committee wants, not stale work.
+    if new_status in (Application.Status.REVISIONS_REQUIRED, Application.Status.APPROVED, Application.Status.NOT_APPROVED):
+        _withdraw_open_assignments(application, request=request, reason=note)
+
     return True, note
+
+
+def _withdraw_open_assignments(application, *, request=None, reason=""):
+    """Deletes every New/Accepted ReviewAssignment on `application` --
+    exactly what the Secretariat's own manual Withdraw does (see
+    secretariat_dashboard.views.reviewer_assignment's "withdraw" branch),
+    just triggered automatically by a status change that makes an open
+    assignment stale instead of a deliberate click. A Completed or
+    Declined assignment is left alone -- there's nothing "open" about
+    either, and a completed one is exactly what the Secretariat is acting
+    on right now."""
+    from reviewer_dashboard.models import ReviewAssignment
+
+    open_assignments = list(
+        ReviewAssignment.objects.filter(
+            application=application,
+            status__in=[ReviewAssignment.Status.NEW, ReviewAssignment.Status.ACCEPTED],
+        ).select_related("reviewer")
+    )
+    for assignment in open_assignments:
+        AuditLog.record(
+            None, "review_assignment.auto_withdrawn", target=application,
+            description=f"{assignment.reviewer.full_name}'s open assignment was cleared -- {reason}",
+        )
+        if request is not None:
+            login_url = request.build_absolute_uri(reverse("pages:login"))
+            send_branded_email(
+                subject=f"Review assignment withdrawn — {application.reference_no or application.title}",
+                to=assignment.reviewer.email,
+                heading="A review assignment was withdrawn",
+                paragraphs=[
+                    f"Hi {assignment.reviewer.full_name},",
+                    f"You've been withdrawn from reviewing \"{application.title}\" "
+                    f"({application.reference_no or 'reference pending'}) -- no action is needed from you, "
+                    "and it no longer appears on your My Reviews list.",
+                ],
+                cta_text="Log in to MSREC",
+                cta_url=login_url,
+                preheader="One of your review assignments was withdrawn.",
+            )
+        assignment.delete()
 
 
 def send_revisions_requested_email(request, application):

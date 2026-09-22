@@ -8,6 +8,7 @@ from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from accounts.models import AuditLog, User
 from accounts.sessions import active_sessions_for
@@ -94,6 +95,9 @@ def _annotate_due(assignment):
 @login_required
 @reviewer_required
 def dashboard_home(request):
+    from .reminders import send_due_soon_reminders
+    send_due_soon_reminders(request)
+
     assignments = list(_assignments_for(request.user).order_by("due_date"))
     for assignment in assignments:
         assignment.tab_value = assignment.tab
@@ -284,9 +288,23 @@ def respond_to_assignment(request):
     the Secretariat isn't left to infer "declined" from an application
     quietly reappearing in the unassigned list."""
     tab = request.POST.get("tab", "new") if request.method == "POST" else "new"
-    redirect_url = f"{reverse('reviewer_dashboard:my_reviews')}?tab={tab}"
+    fallback_url = f"{reverse('reviewer_dashboard:my_reviews')}?tab={tab}"
     if request.method != "POST":
-        return redirect(redirect_url)
+        return redirect(fallback_url)
+
+    # A reviewer can accept/decline from either the dashboard home page or
+    # My Reviews -- without this, accepting from the dashboard used to bounce
+    # them onto My Reviews' New tab, which still has its own (now-stale)
+    # Accept button for other assignments and reads as "accept it again".
+    # `next` (only ever a same-site path this app itself rendered into the
+    # form) sends them back to wherever they actually clicked Accept/Decline
+    # from instead.
+    next_url = request.POST.get("next", "")
+    redirect_url = (
+        next_url
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()})
+        else fallback_url
+    )
 
     action = request.POST.get("action")
     assignment_id = request.POST.get("assignment_id", "")
@@ -442,6 +460,35 @@ def review_application_pdf(request, assignment_id):
     pdf_bytes = render_assessment_pdf(assignment)
     ref = assignment.application.reference_no or f"assignment-{assignment.pk}"
     filename = f"MSREC Ethical Review Assessment - {ref}.pdf".replace("/", "-")
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    return response
+
+
+@login_required
+@reviewer_required
+def review_application_info_pdf(request, assignment_id):
+    """Downloadable PDF of the *applicant's* application record (not the
+    reviewer's own assessment -- see review_application_pdf above for
+    that) -- same shared renderer secretariat_dashboard/admin_dashboard
+    use for their own "Download PDF" button (applicant_dashboard.
+    application_pdf.render_application_pdf), so a reviewer sees the exact
+    same well-formatted record staff do rather than a second, divergent
+    export. Scoped to Accepted/Completed the same way review_application
+    itself is: a reviewer only gets full application access once they've
+    actually accepted the assignment, and that access doesn't go away
+    once they've completed it."""
+    from applicant_dashboard.application_pdf import render_application_pdf
+
+    assignment = get_object_or_404(
+        ReviewAssignment.objects.select_related("application", "application__applicant"),
+        pk=assignment_id, reviewer=request.user,
+        status__in=[ReviewAssignment.Status.ACCEPTED, ReviewAssignment.Status.COMPLETED],
+    )
+    application = assignment.application
+    pdf_bytes = render_application_pdf(application)
+    ref = application.reference_no or f"application-{application.pk}"
+    filename = f"MSREC Application - {ref}.pdf".replace("/", "-")
     response = HttpResponse(pdf_bytes, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
@@ -719,6 +766,12 @@ def security(request):
             _handle_revoke_session(request)
         else:
             messages.error(request, "That request could not be processed.")
+        # Revoking from the "all sessions" page should land back there, not
+        # bounce to the main Security page -- same same-site-only `next`
+        # pattern as reviewer_dashboard.respond_to_assignment.
+        next_url = request.POST.get("next", "")
+        if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+            return redirect(next_url)
         return redirect("reviewer_dashboard:security")
 
     user = request.user
@@ -745,11 +798,24 @@ def security(request):
         score_label = "Needs Attention"
 
     return render(request, "dashboards/reviewer/security.html", {
-        "sessions": sessions,
+        "sessions": sessions[:5],
+        "sessions_total": len(sessions),
         "two_factor_email": two_factor_email,
         "security_score": score,
         "security_score_label": score_label,
         "block_unrecognised_countries": profile.get("blockUnrecognisedCountries", False),
+    })
+
+
+@login_required
+@reviewer_required
+def all_sessions(request):
+    """The full Active Sessions list -- Security itself only ever shows a
+    5-row preview (see security() above), so a reviewer signed in on more
+    devices than that has somewhere to see and revoke the rest."""
+    sessions = active_sessions_for(request.user, current_session_key=request.session.session_key)
+    return render(request, "dashboards/reviewer/all-sessions.html", {
+        "sessions": sessions,
     })
 
 

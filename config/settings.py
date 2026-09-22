@@ -40,6 +40,13 @@ CSRF_TRUSTED_ORIGINS = [
     if o.strip()
 ]
 
+# Absolute base URL for links in emails sent from *outside* a request (a
+# management command run by cron, for instance -- request.build_absolute_uri()
+# covers everything sent from a view). Only reviewer_dashboard.reminders
+# needs this today, since it's the one thing in this project that can fire
+# from a scheduled command rather than a page load.
+SITE_URL = os.getenv("SITE_URL", "https://ghethicalclearance.academicdigital.space" if not DEBUG else "http://127.0.0.1:8000")
+
 # Application definition
 INSTALLED_APPS = [
     "django.contrib.admin",

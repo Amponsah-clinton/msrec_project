@@ -145,6 +145,58 @@
 .cmt-doc-link svg { width: 13px; height: 13px; }
 .cmt-doc-link:hover { text-decoration: underline; }
 
+/* ---------------- Committee Members: card grid ----------------
+   Overrides the shared .acct-list/.acct-row list layout (accounts.css)
+   for this page only -- .acct-row itself stays untouched so every other
+   page that uses it (Accounts, Resources, Applications, ...) is
+   unaffected. Everything else about a row (data attributes, the edit/
+   delete buttons, the generic search/filter-tabs JS) is unchanged; this
+   only restyles it from a horizontal list row into a vertical card. */
+.cmt-member-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+.cmt-member-grid .empty-state { grid-column: 1 / -1; }
+.acct-row.cmt-member-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  padding: 26px 18px 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--white);
+  box-shadow: var(--shadow);
+  transition: box-shadow .15s ease, transform .15s ease;
+}
+/* accounts.css's `.acct-list .acct-row:first-child { border-top: none }`
+   outranks this rule's own `border` shorthand (an extra pseudo-class
+   pushes its specificity higher), which would leave the grid's first
+   card missing its top edge -- restated here with matching specificity
+   so every card in the grid keeps its full border. */
+.cmt-member-grid .acct-row.cmt-member-card:first-child { border-top: 1px solid var(--border); }
+.acct-row.cmt-member-card:hover { background: var(--white); box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.acct-row.cmt-member-card.acct-row-suspended { opacity: 0.65; }
+
+.cmt-member-card .acct-avatar { width: 76px; height: 76px; font-size: 22px; }
+
+.cmt-member-card .acct-info { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; width: 100%; }
+.cmt-member-card .acct-info h4 { justify-content: center; text-align: center; margin: 0; }
+.cmt-member-card .acct-info p { white-space: normal; text-align: center; }
+
+.cmt-member-card .acct-meta { flex-direction: row; justify-content: center; gap: 12px; flex-wrap: wrap; }
+
+.cmt-member-card .acct-actions {
+  width: 100%;
+  justify-content: center;
+  margin-top: 4px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.cmt-member-card .acct-manage { justify-content: center; }
+
 .cmt-modal-wide .acct-modal { max-width: 620px; }
 .acct-form-row textarea {
   padding: 9px 10px;

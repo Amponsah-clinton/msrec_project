@@ -144,6 +144,9 @@
               Review due {{ assignment.due_date|date:"d M Y" }}
             </span>
             {% endif %}
+            <a href="{% url 'reviewer_dashboard:review_application_info_pdf' assignment.pk %}" class="acct-btn acct-btn-edit">
+              <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg> Download Application PDF
+            </a>
           </div>
         </div>
       </section>

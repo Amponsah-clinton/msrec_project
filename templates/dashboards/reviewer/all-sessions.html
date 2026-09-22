@@ -1,0 +1,130 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Active Sessions | MSREC Reviewer{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/reviewer-settings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/reviewer-identity.css' %}">
+{% endblock %}
+
+{% block nav_content %}
+
+      <a href="{% url 'reviewer_dashboard:home' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg></span>
+        <span>Dashboard</span>
+      </a>
+
+      <a href="{% url 'reviewer_dashboard:my_reviews' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span>
+        <span>My Reviews</span>
+      </a>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M16 3.5a4 4 0 0 1 0 7.6"/><path d="M20.5 21v-2a5 5 0 0 0-3.5-4.8"/></svg></span>
+          <span>Conflict of Interest</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'reviewer_dashboard:coi_pending' %}" class="nav-sublink">Pending Declarations</a>
+          <a href="{% url 'reviewer_dashboard:coi_previous' %}" class="nav-sublink">Previous Declarations</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+          <span>Committee Meetings</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'reviewer_dashboard:committee_meetings' %}" class="nav-sublink">Upcoming Meetings</a>
+          <a href="{% url 'reviewer_dashboard:meeting_documents' %}" class="nav-sublink">Meeting Documents / Packets</a>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <button type="button" class="nav-group-toggle" aria-expanded="false">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span>
+          <span>Policies &amp; Guidance</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'reviewer_dashboard:policy_sops' %}" class="nav-sublink">MSREC SOPs</a>
+          <a href="{% url 'reviewer_dashboard:policy_guidance' %}" class="nav-sublink">Reviewer Guidance</a>
+          <a href="{% url 'reviewer_dashboard:policy_ethics' %}" class="nav-sublink">Ethics Guidelines</a>
+        </div>
+      </div>
+
+      <a href="{% url 'reviewer_dashboard:notifications' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+        <span>Notifications</span>
+      </a>
+      <a href="{% url 'reviewer_dashboard:profile_expertise' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></span>
+        <span>Profile &amp; Expertise</span>
+      </a>
+      <a href="{% url 'reviewer_dashboard:security' %}" class="nav-item active">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/></svg></span>
+        <span>Security</span>
+      </a>
+
+{% endblock %}
+
+{% block topbar %}
+
+      <div class="topbar-title">
+        <h1 class="rv-heading">Reviewer Dashboard</h1>
+        <p>Welcome back, {{ request.user.full_name }}</p>
+      </div>
+
+{% endblock %}
+
+{% block main_content %}
+<div class="rv-scope">
+
+      <div class="page-head">
+        <div class="page-head-text">
+          <a href="{% url 'reviewer_dashboard:security' %}" class="dropdown-footer-link" style="display:inline-block; margin-bottom:8px;">&larr; Back to Security</a>
+          <h2>Active Sessions</h2>
+          <p>Every device currently signed in to your account.</p>
+        </div>
+      </div>
+
+      <section class="rv-card rv-card-pad">
+        <div class="panel actions-panel">
+          {% for session in sessions %}
+          <div class="session-row">
+            <span class="rv-session-ico"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg></span>
+            <div class="session-info">
+              <strong>{{ session.os }} &middot; {{ session.browser }}{% if session.is_current %} <span class="badge-tag green">This device</span>{% endif %}</strong>
+              <span>{% if session.ip %}{{ session.ip }} &middot; {% endif %}{% if session.is_current %}Active now{% elif session.login_at %}Signed in {{ session.login_at|timesince }} ago{% else %}Session active{% endif %}</span>
+            </div>
+            {% if not session.is_current %}
+            <form method="post" action="{% url 'reviewer_dashboard:security' %}" class="session-revoke-form" data-confirm="Revoke this session? That device will be signed out immediately." data-confirm-variant="danger" data-confirm-label="Revoke">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="revoke_session">
+              <input type="hidden" name="session_key" value="{{ session.key }}">
+              <input type="hidden" name="next" value="{{ request.path }}">
+              <button class="btn-secondary session-revoke" type="submit">Revoke</button>
+            </form>
+            {% endif %}
+          </div>
+          {% empty %}
+          <p class="field-hint">No active sessions.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/profile-security.js' %}"></script>
+<script src="{% static 'dashboard/js/reviewer-settings.js' %}"></script>
+{% endblock %}

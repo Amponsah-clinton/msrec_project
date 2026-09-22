@@ -69,9 +69,9 @@
           </button>
         </div>
 
-        <div class="acct-list" id="cmMemberList">
+        <div class="cmt-member-grid" id="cmMemberList">
           {% for member in members %}
-          <div class="acct-row{% if not member.is_active %} acct-row-suspended{% endif %}" data-filter-item data-filter="{{ member.group }}"
+          <div class="acct-row cmt-member-card{% if not member.is_active %} acct-row-suspended{% endif %}" data-filter-item data-filter="{{ member.group }}"
                data-search="{{ member.full_name|lower }} {{ member.role_title|lower }} {{ member.tag|lower }}"
                data-member-id="{{ member.pk }}"
                data-full-name="{{ member.full_name }}"
