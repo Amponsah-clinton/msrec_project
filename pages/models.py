@@ -449,13 +449,14 @@ class PolicyDocument(models.Model):
 class ResourceDocument(models.Model):
     """One item on the public Resource Centre page
     (templates/pages/resources.html) -- an Application Form, Protocol
-    Template, Consent Template, Reporting Form, Guideline, FAQ or Training
-    entry. One shared table/model for all seven categories (filtered by
-    `category`, rendered into that category's card grid) rather than
-    seven near-identical models. Managed from admin_dashboard's Resources
-    page. File lives in Supabase Storage's public "resources" bucket
-    (pages/resources_storage.py); a row doesn't need a file at all (e.g. a
-    FAQ is just title+description), so file_path is optional.
+    Template, Consent Template, Reporting Form, Guideline, Regulatory
+    Authorization, FAQ or Training entry. One shared table/model for all
+    eight categories (filtered by `category`, rendered into that
+    category's card grid) rather than eight near-identical models.
+    Managed from admin_dashboard's Resources page. File lives in Supabase
+    Storage's public "resources" bucket (pages/resources_storage.py); a
+    row doesn't need a file at all (e.g. a FAQ is just title+description),
+    so file_path is optional.
     """
 
     class Category(models.TextChoices):
@@ -464,10 +465,11 @@ class ResourceDocument(models.Model):
         CONSENT_TEMPLATES = "consent_templates", "Consent Templates"
         REPORTING_FORMS = "reporting_forms", "Reporting Forms"
         GUIDELINES = "guidelines", "Guidelines"
+        REGULATORY_AUTHORIZATIONS = "regulatory_authorizations", "Regulatory Authorizations"
         FAQS = "faqs", "FAQs"
         TRAINING = "training", "Training"
 
-    category = models.CharField(max_length=20, choices=Category.choices)
+    category = models.CharField(max_length=25, choices=Category.choices)
     title = models.CharField(max_length=200)
     # For most categories, a short blurb shown under the title. For FAQs,
     # this is the answer body; for Training, the module description.

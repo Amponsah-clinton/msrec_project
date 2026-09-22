@@ -511,7 +511,7 @@ def home(request):
 @admin_required
 def applications(request):
     active_tab = request.GET.get("tab", "all")
-    if active_tab not in oversight.STATUS_TABS:
+    if active_tab not in oversight.STATUS_TABS and active_tab != "revised":
         active_tab = "all"
 
     base_qs = oversight.staff_queryset().order_by("-submitted_at")
@@ -520,6 +520,7 @@ def applications(request):
     all_applications = list(base_qs)
     for application in all_applications:
         application.tab = oversight.STATUS_TO_TAB.get(application.status, "all")
+        application.filter_tags = oversight.filter_tags_for(application)
         # The stored value is the form's slug ("not-sure", "expedited").
         # Show the same wording the fee schedule and Reports page use.
         application.review_type_label = fees.label_for(application.review_type)

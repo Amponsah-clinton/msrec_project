@@ -188,6 +188,17 @@ body.resources-page { margin: 0; font-family: var(--default-font); }
 .res-no-results a { color: var(--accent-color); font-weight: 600; }
 .res-no-results[hidden] { display: none; }
 
+.res-empty-note {
+  grid-column: 1 / -1;
+  background: #fff;
+  border: 1px dashed #dbe6e3;
+  border-radius: 14px;
+  padding: 16px 20px;
+  font-size: 13.5px;
+  color: #5c6b69;
+  margin: 0;
+}
+
 /* ---------------- Section shell ---------------- */
 .res-section {
   background: #ffffff;

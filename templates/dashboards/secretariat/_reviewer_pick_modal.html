@@ -1,0 +1,68 @@
+{% comment %}
+Shared "Choose a Reviewer" modal -- one overlay per page, opened by any
+number of [data-open-reviewer-modal] buttons (each living inside its own
+[data-assign-form]). static/dashboard/js/reviewer-assignment.js wires it
+up generically: it remembers which button opened it, and writes the
+picked reviewer into that button's own form's .reviewer-id-input.
+
+Needs `reviewers` in context (a queryset/list of approved-reviewer Users,
+e.g. secretariat_dashboard._approved_reviewers()) and the page to load
+dashboard/css/reviewer-directory.css + dashboard/css/reviewer-assignment.css
+and dashboard/js/reviewer-assignment.js.
+{% endcomment %}
+<div class="reviewer-modal-overlay" id="reviewerModalOverlay" hidden>
+  <div class="reviewer-modal" role="dialog" aria-modal="true" aria-labelledby="reviewerModalTitle">
+    <div class="reviewer-modal-head">
+      <h3 id="reviewerModalTitle">Choose a Reviewer</h3>
+      <button type="button" class="icon-btn" id="reviewerModalClose" aria-label="Close">
+        <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="reviewer-modal-filters">
+      <div class="search-box reviewer-modal-search">
+        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="reviewerModalSearch" placeholder="Search by name, institution, expertise&hellip;">
+      </div>
+      <div class="filter-tabs reviewer-modal-tabs" id="reviewerModalTabs">
+        <button type="button" class="filter-tab active" data-availability="all">All <span class="count">{{ reviewers|length }}</span></button>
+        <button type="button" class="filter-tab" data-availability="available">Available</button>
+        <button type="button" class="filter-tab" data-availability="limited">Limited</button>
+        <button type="button" class="filter-tab" data-availability="unavailable">Unavailable</button>
+      </div>
+    </div>
+
+    <div class="reviewer-modal-list" id="reviewerModalList">
+      {% for reviewer in reviewers %}
+      <button type="button" class="reviewer-pick-card" data-availability="{{ reviewer.reviewer_availability }}"
+              data-reviewer-id="{{ reviewer.pk }}" data-reviewer-name="{{ reviewer.full_name }}"
+              data-search="{{ reviewer.full_name|lower }} {{ reviewer.reviewer_profile.reviewerInstitution|default:reviewer.institution|lower }} {{ reviewer.reviewer_profile.reviewerDiscipline|default:''|lower }} {{ reviewer.reviewer_expertise_tags|join:' '|lower }} {{ reviewer.reviewer_research_area_tags|join:' '|lower }}">
+        <span class="acct-avatar cat-reviewers">{{ reviewer.initials }}</span>
+        <div class="reviewer-pick-info">
+          <div class="reviewer-pick-top">
+            <strong>{{ reviewer.full_name }}</strong>{% if reviewer.role == 'committee' %} <span class="badge-tag purple">Committee</span>{% endif %}
+            <span class="availability-badge availability-{{ reviewer.reviewer_availability }}"><i></i>{{ reviewer.get_reviewer_availability_display }}</span>
+          </div>
+          <p>{{ reviewer.reviewer_profile.reviewerPosition|default:reviewer.position|default:"Reviewer" }}{% if reviewer.reviewer_profile.reviewerInstitution %} &middot; {{ reviewer.reviewer_profile.reviewerInstitution }}{% elif reviewer.institution %} &middot; {{ reviewer.institution }}{% endif %}</p>
+          {% if reviewer.reviewer_expertise_tags %}
+          <div class="reviewer-pick-tags">
+            {% for tag in reviewer.reviewer_expertise_tags|slice:":5" %}<span class="tag-pill">{{ tag }}</span>{% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </button>
+      {% empty %}
+      <div class="empty-state">
+        <span class="empty-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/></svg></span>
+        <h3>No approved reviewers yet</h3>
+        <p>Approve a Reviewer role request from Accounts before you can assign one here.</p>
+      </div>
+      {% endfor %}
+      <div class="empty-state" id="reviewerModalNoMatches" hidden>
+        <span class="empty-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+        <h3>No matches</h3>
+        <p>Try a different search or filter.</p>
+      </div>
+    </div>
+  </div>
+</div>

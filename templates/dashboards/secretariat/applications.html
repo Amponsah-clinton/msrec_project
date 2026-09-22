@@ -8,6 +8,8 @@
 <link rel="stylesheet" href="{% static 'dashboard/css/secretariat.css' %}">
 <link href="{% static 'assets/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
 <link href="{% static 'dashboard/css/application-form.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/reviewer-directory.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/reviewer-assignment.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block nav_content %}
@@ -65,6 +67,7 @@
           <button type="button" class="filter-tab{% if active_tab == 'under_review' %} active{% endif %}" data-filter="under_review">Under Review <span class="count" data-count-key="under_review">{{ counts.under_review }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'with_committee' %} active{% endif %}" data-filter="with_committee">With Committee <span class="count" data-count-key="with_committee">{{ counts.with_committee }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'revisions' %} active{% endif %}" data-filter="revisions">Revisions <span class="count" data-count-key="revisions">{{ counts.revisions }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'revised' %} active{% endif %}" data-filter="revised">Revised <span class="count" data-count-key="revised">{{ counts.revised }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'approved' %} active{% endif %}" data-filter="approved">Approved <span class="count" data-count-key="approved">{{ counts.approved }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'not_approved' %} active{% endif %}" data-filter="not_approved">Not Approved <span class="count" data-count-key="not_approved">{{ counts.not_approved }}</span></button>
         </div>
@@ -72,9 +75,9 @@
         <div class="app-card-grid" id="secAppsList">
           {% for application in all_applications %}
           <div class="app-card" data-card-href="{% url 'secretariat_dashboard:application_detail' application.pk %}"
-             data-filter-item data-filter="{{ application.tab }}"
+             data-filter-item data-filter="{{ application.filter_tags|join:' ' }}"
              data-search="{{ application.reference_no|lower }} {{ application.title|lower }} {{ application.applicant.full_name|lower }}"
-             {% if active_tab != 'all' and application.tab != active_tab %}hidden{% endif %}>
+             {% if active_tab != 'all' and active_tab not in application.filter_tags %}hidden{% endif %}>
             <div class="app-card-top">
               <span class="acct-avatar cat-applicants">{{ application.applicant.initials }}</span>
               <div class="app-card-heading">
@@ -146,8 +149,9 @@
                 <input type="hidden" name="action" value="request_revisions">
                 <div class="acct-modal-body">
                   <div class="field field-wide">
-                    <label>Comment (optional)</label>
-                    <textarea name="revision_comment" rows="5" placeholder="e.g. Please attach the informed consent form in English, and clarify the sample size calculation in Section 5."></textarea>
+                    <label>What does the applicant need to fix? <span class="req">*</span></label>
+                    <p class="field-hint">Sent to the applicant by email, and shown on their Revisions Required page -- be specific about what's missing or needs changing.</p>
+                    <textarea name="revision_comment" rows="5" required placeholder="e.g. Please attach the informed consent form in English, and clarify the sample size calculation in Section 5."></textarea>
                   </div>
                 </div>
                 <div class="acct-modal-actions">
@@ -254,7 +258,7 @@
                     </div>
                   </div>
                   {% if a.status == 'declined' %}
-                  <p class="field-hint sc-flush">Declined -- assign a different reviewer from Reviewer Assignment.</p>
+                  <p class="field-hint sc-flush">Declined -- assign a different reviewer below.</p>
                   {% elif a.status == 'completed' %}
                   <div style="display:flex; align-items:center; gap:10px;">
                     {% if a.recommendation %}<span class="badge-tag {{ a.recommendation_badge }}">{{ a.get_recommendation_display }}</span>{% endif %}
@@ -271,13 +275,38 @@
                     </label>
                     <button type="submit" class="acct-btn acct-btn-edit">Save</button>
                   </form>
+                  <form method="post" action="{% url 'secretariat_dashboard:reviewer_assignment' %}"
+                        onsubmit="return confirm('Withdraw {{ a.reviewer.full_name }} from this application? They&#39;ll be notified by email, and it becomes available to assign to someone else right away.');">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="withdraw">
+                    <input type="hidden" name="assignment_id" value="{{ a.pk }}">
+                    <input type="hidden" name="next" value="{% url 'secretariat_dashboard:applications' %}?tab={{ active_tab }}">
+                    <button type="submit" class="acct-btn acct-btn-delete">{% if a.tab == 'due_overdue' %}Reassign{% else %}Withdraw{% endif %}</button>
+                  </form>
                   {% endif %}
                 </div>
                 {% empty %}
-                <p class="field-hint sc-flush">
-                  No reviewer assigned yet. <a href="{% url 'secretariat_dashboard:reviewer_assignment' %}">Assign one from Reviewer Assignment &rarr;</a>
-                </p>
+                <p class="field-hint sc-flush">No reviewer assigned yet.</p>
                 {% endfor %}
+
+                {% if application.status == 'submitted' or application.status == 'under_review' %}
+                <form method="post" action="{% url 'secretariat_dashboard:reviewer_assignment' %}" class="assign-card-form" data-assign-form style="margin-top:14px; padding-top:14px; border-top:1px solid var(--border);">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="assign">
+                  <input type="hidden" name="application_id" value="{{ application.pk }}">
+                  <input type="hidden" name="reviewer_id" class="reviewer-id-input">
+                  <input type="hidden" name="next" value="{% url 'secretariat_dashboard:applications' %}?tab={{ active_tab }}">
+                  <button type="button" class="choose-reviewer-btn" data-open-reviewer-modal>
+                    <span class="choose-reviewer-avatar" hidden></span>
+                    <span class="choose-reviewer-text">Choose a reviewer&hellip;</span>
+                    <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                  </button>
+                  <input type="date" name="due_date" aria-label="Due date">
+                  <button type="submit" class="assign-btn">
+                    <svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> {% if application.assignments %}Assign Another{% else %}Assign{% endif %}
+                  </button>
+                </form>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -291,10 +320,13 @@
         </div>
       </section>
 
+      {% include "dashboards/secretariat/_reviewer_pick_modal.html" %}
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'dashboard/js/secretariat-applications.js' %}"></script>
 <script src="{% static 'dashboard/js/ms-picker.js' %}"></script>
+<script src="{% static 'dashboard/js/reviewer-assignment.js' %}"></script>
 {% endblock %}

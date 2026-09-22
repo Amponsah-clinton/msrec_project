@@ -787,6 +787,25 @@ def _my_applications(request, *, status=None):
     return qs.order_by("-submitted_at")
 
 
+def _attach_receipts(applications):
+    """Sets `.receipt_payment_id` on each Application in `applications` --
+    the pk of its most recent successful Payment, or None -- so a listing
+    can link straight to applicant_dashboard:payment_receipt without a
+    query per row. A fee-exempt application, or one whose payment hasn't
+    cleared yet, simply gets None and no receipt link shows."""
+    applications = list(applications)
+    by_application = {}
+    payments = (
+        Payment.objects.filter(application_id__in=[a.pk for a in applications], status=Payment.Status.SUCCESS)
+        .order_by("application_id", "-paid_at")
+    )
+    for payment in payments:
+        by_application.setdefault(payment.application_id, payment.pk)
+    for application in applications:
+        application.receipt_payment_id = by_application.get(application.pk)
+    return applications
+
+
 def home(request):
     all_applications = Application.objects.filter(applicant=request.user)
     counts = {
@@ -800,7 +819,7 @@ def home(request):
     ).order_by("-submitted_at").first()
 
     return render(request, "dashboards/applicant.html", {
-        "my_applications": _my_applications(request)[:5],
+        "my_applications": _attach_receipts(_my_applications(request)[:5]),
         "counts": counts,
         "needs_revision": needs_revision,
         # "Notices" panel: real recent activity across every one of this
@@ -835,7 +854,7 @@ def nav_counts(request):
 
 def application_submitted(request):
     return render(request, "dashboards/applicant/application-submitted.html", {
-        "applications": _my_applications(request, status=Application.Status.SUBMITTED),
+        "applications": _attach_receipts(_my_applications(request, status=Application.Status.SUBMITTED)),
     })
 
 

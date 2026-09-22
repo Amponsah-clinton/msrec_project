@@ -33,7 +33,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const filter = currentFilter();
     let anyVisible = false;
     rows.forEach((row) => {
-      const matchesTab = filter === "all" || row.dataset.filter === filter;
+      // A row's data-filter can hold several space-separated tags (its
+      // current-status tab, plus "revised" if it's ever been resubmitted)
+      // -- see script.js's generic filter-tabs handler for why an exact
+      // match here would silently hide every resubmitted row whose
+      // status tab isn't literally "revised".
+      const tags = (row.dataset.filter || "").split(" ");
+      const matchesTab = filter === "all" || tags.includes(filter);
       const matchesSearch = !q || row.dataset.search.includes(q);
       const visible = matchesTab && matchesSearch;
       row.hidden = !visible;

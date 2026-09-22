@@ -106,7 +106,20 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ============================================================
-     Document uploader (client-side only — demo)
+     Document uploader
+
+     uploadedFiles is a JS-side accumulator so the drag-and-drop zone and
+     the picker can both add to the same running list with a nice
+     removable-card display -- but the actual <input type="file"> is what
+     gets posted to the server, and a browser never lets JS assign files
+     into it directly except through a real DataTransfer. Without
+     syncNativeInput() below, drag-and-drop never reaches the input at all
+     (a "drop" on .apply-file-drop is a different element from the input
+     and browsers don't auto-populate it), and removing a card via the "x"
+     button never removed the file from the input either -- both looked
+     right in the UI while silently posting the wrong set of files (or
+     none). Every add/remove now rebuilds the input's real FileList to
+     match uploadedFiles exactly before the form can be submitted.
   ============================================================ */
   const fileInput = document.getElementById("applyFileInput");
   const fileDrop = document.querySelector(".apply-file-drop");
@@ -117,6 +130,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (bytes < 1024) return bytes + " B";
     if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  function syncNativeInput() {
+    if (!fileInput) return;
+    const dt = new DataTransfer();
+    uploadedFiles.forEach((f) => dt.items.add(f));
+    // Assigning .files programmatically doesn't fire "change", so this
+    // never re-enters this same flow.
+    fileInput.files = dt.files;
   }
 
   function renderFileList() {
@@ -133,6 +155,8 @@ document.addEventListener("DOMContentLoaded", () => {
       item.querySelector(".apply-file-remove").addEventListener("click", () => {
         uploadedFiles.splice(i, 1);
         renderFileList();
+        syncNativeInput();
+        updateProgress();
       });
       fileList.appendChild(item);
     });
@@ -141,6 +165,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function addFiles(fileArray) {
     Array.from(fileArray).forEach((f) => uploadedFiles.push(f));
     renderFileList();
+    syncNativeInput();
     updateProgress();
   }
 

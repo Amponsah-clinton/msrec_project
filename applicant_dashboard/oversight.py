@@ -50,9 +50,12 @@ def apply_transition(application, action, *, comment="", actor=None):
     isn't a recognized transition.
 
     `comment` is only meaningful for "request_revisions" -- the
-    Secretariat's optional note on what the applicant needs to fix,
-    shown on their Revisions Required page and included in the email
-    apply_transition's caller sends (see secretariat_dashboard.views).
+    Secretariat's note on what the applicant needs to fix, shown on their
+    Revisions Required page and included in the email apply_transition's
+    caller sends (see secretariat_dashboard.views). Required: a
+    revisions-required email with nothing to act on ("MSREC reviewed your
+    application and it needs changes") leaves the applicant guessing, so
+    this is rejected before any state changes rather than silently sent.
 
     `actor` is whichever staff user (Secretariat or Admin -- both call
     this same helper) made the decision, purely for the audit trail;
@@ -61,6 +64,8 @@ def apply_transition(application, action, *, comment="", actor=None):
     transition = STATUS_ACTIONS.get(action)
     if not transition:
         return False, "That request could not be processed."
+    if action == "request_revisions" and not comment.strip():
+        return False, "Describe what the applicant needs to change before sending a revision request."
 
     new_status, note = transition
     application.status = new_status
@@ -247,7 +252,26 @@ def refer_to_committee(request, application, *, member_ids, platform, meeting_li
 
 
 def status_counts(base_qs):
-    return {
+    counts = {
         key: (base_qs.count() if status is None else base_qs.filter(status=status).count())
         for key, status in STATUS_TABS.items()
     }
+    # "Revised" isn't a status -- it's "has been resubmitted at least once",
+    # true at whatever status the application is currently sitting at (back
+    # in New after a fix, or already moved on to Under Review/Approved/etc).
+    # So it's tracked as an extra tag alongside `tab`, not a STATUS_TABS
+    # entry, and counted separately here rather than via status=.
+    counts["revised"] = base_qs.filter(resubmitted_at__isnull=False).count()
+    return counts
+
+
+def filter_tags_for(application):
+    """The full set of tab keys `application` should show up under on the
+    Applications list -- its current-status tab, plus "revised" if it's
+    ever been resubmitted after a revision request. A card can match more
+    than one filter tab at once (e.g. a resubmitted application now Under
+    Review is both "under_review" and "revised")."""
+    tags = [STATUS_TO_TAB.get(application.status, "all")]
+    if application.resubmitted_at:
+        tags.append("revised")
+    return tags

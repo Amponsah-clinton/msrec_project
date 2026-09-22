@@ -263,7 +263,10 @@
   gap: 10px;
   flex-shrink: 0;
 }
-.reviewer-modal-search { width: 100%; }
+/* .search-box (style.css) caps out at max-width:420px for its usual home
+   in the topbar -- inside this modal's wider body that left a lopsided
+   gap next to the tabs/list below, which do span the full width. */
+.reviewer-modal-search { width: 100%; max-width: none; flex: none; }
 .reviewer-modal-tabs { overflow-x: auto; flex-wrap: nowrap; }
 
 .reviewer-modal-list {

@@ -8,6 +8,7 @@
 <link href="{% static 'dashboard/css/reviewer-directory.css' %}" rel="stylesheet">
 <link href="{% static 'dashboard/css/reviewer-assignment.css' %}" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/secretariat.css' %}">
+<link href="{% static 'dashboard/css/application-form.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block nav_content %}
@@ -133,14 +134,10 @@
                   {% if assignment.due_date %}<span class="due-meta"><svg class="due-meta-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Due {{ assignment.due_date|date:"d M Y" }}</span>{% endif %}
                   <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Assigned {{ assignment.assigned_at|date:"d M Y" }}</span>
                 </div>
-                {% if assignment.status == 'new' %}
-                <form method="post" onsubmit="return confirm('Withdraw this assignment?');">
-                  {% csrf_token %}
-                  <input type="hidden" name="action" value="withdraw">
-                  <input type="hidden" name="tab" value="pending">
-                  <input type="hidden" name="assignment_id" value="{{ assignment.pk }}">
-                  <button type="submit" class="withdraw-btn">Withdraw</button>
-                </form>
+                {% if assignment.status == 'new' or assignment.status == 'accepted' %}
+                <button type="button" class="withdraw-btn" data-open-modal="withdrawAssignment-{{ assignment.pk }}">
+                  {% if assignment.tab_value == 'due_overdue' %}Reassign{% else %}Withdraw{% endif %}
+                </button>
                 {% endif %}
               </div>
               {% empty %}
@@ -152,6 +149,39 @@
               {% endfor %}
             </div>
           </div>
+
+          {% for assignment in pending %}
+          {% if assignment.status == 'new' or assignment.status == 'accepted' %}
+          <!-- WITHDRAW / REASSIGN MODAL -->
+          <div class="acct-modal-overlay" id="withdrawAssignment-{{ assignment.pk }}" hidden data-modal-overlay>
+            <div class="acct-modal">
+              <div class="acct-modal-head">
+                <h3>{% if assignment.tab_value == 'due_overdue' %}Reassign{% else %}Withdraw{% endif %} &mdash; {{ assignment.reviewer.full_name }}</h3>
+                <button type="button" class="icon-btn" data-modal-close aria-label="Close">
+                  <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="withdraw">
+                <input type="hidden" name="tab" value="pending">
+                <input type="hidden" name="assignment_id" value="{{ assignment.pk }}">
+                <div class="acct-modal-body">
+                  <p class="field-hint" style="margin:0;">{{ assignment.reviewer.full_name }} will be removed from &ldquo;{{ assignment.application.title }}&rdquo; and notified by email. The application becomes available to assign to someone else right away.</p>
+                  <div class="field field-wide">
+                    <label>Note to the reviewer <span class="field-hint" style="margin:0;">(optional)</span></label>
+                    <textarea name="withdraw_reason" rows="3" placeholder="e.g. Reassigning to keep the review on schedule -- thanks for your time so far."></textarea>
+                  </div>
+                </div>
+                <div class="acct-modal-actions">
+                  <button type="button" class="acct-btn acct-btn-cancel" data-modal-close>Cancel</button>
+                  <button type="submit" class="acct-btn acct-btn-delete">{% if assignment.tab_value == 'due_overdue' %}Reassign{% else %}Withdraw{% endif %}</button>
+                </div>
+              </form>
+            </div>
+          </div>
+          {% endif %}
+          {% endfor %}
 
           <!-- ============ COMPLETED REVIEWS ============ -->
           <div class="ra-panel" data-ra-panel="completed"{% if active_tab != 'completed' %} hidden{% endif %}>
@@ -227,67 +257,12 @@
 
       </div>
 
-      <!-- ============ CHOOSE REVIEWER MODAL ============ -->
-      <div class="reviewer-modal-overlay" id="reviewerModalOverlay" hidden>
-        <div class="reviewer-modal" role="dialog" aria-modal="true" aria-labelledby="reviewerModalTitle">
-          <div class="reviewer-modal-head">
-            <h3 id="reviewerModalTitle">Choose a Reviewer</h3>
-            <button type="button" class="icon-btn" id="reviewerModalClose" aria-label="Close">
-              <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
-            </button>
-          </div>
-
-          <div class="reviewer-modal-filters">
-            <div class="search-box reviewer-modal-search">
-              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-              <input type="text" id="reviewerModalSearch" placeholder="Search by name, institution, expertise&hellip;">
-            </div>
-            <div class="filter-tabs reviewer-modal-tabs" id="reviewerModalTabs">
-              <button type="button" class="filter-tab active" data-availability="all">All <span class="count">{{ reviewers|length }}</span></button>
-              <button type="button" class="filter-tab" data-availability="available">Available</button>
-              <button type="button" class="filter-tab" data-availability="limited">Limited</button>
-              <button type="button" class="filter-tab" data-availability="unavailable">Unavailable</button>
-            </div>
-          </div>
-
-          <div class="reviewer-modal-list" id="reviewerModalList">
-            {% for reviewer in reviewers %}
-            <button type="button" class="reviewer-pick-card" data-availability="{{ reviewer.reviewer_availability }}"
-                    data-reviewer-id="{{ reviewer.pk }}" data-reviewer-name="{{ reviewer.full_name }}"
-                    data-search="{{ reviewer.full_name|lower }} {{ reviewer.reviewer_profile.reviewerInstitution|default:reviewer.institution|lower }} {{ reviewer.reviewer_profile.reviewerDiscipline|default:''|lower }} {{ reviewer.reviewer_expertise_tags|join:' '|lower }} {{ reviewer.reviewer_research_area_tags|join:' '|lower }}">
-              <span class="acct-avatar cat-reviewers">{{ reviewer.initials }}</span>
-              <div class="reviewer-pick-info">
-                <div class="reviewer-pick-top">
-                  <strong>{{ reviewer.full_name }}</strong>{% if reviewer.role == 'committee' %} <span class="badge-tag purple">Committee</span>{% endif %}
-                  <span class="availability-badge availability-{{ reviewer.reviewer_availability }}"><i></i>{{ reviewer.get_reviewer_availability_display }}</span>
-                </div>
-                <p>{{ reviewer.reviewer_profile.reviewerPosition|default:reviewer.position|default:"Reviewer" }}{% if reviewer.reviewer_profile.reviewerInstitution %} &middot; {{ reviewer.reviewer_profile.reviewerInstitution }}{% elif reviewer.institution %} &middot; {{ reviewer.institution }}{% endif %}</p>
-                {% if reviewer.reviewer_expertise_tags %}
-                <div class="reviewer-pick-tags">
-                  {% for tag in reviewer.reviewer_expertise_tags|slice:":5" %}<span class="tag-pill">{{ tag }}</span>{% endfor %}
-                </div>
-                {% endif %}
-              </div>
-            </button>
-            {% empty %}
-            <div class="empty-state">
-              <span class="empty-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/></svg></span>
-              <h3>No approved reviewers yet</h3>
-              <p>Approve a Reviewer role request from Accounts before you can assign one here.</p>
-            </div>
-            {% endfor %}
-            <div class="empty-state" id="reviewerModalNoMatches" hidden>
-              <span class="empty-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
-              <h3>No matches</h3>
-              <p>Try a different search or filter.</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {% include "dashboards/secretariat/_reviewer_pick_modal.html" %}
 
 </div>
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'dashboard/js/generic-modal.js' %}"></script>
 <script src="{% static 'dashboard/js/reviewer-assignment.js' %}"></script>
 {% endblock %}

@@ -56,7 +56,10 @@ document.addEventListener("DOMContentLoaded", () => {
   // `.filter-tab[data-filter]` buttons and shows/hides that container's
   // `[data-filter-item]` children whose `data-filter` matches (or every
   // item, for the "all" tab). Opt-in via data attributes, so it only
-  // affects pages that actually use it.
+  // affects pages that actually use it. An item's `data-filter` may hold
+  // several space-separated tags (e.g. an application that's both
+  // "under_review" and "revised") -- it matches any tab whose key is one
+  // of those tags, not just an exact whole-string match.
   document.querySelectorAll(".filter-tabs[data-filters-target]").forEach((tabs) => {
     const target = document.querySelector(tabs.dataset.filtersTarget);
     if (!target) return;
@@ -69,7 +72,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const filter = tab.dataset.filter;
         items.forEach((item) => {
-          const matches = filter === "all" || item.dataset.filter === filter;
+          const tags = (item.dataset.filter || "").split(" ");
+          const matches = filter === "all" || tags.includes(filter);
           item.hidden = !matches;
         });
 

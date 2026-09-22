@@ -356,10 +356,36 @@ h6 {
 }
 
 .header .logo h1 {
-  font-size: 30px;
+  font-size: 19px;
   margin: 0;
   font-weight: 700;
   color: var(--heading-color);
+  line-height: 1.2;
+}
+
+.header .logo h1 .sitename-full,
+.header .logo h1 .sitename-short {
+  font-size: inherit;
+  color: inherit;
+  margin-left: 0;
+}
+
+.header .logo .sitename-short {
+  display: none;
+}
+
+@media (max-width: 575px) {
+  .header .logo h1 {
+    font-size: 13px;
+  }
+
+  .header .logo .sitename-full {
+    display: none;
+  }
+
+  .header .logo .sitename-short {
+    display: inline;
+  }
 }
 
 .header .logo span {

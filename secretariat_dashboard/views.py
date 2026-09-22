@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
+from django.utils.http import url_has_allowed_host_and_scheme
 
 from accounts import storage as accounts_storage
 from accounts.models import AuditLog, RoleApprovalLog, User
@@ -115,7 +116,7 @@ def home(request):
 @staff_required
 def applications(request):
     active_tab = request.GET.get("tab", "all")
-    if active_tab not in oversight.STATUS_TABS:
+    if active_tab not in oversight.STATUS_TABS and active_tab != "revised":
         active_tab = "all"
 
     base_qs = oversight.staff_queryset().order_by("-submitted_at").prefetch_related(
@@ -129,6 +130,7 @@ def applications(request):
     all_applications = list(base_qs)
     for application in all_applications:
         application.tab = oversight.STATUS_TO_TAB.get(application.status, "all")
+        application.filter_tags = oversight.filter_tags_for(application)
         # .all() reads the Prefetch above instead of re-querying per card --
         # this is what keeps the "reviewer, deadline & stage" modal button
         # on every card from turning into an N+1.
@@ -142,12 +144,20 @@ def applications(request):
         # card only has room for one name, and the latest decision is the
         # one most likely to be what the Secretariat is waiting on.
         application.completed_reviewers = sorted(completed, key=lambda a: a.completed_at, reverse=True)
+        # Still-active assignments -- drives the card's Assign Reviewer
+        # button ("Assign Reviewer" vs "Assign Another Reviewer" once
+        # someone's already on it) without a second query per card.
+        application.open_assignments = [
+            a for a in application.assignments
+            if a.status in (ReviewAssignment.Status.NEW, ReviewAssignment.Status.ACCEPTED)
+        ]
 
     return render(request, "dashboards/secretariat/applications.html", {
         "all_applications": all_applications,
         "counts": counts,
         "active_tab": active_tab,
         "committee_members": _approved_committee_members(),
+        "reviewers": _approved_reviewers(),
     })
 
 
@@ -714,11 +724,16 @@ def application_detail(request, pk):
     assignments = list(
         application.review_assignments.select_related("reviewer").order_by("-assigned_at")
     )
+    application.open_assignments = [
+        a for a in assignments
+        if a.status in (ReviewAssignment.Status.NEW, ReviewAssignment.Status.ACCEPTED)
+    ]
 
     return render(request, "dashboards/secretariat/application_detail.html", {
         "application": application,
         "documents": documents,
         "assignments": assignments,
+        "reviewers": _approved_reviewers(),
         **_committee_referral_context(application),
     })
 
@@ -931,12 +946,54 @@ def _send_assignment_email(request, assignment):
     )
 
 
+def _send_assignment_withdrawn_email(request, assignment, *, reason=""):
+    """Tells a reviewer their assignment was withdrawn -- called right
+    before assignment.delete() in reviewer_assignment()'s "withdraw"
+    branch, since there's nothing left to email about once the row is
+    gone. Deliberately neutral wording (no "you were too slow"): the
+    Secretariat's optional `reason` is the only place blame could creep
+    in, and it's shown as their own note, not asserted as fact."""
+    login_url = request.build_absolute_uri(reverse("pages:login"))
+    paragraphs = [
+        f"Hi {assignment.reviewer.full_name},",
+        f"You've been withdrawn from reviewing \"{assignment.application.title}\" "
+        f"({assignment.application.reference_no or 'reference pending'}) -- no action is needed from you, "
+        "and it no longer appears on your My Reviews list.",
+    ]
+    return send_branded_email(
+        subject=f"Review assignment withdrawn — {assignment.application.reference_no or assignment.application.title}",
+        to=assignment.reviewer.email,
+        heading="A review assignment was withdrawn",
+        paragraphs=paragraphs,
+        quote_label="Note from the Secretariat" if reason else "",
+        quote_text=reason,
+        cta_text="Log in to MSREC",
+        cta_url=login_url,
+        preheader="One of your review assignments was withdrawn.",
+    )
+
+
 @login_required
 @staff_required
 def reviewer_assignment(request):
     if request.method == "POST":
         action = request.POST.get("action")
         tab = request.POST.get("tab", "assign")
+        # "Assign Reviewer" is also offered right from an application's own
+        # card/detail page (not just this page's own Assign tab) -- those
+        # forms post here too, but a bare `redirect(request.path)` would
+        # yank the Secretariat over to the Reviewer Assignment page instead
+        # of back to whatever they were looking at. `next` (only ever a
+        # same-site path this app itself rendered into the form) sends them
+        # back there instead; absent, this page's own forms fall back to
+        # their original behavior unchanged.
+        next_url = request.POST.get("next", "")
+        fallback_url = f"{request.path}?tab={tab}"
+        redirect_url = (
+            next_url
+            if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()})
+            else fallback_url
+        )
 
         if action == "assign":
             # request.POST.get(...) is '' (never None) when a field posts
@@ -951,7 +1008,7 @@ def reviewer_assignment(request):
             reviewer_id = request.POST.get("reviewer_id", "")
             if not application_id.isdigit() or not reviewer_id.isdigit():
                 messages.error(request, "Choose a reviewer before assigning.")
-                return redirect(f"{request.path}?tab={tab}")
+                return redirect(redirect_url)
 
             application = get_object_or_404(oversight.staff_queryset(), pk=application_id)
             reviewer = get_object_or_404(
@@ -966,6 +1023,14 @@ def reviewer_assignment(request):
             assignment = ReviewAssignment.objects.create(
                 application=application, reviewer=reviewer, assigned_by=request.user, due_date=due_date,
             )
+            # The Secretariat doesn't review applications themselves --
+            # assigning the first reviewer *is* what moves a New submission
+            # into review, so this folds in what the old standalone "Start
+            # Review" button used to do rather than leaving the application
+            # sitting in New with a reviewer already working on it.
+            if application.status == Application.Status.SUBMITTED:
+                application.status = Application.Status.UNDER_REVIEW
+                application.save(update_fields=["status"])
             AuditLog.record(
                 request.user, "review_assignment.created", target=application,
                 description=f"Assigned to {reviewer.full_name}.",
@@ -980,20 +1045,41 @@ def reviewer_assignment(request):
             assignment_id = request.POST.get("assignment_id", "")
             if not assignment_id.isdigit():
                 messages.error(request, "That request could not be processed.")
-                return redirect(f"{request.path}?tab={tab}")
+                return redirect(redirect_url)
+            # Accepted, not just New: a reviewer who accepted and is now
+            # sitting on it (overdue, or just going quiet) is exactly the
+            # case the Secretariat needs to be able to reassign away from
+            # -- restricting this to New only ever covered "never even
+            # opened it", not "took it and is delaying".
             assignment = get_object_or_404(
                 ReviewAssignment.objects.select_related("application", "reviewer"),
-                pk=assignment_id, status=ReviewAssignment.Status.NEW,
+                pk=assignment_id,
+                status__in=[ReviewAssignment.Status.NEW, ReviewAssignment.Status.ACCEPTED],
             )
+            reason = request.POST.get("withdraw_reason", "").strip()
+            reviewer_name = assignment.reviewer.full_name
+            application = assignment.application
             AuditLog.record(
-                request.user, "review_assignment.withdrawn", target=assignment.application,
-                description=f"Withdrawn from {assignment.reviewer.full_name}.",
+                request.user, "review_assignment.withdrawn", target=application,
+                description=f"Withdrawn from {reviewer_name}." + (f" Reason: {reason}" if reason else ""),
             )
+            emailed = _send_assignment_withdrawn_email(request, assignment, reason=reason)
+            # Delete rather than a "withdrawn" status: it must disappear
+            # from the reviewer's own My Reviews entirely (every reviewer
+            # dashboard query there is a bare `reviewer=user` filter), and
+            # the application needs to look exactly as unassigned as it
+            # would if no one had ever been assigned, so it's immediately
+            # eligible again wherever Assign Reviewer is offered.
             assignment.delete()
-            messages.success(request, "Assignment withdrawn -- the application is available to assign again.")
+            suffix = "They've been notified by email." if emailed else "(the notification email couldn't be sent)."
+            messages.success(
+                request,
+                f"Assignment withdrawn from {reviewer_name} -- {application.reference_no or application.title} "
+                f"is available to assign again. {suffix}",
+            )
         else:
             messages.error(request, "That request could not be processed.")
-        return redirect(f"{request.path}?tab={tab}")
+        return redirect(redirect_url)
 
     active_tab = request.GET.get("tab", "assign")
     if active_tab not in REVIEWER_ASSIGNMENT_TABS:

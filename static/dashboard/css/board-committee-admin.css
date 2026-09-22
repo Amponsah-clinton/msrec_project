@@ -43,3 +43,67 @@
 @media (max-width: 640px) {
   .bc-admin-toolbar { flex-direction: column; align-items: stretch; }
 }
+
+/* ---------------- Add Resource modal ----------------
+   .acct-form-row's base rule (accounts.css) only styles <input> and
+   <select> -- it never covers <textarea> or <input type="file">, so both
+   rendered with raw browser chrome (no border-radius, no padding, wrong
+   font) next to the neatly styled title/category fields above them. */
+.acct-form-row textarea {
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--text-main);
+  background: var(--white);
+  resize: vertical;
+  min-height: 72px;
+}
+.acct-form-row textarea:focus {
+  outline: 2px solid var(--teal);
+  outline-offset: 1px;
+}
+
+.acct-form-row input[type="file"] {
+  padding: 8px 10px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  font-size: 12.5px;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.acct-form-row input[type="file"]:hover {
+  border-color: var(--teal);
+  background: var(--white);
+}
+/* Themes the native "Choose File" control itself rather than trying to
+   hide/replace it -- a wrapped custom button needs JS to stay in sync
+   with the real input, which is one more thing to break. */
+.acct-form-row input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  padding: 6px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--teal);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.acct-form-row input[type="file"]::file-selector-button:hover {
+  background: color-mix(in srgb, var(--teal), #000 14%);
+}
+
+/* A short muted line under the bold label, instead of stuffing the
+   instruction into the label text itself (e.g. "Description (optional --
+   for FAQs, this is the answer)"), which read as one dense run-on line. */
+.acct-form-row .acct-field-hint {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-faint);
+  margin-top: -2px;
+}

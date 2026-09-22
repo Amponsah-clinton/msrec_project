@@ -21,7 +21,7 @@
           <p>Forms, templates, guidance and training in one place &mdash; the same documents MSREC reviewers expect to see referenced in a complete submission.</p>
 
           <dl class="res-stats-row">
-            <div class="res-stat"><dt>7</dt><dd>Resource categories</dd></div>
+            <div class="res-stat"><dt>8</dt><dd>Resource categories</dd></div>
             <div class="res-stat"><dt>26</dt><dd>Forms &amp; templates</dd></div>
             <div class="res-stat"><dt>4</dt><dd>Training modules</dd></div>
           </dl>
@@ -47,6 +47,7 @@
           <a href="#res-consent-templates" data-cat="res-consent-templates"><i class="bi bi-file-earmark-person"></i> Consent Templates</a>
           <a href="#res-reporting-forms" data-cat="res-reporting-forms"><i class="bi bi-flag"></i> Reporting Forms</a>
           <a href="#res-guidelines" data-cat="res-guidelines"><i class="bi bi-book"></i> Guidelines</a>
+          <a href="#res-regulatory-authorizations" data-cat="res-regulatory-authorizations"><i class="bi bi-patch-check"></i> Regulatory Authorizations</a>
           <a href="#res-faqs" data-cat="res-faqs"><i class="bi bi-question-circle"></i> FAQs</a>
           <a href="#res-training" data-cat="res-training"><i class="bi bi-mortarboard"></i> Training</a>
         </nav>
@@ -293,6 +294,30 @@
             <span class="res-doc-title">International Collaboration &amp; Cross-Border Data Transfer Guidance</span>
             <span class="res-doc-meta">PDF &middot; 210 KB</span>
           </a>
+        </div>
+      </section>
+
+      <!-- ============ REGULATORY AUTHORIZATIONS ============ -->
+      <section class="res-section" id="res-regulatory-authorizations">
+        <div class="res-section-head">
+          <span class="res-section-icon"><i class="bi bi-patch-check"></i></span>
+          <div>
+            <h2>Regulatory Authorizations</h2>
+            <p>MSREC's own accreditations, registrations and regulatory authorization certificates.</p>
+          </div>
+        </div>
+
+        <div class="res-doc-grid">
+          {% for doc in resources_by_category.regulatory_authorizations %}
+          <a class="res-doc-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" {% if doc.download_url_ %}download{% endif %} target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
+            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
+            <span class="res-doc-title">{{ doc.title }}</span>
+            <span class="res-doc-meta">{{ doc.description|default:"Uploaded document" }}</span>
+          </a>
+          {% empty %}
+          <p class="res-empty-note">No regulatory authorization documents published yet.</p>
+          {% endfor %}
         </div>
       </section>
 

@@ -64,7 +64,7 @@
       <div class="container-fluid position-relative d-flex align-items-center justify-content-between">
         <a href="{% url 'pages:index' %}" class="logo d-flex align-items-center">
           <img src="{% if site_settings.logo_url %}{{ site_settings.logo_url }}{% else %}{% static 'assets/img/logo1.png' %}{% endif %}" alt="{{ site_settings.site_name|default:'MSREC' }} logo">
-          <h1 class="sitename">{{ site_settings.site_name|default:"MSREC" }}</h1>
+          <h1 class="sitename"><span class="sitename-full">{{ site_settings.site_name|default:"MSREC" }}</span><span class="sitename-short">MSREC</span></h1>
         </a>
         <nav id="navmenu" class="navmenu">
           <ul>

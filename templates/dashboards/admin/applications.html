@@ -55,6 +55,7 @@
           <button type="button" class="filter-tab{% if active_tab == 'under_review' %} active{% endif %}" data-filter="under_review">Under Review <span class="count" data-count-key="under_review">{{ counts.under_review }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'with_committee' %} active{% endif %}" data-filter="with_committee">With Committee <span class="count" data-count-key="with_committee">{{ counts.with_committee }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'revisions' %} active{% endif %}" data-filter="revisions">Revisions <span class="count" data-count-key="revisions">{{ counts.revisions }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'revised' %} active{% endif %}" data-filter="revised">Revised <span class="count" data-count-key="revised">{{ counts.revised }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'approved' %} active{% endif %}" data-filter="approved">Approved <span class="count" data-count-key="approved">{{ counts.approved }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'not_approved' %} active{% endif %}" data-filter="not_approved">Not Approved <span class="count" data-count-key="not_approved">{{ counts.not_approved }}</span></button>
         </div>
@@ -62,9 +63,9 @@
         <div class="acct-list" id="adminAppsList">
           {% for application in all_applications %}
           <a href="{% url 'admin_dashboard:application_detail' application.pk %}"
-             class="acct-row" data-filter-item data-filter="{{ application.tab }}"
+             class="acct-row" data-filter-item data-filter="{{ application.filter_tags|join:' ' }}"
              data-search="{{ application.reference_no|lower }} {{ application.title|lower }} {{ application.applicant.full_name|lower }}"
-             {% if active_tab != 'all' and application.tab != active_tab %}hidden{% endif %}
+             {% if active_tab != 'all' and active_tab not in application.filter_tags %}hidden{% endif %}
              style="text-decoration:none; cursor:pointer;">
             <span class="acct-avatar cat-applicants">{{ application.applicant.initials }}</span>
             <div class="acct-info">

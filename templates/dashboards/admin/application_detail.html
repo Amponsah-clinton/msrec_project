@@ -177,8 +177,9 @@
             <input type="hidden" name="action" value="request_revisions">
             <div class="acct-modal-body">
               <div class="field field-wide">
-                <label>Comment (optional)</label>
-                <textarea name="revision_comment" rows="5" placeholder="e.g. Please attach the informed consent form in English, and clarify the sample size calculation in Section 5."></textarea>
+                <label>What does the applicant need to fix? <span class="req">*</span></label>
+                <p class="field-hint">Sent to the applicant by email, and shown on their Revisions Required page -- be specific about what's missing or needs changing.</p>
+                <textarea name="revision_comment" rows="5" required placeholder="e.g. Please attach the informed consent form in English, and clarify the sample size calculation in Section 5."></textarea>
               </div>
             </div>
             <div class="acct-modal-actions">

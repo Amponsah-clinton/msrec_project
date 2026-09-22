@@ -9,6 +9,8 @@
 <link href="{% static 'dashboard/css/application-form.css' %}" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/secretariat.css' %}">
 <link href="{% static 'dashboard/css/reviewer-assessment.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/reviewer-directory.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/reviewer-assignment.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block nav_content %}
@@ -89,10 +91,8 @@
         {% endif %}
 
         <div class="sc-detail-actions">
-          {% if application.status == 'submitted' %}
-          <form method="post">{% csrf_token %}<input type="hidden" name="action" value="start_review">
-            <button type="submit" class="acct-btn acct-btn-approve"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Start Review</button>
-          </form>
+          {% if application.status == 'submitted' or application.status == 'under_review' %}
+          <button type="button" class="acct-btn acct-btn-approve" data-open-modal="assignReviewerOverlay"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> {% if application.open_assignments %}Assign Another Reviewer{% else %}Assign Reviewer{% endif %}</button>
           {% endif %}
           {% if application.status == 'submitted' or application.status == 'under_review' or application.status == 'with_committee' %}
           <button type="button" data-open-modal="requestRevisionsOverlay" class="acct-btn acct-btn-suspend"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Request Revisions</button>
@@ -293,17 +293,65 @@
             {% endif %}
           </div>
           {% elif assignment.status == 'declined' %}
-          <p class="field-hint" style="margin:0;">This reviewer declined the assignment -- assign a different reviewer from Reviewer Assignment.</p>
+          <p class="field-hint" style="margin:0;">This reviewer declined the assignment -- use Assign Reviewer above to assign someone else.</p>
           {% else %}
-          <p class="field-hint" style="margin:0;">Assessment not submitted yet.</p>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+            <p class="field-hint" style="margin:0;">Assessment not submitted yet.</p>
+            <form method="post" action="{% url 'secretariat_dashboard:reviewer_assignment' %}"
+                  onsubmit="return confirm('Withdraw {{ assignment.reviewer.full_name }} from this application? They&#39;ll be notified by email, and it becomes available to assign to someone else right away.');">
+              {% csrf_token %}
+              <input type="hidden" name="action" value="withdraw">
+              <input type="hidden" name="assignment_id" value="{{ assignment.pk }}">
+              <input type="hidden" name="next" value="{% url 'secretariat_dashboard:application_detail' application.pk %}">
+              <button type="submit" class="acct-btn acct-btn-delete">Withdraw &amp; Reassign</button>
+            </form>
+          </div>
           {% endif %}
         </div>
         {% empty %}
         <p class="field-hint" style="margin:0;">
-          No reviewer assigned yet. <a href="{% url 'secretariat_dashboard:reviewer_assignment' %}">Assign one from Reviewer Assignment &rarr;</a>
+          No reviewer assigned yet.
+          {% if application.status == 'submitted' or application.status == 'under_review' %}Use Assign Reviewer above.{% endif %}
         </p>
         {% endfor %}
       </section>
+
+      <!-- ASSIGN REVIEWER MODAL -->
+      <div class="acct-modal-overlay" id="assignReviewerOverlay" hidden data-modal-overlay>
+        <div class="acct-modal">
+          <div class="acct-modal-head">
+            <h3>Assign Reviewer</h3>
+            <button type="button" class="icon-btn" data-modal-close aria-label="Close">
+              <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <form method="post" action="{% url 'secretariat_dashboard:reviewer_assignment' %}" data-assign-form>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="assign">
+            <input type="hidden" name="application_id" value="{{ application.pk }}">
+            <input type="hidden" name="reviewer_id" class="reviewer-id-input">
+            <input type="hidden" name="next" value="{% url 'secretariat_dashboard:application_detail' application.pk %}">
+            <div class="acct-modal-body">
+              <div class="field field-wide">
+                <label>Reviewer <span class="req">*</span></label>
+                <button type="button" class="choose-reviewer-btn" data-open-reviewer-modal style="width:100%;">
+                  <span class="choose-reviewer-avatar" hidden></span>
+                  <span class="choose-reviewer-text">Choose a reviewer&hellip;</span>
+                  <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+              </div>
+              <div class="field field-wide">
+                <label>Due date <span class="field-hint" style="margin:0;">(optional)</span></label>
+                <input type="date" name="due_date">
+              </div>
+            </div>
+            <div class="acct-modal-actions">
+              <button type="button" class="acct-btn acct-btn-cancel" data-modal-close>Cancel</button>
+              <button type="submit" class="acct-btn acct-btn-approve"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Assign</button>
+            </div>
+          </form>
+        </div>
+      </div>
 
       <!-- REQUEST REVISIONS MODAL -->
       <div class="acct-modal-overlay" id="requestRevisionsOverlay" hidden data-modal-overlay>
@@ -319,8 +367,9 @@
             <input type="hidden" name="action" value="request_revisions">
             <div class="acct-modal-body">
               <div class="field field-wide">
-                <label>Comment (optional)</label>
-                <textarea name="revision_comment" rows="5" placeholder="e.g. Please attach the informed consent form in English, and clarify the sample size calculation in Section 5."></textarea>
+                <label>What does the applicant need to fix? <span class="req">*</span></label>
+                <p class="field-hint">Sent to the applicant by email, and shown on their Revisions Required page -- be specific about what's missing or needs changing.</p>
+                <textarea name="revision_comment" rows="5" required placeholder="e.g. Please attach the informed consent form in English, and clarify the sample size calculation in Section 5."></textarea>
               </div>
             </div>
             <div class="acct-modal-actions">
@@ -383,10 +432,13 @@
         </section>
       </div>
 
+      {% include "dashboards/secretariat/_reviewer_pick_modal.html" %}
+
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'dashboard/js/generic-modal.js' %}"></script>
 <script src="{% static 'dashboard/js/ms-picker.js' %}"></script>
+<script src="{% static 'dashboard/js/reviewer-assignment.js' %}"></script>
 {% endblock %}

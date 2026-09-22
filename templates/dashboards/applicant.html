@@ -142,9 +142,16 @@
                   </td>
                   <td data-label="Submitted"><span class="due-main">{{ application.submitted_at|date:"d M Y" }}</span></td>
                   <td data-label="Action">
-                    <a class="action-btn" aria-label="View" href="{% url 'applicant_dashboard:application_detail' application.pk %}">
-                      <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                    </a>
+                    <div class="action-btn-group">
+                      <a class="action-btn" aria-label="View" href="{% url 'applicant_dashboard:application_detail' application.pk %}">
+                        <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                      </a>
+                      {% if application.receipt_payment_id %}
+                      <a class="action-btn" aria-label="Receipt" title="View payment receipt" href="{% url 'applicant_dashboard:payment_receipt' application.receipt_payment_id %}" target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+                      </a>
+                      {% endif %}
+                    </div>
                   </td>
                 </tr>
                 {% empty %}
