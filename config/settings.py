@@ -146,6 +146,18 @@ if _email_host:
     # behavior for anyone with EMAIL_HOST set but neither flag specified.
     EMAIL_USE_SSL = _env_bool("EMAIL_USE_SSL", False)
     EMAIL_USE_TLS = _env_bool("EMAIL_USE_TLS", not EMAIL_USE_SSL)
+    # Django's SMTP backend passes this straight to smtplib.SMTP(...,
+    # timeout=...) -- left unset, that's a *blocking* socket (no timeout at
+    # all), so if the SMTP host is slow, unreachable or silently dropping
+    # packets (common from inside a container/VPS with outbound mail ports
+    # firewalled), every view that sends an email -- assigning a reviewer,
+    # approving an application, anything -- hangs until the WSGI worker's
+    # own timeout kills the whole process, which surfaces to the browser as
+    # a bare "Internal Server Error" from the reverse proxy, not a graceful
+    # Django 500. Bounding it here means a bad SMTP connection fails fast
+    # (notifications.emails.send_branded_email's fail_silently=True already
+    # catches that and just logs it) instead of taking the request down.
+    EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "") or os.getenv(
