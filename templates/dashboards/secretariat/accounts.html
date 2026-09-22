@@ -117,7 +117,7 @@
               <h4>
                 {{ u.full_name }}
                 {% if u.is_superuser or u.role == 'admin' %}<span class="badge-tag navy">Admin</span>{% endif %}
-                {% if u.role == 'reviewer' and u.reviewer_status == 'approved' %}<span class="badge-tag teal">Reviewer</span>{% endif %}
+                {% if u.reviewer_status == 'approved' %}<span class="badge-tag teal">Reviewer</span>{% endif %}
                 {% if u.role == 'committee' and u.committee_status == 'approved' %}<span class="badge-tag purple">Committee</span>{% endif %}
                 {% if u.reviewer_status == 'pending' %}<span class="badge-tag orange">Reviewer Requested</span>{% endif %}
                 {% if u.committee_status == 'pending' %}<span class="badge-tag orange">Committee Requested</span>{% endif %}

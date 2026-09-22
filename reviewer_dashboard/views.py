@@ -40,11 +40,13 @@ EXPERTISE_SUGGESTIONS = [
 
 
 def is_reviewer(user):
-    return (
-        user.is_authenticated
-        and user.role == User.Role.REVIEWER
-        and user.reviewer_status == User.RequestStatus.APPROVED
-    )
+    # reviewer_status is the real permission here, not the primary `role`
+    # (which only picks a default post-login dashboard) -- a Committee
+    # member with an approved reviewer_status (see accounts.models.User.
+    # approve_role, which grants every approved Committee member Reviewer
+    # access too) must still pass this even though their `role` stays
+    # "committee".
+    return user.is_authenticated and user.reviewer_status == User.RequestStatus.APPROVED
 
 
 reviewer_required = user_passes_test(is_reviewer, login_url="pages:login")

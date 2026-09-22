@@ -58,8 +58,9 @@
             <button type="submit" class="acct-btn acct-btn-approve"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Start Review</button>
           </form>
           {% endif %}
-          {% if application.status == 'submitted' or application.status == 'under_review' %}
-          <button type="button" id="requestRevisionsOpen" class="acct-btn acct-btn-suspend"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Request Revisions</button>
+          {% if application.status == 'submitted' or application.status == 'under_review' or application.status == 'with_committee' %}
+          <button type="button" data-open-modal="requestRevisionsOverlay" class="acct-btn acct-btn-suspend"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Request Revisions</button>
+          <button type="button" data-open-modal="referCommitteeOverlay" class="acct-btn acct-btn-edit"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> {% if committee_referrals %}Refer Again{% else %}Refer to Committee{% endif %}</button>
           <form method="post" data-confirm="Approve {{ application.reference_no }}? The applicant will see this as an approved study." data-confirm-label="Approve"><input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}"><input type="hidden" name="action" value="approve">
             <button type="submit" class="acct-btn acct-btn-activate"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Approve</button>
           </form>
@@ -77,15 +78,95 @@
             <button type="submit" class="acct-btn acct-btn-edit"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg> Reopen</button>
           </form>
           {% endif %}
+          <a href="{% url 'admin_dashboard:application_edit' application.pk %}" class="acct-btn acct-btn-edit"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.1 2.1 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg> Edit Application</a>
         </div>
+
+        {% if committee_referrals %}
+        <div class="reuse-hint" style="margin-top:14px;">
+          <i class="bi bi-people"></i>
+          <span>
+            <strong>Referred to Committee:</strong>
+            {% for m in committee_referrals %}
+              {{ m.scheduled_at|date:"j M Y, g:i A" }}{% if m.meeting_link %} &middot; <a href="{{ m.meeting_link }}" target="_blank" rel="noopener">Join link</a>{% endif %}
+              &middot; {{ m.participants.count }} member{{ m.participants.count|pluralize }} invited
+              ({% for part in m.participants.all %}{{ part.user.full_name }}{% if not forloop.last %}, {% endif %}{% endfor %}){% if not forloop.last %}<br>{% endif %}
+            {% endfor %}
+          </span>
+        </div>
+        {% endif %}
       </section>
 
+      <!-- REFER TO COMMITTEE MODAL -->
+      <div class="acct-modal-overlay" id="referCommitteeOverlay" hidden data-modal-overlay>
+        <div class="acct-modal" style="max-width:640px;">
+          <div class="acct-modal-head">
+            <h3><svg viewBox="0 0 24 24" width="18" height="18" style="vertical-align:-3px; margin-right:4px;"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Refer to Committee</h3>
+            <button type="button" class="icon-btn" data-modal-close aria-label="Close">
+              <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="refer_committee">
+            <div class="acct-modal-body">
+              <p class="field-hint">
+                Choose who'll deliberate on {{ application.reference_no }} and set up the meeting. Invited members can view the full application immediately and will be emailed the meeting details.
+              </p>
+              <div class="field field-wide">
+                <label>Committee members</label>
+                <div class="chip-checkbox-grid">
+                  {% for member in committee_members %}
+                  <label class="chip-checkbox">
+                    <input type="checkbox" name="committee_members" value="{{ member.pk }}">
+                    <span>{{ member.full_name }}</span>
+                  </label>
+                  {% empty %}
+                  <p class="field-hint">No approved Committee members yet.</p>
+                  {% endfor %}
+                </div>
+              </div>
+              <div class="field-grid">
+                <div class="field">
+                  <label>Date &amp; time</label>
+                  <input type="datetime-local" name="scheduled_at" required>
+                </div>
+                <div class="field">
+                  <label>Platform</label>
+                  <select name="platform">
+                    <option value="Zoom">Zoom</option>
+                    <option value="Google Meet">Google Meet</option>
+                    <option value="Microsoft Teams">Microsoft Teams</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Meeting link</label>
+                  <input type="url" name="meeting_link" placeholder="https://zoom.us/j/...">
+                </div>
+                <div class="field">
+                  <label>Duration (minutes)</label>
+                  <input type="number" name="duration_minutes" value="90" min="15" step="15">
+                </div>
+              </div>
+              <div class="field field-wide">
+                <label>Additional info / agenda (optional)</label>
+                <textarea name="info" rows="3" placeholder="Anything the Committee should know before the meeting."></textarea>
+              </div>
+            </div>
+            <div class="acct-modal-actions">
+              <button type="button" class="acct-btn acct-btn-cancel" data-modal-close>Cancel</button>
+              <button type="submit" class="acct-btn acct-btn-approve"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg> Send Invitations</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <!-- REQUEST REVISIONS MODAL -->
-      <div class="acct-modal-overlay" id="requestRevisionsOverlay" hidden>
+      <div class="acct-modal-overlay" id="requestRevisionsOverlay" hidden data-modal-overlay>
         <div class="acct-modal">
           <div class="acct-modal-head">
             <h3>Request Revisions</h3>
-            <button type="button" class="icon-btn" id="requestRevisionsClose" aria-label="Close">
+            <button type="button" class="icon-btn" data-modal-close aria-label="Close">
               <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
@@ -93,18 +174,13 @@
             {% csrf_token %}
             <input type="hidden" name="action" value="request_revisions">
             <div class="acct-modal-body">
-              <p class="field-hint" style="margin:0;">
-                Let {{ application.applicant.full_name }} know what needs fixing on {{ application.reference_no }}
-                &mdash; this is optional, but it's the only detail they'll see before you message them separately.
-                They'll get an email right away and can resubmit without paying again.
-              </p>
-              <label class="form-label-block">
-                <span>Comment (optional)</span>
-                <textarea name="revision_comment" rows="5" placeholder="e.g. Please attach the informed consent form in English, and clarify the sample size calculation in Section 5." class="form-textarea"></textarea>
-              </label>
+              <div class="field field-wide">
+                <label>Comment (optional)</label>
+                <textarea name="revision_comment" rows="5" placeholder="e.g. Please attach the informed consent form in English, and clarify the sample size calculation in Section 5."></textarea>
+              </div>
             </div>
             <div class="acct-modal-actions">
-              <button type="button" class="acct-btn acct-btn-cancel" id="requestRevisionsCancel">Cancel</button>
+              <button type="button" class="acct-btn acct-btn-cancel" data-modal-close>Cancel</button>
               <button type="submit" class="acct-btn acct-btn-suspend"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Send Request</button>
             </div>
           </form>
@@ -171,5 +247,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'dashboard/js/request-revisions.js' %}"></script>
+<script src="{% static 'dashboard/js/generic-modal.js' %}"></script>
 {% endblock %}

@@ -53,6 +53,7 @@
           <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count" data-count-key="all">{{ counts.all }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'submitted' %} active{% endif %}" data-filter="submitted">New <span class="count" data-count-key="submitted">{{ counts.submitted }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'under_review' %} active{% endif %}" data-filter="under_review">Under Review <span class="count" data-count-key="under_review">{{ counts.under_review }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'with_committee' %} active{% endif %}" data-filter="with_committee">With Committee <span class="count" data-count-key="with_committee">{{ counts.with_committee }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'revisions' %} active{% endif %}" data-filter="revisions">Revisions <span class="count" data-count-key="revisions">{{ counts.revisions }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'approved' %} active{% endif %}" data-filter="approved">Approved <span class="count" data-count-key="approved">{{ counts.approved }}</span></button>
           <button type="button" class="filter-tab{% if active_tab == 'not_approved' %} active{% endif %}" data-filter="not_approved">Not Approved <span class="count" data-count-key="not_approved">{{ counts.not_approved }}</span></button>
@@ -71,6 +72,7 @@
                 {{ application.title }}
                 {% if application.tab == 'submitted' %}<span class="badge-tag orange">New</span>
                 {% elif application.tab == 'under_review' %}<span class="badge-tag blue">Under Review</span>
+                {% elif application.tab == 'with_committee' %}<span class="badge-tag purple">With Committee</span>
                 {% elif application.tab == 'revisions' %}<span class="badge-tag red">Revisions Requested</span>
                 {% elif application.tab == 'approved' %}<span class="badge-tag green">Approved</span>
                 {% elif application.tab == 'not_approved' %}<span class="badge-tag red">Not Approved</span>

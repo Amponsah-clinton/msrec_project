@@ -11,7 +11,7 @@ can never drift out of sync with each other.
 from django.urls import reverse
 from django.utils import timezone
 
-from accounts.models import AuditLog
+from accounts.models import AuditLog, User
 from notifications.emails import send_branded_email
 
 from .models import Application
@@ -21,6 +21,7 @@ STATUS_TABS = {
     "all": None,
     "submitted": Application.Status.SUBMITTED,
     "under_review": Application.Status.UNDER_REVIEW,
+    "with_committee": Application.Status.WITH_COMMITTEE,
     "revisions": Application.Status.REVISIONS_REQUIRED,
     "approved": Application.Status.APPROVED,
     "not_approved": Application.Status.NOT_APPROVED,
@@ -154,6 +155,89 @@ def send_decision_email(request, application, action):
         cta_url=login_url,
         preheader=preheader,
     )
+
+
+def refer_to_committee(application, *, member_ids, platform, meeting_link, scheduled_at,
+                        duration_minutes=90, info="", actor=None):
+    """Schedules a deliberation meeting for `application` and invites the
+    chosen Committee members to it -- the Secretariat's "set up a
+    Committee meeting" action, called by both admin_dashboard and
+    secretariat_dashboard's application_detail views (same shared-helper
+    pattern as send_revisions_requested_email/send_decision_email above,
+    so the two staff sides can never drift).
+
+    Deliberately NOT a STATUS_ACTIONS entry / apply_transition() call --
+    every other transition there is a pure status flip, but this one also
+    creates real rows (a meetings.Meeting, its AgendaItem linking it to
+    this application, and one MeetingParticipant per chosen member) and
+    needs caller-supplied meeting details apply_transition's flat
+    (status, note) shape has no room for.
+
+    A member becomes able to see this application the moment their
+    MeetingParticipant row exists (see committee_dashboard.protocol_views.
+    _protocol_rows, which derives a member's visible protocols entirely
+    from "am I a participant on a meeting whose agenda includes this
+    application" -- no separate "assignment" concept to maintain here).
+
+    Returns (ok, message, meeting-or-None).
+    """
+    from meetings.models import AgendaItem, Meeting, MeetingParticipant
+    from meetings.services import send_meeting_invites
+
+    members = list(User.objects.filter(
+        pk__in=member_ids, role=User.Role.COMMITTEE, committee_status=User.RequestStatus.APPROVED,
+    ))
+    if not members:
+        return False, "Choose at least one Committee member to invite.", None
+    if not scheduled_at:
+        return False, "Choose a meeting date and time.", None
+
+    label = application.reference_no or application.title or f"Application #{application.pk}"
+    description = f'Committee deliberation on "{application.title}" ({label}).'
+    if platform:
+        description += f" Platform: {platform}."
+    if info:
+        description += f"\n\n{info}"
+
+    meeting = Meeting.objects.create(
+        title=f"Deliberation — {label}"[:200],
+        meeting_type=Meeting.MeetingType.FULL_COMMITTEE,
+        description=description,
+        scheduled_at=scheduled_at,
+        duration_minutes=duration_minutes or 90,
+        mode=Meeting.Mode.VIRTUAL if meeting_link else Meeting.Mode.IN_PERSON,
+        meeting_link=meeting_link,
+        chair=actor if actor is not None and actor.role == User.Role.CHAIR else None,
+        created_by=actor,
+    )
+    AgendaItem.objects.create(
+        meeting=meeting, application=application,
+        title=f"Deliberate: {label}"[:255],
+        description=info,
+    )
+    for member in members:
+        MeetingParticipant.objects.create(
+            meeting=meeting, user=member,
+            role_at_meeting=MeetingParticipant.ParticipantRole.MEMBER, is_voting=True,
+        )
+
+    application.status = Application.Status.WITH_COMMITTEE
+    application.save(update_fields=["status"])
+
+    if actor is not None:
+        AuditLog.record(
+            actor, "application.referred_to_committee", target=application,
+            description=(
+                f"Referred to {len(members)} committee member(s) for deliberation "
+                f"on {meeting.scheduled_at:%d %b %Y at %I:%M %p}."
+            ),
+        )
+
+    emailed = send_meeting_invites(meeting, kind="invitation")
+    plural = "s" if len(members) != 1 else ""
+    note = f"Referred to {len(members)} committee member{plural} for deliberation."
+    note += f" {emailed} notified by email." if emailed else " (the invitation emails couldn't be sent)."
+    return True, note, meeting
 
 
 def status_counts(base_qs):

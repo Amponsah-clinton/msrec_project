@@ -1,0 +1,34 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Edit {{ application.reference_no|default:"Application" }} | MSREC Admin{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'assets/vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="{% static 'dashboard/css/application-form.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}
+      {% include "dashboards/admin/_nav.html" with active="applications" %}
+{% endblock %}
+
+{% block topbar %}
+      {% include "dashboards/admin/_topbar.html" with page_title="Editing "|add:application.reference_no page_subtitle=application.title %}
+{% endblock %}
+
+{% block main_content %}
+    <div class="reuse-hint" style="margin-bottom:16px;">
+      <i class="bi bi-info-circle"></i>
+      <span>You're editing this application on the applicant's behalf. Nothing here changes its status -- use Approve / Request Revisions / Not Approve on the application page for that.</span>
+    </div>
+    <a href="{% url 'admin_dashboard:application_detail' application.pk %}" class="btn-secondary" style="margin-bottom:16px;display:inline-flex;">
+      <i class="bi bi-arrow-left"></i> Back to application
+    </a>
+    {% url 'admin_dashboard:application_edit' application.pk as edit_form_action %}
+    {% include "dashboards/applicant/_application_form_fields.html" with staff_edit=True apply_form_action=edit_form_action apply_autosave_url="" %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/apply.js' %}"></script>
+{% endblock %}

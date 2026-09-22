@@ -22,6 +22,7 @@ class Application(models.Model):
         DRAFT = "draft", "Draft"
         SUBMITTED = "submitted", "Submitted"
         UNDER_REVIEW = "under_review", "Under Review"
+        WITH_COMMITTEE = "with_committee", "With Committee"
         REVISIONS_REQUIRED = "revisions_required", "Revisions Required"
         APPROVED = "approved", "Approved"
         NOT_APPROVED = "not_approved", "Not Approved"

@@ -23,6 +23,9 @@ from accounts.sessions import active_sessions_for, describe_user_agent
 from applicant_dashboard import oversight
 from applicant_dashboard import storage as application_storage
 from applicant_dashboard.models import Application
+from applicant_dashboard.views import (
+    _apply_posted_fields, _fee_schedule_context, _initial_data_for_template,
+)
 from messaging.access import is_staff_side
 from notifications.emails import send_branded_email
 from pages import committee_services
@@ -46,7 +49,9 @@ from pages.models import (
     Testimonial,
     TrainingRecord,
 )
-from secretariat_dashboard.views import _audit_log_category
+from secretariat_dashboard.views import (
+    _audit_log_category, _committee_referral_context, _handle_refer_committee,
+)
 from payments import fees
 from payments import services as payment_services
 from reviewer_dashboard import storage as reviewer_storage
@@ -126,6 +131,13 @@ def _send_role_approved_email(request, target, role):
         paragraphs.append(
             f"Your Membership Ethics ID is {target.membership_ethics_id}. Your Membership Certificate "
             f"is ready to download from Profile on your Committee dashboard."
+        )
+        # Every approved Committee member is also a Reviewer (see
+        # accounts.models.User.approve_role) -- say so, since nothing else
+        # tells them this happened.
+        paragraphs.append(
+            "As a Committee member you're also an approved Reviewer -- open \"My Reviews\" from your "
+            "Committee dashboard to see any protocols assigned to you."
         )
     return send_branded_email(
         subject=f"Your MSREC {role_label} request has been approved",
@@ -608,6 +620,10 @@ def application_detail(request, pk):
 
     if request.method == "POST":
         action = request.POST.get("action")
+        if action == "refer_committee":
+            _handle_refer_committee(request, application)
+            return redirect("admin_dashboard:application_detail", pk=application.pk)
+
         comment = request.POST.get("revision_comment", "")
         ok, note = oversight.apply_transition(application, action, comment=comment, actor=request.user)
         if ok and action == "request_revisions":
@@ -632,6 +648,36 @@ def application_detail(request, pk):
     return render(request, "dashboards/admin/application_detail.html", {
         "application": application,
         "documents": documents,
+        **_committee_referral_context(application),
+    })
+
+
+@login_required
+@admin_required
+def application_edit(request, pk):
+    """Admin equivalent of secretariat_dashboard.views.application_edit --
+    see that view's docstring for the full reasoning. Kept as a thin
+    duplicate (same body, different decorator/redirect target) rather than
+    importing the view function itself, since admin_required's stricter
+    gate must be the one actually enforced here."""
+    application = get_object_or_404(oversight.staff_queryset(), pk=pk)
+
+    if request.method == "POST":
+        _apply_posted_fields(application, request)
+        application.save()
+        AuditLog.record(
+            request.user, "application.edited_by_staff", target=application,
+            description="Application content edited by an administrator.",
+        )
+        messages.success(request, "Changes saved.")
+        return redirect("admin_dashboard:application_detail", pk=application.pk)
+
+    return render(request, "dashboards/admin/application-edit.html", {
+        "application": application,
+        "initial_data": _initial_data_for_template(
+            application.form_data, application.review_type, application.applicant_category,
+        ),
+        **_fee_schedule_context(),
     })
 
 

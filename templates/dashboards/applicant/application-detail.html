@@ -87,7 +87,7 @@
             <span>Status</span>
             <strong>
               {% if application.status == 'submitted' %}Submitted
-              {% elif application.status == 'under_review' %}Under Review
+              {% elif application.status == 'under_review' or application.status == 'with_committee' %}Under Review
               {% elif application.status == 'revisions_required' %}Revisions Required
               {% elif application.status == 'approved' %}Approved
               {% elif application.status == 'not_approved' %}Not Approved

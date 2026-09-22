@@ -301,12 +301,25 @@ class User(AbstractBaseUser, PermissionsMixin):
         Committee dashboard's Profile page (committee_dashboard.certificate).
         Only reviewers who are ALSO approved as Committee get membership --
         being a Reviewer alone doesn't, by design (see the /apply
-        conversation this shipped from)."""
-        update_fields = ["reviewer_status", "committee_status", "role"]
+        conversation this shipped from).
+
+        Approving a Committee request also unconditionally grants Reviewer
+        access: every Committee member is a reviewer too (MSREC's Full
+        Committee Review pathway is committee members reviewing protocols),
+        so committee_status APPROVED always brings reviewer_status along
+        with it, regardless of whether Reviewer was ever separately
+        requested/rejected. `role` stays "committee" (their primary,
+        post-login dashboard -- see dashboard_url_name) rather than being
+        overwritten to "reviewer"; reviewer_dashboard.views.is_reviewer
+        checks reviewer_status directly rather than `role`, precisely so a
+        Committee-primary account still gets in."""
+        update_fields = ["reviewer_status", "committee_status", "role", "wants_reviewer"]
         if role == self.Role.REVIEWER:
             self.reviewer_status = self.RequestStatus.APPROVED
         elif role == self.Role.COMMITTEE:
             self.committee_status = self.RequestStatus.APPROVED
+            self.reviewer_status = self.RequestStatus.APPROVED
+            self.wants_reviewer = True
             if not self.membership_ethics_id:
                 self.membership_ethics_id = generate_membership_ethics_id(self)
                 self.membership_confirmed_at = timezone.now()

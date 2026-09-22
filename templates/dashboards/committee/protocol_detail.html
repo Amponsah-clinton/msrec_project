@@ -26,6 +26,8 @@
   <div class="mm-meta">
     {% if p.pi_name %}<span><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>{{ p.pi_name }}{% if p.institution %}, {{ p.institution }}{% endif %}</span>{% endif %}
     <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg><a href="{% url 'committee_dashboard:agenda' %}?meeting={{ p.meeting.pk }}">{{ p.meeting.title }}</a> &middot; {{ p.meeting.scheduled_at|date:"j M Y, g:i A" }}</span>
+    {% if p.meeting.mode != 'in_person' and p.meeting.meeting_link and p.meeting.status == 'scheduled' %}<span><svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg><a href="{{ p.meeting.meeting_link }}" target="_blank" rel="noopener noreferrer">Join link</a></span>{% endif %}
+    {% if p.meeting.mode != 'virtual' and p.meeting.location %}<span><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg>{{ p.meeting.location }}</span>{% endif %}
   </div>
 </section>
 

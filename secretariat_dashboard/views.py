@@ -12,6 +12,9 @@ from accounts import storage as accounts_storage
 from accounts.models import AuditLog, RoleApprovalLog, User
 from applicant_dashboard import oversight
 from applicant_dashboard import storage as application_storage
+from applicant_dashboard.views import (
+    _apply_posted_fields, _fee_schedule_context, _initial_data_for_template,
+)
 from applicant_dashboard.models import (
     POSTAPPROVAL_FIELDS,
     POSTAPPROVAL_LIST_LABELS,
@@ -144,6 +147,7 @@ def applications(request):
         "all_applications": all_applications,
         "counts": counts,
         "active_tab": active_tab,
+        "committee_members": _approved_committee_members(),
     })
 
 
@@ -570,6 +574,52 @@ def document_letter_view(request, doc_type, pk):
     })
 
 
+def _approved_committee_members():
+    """The pool of Committee members every "Refer to Committee" modal
+    offers to invite -- both the Applications list (one modal per card)
+    and the application detail page share this, so the picklist can never
+    drift between the two."""
+    return User.objects.filter(
+        role=User.Role.COMMITTEE, committee_status=User.RequestStatus.APPROVED,
+    ).order_by("first_name", "last_name")
+
+
+def _committee_referral_context(application):
+    """Meeting(s) an application has already been referred to, plus the
+    pool of committee members the "Refer to Committee" modal can invite --
+    shared by both secretariat_dashboard and admin_dashboard so the modal
+    and the "already referred" recap never drift between the two."""
+    referrals = list(
+        Meeting.objects.filter(agenda_items__application=application)
+        .exclude(status=Meeting.Status.CANCELLED)
+        .prefetch_related("participants__user")
+        .order_by("-scheduled_at")
+        .distinct()
+    )
+    return {
+        "committee_members": _approved_committee_members(),
+        "committee_referrals": referrals,
+    }
+
+
+def _handle_refer_committee(request, application):
+    member_ids = [v for v in request.POST.getlist("committee_members") if v.isdigit()]
+    scheduled_at = parse_datetime(request.POST.get("scheduled_at", "").strip())
+    if scheduled_at and timezone.is_naive(scheduled_at):
+        scheduled_at = timezone.make_aware(scheduled_at)
+    ok, note, _meeting = oversight.refer_to_committee(
+        application,
+        member_ids=member_ids,
+        platform=request.POST.get("platform", "").strip(),
+        meeting_link=request.POST.get("meeting_link", "").strip(),
+        scheduled_at=scheduled_at,
+        duration_minutes=request.POST.get("duration_minutes") or 90,
+        info=request.POST.get("info", "").strip(),
+        actor=request.user,
+    )
+    (messages.success if ok else messages.error)(request, note)
+
+
 @login_required
 @staff_required
 def application_detail(request, pk):
@@ -577,6 +627,10 @@ def application_detail(request, pk):
 
     if request.method == "POST":
         action = request.POST.get("action")
+        if action == "refer_committee":
+            _handle_refer_committee(request, application)
+            return redirect("secretariat_dashboard:application_detail", pk=application.pk)
+
         comment = request.POST.get("revision_comment", "")
         ok, note = oversight.apply_transition(application, action, comment=comment, actor=request.user)
         if ok and action == "request_revisions":
@@ -603,6 +657,44 @@ def application_detail(request, pk):
         "application": application,
         "documents": documents,
         "assignments": assignments,
+        **_committee_referral_context(application),
+    })
+
+
+@login_required
+@staff_required
+def application_edit(request, pk):
+    """Lets the Secretariat correct an application's own content directly
+    (typos, a field the applicant filled in wrong) instead of bouncing it
+    back for the applicant to fix -- the "or have the Secretariat edit it
+    himself" option after a Committee deliberation (or any time). Reuses
+    the exact same field partial/JS the applicant's own form uses (see
+    templates/dashboards/applicant/_application_form_fields.html and
+    _apply_posted_fields/_initial_data_for_template, imported from
+    applicant_dashboard.views rather than duplicated) so every field name,
+    conditional reveal and validation rule stays identical -- only the
+    save behavior differs: no payment gate, no PI-declaration requirement,
+    no status change and no draft/submit distinction. Every save either
+    way is logged to AuditLog so there's always a record of what staff
+    changed versus what the applicant originally wrote."""
+    application = get_object_or_404(oversight.staff_queryset(), pk=pk)
+
+    if request.method == "POST":
+        _apply_posted_fields(application, request)
+        application.save()
+        AuditLog.record(
+            request.user, "application.edited_by_staff", target=application,
+            description="Application content edited by the Secretariat.",
+        )
+        messages.success(request, "Changes saved.")
+        return redirect("secretariat_dashboard:application_detail", pk=application.pk)
+
+    return render(request, "dashboards/secretariat/application-edit.html", {
+        "application": application,
+        "initial_data": _initial_data_for_template(
+            application.form_data, application.review_type, application.applicant_category,
+        ),
+        **_fee_schedule_context(),
     })
 
 
@@ -647,12 +739,14 @@ def finance(request):
 
 
 def _approved_reviewers():
-    # Only accounts an admin has actually approved as Reviewer belong in
-    # the directory -- a pending or rejected request is not a reviewer
-    # yet (see accounts.models.User.approve_role, which is the only place
-    # reviewer_status becomes "approved").
+    # Deliberately NOT filtered on role=REVIEWER -- every approved
+    # Committee member also gets reviewer_status=APPROVED (see
+    # accounts.models.User.approve_role) while keeping role="committee"
+    # as their primary dashboard, so this must key off reviewer_status
+    # alone to include them in the reviewer pool too. A pending or
+    # rejected request is not a reviewer yet either way.
     return User.objects.filter(
-        role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED
+        reviewer_status=User.RequestStatus.APPROVED
     ).order_by("first_name", "last_name")
 
 
@@ -662,7 +756,7 @@ def reviewer_directory(request):
     if request.method == "POST":
         target = get_object_or_404(
             User, pk=request.POST.get("user_id"),
-            role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED,
+            reviewer_status=User.RequestStatus.APPROVED,
         )
         availability = request.POST.get("availability", "")
         if availability in User.Availability.values:
@@ -800,7 +894,7 @@ def reviewer_assignment(request):
             application = get_object_or_404(oversight.staff_queryset(), pk=application_id)
             reviewer = get_object_or_404(
                 User, pk=reviewer_id,
-                role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED,
+                reviewer_status=User.RequestStatus.APPROVED,
             )
             # ReviewAssignment.objects.create() only coerces the DB column;
             # the in-memory instance keeps whatever type was passed in, so a
@@ -879,7 +973,7 @@ def reviewer_assignment(request):
     )
 
     workload = list(
-        User.objects.filter(role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED)
+        User.objects.filter(reviewer_status=User.RequestStatus.APPROVED)
         .annotate(
             active_count=Count(
                 "review_assignments",
@@ -931,7 +1025,7 @@ def reviewer_assignment_counts(request):
         "pending": _open_assignments().count(),
         "completed": ReviewAssignment.objects.filter(status=ReviewAssignment.Status.COMPLETED).count(),
         "workload": User.objects.filter(
-            role=User.Role.REVIEWER, reviewer_status=User.RequestStatus.APPROVED
+            reviewer_status=User.RequestStatus.APPROVED
         ).count(),
     })
 

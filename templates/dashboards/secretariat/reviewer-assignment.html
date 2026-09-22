@@ -258,10 +258,10 @@
               <span class="acct-avatar cat-reviewers">{{ reviewer.initials }}</span>
               <div class="reviewer-pick-info">
                 <div class="reviewer-pick-top">
-                  <strong>{{ reviewer.full_name }}</strong>
+                  <strong>{{ reviewer.full_name }}</strong>{% if reviewer.role == 'committee' %} <span class="badge-tag purple">Committee</span>{% endif %}
                   <span class="availability-badge availability-{{ reviewer.reviewer_availability }}"><i></i>{{ reviewer.get_reviewer_availability_display }}</span>
                 </div>
-                <p>{{ reviewer.reviewer_profile.reviewerPosition|default:"Reviewer" }}{% if reviewer.reviewer_profile.reviewerInstitution %} &middot; {{ reviewer.reviewer_profile.reviewerInstitution }}{% elif reviewer.institution %} &middot; {{ reviewer.institution }}{% endif %}</p>
+                <p>{{ reviewer.reviewer_profile.reviewerPosition|default:reviewer.position|default:"Reviewer" }}{% if reviewer.reviewer_profile.reviewerInstitution %} &middot; {{ reviewer.reviewer_profile.reviewerInstitution }}{% elif reviewer.institution %} &middot; {{ reviewer.institution }}{% endif %}</p>
                 {% if reviewer.reviewer_expertise_tags %}
                 <div class="reviewer-pick-tags">
                   {% for tag in reviewer.reviewer_expertise_tags|slice:":5" %}<span class="tag-pill">{{ tag }}</span>{% endfor %}

@@ -764,14 +764,26 @@ def team_invite_accept(request, token):
     return render(request, "pages/team_invite_accept.html", {"valid": True, "member": member})
 
 
+#: What "Under Review" means from an applicant's own point of view --
+#: whether the Secretariat is screening it themselves or it's gone to a
+#: Committee deliberation meeting is an internal routing detail (see
+#: applicant_dashboard.oversight.refer_to_committee); the applicant just
+#: sees "still under review" either way.
+UNDER_REVIEW_STATUSES = [Application.Status.UNDER_REVIEW, Application.Status.WITH_COMMITTEE]
+
+
 def _my_applications(request, *, status=None):
     """Every one of this applicant's own applications -- optionally
-    narrowed to one status -- newest submission first. Drafts are never
+    narrowed to one status (or an iterable of statuses, e.g.
+    UNDER_REVIEW_STATUSES) -- newest submission first. Drafts are never
     included here; that's what Draft Applications / application_drafts is
     for (see _get_draft_or_404 and application_drafts above)."""
     qs = Application.objects.filter(applicant=request.user).exclude(status=Application.Status.DRAFT)
     if status:
-        qs = qs.filter(status=status)
+        if isinstance(status, (list, tuple)):
+            qs = qs.filter(status__in=status)
+        else:
+            qs = qs.filter(status=status)
     return qs.order_by("-submitted_at")
 
 
@@ -779,7 +791,7 @@ def home(request):
     all_applications = Application.objects.filter(applicant=request.user)
     counts = {
         "draft": all_applications.filter(status=Application.Status.DRAFT).count(),
-        "under_review": all_applications.filter(status=Application.Status.UNDER_REVIEW).count(),
+        "under_review": all_applications.filter(status__in=UNDER_REVIEW_STATUSES).count(),
         "revisions": all_applications.filter(status=Application.Status.REVISIONS_REQUIRED).count(),
         "approved": all_applications.filter(status=Application.Status.APPROVED).count(),
     }
@@ -808,7 +820,7 @@ def nav_counts(request):
     counts = {
         "draft": all_applications.filter(status=Application.Status.DRAFT).count(),
         "submitted": all_applications.filter(status=Application.Status.SUBMITTED).count(),
-        "under_review": all_applications.filter(status=Application.Status.UNDER_REVIEW).count(),
+        "under_review": all_applications.filter(status__in=UNDER_REVIEW_STATUSES).count(),
         "revisions": all_applications.filter(status=Application.Status.REVISIONS_REQUIRED).count(),
         "approved": all_applications.filter(status=Application.Status.APPROVED).count(),
         "not_approved": all_applications.filter(status=Application.Status.NOT_APPROVED).count(),
@@ -829,7 +841,7 @@ def application_submitted(request):
 
 def application_under_review(request):
     return render(request, "dashboards/applicant/application-under-review.html", {
-        "applications": _my_applications(request, status=Application.Status.UNDER_REVIEW),
+        "applications": _my_applications(request, status=UNDER_REVIEW_STATUSES),
     })
 
 
@@ -868,7 +880,7 @@ def _progress_steps(application):
         {"key": "submitted", "label": "Submitted", "done": True, "current": False, "date": application.submitted_at},
         {
             "key": "under_review", "label": "Under Review", "done": reached_review,
-            "current": application.status == Application.Status.UNDER_REVIEW, "date": None,
+            "current": application.status in UNDER_REVIEW_STATUSES, "date": None,
         },
     ]
     if application.revision_count > 0:
