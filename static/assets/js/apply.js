@@ -30,15 +30,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* Participant Recruitment: compensation detail */
-  (function () {
-    const toggle = document.querySelector('.yn-toggle[data-hidden-id="compensationYn"]');
-    const detail = document.getElementById("compensationDetails");
-    if (toggle && detail) {
-      toggle.addEventListener("ynchange", (e) => { detail.hidden = e.detail.value !== "yes"; });
-    }
-  })();
-
   /* Privacy & Confidentiality: sensitive info */
   gateYesNo("sensitiveInfoGate", document.getElementById("sensitiveInfoDetails"), ["yes"]);
 

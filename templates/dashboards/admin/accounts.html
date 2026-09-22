@@ -88,7 +88,7 @@
                 {% if u.category == 'applicants' %}<span class="badge-tag blue">Applicant</span>{% endif %}
                 {% if not u.is_active %}<span class="badge-tag red">Suspended</span>{% endif %}
               </h4>
-              <p>{{ u.email }}{% if u.institution %} &middot; {{ u.institution }}{% endif %}</p>
+              <p>{{ u.email }}{% if u.institution %} &middot; {{ u.institution }}{% endif %}{% if u.membership_ethics_id %} &middot; Ethics ID {{ u.membership_ethics_id }}{% endif %}</p>
             </div>
 
             <div class="acct-meta">

@@ -236,7 +236,7 @@ PROTOCOL_SECTIONS = [
 PROTOCOL_FLAGS = [
     ("Identifiable data", "identifiableInfoYn"), ("Sensitive information", "sensitiveInfoYn"),
     ("Externally funded", "fundedYn"), ("Commercially sponsored", "commerciallySponsoredYn"),
-    ("Participant compensation", "compensationYn"), ("International study", "internationalYn"),
+    ("International study", "internationalYn"),
     ("Uses AI", "aiInvolvedYn"),
 ]
 

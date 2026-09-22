@@ -148,6 +148,45 @@ def _get_editable_or_404(request, pk):
     )
 
 
+def _send_submission_confirmation_email(application, request, *, is_resubmission):
+    """Emails the applicant their own confirmation that MSREC actually
+    received the submission -- separate from the in-app notify() below,
+    which only reaches the Secretariat's dashboard, not the applicant's
+    inbox. Fires exactly once per real submission, same call site as that
+    notify(), right after the reference number is assigned so it's
+    already available to quote."""
+    login_url = request.build_absolute_uri(reverse("pages:login"))
+    if is_resubmission:
+        subject = f"MSREC — resubmission received ({application.reference_no})"
+        heading = "Your resubmission has been received"
+        intro = (
+            f"Your revised application, “{application.title}” ({application.reference_no}), "
+            "has been resubmitted and is now back with the Secretariat for review."
+        )
+    else:
+        subject = f"MSREC — application received ({application.reference_no})"
+        heading = "Your application has been received"
+        intro = (
+            f"Your application, “{application.title}”, has been submitted to MSREC and "
+            f"assigned reference number {application.reference_no}. Keep this reference number handy "
+            "-- it's how the Secretariat and Committee will identify your study going forward."
+        )
+    return send_branded_email(
+        subject=subject,
+        to=application.applicant.email,
+        heading=heading,
+        paragraphs=[
+            f"Hi {application.applicant.full_name},",
+            intro,
+            "The Secretariat will screen it and let you know what happens next -- you can check its "
+            "status any time from your Applicant dashboard.",
+        ],
+        cta_text="View My Application",
+        cta_url=login_url,
+        preheader=f"{application.reference_no} has been received by MSREC.",
+    )
+
+
 def finalize_submission(application, request):
     """The one place an application actually becomes SUBMITTED -- called
     either directly (fee-exempt review types, or a resubmission that was
@@ -190,6 +229,7 @@ def finalize_submission(application, request):
         link_url_name="secretariat_dashboard:application_detail",
         link_kwargs={"pk": application.pk},
     )
+    _send_submission_confirmation_email(application, request, is_resubmission=is_resubmission)
     messages.success(request, f"Application {application.reference_no} submitted successfully.")
     return application
 

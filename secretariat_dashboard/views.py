@@ -582,6 +582,9 @@ def application_detail(request, pk):
         if ok and action == "request_revisions":
             emailed = oversight.send_revisions_requested_email(request, application)
             note += " Applicant notified by email." if emailed else " (the notification email couldn't be sent)."
+        elif ok and action in ("approve", "not_approve"):
+            emailed = oversight.send_decision_email(request, application, action)
+            note += " Applicant notified by email." if emailed else " (the notification email couldn't be sent)."
         (messages.success if ok else messages.error)(request, note)
         return redirect("secretariat_dashboard:application_detail", pk=application.pk)
 

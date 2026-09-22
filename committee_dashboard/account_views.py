@@ -10,6 +10,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
 from django.db.models import Q
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
@@ -22,6 +23,7 @@ from notifications.models import Notification
 from pages import documents_storage
 from pages.models import GovernanceMember
 
+from .certificate import render_membership_certificate_pdf
 from .views import committee_required
 
 
@@ -165,7 +167,6 @@ def _handle_update_profile(request):
     user.last_name = last_name
     user.email = email
     user.phone = post.get("phone", "").strip()
-    user.orcid = post.get("orcid", "").strip()
     user.country_residence = post.get("country_residence", "").strip()
     user.position = post.get("position", "").strip()
     user.institution = post.get("institution", "").strip()
@@ -179,19 +180,14 @@ def _handle_update_profile(request):
         "committeePosition": user.position,
         "committeeInstitution": user.institution,
         "committeeYears": years,
-        "committeeOrcid": user.orcid,
-        "committeeRegistration": post.get("registration", "").strip(),
-        "committeeEthicsExperience": post.get("ethics_experience", "").strip(),
-        "committeeEthicsDetails": post.get("ethics_details", "").strip(),
         "committeeBackground": post.get("background", "").strip(),
-        "committeeTraining": post.get("training", "").strip(),
         "committeeBio": post.get("bio", "").strip(),
         "committeeExpertiseCategory": [v for v in post.getlist("expertise") if v in _EXPERTISE_VALUES],
     })
     user.committee_profile = profile
 
     user.save(update_fields=[
-        "title", "first_name", "last_name", "email", "phone", "orcid", "country_residence",
+        "title", "first_name", "last_name", "email", "phone", "country_residence",
         "position", "institution", "department", "committee_profile",
     ])
     AuditLog.record(user, "user.profile_updated", target=user, description="Committee profile updated")
@@ -254,8 +250,8 @@ def profile(request):
     }
 
     completeness_fields = [
-        user.profile_photo_path, user.phone, user.orcid, user.position, user.institution,
-        data.get("committeeYears"), data.get("committeeEthicsExperience"), data.get("committeeBackground"),
+        user.profile_photo_path, user.phone, user.position, user.institution,
+        data.get("committeeYears"), data.get("committeeBackground"),
         data.get("committeeBio"), chosen,
     ]
     completeness = round(100 * sum(1 for f in completeness_fields if f) / len(completeness_fields))
@@ -271,6 +267,25 @@ def profile(request):
         "chosen_expertise_labels": [_EXPERTISE_LABELS.get(v, v) for v in chosen],
         "title_choices": ["Prof.", "Dr.", "Rev.", "Mr.", "Mrs.", "Ms.", "Madam", "Barr.", "Engr."],
     })
+
+
+@login_required
+@committee_required
+def certificate_download(request):
+    """Streams the requesting committee member's own Membership Certificate
+    PDF -- membership_ethics_id is only ever set by User.approve_role once
+    the Secretariat/an admin confirms the Committee request (see
+    accounts.models.User.approve_role), so a 404 here means "not confirmed
+    yet" rather than a broken link."""
+    user = request.user
+    if not user.membership_ethics_id:
+        raise Http404("No membership certificate has been issued for this account yet.")
+
+    pdf_bytes = render_membership_certificate_pdf(user)
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    filename = f"MSREC-Membership-Certificate-{user.membership_ethics_id.replace('/', '-')}.pdf"
+    response["Content-Disposition"] = f'inline; filename="{filename}"'
+    return response
 
 
 # ---------------------------------------------------------------------

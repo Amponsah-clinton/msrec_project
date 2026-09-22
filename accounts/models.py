@@ -7,6 +7,18 @@ from django.db import models
 from django.utils import timezone
 
 
+def generate_membership_ethics_id(user):
+    """MSREC/ETH/<user.pk, zero-padded>: the committee-membership ID shown
+    on a member's certificate and profile page. Keyed off the account's own
+    primary key rather than a separate counter -- pk is already unique and
+    already assigned by the time approve_role() calls this (the account
+    exists; only its committee_status is changing), so there's no
+    "reserve the next number" race to guard against with a lock/transaction.
+    The tradeoff: gaps where a pk belongs to a non-member account are
+    expected and fine -- this is an identifier, not a membership headcount."""
+    return f"MSREC/ETH/{user.pk:05d}"
+
+
 class UserManager(BaseUserManager):
     use_in_migrations = True
 
@@ -151,6 +163,15 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
     committee_profile = models.JSONField(blank=True, default=dict)
 
+    # Set once, the moment a Committee request is first approved (see
+    # approve_role below) -- never reassigned afterwards, even if the seat
+    # later lapses/is renewed, so a certificate issued today stays valid
+    # proof of who held that ID. null (not "") so the "one row per unique
+    # value" unique index doesn't choke on multiple unissued members --
+    # see migration 0xxx_membership_certificate.
+    membership_ethics_id = models.CharField(max_length=40, unique=True, null=True, blank=True)
+    membership_confirmed_at = models.DateTimeField(null=True, blank=True)
+
     # Whether this account actually ticked "Applicant / Researcher" at
     # signup -- Applicant access was previously granted to EVERY account
     # regardless of what was selected, which is exactly what put a
@@ -271,16 +292,30 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def approve_role(self, role, *, promote=True):
         """Approve a pending reviewer/committee request. Optionally makes
-        it the account's primary (login-redirect) role."""
+        it the account's primary (login-redirect) role.
+
+        Approving a Committee request is also what makes someone an MSREC
+        *member*: it issues a permanent membership_ethics_id (see
+        generate_membership_ethics_id) and stamps membership_confirmed_at,
+        which together unlock the "Download certificate" button on the
+        Committee dashboard's Profile page (committee_dashboard.certificate).
+        Only reviewers who are ALSO approved as Committee get membership --
+        being a Reviewer alone doesn't, by design (see the /apply
+        conversation this shipped from)."""
+        update_fields = ["reviewer_status", "committee_status", "role"]
         if role == self.Role.REVIEWER:
             self.reviewer_status = self.RequestStatus.APPROVED
         elif role == self.Role.COMMITTEE:
             self.committee_status = self.RequestStatus.APPROVED
+            if not self.membership_ethics_id:
+                self.membership_ethics_id = generate_membership_ethics_id(self)
+                self.membership_confirmed_at = timezone.now()
+                update_fields += ["membership_ethics_id", "membership_confirmed_at"]
         else:
             raise ValueError("Only reviewer/committee requests go through approval.")
         if promote:
             self.role = role
-        self.save(update_fields=["reviewer_status", "committee_status", "role"])
+        self.save(update_fields=update_fields)
 
     def reject_role(self, role):
         if role == self.Role.REVIEWER:

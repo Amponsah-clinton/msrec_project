@@ -31,7 +31,7 @@ def home(request):
 
 # Notifications / Profile & Committee Appointment / Security live in
 # account_views.py; re-exported so urls.py can keep using `views.<name>`.
-from .account_views import notifications, profile, security  # noqa: E402,F401
+from .account_views import certificate_download, notifications, profile, security  # noqa: E402,F401
 
 # Meetings & Agenda live in meeting_views.py; same re-export.
 from .meeting_views import (  # noqa: E402,F401

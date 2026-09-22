@@ -3,7 +3,7 @@ from django.shortcuts import render
 
 from payments import fees
 from . import resources_storage, storage
-from .models import ClientLogo, GovernanceMember, Inquiry, ResourceDocument, Testimonial
+from .models import ClientLogo, GovernanceMember, Inquiry, ResourceDocument, SiteSettings, Testimonial
 
 REASON_VALUES = {value for value, _ in Inquiry.Reason.choices}
 
@@ -46,6 +46,7 @@ def index(request):
         "exemption_fee": schedule.get("exemption"),
         "client_logos": client_logos,
         "testimonials": testimonials,
+        "hero_image_url": SiteSettings.get_solo().hero_image_url,
     })
 
 

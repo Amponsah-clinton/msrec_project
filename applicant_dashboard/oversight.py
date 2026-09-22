@@ -112,6 +112,50 @@ def send_revisions_requested_email(request, application):
     )
 
 
+def send_decision_email(request, application, action):
+    """Tells the applicant MSREC's final decision -- called by both
+    admin_dashboard and secretariat_dashboard right after
+    apply_transition("approve"/"not_approve") succeeds, same "one shared
+    helper so both staff sides can never drift" pattern as
+    send_revisions_requested_email above. `action` is the same
+    STATUS_ACTIONS key apply_transition was just called with; anything
+    else is a no-op (returns False) since only these two are decisions."""
+    login_url = request.build_absolute_uri(reverse("pages:login"))
+    if action == "approve":
+        subject = f"Application approved — {application.reference_no}"
+        heading = "Your application has been approved"
+        paragraphs = [
+            f"Hi {application.applicant.full_name},",
+            f"Congratulations — MSREC has approved \"{application.title}\" ({application.reference_no}). "
+            "Your ethics approval documents are available on your Applicant dashboard.",
+            "Any post-approval obligations (progress reports, amendments, adverse events) can also be "
+            "submitted from there for the lifetime of the study.",
+        ]
+        preheader = f"{application.reference_no} has been approved."
+    elif action == "not_approve":
+        subject = f"Application decision — {application.reference_no}"
+        heading = "Decision on your application"
+        paragraphs = [
+            f"Hi {application.applicant.full_name},",
+            f"MSREC has reviewed \"{application.title}\" ({application.reference_no}) and is unable to "
+            "approve it in its current form.",
+            "Log in to your Applicant dashboard for the Committee's full reasoning, and contact the "
+            "Secretariat if you have questions about next steps.",
+        ]
+        preheader = f"A decision has been recorded on {application.reference_no}."
+    else:
+        return False
+    return send_branded_email(
+        subject=subject,
+        to=application.applicant.email,
+        heading=heading,
+        paragraphs=paragraphs,
+        cta_text="View My Application",
+        cta_url=login_url,
+        preheader=preheader,
+    )
+
+
 def status_counts(base_qs):
     return {
         key: (base_qs.count() if status is None else base_qs.filter(status=status).count())

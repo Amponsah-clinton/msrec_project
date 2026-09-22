@@ -27,6 +27,7 @@ from messaging.access import is_staff_side
 from notifications.emails import send_branded_email
 from pages import committee_services
 from pages import documents_storage
+from pages import hero_storage
 from pages import resources_storage
 from pages import storage as pages_storage
 from pages.models import (
@@ -113,15 +114,24 @@ def _send_role_approved_email(request, target, role):
     email went out when it actually didn't."""
     role_label = User.Role(role).label
     login_url = request.build_absolute_uri(reverse("pages:login"))
+    paragraphs = [
+        f"Hi {target.full_name},",
+        f"Good news — your request to join MSREC as a {role_label} has been approved. "
+        f"You can now log in and access the {role_label} dashboard whenever you're ready.",
+    ]
+    # Committee approval is also what makes someone an MSREC member (see
+    # accounts.models.User.approve_role) -- tell them their certificate and
+    # ethics ID are ready rather than leaving them to discover it.
+    if role == User.Role.COMMITTEE and target.membership_ethics_id:
+        paragraphs.append(
+            f"Your Membership Ethics ID is {target.membership_ethics_id}. Your Membership Certificate "
+            f"is ready to download from Profile on your Committee dashboard."
+        )
     return send_branded_email(
         subject=f"Your MSREC {role_label} request has been approved",
         to=target.email,
         heading="Your request has been approved",
-        paragraphs=[
-            f"Hi {target.full_name},",
-            f"Good news — your request to join MSREC as a {role_label} has been approved. "
-            f"You can now log in and access the {role_label} dashboard whenever you're ready.",
-        ],
+        paragraphs=paragraphs,
         cta_text="Log in to MSREC",
         cta_url=login_url,
         preheader=f"Your {role_label} request has been approved.",
@@ -602,6 +612,9 @@ def application_detail(request, pk):
         ok, note = oversight.apply_transition(application, action, comment=comment, actor=request.user)
         if ok and action == "request_revisions":
             emailed = oversight.send_revisions_requested_email(request, application)
+            note += " Applicant notified by email." if emailed else " (the notification email couldn't be sent)."
+        elif ok and action in ("approve", "not_approve"):
+            emailed = oversight.send_decision_email(request, application, action)
             note += " Applicant notified by email." if emailed else " (the notification email couldn't be sent)."
         (messages.success if ok else messages.error)(request, note)
         return redirect("admin_dashboard:application_detail", pk=application.pk)
@@ -1592,6 +1605,29 @@ def _handle_settings_identity(request, site):
     messages.success(request, "Site identity updated.")
 
 
+def _handle_settings_hero(request, site):
+    hero_image = request.FILES.get("hero_image")
+    if not hero_image:
+        messages.error(request, "Choose an image to upload.")
+        return
+    if not (hero_image.content_type or "").startswith("image/"):
+        messages.error(request, "Hero image must be an image file.")
+        return
+
+    old_path = site.hero_image_path
+    object_path = hero_storage.upload_hero_image(hero_image)
+    if not object_path:
+        messages.error(request, "The hero image couldn't be uploaded right now -- please try again.")
+        return
+
+    site.hero_image_path = object_path
+    site.updated_by = request.user
+    site.save()
+    if old_path and old_path != object_path:
+        hero_storage.delete_object(old_path)
+    messages.success(request, "Homepage hero image updated.")
+
+
 def _handle_settings_footer(request, site):
     footer_email = request.POST.get("footer_email", "").strip()
     if footer_email:
@@ -1920,6 +1956,7 @@ def site_settings(request):
     if request.method == "POST":
         handler = {
             "update_identity": _handle_settings_identity,
+            "update_hero": _handle_settings_hero,
             "update_footer": _handle_settings_footer,
             "update_contact": _handle_settings_contact,
             "update_paystack": _handle_settings_paystack,
@@ -1978,6 +2015,7 @@ def site_settings(request):
     return render(request, "dashboards/admin/settings.html", {
         "site": site,
         "logo_url": pages_storage.public_url(site.logo_path),
+        "hero_image_url": hero_storage.public_url(site.hero_image_path),
         "paystack_secret_key_masked": _mask_secret(site.paystack_secret_key),
         "using_env_public_key": not site.paystack_public_key,
         "using_env_secret_key": not site.paystack_secret_key,

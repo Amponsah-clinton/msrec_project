@@ -30,35 +30,25 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  /* Section 8 -> gates its own detail block AND the whole of section 9 */
+  /* Section 8 -> gates its own detail block */
   gateYesNo("participantsGate", document.getElementById("participantsDetails"), ["yes"]);
-  gateYesNo("participantsGate", document.getElementById("sec-9"), ["yes"]);
 
-  /* Section 9 compensation detail */
-  (function () {
-    const toggle = document.querySelector('.yn-toggle[data-hidden-id="compensationYn"]');
-    const detail = document.getElementById("compensationDetails");
-    if (toggle && detail) {
-      toggle.addEventListener("ynchange", (e) => { detail.hidden = e.detail.value !== "yes"; });
-    }
-  })();
-
-  /* Section 12 sensitive info */
+  /* Section 11 sensitive info */
   gateYesNo("sensitiveInfoGate", document.getElementById("sensitiveInfoDetails"), ["yes"]);
 
-  /* Section 14 AI/ML */
+  /* Section 13 AI/ML */
   gateYesNo("aiGate", document.getElementById("aiDetails"), ["yes"]);
 
-  /* Section 15 system/device */
+  /* Section 14 system/device */
   gateYesNo("systemGate", document.getElementById("systemDetails"), ["yes"]);
 
-  /* Section 16 reviews */
+  /* Section 15 reviews */
   gateYesNo("reviewGate", document.getElementById("reviewDetails"), ["yes"]);
 
-  /* Section 17 secondary data */
+  /* Section 16 secondary data */
   gateYesNo("secondaryDataGate", document.getElementById("secondaryDataDetails"), ["yes"]);
 
-  /* Section 19 funding / international collaboration */
+  /* Section 18 funding / international collaboration */
   gateYesNo("fundedGate", document.getElementById("fundedDetails"), ["yes"]);
   gateYesNo("internationalGate", document.getElementById("internationalDetails"), ["yes"]);
 

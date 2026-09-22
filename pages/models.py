@@ -25,6 +25,13 @@ class SiteSettings(models.Model):
     # logo falls back to the bundled static/assets/img/logo1.png.
     logo_path = models.CharField(max_length=255, blank=True)
 
+    # Object path inside Supabase Storage's public "hero" bucket (see
+    # pages/hero_storage.py's upload_hero_image()) -- fixed "hero/image.<ext>"
+    # path, singleton like logo_path above. Blank means "no custom hero
+    # image yet", and the homepage falls back to the bundled
+    # static/assets/img/c.png.
+    hero_image_path = models.CharField(max_length=255, blank=True)
+
     # ---- Public-site footer (templates/base.html) -------------------------
     footer_about = models.TextField(blank=True, default=(
         "Metascholar Research Ethics Committee provides structured ethical review, "
@@ -89,6 +96,13 @@ class SiteSettings(models.Model):
             return None
         from . import storage
         return storage.public_url(self.logo_path)
+
+    @property
+    def hero_image_url(self):
+        if not self.hero_image_path:
+            return None
+        from . import hero_storage
+        return hero_storage.public_url(self.hero_image_path)
 
     @property
     def effective_paystack_public_key(self):

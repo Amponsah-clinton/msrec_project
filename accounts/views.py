@@ -33,14 +33,12 @@ APPLICANT_PROFILE_FIELDS = [
 ]
 REVIEWER_PROFILE_FIELDS = [
     "independentReviewer", "reviewerPosition", "reviewerInstitution", "reviewerDiscipline",
-    "reviewerYearsProfessional", "reviewerYearsResearch", "reviewerPriorExperience",
-    "reviewerCommitteeExperience", "reviewerExpertise", "reviewerResearchAreas",
-    "reviewerTraining", "reviewerOrcid", "reviewerRegistration", "reviewerBio",
+    "reviewerYearsProfessional", "reviewerYearsResearch",
+    "reviewerExpertise", "reviewerResearchAreas", "reviewerBio",
 ]
 COMMITTEE_PROFILE_FIELDS = [
-    "committeePosition", "committeeInstitution", "committeeYears", "committeeEthicsExperience",
-    "committeeEthicsDetails", "committeeBackground", "committeeTraining", "committeeOrcid",
-    "committeeRegistration", "committeeReference", "committeeBio",
+    "committeePosition", "committeeInstitution", "committeeYears",
+    "committeeBackground", "committeeReference", "committeeBio",
 ]
 
 
@@ -56,6 +54,31 @@ def _collect_profile(post, fields, multi_fields=()):
             if value:
                 data[key] = value
     return data
+
+
+def _send_welcome_email(request, user):
+    """Sent to every new account right after signup, regardless of which
+    role(s) were requested -- the one guaranteed "you're in" email. Kept
+    separate from _send_role_pending_email below, which only fires for a
+    Reviewer/Committee request and is about that request's status, not
+    the account itself -- both go out on the same signup when relevant,
+    this one first."""
+    login_url = request.build_absolute_uri(reverse("pages:login"))
+    return send_branded_email(
+        subject="Welcome to MSREC",
+        to=user.email,
+        heading=f"Welcome to MSREC, {user.first_name}",
+        paragraphs=[
+            f"Hi {user.full_name},",
+            "Your MSREC account has been created. MSREC (Metascholar Research Ethics Committee) "
+            "provides structured ethical review, post-approval oversight and verifiable decisions "
+            "for researchers and institutions.",
+            "You can log in any time using the email address and password you just set.",
+        ],
+        cta_text="Log in to MSREC",
+        cta_url=login_url,
+        preheader="Your MSREC account is ready.",
+    )
 
 
 def _send_role_pending_email(user):
@@ -319,6 +342,7 @@ def signup(request):
 
             user.set_password(cd["password"])
             user.save()
+            _send_welcome_email(request, user)
 
             auth_login(request, user)
             request.session["ua"] = request.META.get("HTTP_USER_AGENT", "")[:300]

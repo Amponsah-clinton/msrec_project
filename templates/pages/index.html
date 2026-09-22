@@ -37,7 +37,11 @@
             </div>
           </div>
           <div class="col-lg-5 order-1 order-lg-2">
+            {% if hero_image_url %}
+            <img src="{{ hero_image_url }}" class="img-fluid hero-img" alt="">
+            {% else %}
             <img src="{% static 'assets/img/c.png' %}" class="img-fluid hero-img" alt="">
+            {% endif %}
           </div>
         </div>
       </div>

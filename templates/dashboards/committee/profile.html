@@ -118,10 +118,7 @@
               <label class="field-label" for="cmEmail">Email address</label>
               <input type="email" class="field-input" id="cmEmail" name="email" value="{{ request.user.email }}" form="cmProfileForm" required>
             </div>
-            <div class="field-group">
-              <label class="field-label" for="cmOrcid">ORCID iD</label>
-              <input type="text" class="field-input" id="cmOrcid" name="orcid" value="{{ request.user.orcid }}" form="cmProfileForm" placeholder="0000-0000-0000-0000">
-            </div>
+            <div class="field-group"></div>
           </div>
           <div class="field-row">
             <div class="field-group">
@@ -161,31 +158,6 @@
               <label class="field-label" for="cmYears">Years of professional experience</label>
               <input type="number" class="field-input" id="cmYears" name="years" min="0" max="80" value="{{ data.committeeYears }}" form="cmProfileForm">
             </div>
-          </div>
-          <div class="field-row">
-            <div class="field-group">
-              <label class="field-label" for="cmRegistration">Professional registration</label>
-              <input type="text" class="field-input" id="cmRegistration" name="registration" value="{{ data.committeeRegistration }}" form="cmProfileForm">
-            </div>
-            <div class="field-group">
-              <label class="field-label" for="cmTraining">Ethics / governance training</label>
-              <input type="text" class="field-input" id="cmTraining" name="training" value="{{ data.committeeTraining }}" form="cmProfileForm">
-            </div>
-          </div>
-          <div class="field-row">
-            <div class="field-group">
-              <label class="field-label" for="cmEthicsExp">Research ethics experience</label>
-              <select class="field-input" id="cmEthicsExp" name="ethics_experience" form="cmProfileForm">
-                <option value="">Select an answer</option>
-                <option value="yes"{% if data.committeeEthicsExperience == "yes" %} selected{% endif %}>Yes</option>
-                <option value="no"{% if data.committeeEthicsExperience == "no" %} selected{% endif %}>No</option>
-              </select>
-            </div>
-            <div class="field-group"></div>
-          </div>
-          <div class="field-group">
-            <label class="field-label" for="cmEthicsDetails">Ethics experience &mdash; details</label>
-            <textarea class="field-input" id="cmEthicsDetails" name="ethics_details" rows="3" form="cmProfileForm">{{ data.committeeEthicsDetails }}</textarea>
           </div>
           <div class="field-group">
             <label class="field-label" for="cmBackground">Professional background</label>
@@ -288,10 +260,24 @@
         {% endif %}
       </section>
 
+      {% if request.user.membership_ethics_id %}
+      <section class="panel actions-panel cm-appt">
+        <div class="cm-side-head"><h2>Membership certificate</h2></div>
+        <dl class="cm-facts">
+          <div><dt>Membership Ethics ID</dt><dd>{{ request.user.membership_ethics_id }}</dd></div>
+          <div><dt>Confirmed</dt><dd>{{ request.user.membership_confirmed_at|date:"j F Y" }}</dd></div>
+        </dl>
+        <a class="btn-secondary cm-letter" href="{% url 'committee_dashboard:certificate_download' %}" target="_blank" rel="noopener">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+          Download certificate
+        </a>
+      </section>
+      {% endif %}
+
       <section class="panel actions-panel">
         <div class="cm-side-head"><h2>Profile strength</h2><b class="cm-pct">{{ completeness }}%</b></div>
         <div class="cm-term-bar cm-strength"><span style="width:{{ completeness }}%"></span></div>
-        <p class="field-hint" style="margin:10px 0 0;">{% if completeness == 100 %}Everything the Secretariat needs is on file.{% else %}Add a photo, ORCID, experience and a short bio to reach 100%.{% endif %}</p>
+        <p class="field-hint" style="margin:10px 0 0;">{% if completeness == 100 %}Everything the Secretariat needs is on file.{% else %}Add a photo, background and a short bio to reach 100%.{% endif %}</p>
       </section>
 
       {% if seat %}

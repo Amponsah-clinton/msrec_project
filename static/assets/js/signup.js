@@ -253,31 +253,21 @@ document.addEventListener("DOMContentLoaded", () => {
   applicantCategory.addEventListener("change", applyApplicantConditionalRequirements);
 
   /* ============================================================
-     Reviewer conditional logic — prior ethics review experience
+     Reviewer conditional logic
   ============================================================ */
-  const reviewerPriorExperience = document.getElementById("reviewerPriorExperience");
-  const reviewerCommitteeExperienceField = document.getElementById("field-reviewerCommitteeExperience");
-
   function applyReviewerConditionalRequirements() {
     const active = isRoleChecked("reviewer");
-    ["reviewerPosition", "reviewerDiscipline", "reviewerYearsProfessional", "reviewerPriorExperience"].forEach((id) => {
+    ["reviewerPosition", "reviewerDiscipline", "reviewerYearsProfessional"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.required = active;
     });
     document.getElementById("reviewerCv").required = active;
     applyReviewerInstitutionRequirement();
-
-    reviewerCommitteeExperienceField.hidden = reviewerPriorExperience.value !== "yes";
   }
-  reviewerPriorExperience.addEventListener("change", () => {
-    reviewerCommitteeExperienceField.hidden = reviewerPriorExperience.value !== "yes";
-  });
 
   /* ============================================================
      Committee conditional logic
   ============================================================ */
-  const committeeEthicsExperience = document.getElementById("committeeEthicsExperience");
-  const committeeEthicsDetailsField = document.getElementById("field-committeeEthicsDetails");
   const committeeInstitution = document.getElementById("committeeInstitution");
   const committeeInstitutionReqTag = document.getElementById("committeeInstitutionReqTag");
   const committeeCv = document.getElementById("committeeCv");
@@ -285,7 +275,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function applyCommitteeConditionalRequirements() {
     const active = isRoleChecked("committee");
-    ["committeePosition", "committeeYears", "committeeEthicsExperience", "committeeBackground"].forEach((id) => {
+    ["committeePosition", "committeeYears", "committeeBackground"].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.required = active;
     });
@@ -295,12 +285,7 @@ document.addEventListener("DOMContentLoaded", () => {
     committeeCv.required = active && !isLayCommunity;
     committeeInstitutionReqTag.hidden = isLayCommunity;
     committeeCvReqTag.hidden = isLayCommunity;
-
-    committeeEthicsDetailsField.hidden = committeeEthicsExperience.value !== "yes";
   }
-  committeeEthicsExperience.addEventListener("change", () => {
-    committeeEthicsDetailsField.hidden = committeeEthicsExperience.value !== "yes";
-  });
 
   /* ============================================================
      Submit

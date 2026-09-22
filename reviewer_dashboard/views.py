@@ -455,7 +455,6 @@ def _handle_update_profile(request):
     first_name = request.POST.get("first_name", "").strip()
     last_name = request.POST.get("last_name", "").strip()
     phone = request.POST.get("phone", "").strip()
-    orcid = request.POST.get("orcid", "").strip()
     email = request.POST.get("email", "").strip().lower()
 
     if not first_name or not last_name:
@@ -489,7 +488,6 @@ def _handle_update_profile(request):
     user.first_name = first_name
     user.last_name = last_name
     user.phone = phone
-    user.orcid = orcid
     user.email = email
     user.institution = institution
     user.position = position
@@ -510,13 +508,12 @@ def _handle_update_profile(request):
     profile["reviewerYearsResearch"] = years_experience
     profile["reviewerExpertise"] = expertise
     profile["reviewerBio"] = bio
-    profile["reviewerOrcid"] = orcid
     profile["maxConcurrentReviews"] = max_reviews
     profile["preferredCategories"] = preferred_categories
     user.reviewer_profile = profile
 
     user.save(update_fields=[
-        "title", "first_name", "last_name", "phone", "orcid", "email",
+        "title", "first_name", "last_name", "phone", "email",
         "institution", "position", "reviewer_availability", "reviewer_profile",
     ])
     messages.success(request, "Profile updated.")
@@ -589,7 +586,7 @@ def profile_expertise(request):
     # means the Secretariat has everything it could plausibly use to
     # match this reviewer to a protocol.
     completeness_fields = [
-        user.profile_photo_path, user.phone, user.orcid,
+        user.profile_photo_path, user.phone,
         profile.get("reviewerInstitution") or user.institution,
         profile.get("reviewerPosition") or user.position,
         profile.get("reviewerDiscipline"), profile.get("reviewerYearsResearch"),
