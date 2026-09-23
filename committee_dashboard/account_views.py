@@ -289,20 +289,27 @@ def certificate_download(request):
         raise Http404("No membership certificate has been issued for this account yet.")
 
     role_title = (user.committee_profile or {}).get("committeePosition") or user.position or "Committee Member"
+    approval = (
+        RoleApprovalLog.objects.filter(
+            user=user, role=User.Role.COMMITTEE, action=RoleApprovalLog.Action.APPROVED,
+        ).select_related("acted_by").order_by("-pk").first()
+    )
+    chair = User.objects.filter(role=User.Role.CHAIR, is_active=True).order_by("pk").first()
     return render(request, "certificates/award_certificate.html", {
         "cert_title": "Certificate",
         "cert_subtitle": "of Membership",
+        "seal_caption": "MEMBERSHIP",
         "recipient_name": user.full_name,
         "message": (
-            f"In recognition of your confirmed membership of the Metascholar Research<br>"
-            f"Ethics Committee, serving as {role_title}, in good standing with MSREC's governing charter"
+            f"has been confirmed as a member of the Metascholar Research Ethics Committee, "
+            f"serving as {role_title}, and is in good standing under the Committee's governing charter."
         ),
         "cert_id": user.membership_ethics_id,
         "issued_on": user.membership_confirmed_at,
-        "left_name": "Secretariat",
-        "left_role": "MSREC Secretariat",
-        "right_name": "Chair",
-        "right_role": "MSREC Committee Chair",
+        "left_name": approval.acted_by.full_name if approval and approval.acted_by else "",
+        "left_role": "Secretariat",
+        "right_name": chair.full_name if chair else "",
+        "right_role": "Chair of the Committee",
         "back_url": reverse("committee_dashboard:profile"),
     })
 

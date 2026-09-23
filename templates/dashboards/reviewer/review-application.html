@@ -93,8 +93,17 @@
         </div>
       </section>
 
-      <div class="body-grid">
+      <div class="rv-review-split">
+        <div class="rv-review-pane">
         <section class="panel" style="padding:24px 26px;">
+
+          <div class="rv-pane-header">
+            <span class="rv-pane-header-icon blue"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
+            <div>
+              <h2>Applicant's Submission</h2>
+              <p>Everything {{ application.applicant.full_name }} submitted for this study</p>
+            </div>
+          </div>
 
           <div class="form-section">
             <h3 class="form-section-title"><span class="section-icon-badge blue"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span> Research Information</h3>
@@ -145,11 +154,19 @@
           </div>
 
         </section>
-      </div>
+        </div>
 
       {% if assignment.status == 'completed' %}
-      <div class="body-grid">
+        <div class="rv-review-pane">
         <section class="panel" style="padding:24px 26px;">
+
+          <div class="rv-pane-header">
+            <span class="rv-pane-header-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 5-5"/></svg></span>
+            <div>
+              <h2>Your Assessment</h2>
+              <p>Submitted and recorded &mdash; read only</p>
+            </div>
+          </div>
 
           <div class="assess-summary-banner">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 5-5"/></svg>
@@ -215,10 +232,18 @@
           </div>
 
         </section>
-      </div>
+        </div>
       {% elif assignment.status == 'accepted' %}
-      <div class="body-grid">
+        <div class="rv-review-pane">
         <section class="panel" style="padding:24px 26px;">
+
+          <div class="rv-pane-header">
+            <span class="rv-pane-header-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+            <div>
+              <h2>Your Assessment</h2>
+              <p>Complete the checklist below</p>
+            </div>
+          </div>
 
           <div class="assess-intro">
             <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
@@ -317,8 +342,9 @@
           </form>
 
         </section>
-      </div>
+        </div>
       {% endif %}
+      </div>
 
 </div>
 {% endblock %}

@@ -672,7 +672,7 @@ def _handle_award_certificate(request, application):
         heading="Your certificate is ready",
         paragraphs=[
             f"Hi {reviewer.full_name},",
-            "Thank you for completing a peer review for MSREC — your Certificate of Appreciation "
+            "Thank you for completing a peer review for MSREC — your Certificate of Peer Review "
             "is attached to this email, and is also available any time from your Reviewer dashboard.",
             f"Certificate ID: {assignment.certificate_id}",
         ],
@@ -690,6 +690,20 @@ def _handle_award_certificate(request, application):
     (messages.success if emailed else messages.warning)(request, note)
 
 
+def _compose_revision_comment(post):
+    """The Request Revisions composer posts each required change as its own
+    `revision_item` plus an optional covering `revision_note`; this folds
+    them into the single numbered-letter text Application.revision_comment
+    stores (and the applicant's email/Revisions page already display).
+    A plain `revision_comment` field is still accepted as-is."""
+    items = [i.strip() for i in post.getlist("revision_item") if i.strip()]
+    note = post.get("revision_note", "").strip()
+    if not items:
+        return note or post.get("revision_comment", "")
+    numbered = "\n".join(f"{n}. {item}" for n, item in enumerate(items, start=1))
+    return f"{note}\n\n{numbered}" if note else numbered
+
+
 @login_required
 @staff_required
 def application_detail(request, pk):
@@ -704,7 +718,7 @@ def application_detail(request, pk):
             _handle_award_certificate(request, application)
             return redirect(f"{reverse('secretariat_dashboard:application_detail', args=[application.pk])}#reviewer-assessments")
 
-        comment = request.POST.get("revision_comment", "")
+        comment = _compose_revision_comment(request.POST)
         ok, note = oversight.apply_transition(application, action, comment=comment, actor=request.user, request=request)
         if ok and action == "request_revisions":
             emailed = oversight.send_revisions_requested_email(request, application)
@@ -734,6 +748,10 @@ def application_detail(request, pk):
         "application": application,
         "documents": documents,
         "assignments": assignments,
+        "reviewer_concerns": [
+            a for a in assignments
+            if a.status == ReviewAssignment.Status.COMPLETED and (a.key_concerns or "").strip()
+        ],
         "reviewers": _approved_reviewers(),
         **_committee_referral_context(application),
     })

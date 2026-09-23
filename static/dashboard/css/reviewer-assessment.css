@@ -7,6 +7,76 @@
    of relying on the browser's bare default control.
 ========================================================== */
 
+/* ---------------- Review split view -----------------
+   The applicant's own submission and the reviewer's assessment used to
+   stack as two separate full-width sections, so answering the checklist
+   meant scrolling up and down to re-check what the applicant actually
+   wrote. On a screen wide enough to fit both comfortably, they sit side
+   by side instead -- each its own independently-scrolling, sticky pane,
+   the same "compare two long documents at once" layout a code review
+   split view uses. Below that width there isn't room for two full
+   columns, so it falls back to the original stacked layout. */
+.rv-review-split {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: start;
+}
+.rv-review-pane { min-width: 0; width: 100%; }
+
+/* Each pane's own header, inside the panel -- a real card header (icon
+   badge + serif title + subtitle) rather than a small floating label
+   above the border, so the two sides of the split read as two distinct,
+   deliberately designed documents rather than one afterthought caption
+   stuck on top of the same-looking box. */
+.rv-pane-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 18px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+.rv-pane-header-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rv-pane-header-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.rv-pane-header-icon.blue { background: var(--blue-light); color: var(--blue); }
+.rv-pane-header-icon.teal { background: var(--teal-light); color: var(--teal); }
+.rv-pane-header h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+.rv-pane-header p { margin: 3px 0 0; font-size: 12.5px; color: var(--text-sub); }
+
+@media (min-width: 1200px) {
+  .rv-review-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+  .rv-review-pane {
+    position: sticky;
+    top: 22px;
+    max-height: calc(100vh - 44px);
+    display: flex;
+    flex-direction: column;
+  }
+  .rv-review-pane .panel {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    min-height: 0;
+  }
+}
+
 /* ---------------- Section header icon badge -----------------
    Same "colour-tinted circle behind an icon" language as .stat-icon on
    the dashboard's summary cards -- gives each section its own identity

@@ -514,27 +514,27 @@ def certificate_download(request, assignment_id):
     design server-side would need a system HTML-to-PDF engine (WeasyPrint
     + GTK3) this Windows dev box doesn't have installed."""
     assignment = get_object_or_404(
-        ReviewAssignment.objects.select_related("application", "reviewer"),
+        ReviewAssignment.objects.select_related("application", "reviewer", "certificate_awarded_by"),
         pk=assignment_id, reviewer=request.user, status=ReviewAssignment.Status.COMPLETED,
     )
     if not assignment.certificate_id:
         raise Http404("No certificate has been awarded for this review yet.")
 
-    ref = assignment.application.reference_no or f"Application #{assignment.application_id}"
+    from .certificate import certificate_signatories, review_certificate_message
+
+    secretariat_name, chair_name = certificate_signatories(assignment)
     return render(request, "certificates/award_certificate.html", {
         "cert_title": "Certificate",
-        "cert_subtitle": "of Appreciation",
+        "cert_subtitle": "of Peer Review",
+        "seal_caption": "PEER REVIEW",
         "recipient_name": assignment.reviewer.full_name,
-        "message": (
-            f"In recognition of your time and expertise in completing an independent<br>"
-            f"ethical review for MSREC, under reference {ref}"
-        ),
+        "message": review_certificate_message(assignment),
         "cert_id": assignment.certificate_id,
         "issued_on": assignment.certificate_awarded_at,
-        "left_name": "Secretariat",
-        "left_role": "MSREC Secretariat",
-        "right_name": "Chair",
-        "right_role": "MSREC Committee Chair",
+        "left_name": secretariat_name,
+        "left_role": "Secretariat",
+        "right_name": chair_name,
+        "right_role": "Chair of the Committee",
         "back_url": reverse("reviewer_dashboard:my_reviews"),
     })
 

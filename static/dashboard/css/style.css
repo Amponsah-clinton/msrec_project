@@ -160,7 +160,8 @@ html, body {
 .page-head-text h2,
 .panel-header h2,
 .form-section-title,
-.ad-card-header-text h3 {
+.ad-card-header-text h3,
+.rv-pane-header h2 {
   font-family: "IBM Plex Serif", Georgia, "Times New Roman", serif;
   letter-spacing: -0.011em;
 }

@@ -357,26 +357,72 @@
 
       <!-- REQUEST REVISIONS MODAL -->
       <div class="acct-modal-overlay" id="requestRevisionsOverlay" hidden data-modal-overlay>
-        <div class="acct-modal">
-          <div class="acct-modal-head">
-            <h3>Request Revisions</h3>
+        <div class="acct-modal rr-modal" role="dialog" aria-modal="true" aria-labelledby="rrTitle">
+          <div class="rr-head">
+            <div>
+              <span class="rr-round">Round {{ application.revision_count|add:1 }}</span>
+              <h3 id="rrTitle">Request revisions</h3>
+              <p>{{ application.reference_no|default:"This application" }} &middot; {{ application.applicant.full_name }}</p>
+            </div>
             <button type="button" class="icon-btn" data-modal-close aria-label="Close">
               <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
           </div>
-          <form method="post">
+
+          <form method="post" id="rrForm">
             {% csrf_token %}
             <input type="hidden" name="action" value="request_revisions">
-            <div class="acct-modal-body">
-              <div class="field field-wide">
-                <label>What does the applicant need to fix? <span class="req">*</span></label>
-                <p class="field-hint">Sent to the applicant by email, and shown on their Revisions Required page -- be specific about what's missing or needs changing.</p>
-                <textarea name="revision_comment" rows="5" required placeholder="e.g. Please attach the informed consent form in English, and clarify the sample size calculation in Section 5."></textarea>
+
+            <div class="rr-body">
+              <div class="rr-section">
+                <div class="rr-label-row">
+                  <label class="rr-label" for="rrFirstItem">Required changes</label>
+                  <span class="rr-count" id="rrCount">1 item</span>
+                </div>
+                <ol class="rr-items" id="rrItems">
+                  <li class="rr-item">
+                    <span class="rr-num">1</span>
+                    <textarea id="rrFirstItem" name="revision_item" rows="2" placeholder="e.g. Attach the participant information sheet in English and in the local language."></textarea>
+                    <button type="button" class="rr-remove" aria-label="Remove this change"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                  </li>
+                </ol>
+                <button type="button" class="rr-add" id="rrAdd">
+                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add another change
+                </button>
               </div>
+
+              {% if reviewer_concerns %}
+              <div class="rr-section rr-sources">
+                <div class="rr-label">From reviewer assessments</div>
+                {% for a in reviewer_concerns %}
+                <div class="rr-source">
+                  <div class="rr-source-meta">
+                    <strong>{{ a.reviewer.full_name }}</strong>
+                    {% if a.recommendation %}<span class="badge-tag {{ a.recommendation_badge }}">{{ a.get_recommendation_display }}</span>{% endif %}
+                  </div>
+                  <p>{{ a.key_concerns|linebreaksbr }}</p>
+                  <button type="button" class="rr-use" data-text="{{ a.key_concerns }}">
+                    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add to the list
+                  </button>
+                </div>
+                {% endfor %}
+              </div>
+              {% endif %}
+
+              <div class="rr-section">
+                <label class="rr-label" for="rrNote">Covering note <span class="rr-optional">optional</span></label>
+                <textarea id="rrNote" name="revision_note" rows="2" placeholder="Thank you for your submission. Before the Committee can proceed, please address the points below."></textarea>
+              </div>
+
+              <p class="rr-error" id="rrError" hidden>Add at least one change for the applicant to make.</p>
             </div>
-            <div class="acct-modal-actions">
-              <button type="button" class="acct-btn acct-btn-cancel" data-modal-close>Cancel</button>
-              <button type="submit" class="acct-btn acct-btn-suspend"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Send Request</button>
+
+            <div class="rr-foot">
+              <p>Emailed to the applicant as a numbered list. The application moves to <strong>Revisions Required</strong>.</p>
+              <div class="rr-foot-actions">
+                <button type="button" class="acct-btn acct-btn-cancel" data-modal-close>Cancel</button>
+                <button type="submit" class="rr-send">Send request</button>
+              </div>
             </div>
           </form>
         </div>
@@ -443,4 +489,5 @@
 <script src="{% static 'dashboard/js/generic-modal.js' %}"></script>
 <script src="{% static 'dashboard/js/ms-picker.js' %}"></script>
 <script src="{% static 'dashboard/js/reviewer-assignment.js' %}"></script>
+<script src="{% static 'dashboard/js/revision-request.js' %}"></script>
 {% endblock %}

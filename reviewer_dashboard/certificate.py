@@ -1,178 +1,230 @@
-"""Renders the Peer Review Certificate PDF for one completed ReviewAssignment
--- reviewer_dashboard.account_views.certificate_download (self-serve) and
-secretariat_dashboard.views._handle_award_certificate (the Secretariat's
-"Award Certificate" button, which is what actually sets certificate_id/
-certificate_awarded_at in the first place -- see accounts.models.User for
-the equivalent Committee membership certificate) are the only callers.
-Only ever called for an assignment with certificate_id set, so callers
-must check that themselves before rendering.
+"""Peer Review Certificate for one completed ReviewAssignment.
 
-Built with reportlab's platypus layer directly, the same approach and
-exact colour tokens as committee_dashboard/certificate.py, so a reviewer's
-certificate reads as the same product as a committee member's rather than
-a differently-branded export.
+Two renderings share the wording and signatories defined here:
+  * the on-screen, print-ready HTML version (templates/certificates/
+    award_certificate.html, via reviewer_dashboard.views.certificate_download)
+  * the PDF attached to the award email (render_review_certificate_pdf below,
+    called from secretariat_dashboard.views._handle_award_certificate)
+
+The PDF is drawn straight onto a reportlab canvas rather than laid out with
+platypus flowables, so it can reproduce the HTML version's fixed A4
+composition -- navy ink on ivory, a brass lattice border, a line-art seal --
+instead of reading like a generic generated report.
 """
+import math
 from io import BytesIO
 
 from reportlab.lib import colors
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib.units import cm
-from reportlab.platypus import HRFlowable, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas as rl_canvas
+from reportlab.platypus import Paragraph
 
-# Same wine/gold palette as templates/certificates/award_certificate.html's
-# :root custom properties -- this simpler reportlab rendering (used only
-# for the PDF attached to the award email; the dashboard's "Certificate"
-# link opens that exact HTML design instead, see certificate_download's
-# docstring) is still styled to match rather than reverting to the old
-# navy/teal report theme.
-WINE = colors.HexColor("#7b0b0d")
-GOLD_DEEP = colors.HexColor("#9b6900")
-GOLD_LIGHT = colors.HexColor("#f6efdd")
-TEXT_MAIN = colors.HexColor("#4c1111")
-TEXT_SUB = colors.HexColor("#7a3a3a")
-TEXT_FAINT = colors.HexColor("#a98a8a")
-BORDER = colors.HexColor("#e9ded0")
-GOLD = colors.HexColor("#d2b364")
+from accounts.models import User
 
-PAGE_SIZE = landscape(A4)
-PAGE_MARGIN = 1.8 * cm
+PAPER = colors.HexColor("#fbf8f1")
+INK = colors.HexColor("#1b2a4a")
+INK_SOFT = colors.HexColor("#4a5670")
+BRASS = colors.HexColor("#8a6d2f")
+RULE = colors.HexColor("#c9b98f")
+
+PAGE_W, PAGE_H = landscape(A4)
 
 
-def _styles():
-    return {
-        "org_name": ParagraphStyle(
-            "org_name", fontName="Helvetica-Bold", fontSize=13, leading=16, textColor=WINE,
-        ),
-        "org_sub": ParagraphStyle(
-            "org_sub", fontName="Helvetica", fontSize=9, leading=12, textColor=TEXT_FAINT,
-        ),
-        "eyebrow": ParagraphStyle(
-            "eyebrow", fontName="Helvetica-Bold", fontSize=11, leading=14, textColor=GOLD_DEEP,
-            alignment=1, spaceAfter=6,
-        ),
-        "cert_sub": ParagraphStyle(
-            "cert_sub", fontName="Helvetica", fontSize=10.5, leading=15, textColor=TEXT_SUB,
-            alignment=1,
-        ),
-        "recipient": ParagraphStyle(
-            "recipient", fontName="Helvetica-Bold", fontSize=22, leading=26, textColor=WINE,
-            alignment=1, spaceBefore=16, spaceAfter=6,
-        ),
-        "body_center": ParagraphStyle(
-            "body_center", fontName="Helvetica", fontSize=11, leading=17, textColor=TEXT_MAIN,
-            alignment=1,
-        ),
-        "label": ParagraphStyle(
-            "label", fontName="Helvetica-Bold", fontSize=8, leading=11, textColor=TEXT_FAINT,
-            alignment=1,
-        ),
-        "value": ParagraphStyle(
-            "value", fontName="Helvetica-Bold", fontSize=11, leading=14, textColor=WINE,
-            alignment=1,
-        ),
-        "sign_name": ParagraphStyle(
-            "sign_name", fontName="Helvetica-Bold", fontSize=10, leading=13, textColor=TEXT_MAIN,
-            alignment=1,
-        ),
-        "sign_title": ParagraphStyle(
-            "sign_title", fontName="Helvetica", fontSize=8.5, leading=11, textColor=TEXT_FAINT,
-            alignment=1,
-        ),
-    }
+def certificate_signatories(assignment):
+    """(secretariat name, chair name) for the signature lines -- the staff
+    member who actually awarded this certificate, and the Committee's
+    current Chair. Either can be "" (e.g. no Chair account exists yet),
+    in which case the certificate shows a bare line to sign by hand."""
+    awarded_by = assignment.certificate_awarded_by
+    chair = User.objects.filter(role=User.Role.CHAIR, is_active=True).order_by("pk").first()
+    return (awarded_by.full_name if awarded_by else ""), (chair.full_name if chair else "")
 
 
-def _border_frame(canvas, doc):
-    """Double-rule border that reads as "certificate" rather than "report",
-    drawn straight on the canvas rather than as a Table so it doesn't
-    consume any flowable width/height budget -- identical treatment to
-    committee_dashboard/certificate.py's membership certificate."""
-    canvas.saveState()
-    outer = 0.9 * cm
-    canvas.setStrokeColor(GOLD)
-    canvas.setLineWidth(1.6)
-    canvas.rect(outer, outer, PAGE_SIZE[0] - 2 * outer, PAGE_SIZE[1] - 2 * outer)
-    inner = outer + 0.14 * cm
-    canvas.setStrokeColor(WINE)
-    canvas.setLineWidth(0.6)
-    canvas.rect(inner, inner, PAGE_SIZE[0] - 2 * inner, PAGE_SIZE[1] - 2 * inner)
-
-    canvas.setFont("Helvetica", 7.5)
-    canvas.setFillColor(TEXT_FAINT)
-    canvas.drawCentredString(
-        PAGE_SIZE[0] / 2, outer - 0.05 * cm,
-        "Verify this certificate's ID with the MSREC Secretariat.",
+def review_certificate_message(assignment):
+    ref = assignment.application.reference_no or f"application #{assignment.application_id}"
+    return (
+        f"completed an independent ethical review for the Metascholar Research Ethics "
+        f"Committee under reference {ref}, and is recognised for the rigour, "
+        f"impartiality and confidentiality brought to that work."
     )
-    canvas.restoreState()
+
+
+def _spaced(c, text, x, y, font, size, spacing, color):
+    """Centred, letter-spaced caps -- reportlab's drawCentredString has no
+    tracking option, so this lays each character out by hand."""
+    c.setFont(font, size)
+    c.setFillColor(color)
+    widths = [c.stringWidth(ch, font, size) for ch in text]
+    total = sum(widths) + spacing * (len(text) - 1)
+    cursor = x - total / 2
+    for ch, w in zip(text, widths):
+        c.drawString(cursor, y, ch)
+        cursor += w + spacing
+
+
+def _border(c):
+    c.setFillColor(PAPER)
+    c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+
+    c.setStrokeColor(INK)
+    c.setLineWidth(0.6 * mm * 0.75)
+    c.rect(7 * mm, 7 * mm, PAGE_W - 14 * mm, PAGE_H - 14 * mm)
+
+    # Brass lattice band: a row of small diamonds running around the frame.
+    c.setStrokeColor(BRASS)
+    c.setLineWidth(0.35)
+    step, half = 3 * mm, 1.5 * mm
+    left, right = 9.5 * mm, PAGE_W - 9.5 * mm
+    bottom, top = 9.5 * mm, PAGE_H - 9.5 * mm
+
+    def diamond(cx, cy):
+        p = c.beginPath()
+        p.moveTo(cx - half, cy)
+        p.lineTo(cx, cy + half)
+        p.lineTo(cx + half, cy)
+        p.lineTo(cx, cy - half)
+        p.close()
+        c.drawPath(p, stroke=1, fill=0)
+
+    x = left
+    while x <= right + 0.01:
+        diamond(x, top)
+        diamond(x, bottom)
+        x += step
+    y = bottom + step
+    while y < top - 0.01:
+        diamond(left, y)
+        diamond(right, y)
+        y += step
+
+    c.setStrokeColor(INK)
+    c.setLineWidth(0.25 * mm * 0.75)
+    c.rect(12 * mm, 12 * mm, PAGE_W - 24 * mm, PAGE_H - 24 * mm)
+
+    c.setFillColor(BRASS)
+    for cx, cy in [(12, 12), (PAGE_W / mm - 12, 12), (12, PAGE_H / mm - 12), (PAGE_W / mm - 12, PAGE_H / mm - 12)]:
+        c.saveState()
+        c.translate(cx * mm, cy * mm)
+        c.rotate(45)
+        c.rect(-1.6 * mm, -1.6 * mm, 3.2 * mm, 3.2 * mm, stroke=0, fill=1)
+        c.restoreState()
+
+
+def _seal(c, cx, cy, caption):
+    c.setStrokeColor(BRASS)
+    for r, w in [(18, 1.1), (16.7, 0.4), (11.3, 0.7), (10.3, 0.35)]:
+        c.setLineWidth(w)
+        c.circle(cx, cy, r * mm, stroke=1, fill=0)
+
+    ring_text = "METASCHOLAR RESEARCH ETHICS COMMITTEE · "
+    font, size = "Times-Roman", 6.3
+    radius = 13.9 * mm
+    c.setFont(font, size)
+    c.setFillColor(BRASS)
+    angle_per_char = 360 / len(ring_text)
+    for i, ch in enumerate(ring_text):
+        angle = 90 - i * angle_per_char
+        rad = math.radians(angle)
+        c.saveState()
+        c.translate(cx + radius * math.cos(rad), cy + radius * math.sin(rad))
+        c.rotate(angle - 90)
+        c.drawCentredString(0, -size / 3, ch)
+        c.restoreState()
+
+    c.setFillColor(INK)
+    c.setFont("Times-Bold", 13)
+    c.drawCentredString(cx, cy + 0.6 * mm, "MSREC")
+    c.setStrokeColor(BRASS)
+    c.setLineWidth(0.5)
+    c.line(cx - 5 * mm, cy - 1.6 * mm, cx + 5 * mm, cy - 1.6 * mm)
+    _spaced(c, caption, cx, cy - 5 * mm, "Times-Roman", 5.2, 0.9, BRASS)
+
+
+def _signature(c, cx, y, name, role):
+    c.setFillColor(INK)
+    c.setFont("Times-Bold", 13)
+    if name:
+        c.drawCentredString(cx, y + 3 * mm, name)
+    c.setStrokeColor(INK)
+    c.setLineWidth(0.5)
+    c.line(cx - 32 * mm, y, cx + 32 * mm, y)
+    _spaced(c, role.upper(), cx, y - 5 * mm, "Times-Roman", 8.5, 1.2, INK_SOFT)
 
 
 def render_review_certificate_pdf(assignment):
-    """Returns the rendered PDF as raw bytes for one completed
-    ReviewAssignment that has already been issued a certificate_id."""
-    styles = _styles()
-    reviewer = assignment.reviewer
-    application = assignment.application
-
+    """Returns the PDF as raw bytes. Only call for an assignment that has
+    already been issued a certificate_id."""
     buffer = BytesIO()
-    doc = SimpleDocTemplate(
-        buffer, pagesize=PAGE_SIZE,
-        topMargin=PAGE_MARGIN + 0.6 * cm, bottomMargin=PAGE_MARGIN + 0.6 * cm,
-        leftMargin=PAGE_MARGIN + 0.6 * cm, rightMargin=PAGE_MARGIN + 0.6 * cm,
-        title=f"MSREC Peer Review Certificate - {assignment.certificate_id}",
+    c = rl_canvas.Canvas(buffer, pagesize=(PAGE_W, PAGE_H))
+    c.setTitle(f"MSREC Certificate of Peer Review - {assignment.certificate_id}")
+
+    _border(c)
+    mid = PAGE_W / 2
+
+    _spaced(c, "METASCHOLAR RESEARCH ETHICS COMMITTEE", mid, PAGE_H - 34 * mm, "Times-Roman", 10, 2.4, INK_SOFT)
+    c.setStrokeColor(RULE)
+    c.setLineWidth(0.6)
+    c.line(mid - 22 * mm, PAGE_H - 39 * mm, mid - 4 * mm, PAGE_H - 39 * mm)
+    c.line(mid + 4 * mm, PAGE_H - 39 * mm, mid + 22 * mm, PAGE_H - 39 * mm)
+    c.saveState()
+    c.translate(mid, PAGE_H - 39 * mm)
+    c.rotate(45)
+    c.setFillColor(BRASS)
+    c.rect(-0.9 * mm, -0.9 * mm, 1.8 * mm, 1.8 * mm, stroke=0, fill=1)
+    c.restoreState()
+
+    title_y = PAGE_H - 58 * mm
+    lead, tail = "Certificate ", "of Peer Review"
+    lead_w = c.stringWidth(lead, "Times-Roman", 40)
+    tail_w = c.stringWidth(tail, "Times-Italic", 40)
+    start = mid - (lead_w + tail_w) / 2
+    c.setFont("Times-Roman", 40)
+    c.setFillColor(INK)
+    c.drawString(start, title_y, lead)
+    c.setFont("Times-Italic", 40)
+    c.setFillColor(BRASS)
+    c.drawString(start + lead_w, title_y, tail)
+
+    c.setFont("Times-Italic", 14)
+    c.setFillColor(INK_SOFT)
+    c.drawCentredString(mid, title_y - 22 * mm, "This is to certify that")
+
+    name = assignment.reviewer.full_name
+    name_y = title_y - 36 * mm
+    name_size = 34
+    while name_size > 20 and c.stringWidth(name, "Times-Bold", name_size) > 200 * mm:
+        name_size -= 1
+    c.setFont("Times-Bold", name_size)
+    c.setFillColor(INK)
+    c.drawCentredString(mid, name_y, name)
+    name_w = max(c.stringWidth(name, "Times-Bold", name_size), 90 * mm)
+    c.setStrokeColor(RULE)
+    c.setLineWidth(0.8)
+    c.line(mid - name_w / 2 - 6 * mm, name_y - 4 * mm, mid + name_w / 2 + 6 * mm, name_y - 4 * mm)
+
+    body = Paragraph(
+        review_certificate_message(assignment),
+        ParagraphStyle("body", fontName="Times-Roman", fontSize=14, leading=21,
+                       textColor=INK_SOFT, alignment=TA_CENTER),
     )
+    body_w = 185 * mm
+    _, body_h = body.wrap(body_w, 40 * mm)
+    body.drawOn(c, mid - body_w / 2, name_y - 12 * mm - body_h)
 
-    story = []
+    secretariat_name, chair_name = certificate_signatories(assignment)
+    sign_y = 44 * mm
+    _signature(c, mid - 82 * mm, sign_y, secretariat_name, "Secretariat")
+    _signature(c, mid + 82 * mm, sign_y, chair_name, "Chair of the Committee")
+    _seal(c, mid, sign_y + 6 * mm, "PEER REVIEW")
 
-    story.append(Paragraph("MSREC", styles["org_name"]))
-    story.append(Paragraph("Metascholar Research Ethics Committee", styles["org_sub"]))
-    story.append(Spacer(1, 14))
-    story.append(HRFlowable(width="100%", thickness=1, color=BORDER))
-    story.append(Spacer(1, 22))
+    footer = f"CERTIFICATE NO. {assignment.certificate_id}"
+    if assignment.certificate_awarded_at:
+        footer += f"      ISSUED {assignment.certificate_awarded_at.strftime('%d %B %Y').upper()}"
+    _spaced(c, footer, mid, 24 * mm, "Times-Roman", 8.5, 1.0, INK_SOFT)
 
-    story.append(Paragraph("CERTIFICATE OF APPRECIATION", styles["eyebrow"]))
-    story.append(Paragraph("Presented to", styles["cert_sub"]))
-    story.append(Paragraph(reviewer.full_name, styles["recipient"]))
-
-    ref = application.reference_no or f"Application #{application.pk}"
-    story.append(Paragraph(
-        f"in recognition of your time and expertise in completing an independent ethical "
-        f"review for the Metascholar Research Ethics Committee, under reference <b>{ref}</b>. "
-        f"Your contribution supports MSREC's commitment to rigorous, independent research "
-        f"ethics oversight.",
-        styles["body_center"],
-    ))
-    story.append(Spacer(1, 22))
-
-    meta = Table(
-        [[
-            [Paragraph("CERTIFICATE ID", styles["label"]), Paragraph(assignment.certificate_id, styles["value"])],
-            [Paragraph("AWARDED ON", styles["label"]),
-             Paragraph(assignment.certificate_awarded_at.strftime("%d %B %Y") if assignment.certificate_awarded_at else "—", styles["value"])],
-        ]],
-        colWidths=[doc.width / 2, doc.width / 2],
-    )
-    meta.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, -1), GOLD_LIGHT),
-        ("BOX", (0, 0), (-1, -1), 0.6, GOLD_DEEP),
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING", (0, 0), (-1, -1), 12),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 12),
-        ("LINEAFTER", (0, 0), (0, 0), 0.6, GOLD_DEEP),
-    ]))
-    story.append(meta)
-    story.append(Spacer(1, 34))
-
-    sign_row = Table(
-        [[
-            [HRFlowable(width="70%", thickness=0.8, color=TEXT_SUB, hAlign="CENTER"),
-             Spacer(1, 4), Paragraph("Secretariat", styles["sign_name"]), Paragraph("MSREC Secretariat", styles["sign_title"])],
-            [HRFlowable(width="70%", thickness=0.8, color=TEXT_SUB, hAlign="CENTER"),
-             Spacer(1, 4), Paragraph("Chair", styles["sign_name"]), Paragraph("MSREC Committee Chair", styles["sign_title"])],
-        ]],
-        colWidths=[doc.width / 2, doc.width / 2],
-    )
-    sign_row.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP")]))
-    story.append(sign_row)
-
-    doc.build(story, onFirstPage=_border_frame, onLaterPages=_border_frame)
+    c.showPage()
+    c.save()
     return buffer.getvalue()
