@@ -71,14 +71,7 @@ class SignupForm(forms.Form):
         if password and confirm_password and password != confirm_password:
             self.add_error("confirmPassword", "Passwords do not match.")
 
-        # CharField(min_length=8) above only checks length -- run the real
-        # strength rules (AUTH_PASSWORD_VALIDATORS: length, similarity to
-        # the applicant's own name/email, common-password list, not-all-
-        # digits, and character variety) the same way a password *change*
-        # already does in applicant_dashboard's _handle_update_profile.
-        # UserAttributeSimilarityValidator needs a user to compare
-        # against; nothing's been saved yet, so build an unsaved one from
-        # what's already been typed.
+        
         if password:
             temp_user = User(
                 email=email or "", first_name=cleaned.get("firstName", ""),
@@ -116,12 +109,7 @@ class LoginForm(forms.Form):
         if email and password:
             email = email.strip().lower()
 
-            # ModelBackend.authenticate() silently rejects inactive users
-            # (returns None) before we'd ever see them, which would surface
-            # the generic "incorrect email or password" message below for a
-            # suspended account too. Check the password against the account
-            # directly first so a suspended user gets told why, instead of
-            # being left to think they mistyped their password.
+          
             try:
                 candidate = User.objects.get(email=email)
             except User.DoesNotExist:
