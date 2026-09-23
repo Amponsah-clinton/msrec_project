@@ -299,7 +299,8 @@
           <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
             <p class="field-hint" style="margin:0;">Assessment not submitted yet.</p>
             <form method="post" action="{% url 'secretariat_dashboard:reviewer_assignment' %}"
-                  onsubmit="return confirm('Withdraw {{ assignment.reviewer.full_name }} from this application? They&#39;ll be notified by email, and it becomes available to assign to someone else right away.');">
+                  data-confirm="Withdraw {{ assignment.reviewer.full_name }} from this application? They'll be notified by email, and it becomes available to assign to someone else right away."
+                  data-confirm-variant="danger" data-confirm-label="Withdraw &amp; Reassign">
               {% csrf_token %}
               <input type="hidden" name="action" value="withdraw">
               <input type="hidden" name="assignment_id" value="{{ assignment.pk }}">

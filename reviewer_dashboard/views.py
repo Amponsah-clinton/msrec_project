@@ -123,8 +123,7 @@ def dashboard_home(request):
         "pending_coi_count": len(pending_coi),
         "urgent_assignment": urgent,
         "open_assignments": open_assignments,
-        "notifications": notification_services.for_user(request.user, Notification.Audience.REVIEWER, limit=6),
-        "unread_count": notification_services.unread_count(request.user, Notification.Audience.REVIEWER),
+        # notifications/unread_count come from context_processors.notif_bell now.
     })
 
 

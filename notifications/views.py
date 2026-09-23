@@ -4,6 +4,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
 
+from accounts.models import User
 from messaging.access import is_staff_side
 
 from . import services
@@ -11,15 +12,26 @@ from .models import Notification
 
 # Which audiences a given user is allowed to read/clear -- a notification
 # for role X is only ever meant for whoever currently holds role X (see
-# Notification's own docstring), so this just re-checks request.user.role
-# rather than any fixed recipient list. Staff (Admin/Secretariat) can also
-# open anything, the same "staff sees every inbox" rule messaging.access
-# already applies to the applicant support inbox.
+# Notification's own docstring). Staff (Admin/Secretariat) can also open
+# anything, the same "staff sees every inbox" rule messaging.access already
+# applies to the applicant support inbox.
+#
+# Reviewer/Committee are checked by their approval *_status, not `role` --
+# same reasoning as reviewer_dashboard.views.is_reviewer and
+# committee_dashboard.views.is_committee: `role` only ever reflects
+# whichever dashboard is primary, and a Committee-primary account is still
+# an approved Reviewer (accounts.models.User.approve_role), so a plain
+# `role == audience` check here would 403 them out of their own Reviewer
+# notifications bell.
 def _authorized(user, audience):
     if not user.is_authenticated:
         return False
     if is_staff_side(user):
         return True
+    if audience == Notification.Audience.REVIEWER:
+        return user.reviewer_status == User.RequestStatus.APPROVED
+    if audience == Notification.Audience.COMMITTEE:
+        return user.committee_status == User.RequestStatus.APPROVED
     return user.role == audience
 
 

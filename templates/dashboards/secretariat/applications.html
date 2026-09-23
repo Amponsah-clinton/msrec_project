@@ -276,7 +276,8 @@
                     <button type="submit" class="acct-btn acct-btn-edit">Save</button>
                   </form>
                   <form method="post" action="{% url 'secretariat_dashboard:reviewer_assignment' %}"
-                        onsubmit="return confirm('Withdraw {{ a.reviewer.full_name }} from this application? They&#39;ll be notified by email, and it becomes available to assign to someone else right away.');">
+                        data-confirm="Withdraw {{ a.reviewer.full_name }} from this application? They'll be notified by email, and it becomes available to assign to someone else right away."
+                        data-confirm-variant="danger" data-confirm-label="{% if a.tab == 'due_overdue' %}Reassign{% else %}Withdraw{% endif %}">
                     {% csrf_token %}
                     <input type="hidden" name="action" value="withdraw">
                     <input type="hidden" name="assignment_id" value="{{ a.pk }}">

@@ -31,49 +31,7 @@
           <svg class="icon-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
         </button>
 
-        <div class="dropdown" id="bellDropdown">
-          <button class="icon-btn bell-btn" id="bellBtn" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
-            <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-            <span class="badge">4</span>
-          </button>
-          <div class="dropdown-menu bell-menu" id="bellMenu">
-            <div class="dropdown-head">
-              <h4>Notifications</h4>
-              <button class="mark-read" type="button">Mark all as read</button>
-            </div>
-            <ul class="bell-list">
-              <li class="unread">
-                <span class="notice-icon warn"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></span>
-                <div class="notice-body">
-                  <p>Urgent review MSREC/2026/0039 is due in 2 days.</p>
-                  <span class="notice-date">20 May 2026</span>
-                </div>
-              </li>
-              <li class="unread">
-                <span class="notice-icon info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg></span>
-                <div class="notice-body">
-                  <p>Next REC meeting scheduled for 29 May 2026 at 10:00 AM.</p>
-                  <span class="notice-date">20 May 2026</span>
-                </div>
-              </li>
-              <li class="unread">
-                <span class="notice-icon success"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg></span>
-                <div class="notice-body">
-                  <p>New SOP: Expedited Review Process activated.</p>
-                  <span class="notice-date">15 May 2026</span>
-                </div>
-              </li>
-              <li class="unread">
-                <span class="notice-icon cal"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
-                <div class="notice-body">
-                  <p>Annual reviewer training on 05 June 2026.</p>
-                  <span class="notice-date">12 May 2026</span>
-                </div>
-              </li>
-            </ul>
-            <a href="{% url 'reviewer_dashboard:notifications' %}" class="dropdown-footer-link">View all notifications</a>
-          </div>
-        </div>
+        {% include "dashboards/reviewer/_notif_bell.html" %}
 
         <div class="dropdown" id="profileDropdown">
           <button class="profile-btn" id="profileBtn" aria-haspopup="true" aria-expanded="false">

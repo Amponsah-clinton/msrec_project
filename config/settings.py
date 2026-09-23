@@ -102,6 +102,7 @@ TEMPLATES = [
                 "applicant_dashboard.context_processors.notif_bell",
                 "secretariat_dashboard.context_processors.unread_messages",
                 "committee_dashboard.context_processors.reviewer_workload",
+                "reviewer_dashboard.context_processors.notif_bell",
             ],
         },
     },

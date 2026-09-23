@@ -250,12 +250,8 @@ def reset_password(request):
         del request.session[PASSWORD_RESET_SESSION_KEY]
         request.session.pop(PASSWORD_RESET_ATTEMPTS_KEY, None)
 
-        auth_login(request, user)
-        request.session["ua"] = request.META.get("HTTP_USER_AGENT", "")[:300]
-        request.session["login_ip"] = request.META.get("REMOTE_ADDR", "")
-        request.session["login_at"] = timezone.now().isoformat()
-        messages.success(request, "Your password has been reset. You're now signed in.")
-        return redirect(user.dashboard_url_name())
+        messages.success(request, "Your password has been reset. Please log in with your new password.")
+        return redirect("pages:login")
 
     return render(request, "pages/reset-password.html", {"email": email})
 

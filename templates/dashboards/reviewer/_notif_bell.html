@@ -1,0 +1,49 @@
+{% comment %}
+The Reviewer topbar bell, in one place.
+
+Only reviewer.html (the dashboard home) ever had the real, working version
+of this (backed by notifications.app's generic per-audience feed/mark-read/
+list views, live-polled by static/dashboard/js/notif-bell.js). Every other
+Reviewer page either had no bell at all, or a copy-pasted fake with a
+hardcoded "4" badge and no data-notif-feed-url -- so the badge never
+matched reality and clicking anything in it did nothing. One include,
+fed by reviewer_dashboard.context_processors.notif_bell (registered
+globally, scoped to is_reviewer so it's a no-op elsewhere), fixes both:
+every Reviewer page now shows the same live count, and there's exactly
+one copy of this markup to keep in sync with notifications:feed's JSON
+shape (see notif-bell.js's renderList()).
+{% endcomment %}
+<div class="dropdown" id="bellDropdown" data-notif-feed-url="{% url 'notifications:feed' 'reviewer' %}">
+  <button class="icon-btn bell-btn" id="bellBtn" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+    <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    <span class="badge"{% if not unread_count %} hidden{% endif %}>{{ unread_count }}</span>
+  </button>
+  <div class="dropdown-menu bell-menu" id="bellMenu">
+    <div class="dropdown-head">
+      <h4>Notifications</h4>
+      <form method="post" action="{% url 'notifications:mark_all_read' 'reviewer' %}"{% if not unread_count %} hidden{% endif %}>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.path }}">
+        <button class="mark-read" type="submit">Mark all as read</button>
+      </form>
+    </div>
+    <ul class="bell-list">
+      {% for n in notifications %}
+      <li class="{% if not n.is_read %}unread{% endif %}">
+        <span class="notice-icon {{ n.icon }}">
+          {% if n.icon == 'success' %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+          {% elif n.icon == 'warn' %}<svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+          {% else %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>{% endif %}
+        </span>
+        <div class="notice-body">
+          <p><a href="{% url 'notifications:open' 'reviewer' n.pk %}">{{ n.message }}</a></p>
+          <span class="notice-date">{{ n.created_at|date:"j M Y, g:i A" }}</span>
+        </div>
+      </li>
+      {% empty %}
+      <li class="notice-empty"><div class="notice-body"><p>No notifications yet.</p></div></li>
+      {% endfor %}
+    </ul>
+    <a href="{% url 'notifications:list' 'reviewer' %}" class="dropdown-footer-link">View all notifications</a>
+  </div>
+</div>
