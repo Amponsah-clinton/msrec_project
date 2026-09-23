@@ -1,6 +1,11 @@
 {% extends "dashboards/base.html" %}
+{% load static %}
 
 {% block title %}Submitted Documents | MSREC{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/documents-submitted.css' %}">
+{% endblock %}
 
 {% block nav_content %}
       {% include "dashboards/applicant/_nav.html" %}
@@ -37,9 +42,9 @@
         </div>
       </div>
 
-      <div id="submittedDocsList">
+      <div id="submittedDocsList" class="sd-scope">
         {% for group in groups %}
-        <div class="doc-group">
+        <div class="doc-group sd-group">
           <div class="doc-group-head">
             <div>
               <h3>{{ group.application.title }}</h3>
@@ -52,15 +57,18 @@
             {% elif group.application.status == 'not_approved' %}<span class="badge-tag red">Not Approved</span>
             {% endif %}
           </div>
-          <div class="doc-list">
+          <div class="sd-card-grid">
             {% for doc in group.documents %}
-            <div class="doc-row">
-              <div class="doc-icon ext {{ doc.name|lower|slice:"-4:"|cut:"." }}">{{ doc.name|lower|slice:"-3:"|upper }}</div>
-              <div class="doc-info">
-                <h4 class="doc-name">{{ doc.name }}</h4>
-                <span class="doc-meta">{{ doc.size|filesizeformat }} &nbsp;&bull;&nbsp; Uploaded {{ group.application.updated_at|date:"d M Y" }}</span>
+            <div class="doc-row sd-card" data-search="{{ doc.name|lower }}">
+              <div class="sd-card-top">
+                <div class="doc-icon ext {{ doc.name|lower|slice:"-4:"|cut:"." }}">{{ doc.name|lower|slice:"-3:"|upper }}</div>
+                <div class="sd-card-actions">
+                  <a class="action-btn" aria-label="Open" href="{{ doc.url }}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></a>
+                  <a class="action-btn" aria-label="Download" href="{{ doc.url }}" download><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></a>
+                </div>
               </div>
-              <div class="doc-trailing"><div class="doc-actions"><a class="action-btn" aria-label="Open" href="{{ doc.url }}" target="_blank" rel="noopener"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></a><a class="action-btn" aria-label="Download" href="{{ doc.url }}" download><svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg></a></div></div>
+              <h4 class="sd-card-name" title="{{ doc.name }}">{{ doc.name }}</h4>
+              <span class="sd-card-meta">{{ doc.size|filesizeformat }} &nbsp;&bull;&nbsp; Uploaded {{ group.application.updated_at|date:"d M Y" }}</span>
             </div>
             {% endfor %}
           </div>

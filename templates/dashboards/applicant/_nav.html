@@ -13,6 +13,18 @@ wrong item active, and a new page gets correct nav for free.
         <span>Dashboard</span>
       </a>
 
+      {% if request.user.committee_status == 'approved' %}
+      <a href="{% url 'committee_dashboard:home' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M16 3.5a4 4 0 0 1 0 7.6"/><path d="M20.5 21v-2a5 5 0 0 0-3.5-4.8"/></svg></span>
+        <span>Committee Dashboard</span>
+      </a>
+      {% elif request.user.reviewer_status == 'approved' %}
+      <a href="{% url 'reviewer_dashboard:home' %}" class="nav-item">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
+        <span>Reviewer Dashboard</span>
+      </a>
+      {% endif %}
+
       <div class="nav-group{% if 'application' in u and u != 'application_letter' %} open{% endif %}">
         <button type="button" class="nav-group-toggle" aria-expanded="{% if 'application' in u and u != 'application_letter' %}true{% else %}false{% endif %}">
           <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>

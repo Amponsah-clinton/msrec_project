@@ -859,8 +859,18 @@ def application_submitted(request):
 
 
 def application_under_review(request):
+    applications = list(_my_applications(request, status=UNDER_REVIEW_STATUSES))
+    for application in applications:
+        # Same step tracker as the application-detail page (_progress_steps)
+        # -- previously this list drew a fixed "Submitted / Screening /
+        # Review / Decision" pipeline on every card regardless of the
+        # application's actual status, including a "Screening" stage that
+        # isn't a real state this model ever has. Reusing the real tracker
+        # means a resubmitted application correctly shows its "Revisions
+        # Requested" step instead of pretending it went straight through.
+        application.pipeline = _progress_steps(application)
     return render(request, "dashboards/applicant/application-under-review.html", {
-        "applications": _my_applications(request, status=UNDER_REVIEW_STATUSES),
+        "applications": applications,
     })
 
 

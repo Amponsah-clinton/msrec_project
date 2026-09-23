@@ -96,7 +96,6 @@
               <tr>
                 <th>Reference</th>
                 <th>Study / Ref No.</th>
-                <th>Type</th>
                 <th>Amount</th>
                 <th>Status</th>
                 <th>Action</th>
@@ -107,7 +106,6 @@
               <tr>
                 <td data-label="Reference" class="ref-cell">&mdash;</td>
                 <td data-label="Study / Ref No.">{{ item.application.title }}<br><span style="color:var(--text-faint);font-size:11.5px;">Not yet submitted</span></td>
-                <td data-label="Type"><span class="badge-tag blue">{{ item.application.review_type|default:"Not specified" }}</span></td>
                 <td data-label="Amount" class="ref-cell">GHS {{ item.amount|floatformat:2 }}</td>
                 <td data-label="Status"><span class="badge-tag orange">Awaiting payment</span></td>
                 <td data-label="Action"><a href="{% url 'applicant_dashboard:application_pay' item.application.pk %}" class="btn-secondary" style="padding:7px 14px;font-size:12.5px;">Pay Now</a></td>
@@ -117,7 +115,6 @@
               <tr>
                 <td data-label="Reference" class="ref-cell">{{ payment.reference }}</td>
                 <td data-label="Study / Ref No.">{{ payment.application.title|default:payment.purpose }}<br><span style="color:var(--text-faint);font-size:11.5px;">{{ payment.application.reference_no|default:"&mdash;" }}</span></td>
-                <td data-label="Type"><span class="badge-tag blue">{{ payment.review_type|default:"&mdash;" }}</span></td>
                 <td data-label="Amount" class="ref-cell">{{ payment.currency }} {{ payment.amount|floatformat:2 }}</td>
                 <td data-label="Status">
                   {% if payment.status == 'success' %}<span class="badge-tag green">Paid &mdash; {{ payment.paid_at|date:"d M Y" }}</span>
@@ -133,7 +130,7 @@
               {% endfor %}
               {% if not outstanding and not payments %}
               <tr>
-                <td colspan="6" style="text-align:center; color:var(--text-faint); padding:24px 0;">No invoices yet &mdash; one is raised when you submit a fee-bearing application.</td>
+                <td colspan="5" style="text-align:center; color:var(--text-faint); padding:24px 0;">No invoices yet &mdash; one is raised when you submit a fee-bearing application.</td>
               </tr>
               {% endif %}
             </tbody>

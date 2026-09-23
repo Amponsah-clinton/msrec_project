@@ -16,10 +16,13 @@ comma-joined readable text, not a Python list's repr) rather than a raw
 key/value printout, and with whatever already appeared in a named section
 above excluded so nothing repeats twice on the page.
 """
+import logging
 import re
 from io import BytesIO
 
 from django.utils import timezone
+from pypdf import PdfReader, PdfWriter
+from pypdf.errors import PdfReadError
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
@@ -69,6 +72,22 @@ _STATUS_BADGE = {
 }
 
 PAGE_MARGIN = 2 * cm
+
+logger = logging.getLogger(__name__)
+
+
+def _is_mergeable_pdf(doc_item):
+    """Whether an uploaded-documents entry looks like a PDF worth
+    appending as real pages rather than just naming in the list above --
+    Word/image/other uploads have no reliable, dependency-free way to
+    become PDF pages here, so they stay a filename reference only."""
+    if not isinstance(doc_item, dict):
+        return False
+    content_type = (doc_item.get("content_type") or "").lower()
+    if content_type == "application/pdf":
+        return True
+    name = (doc_item.get("name") or "").lower()
+    return name.endswith(".pdf")
 
 # Same camelCase -> "Camel Case" treatment as secretariat_dashboard's
 # humanize_key template filter, duplicated here (not imported) so this
@@ -394,7 +413,8 @@ def render_application_pdf(application):
         story.append(Spacer(1, 3))
         for doc_item in uploaded:
             name = doc_item.get("name") if isinstance(doc_item, dict) else str(doc_item)
-            story.append(Paragraph(f"&bull; {name}", styles["body"]))
+            note = " (appended as pages below)" if _is_mergeable_pdf(doc_item) else " (not a PDF -- see the copy on file)"
+            story.append(Paragraph(f"&bull; {name}{note}", styles["body"]))
     elif not checklist:
         story.append(Paragraph("No documents were attached to this application.", styles["body_muted"]))
 
@@ -481,4 +501,36 @@ def render_application_pdf(application):
     ))
 
     doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
-    return buffer.getvalue()
+    return _with_uploaded_pdfs_appended(buffer.getvalue(), uploaded)
+
+
+def _with_uploaded_pdfs_appended(record_pdf_bytes, uploaded_documents):
+    """Merges every uploaded document that's actually a PDF onto the end
+    of the just-built Application Record, so a Secretariat/Committee/
+    Reviewer downloading "the" PDF gets one single file -- the record plus
+    the protocol, consent forms, etc. the applicant attached -- instead of
+    having to separately open each one from the Documents list. A file
+    that turns out not to be a real, readable PDF (wrong extension, or
+    corrupted) is skipped rather than failing the whole download; the
+    Documents section above still names every uploaded file either way.
+    """
+    from . import storage as application_storage
+
+    writer = PdfWriter()
+    writer.append(BytesIO(record_pdf_bytes))
+
+    for doc_item in uploaded_documents:
+        if not _is_mergeable_pdf(doc_item):
+            continue
+        path = doc_item.get("path")
+        data = application_storage.download_bytes(path) if path else None
+        if not data:
+            continue
+        try:
+            writer.append(PdfReader(BytesIO(data)))
+        except PdfReadError:
+            logger.warning("Skipping unreadable uploaded PDF %s when merging application record", path)
+
+    out = BytesIO()
+    writer.write(out)
+    return out.getvalue()

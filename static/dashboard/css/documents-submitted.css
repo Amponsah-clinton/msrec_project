@@ -1,0 +1,81 @@
+/* ==========================================================
+   Applicant — Submitted Documents
+   Each file as a small card instead of a plain list row -- grouped
+   under its application's existing .doc-group header, which stays
+   untouched (and shared with the other Documents pages); only the
+   row-per-file layout inside each group is redesigned here, scoped
+   under .sd-scope/.sd-card so nothing else that reuses .doc-group/
+   .doc-row (Decision Letters, Approval Letters, reviewer policy
+   docs, ...) is affected.
+========================================================== */
+
+.sd-group { padding-bottom: 4px; }
+
+.sd-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  padding: 16px;
+}
+
+.sd-scope .doc-row.sd-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+}
+.sd-scope .doc-row.sd-card:hover {
+  background: var(--white);
+  border-color: color-mix(in srgb, var(--border), var(--teal) 35%);
+  box-shadow: var(--shadow);
+  transform: translateY(-1px);
+}
+
+.sd-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sd-card-top .doc-icon { width: 40px; height: 40px; border-radius: 11px; }
+
+.sd-card-actions { display: flex; align-items: center; gap: 4px; opacity: 0; transition: opacity .15s ease; }
+.sd-scope .doc-row.sd-card:hover .sd-card-actions,
+.sd-scope .doc-row.sd-card:focus-within .sd-card-actions { opacity: 1; }
+.sd-card-actions .action-btn { width: 28px; height: 28px; }
+.sd-card-actions .action-btn svg { width: 14px; height: 14px; }
+
+.sd-card-name {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.sd-card-meta {
+  display: block;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* Actions are always visible on touch devices -- there's no hover to
+   reveal them on tap. */
+@media (hover: none) {
+  .sd-card-actions { opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  .sd-card-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 12px; }
+}

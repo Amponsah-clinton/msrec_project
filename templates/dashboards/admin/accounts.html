@@ -12,7 +12,7 @@
 {% endblock %}
 
 {% block topbar %}
-      {% include "dashboards/admin/_topbar.html" with page_title="Accounts" page_subtitle="Every registered MSREC user, across every role" search_id="accountsSearch" search_placeholder="Search by name, email, institution..." %}
+      {% include "dashboards/admin/_topbar.html" with page_title="Accounts" page_subtitle="Every registered MSREC user, across every role" %}
 {% endblock %}
 
 {% block main_content %}
@@ -47,19 +47,25 @@
 
       <!-- TABS + LIST -->
       <section class="panel acct-panel">
-        <div class="filter-tabs acct-tabs" data-filters-target="#acctList">
-          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count">{{ counts.all }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}" data-filter="pending">Pending Approval <span class="count">{{ counts.pending }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'applicants' %} active{% endif %}" data-filter="applicants">Applicants <span class="count">{{ counts.applicants }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'reviewers' %} active{% endif %}" data-filter="reviewers">Reviewers <span class="count">{{ counts.reviewers }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'committee' %} active{% endif %}" data-filter="committee">Committee <span class="count">{{ counts.committee }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'admins' %} active{% endif %}" data-filter="admins">Admins <span class="count">{{ counts.admins }}</span></button>
+        <div class="acct-toolbar">
+          <div class="filter-tabs acct-tabs">
+            <a href="?tab=all" class="filter-tab{% if active_tab == 'all' %} active{% endif %}">All <span class="count">{{ counts.all }}</span></a>
+            <a href="?tab=pending" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}">Pending Approval <span class="count">{{ counts.pending }}</span></a>
+            <a href="?tab=applicants" class="filter-tab{% if active_tab == 'applicants' %} active{% endif %}">Applicants <span class="count">{{ counts.applicants }}</span></a>
+            <a href="?tab=reviewers" class="filter-tab{% if active_tab == 'reviewers' %} active{% endif %}">Reviewers <span class="count">{{ counts.reviewers }}</span></a>
+            <a href="?tab=committee" class="filter-tab{% if active_tab == 'committee' %} active{% endif %}">Committee <span class="count">{{ counts.committee }}</span></a>
+            <a href="?tab=admins" class="filter-tab{% if active_tab == 'admins' %} active{% endif %}">Admins <span class="count">{{ counts.admins }}</span></a>
+          </div>
+          <form method="get" class="search-box acct-search">
+            <input type="hidden" name="tab" value="{{ active_tab }}">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+            <input type="text" name="q" value="{{ query }}" placeholder="Search by name, email, institution&hellip;">
+          </form>
         </div>
 
         <div class="acct-list" id="acctList">
-          {% for u in all_users %}
-          <div class="acct-row{% if not u.is_active %} acct-row-suspended{% endif %}" data-filter-item data-filter="{{ u.category }}"
-               data-search="{{ u.full_name|lower }} {{ u.email|lower }} {{ u.institution|lower }}"
+          {% for u in page %}
+          <div class="acct-row{% if not u.is_active %} acct-row-suspended{% endif %}"
                data-user-id="{{ u.pk }}"
                data-first-name="{{ u.first_name }}"
                data-middle-name="{{ u.middle_name }}"
@@ -70,8 +76,7 @@
                data-department="{{ u.department }}"
                data-position="{{ u.position }}"
                data-role="{{ u.role }}"
-               data-is-superuser="{{ u.is_superuser|yesno:'1,0' }}"
-               {% if active_tab != 'all' and u.category != active_tab %}hidden{% endif %}>
+               data-is-superuser="{{ u.is_superuser|yesno:'1,0' }}">
 
             <span class="acct-avatar cat-{{ u.category }}">{{ u.initials }}</span>
 
@@ -182,11 +187,44 @@
           {% empty %}
           <div class="empty-state">
             <span class="empty-icon"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></span>
-            <h3>No accounts yet</h3>
-            <p>Registered users will appear here as soon as someone signs up at MSREC.</p>
+            <h3>No accounts found</h3>
+            <p>{% if query %}Nothing matches &quot;{{ query }}&quot; in this tab.{% else %}Registered users will appear here as soon as someone signs up at MSREC.{% endif %}</p>
           </div>
           {% endfor %}
         </div>
+
+        {% if page.paginator.num_pages > 1 %}
+        <div class="acct-pagination">
+          <div class="acct-page-bar">
+            {% if page.has_previous %}
+            <a href="?tab={{ active_tab }}&amp;q={{ query }}&amp;page={{ page.previous_page_number }}" class="acct-page-nav" aria-label="Previous page">
+              <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+            </a>
+            {% else %}
+            <span class="acct-page-nav disabled" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></span>
+            {% endif %}
+
+            {% for num in page_range %}
+              {% if num == page.paginator.ELLIPSIS %}
+              <span class="acct-page-ellipsis">&hellip;</span>
+              {% elif num == page.number %}
+              <span class="acct-page-num active">{{ num }}</span>
+              {% else %}
+              <a href="?tab={{ active_tab }}&amp;q={{ query }}&amp;page={{ num }}" class="acct-page-num">{{ num }}</a>
+              {% endif %}
+            {% endfor %}
+
+            {% if page.has_next %}
+            <a href="?tab={{ active_tab }}&amp;q={{ query }}&amp;page={{ page.next_page_number }}" class="acct-page-nav" aria-label="Next page">
+              <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+            {% else %}
+            <span class="acct-page-nav disabled" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+            {% endif %}
+          </div>
+          <span class="acct-page-info">Page {{ page.number }} of {{ page.paginator.num_pages }} &middot; {{ page.paginator.count }} account{{ page.paginator.count|pluralize }}</span>
+        </div>
+        {% endif %}
       </section>
 
       <!-- EDIT ACCOUNT MODAL -->

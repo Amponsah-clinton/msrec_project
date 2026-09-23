@@ -35,8 +35,8 @@ and dashboard/js/reviewer-assignment.js.
     <div class="reviewer-modal-list" id="reviewerModalList">
       {% for reviewer in reviewers %}
       <button type="button" class="reviewer-pick-card" data-availability="{{ reviewer.reviewer_availability }}"
-              data-reviewer-id="{{ reviewer.pk }}" data-reviewer-name="{{ reviewer.full_name }}"
-              data-search="{{ reviewer.full_name|lower }} {{ reviewer.reviewer_profile.reviewerInstitution|default:reviewer.institution|lower }} {{ reviewer.reviewer_profile.reviewerDiscipline|default:''|lower }} {{ reviewer.reviewer_expertise_tags|join:' '|lower }} {{ reviewer.reviewer_research_area_tags|join:' '|lower }}">
+              data-reviewer-id="{{ reviewer.pk }}" data-reviewer-name="{{ reviewer.full_name }}" data-reviewer-email="{{ reviewer.email }}"
+              data-search="{{ reviewer.full_name|lower }} {{ reviewer.email|lower }} {{ reviewer.reviewer_profile.reviewerInstitution|default:reviewer.institution|lower }} {{ reviewer.reviewer_profile.reviewerDiscipline|default:''|lower }} {{ reviewer.reviewer_expertise_tags|join:' '|lower }} {{ reviewer.reviewer_research_area_tags|join:' '|lower }}">
         <span class="acct-avatar cat-reviewers">{{ reviewer.initials }}</span>
         <div class="reviewer-pick-info">
           <div class="reviewer-pick-top">
@@ -44,6 +44,7 @@ and dashboard/js/reviewer-assignment.js.
             <span class="availability-badge availability-{{ reviewer.reviewer_availability }}"><i></i>{{ reviewer.get_reviewer_availability_display }}</span>
           </div>
           <p>{{ reviewer.reviewer_profile.reviewerPosition|default:reviewer.position|default:"Reviewer" }}{% if reviewer.reviewer_profile.reviewerInstitution %} &middot; {{ reviewer.reviewer_profile.reviewerInstitution }}{% elif reviewer.institution %} &middot; {{ reviewer.institution }}{% endif %}</p>
+          <p class="reviewer-pick-email mono">{{ reviewer.email }}</p>
           {% if reviewer.reviewer_expertise_tags %}
           <div class="reviewer-pick-tags">
             {% for tag in reviewer.reviewer_expertise_tags|slice:":5" %}<span class="tag-pill">{{ tag }}</span>{% endfor %}

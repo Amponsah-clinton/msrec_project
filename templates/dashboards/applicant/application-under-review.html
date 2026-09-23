@@ -41,25 +41,15 @@
         </div>
         <div class="pipeline-row">
           <div class="pipeline">
-            <div class="pipeline-step done">
-              <div class="pipeline-dot"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/></svg></div>
-              <span class="pipeline-label">Submitted</span>
-              <div class="pipeline-line"></div>
+            {% for step in application.pipeline %}
+            <div class="pipeline-step{% if step.done %} done{% endif %}{% if step.current %} current{% endif %}">
+              <div class="pipeline-dot">
+                {% if step.done %}<svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/></svg>{% else %}{{ forloop.counter }}{% endif %}
+              </div>
+              <span class="pipeline-label">{{ step.label }}</span>
+              {% if not forloop.last %}<div class="pipeline-line"></div>{% endif %}
             </div>
-            <div class="pipeline-step done">
-              <div class="pipeline-dot"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/></svg></div>
-              <span class="pipeline-label">Screening</span>
-              <div class="pipeline-line"></div>
-            </div>
-            <div class="pipeline-step current">
-              <div class="pipeline-dot">3</div>
-              <span class="pipeline-label">Review</span>
-              <div class="pipeline-line"></div>
-            </div>
-            <div class="pipeline-step">
-              <div class="pipeline-dot">4</div>
-              <span class="pipeline-label">Decision</span>
-            </div>
+            {% endfor %}
           </div>
           <div class="revision-actions">
             <a href="{% url 'applicant_dashboard:application_detail' application.pk %}" class="btn-secondary"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg> View Submission</a>

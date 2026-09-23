@@ -275,16 +275,28 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.role == self.Role.APPLICANT and not self.wants_applicant
 
     def dashboard_url_name(self):
-        """Which dashboard namespace this account should land on after login."""
+        """Which dashboard namespace this account should land on after login.
+
+        Committee/Reviewer are checked by *_status alone, not `role` --
+        same reasoning as reviewer_dashboard.views.is_reviewer and
+        committee_dashboard.views.is_committee: `role` only ever reflects
+        whichever dashboard was primary the last time something promoted
+        it (approve_role, or an admin editing the account directly), and
+        can end up out of step with an approval status that's still
+        APPROVED. An applicant-primary account whose Committee request
+        was approved must still land on the Committee dashboard, not be
+        sent back to Applicant because `role` never got promoted (or was
+        later changed back).
+        """
         if self.is_superuser or self.role == self.Role.ADMIN:
             return "admin_dashboard:home"
         if self.role == self.Role.SECRETARIAT:
             return "secretariat_dashboard:home"
         if self.role == self.Role.CHAIR:
             return "chair_dashboard:home"
-        if self.role == self.Role.COMMITTEE and self.committee_status == self.RequestStatus.APPROVED:
+        if self.committee_status == self.RequestStatus.APPROVED:
             return "committee_dashboard:home"
-        if self.role == self.Role.REVIEWER and self.reviewer_status == self.RequestStatus.APPROVED:
+        if self.reviewer_status == self.RequestStatus.APPROVED:
             return "reviewer_dashboard:home"
         if self.awaiting_role_only:
             return "pages:role_status"

@@ -235,6 +235,10 @@ def _policy_documents_page(request, *, category, page_title, page_subtitle):
         "documents": documents,
         "page_title": page_title,
         "page_subtitle": page_subtitle,
+        # Both the sidebar include (_nav.html, active=...) and this page's
+        # own in-content category tabs (active_key ==) key off which
+        # policy category this is -- same value, two different templates.
+        "active": category,
         "active_key": category,
     })
 

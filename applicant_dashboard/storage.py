@@ -129,6 +129,35 @@ def delete_object(object_path):
         return False
 
 
+def download_bytes(object_path):
+    """Fetch one object's raw bytes straight from Supabase Storage
+    (server-side, with the service key -- same call pages/file_proxy.py's
+    serve() makes to stream a file back through this app's own domain).
+    Used by applicant_dashboard.application_pdf to merge an applicant's
+    uploaded documents into the generated Application Record PDF instead
+    of only listing their filenames. Returns None if Storage isn't
+    configured, the object doesn't exist, or the fetch otherwise fails --
+    callers treat a missing file as "skip it", never as fatal.
+    """
+    if not object_path or not _configured():
+        return None
+
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{object_path}"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+            "apikey": settings.SUPABASE_SERVICE_KEY,
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return resp.read()
+    except urllib.error.URLError:
+        logger.warning("Supabase Storage download failed for %s", object_path)
+        return None
+
+
 def public_url(object_path):
     """A link to an object in the "application" bucket (public, unlike
     "signup"), proxied through this app's own domain (see

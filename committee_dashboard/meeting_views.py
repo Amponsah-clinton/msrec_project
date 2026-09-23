@@ -36,11 +36,9 @@ MAX_NOTE_LENGTH = 5000
 
 
 def _is_committee(user):
-    return (
-        user.is_authenticated
-        and user.role == User.Role.COMMITTEE
-        and user.committee_status == User.RequestStatus.APPROVED
-    )
+    # Status-only check, same as committee_dashboard.views.is_committee --
+    # see that function's comment for why `role` isn't part of this.
+    return user.is_authenticated and user.committee_status == User.RequestStatus.APPROVED
 
 
 committee_required = user_passes_test(_is_committee, login_url="pages:login")

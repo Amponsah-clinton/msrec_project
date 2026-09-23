@@ -368,6 +368,11 @@ svg {
 }
 .nav-sublink.active .nav-badge { background: var(--blue); color: #fff; }
 
+/* .nav-item (top-level links) has no justify-content:space-between the
+   way .nav-sublink does, since most never carry a badge -- push the one
+   that does to the far right instead of leaving it glued to the label. */
+.nav-item .nav-badge { margin-left: auto; }
+
 /* Revisions Required is the one badge that means "you need to act" --
    it stays amber even when the link isn't the active page, so it can't
    get lost among the neutral teal counts. */

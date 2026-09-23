@@ -98,9 +98,12 @@ document.addEventListener("DOMContentLoaded", () => {
         const textEl = activeTriggerBtn.querySelector(".choose-reviewer-text");
         const avatarEl = activeTriggerBtn.querySelector(".choose-reviewer-avatar");
         const name = card.dataset.reviewerName;
+        const email = card.dataset.reviewerEmail;
+        const display = email ? `${name} — ${email}` : name;
 
         hiddenInput.value = card.dataset.reviewerId;
-        textEl.textContent = name;
+        textEl.textContent = display;
+        textEl.title = display;
         activeTriggerBtn.classList.add("has-value");
         if (avatarEl) {
           avatarEl.hidden = false;

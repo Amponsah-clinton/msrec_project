@@ -9,6 +9,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from django.core.paginator import Paginator
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.http import HttpResponse, JsonResponse
@@ -329,12 +330,33 @@ def accounts(request, template_name="dashboards/admin/accounts.html"):
     for u in all_users:
         u.category = _categorize(u)
         counts[u.category] += 1
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in TABS:
+        active_tab = "all"
+
+    query = request.GET.get("q", "").strip().lower()
+
+    scoped_users = all_users
+    if active_tab != "all":
+        scoped_users = [u for u in scoped_users if u.category == active_tab]
+    if query:
+        scoped_users = [
+            u for u in scoped_users
+            if query in u.full_name.lower() or query in u.email.lower() or query in (u.institution or "").lower()
+        ]
+
+    paginator = Paginator(scoped_users, 20)
+    page = paginator.get_page(request.GET.get("page"))
+    page_range = paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1)
+
+    for u in page:
         # Signed links to whatever the applicant uploaded at signup, so an
         # admin can actually look at the CV before approving a role request
         # instead of taking it on faith. Only bothered for rows an admin
         # would plausibly need them on (pending, or already-approved
-        # reviewer/committee) -- not worth a Storage round trip per row on
-        # every tab.
+        # reviewer/committee), and now only for the ~20 users on this page
+        # rather than a Storage round trip per row across the whole table.
         if u.category in ("pending", "reviewers", "committee"):
             u.reviewer_cv_url = storage.create_signed_url(u.reviewer_profile.get("cv_path"))
             u.committee_cv_url = storage.create_signed_url(u.committee_profile.get("cv_path"))
@@ -342,14 +364,12 @@ def accounts(request, template_name="dashboards/admin/accounts.html"):
             u.reviewer_cv_url = None
             u.committee_cv_url = None
 
-    active_tab = request.GET.get("tab", "all")
-    if active_tab not in TABS:
-        active_tab = "all"
-
     return render(request, template_name, {
-        "all_users": all_users,
+        "page": page,
+        "page_range": page_range,
         "counts": counts,
         "active_tab": active_tab,
+        "query": request.GET.get("q", ""),
     })
 
 

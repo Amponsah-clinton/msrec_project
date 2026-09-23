@@ -7,11 +7,17 @@ from notifications.models import Notification
 
 
 def is_committee(user):
-    return (
-        user.is_authenticated
-        and user.role == User.Role.COMMITTEE
-        and user.committee_status == User.RequestStatus.APPROVED
-    )
+    # committee_status is the real permission here, not the primary `role`
+    # (which only picks the default post-login dashboard, via
+    # User.dashboard_url_name) -- same reasoning as reviewer_dashboard.
+    # views.is_reviewer. An applicant-primary account whose Committee
+    # request was approved (committee_status=APPROVED) must still pass
+    # this even if `role` was never promoted to "committee" or was later
+    # edited back (e.g. from the Accounts page's Edit modal, which lets
+    # an admin change `role` independently of the approval statuses) --
+    # otherwise an approved member can be locked out of the dashboard
+    # their own approval was supposed to unlock.
+    return user.is_authenticated and user.committee_status == User.RequestStatus.APPROVED
 
 
 committee_required = user_passes_test(is_committee, login_url="pages:login")
