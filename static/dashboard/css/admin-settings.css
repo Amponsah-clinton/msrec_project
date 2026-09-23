@@ -162,6 +162,7 @@
 .ad-ico.orange { background: var(--orange-light); color: var(--orange); }
 .ad-ico.red    { background: var(--red-light);    color: var(--red); }
 .ad-ico.navy   { background: var(--navy);         color: #fff; }
+.ad-ico.navy-light { background: var(--navy-light); color: var(--navy); }
 .ad-ico.gray   { background: var(--gray-light);   color: var(--gray); }
 
 @media (max-width: 480px) {
@@ -182,12 +183,12 @@
   background: var(--white);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 22px 18px;
+  padding: 24px 18px;
   text-align: center;
 }
-.ad-kpi-top { display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
-.ad-kpi-top .ad-ico { width: 52px; height: 52px; border-radius: 15px; }
-.ad-kpi-top .ad-ico svg { width: 24px; height: 24px; }
+.ad-kpi-top { display: flex; align-items: center; justify-content: center; margin-bottom: 16px; }
+.ad-kpi-top .ad-ico { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.ad-kpi-top .ad-ico svg { width: 28px; height: 28px; }
 .ad-kpi-value { font-size: 25px; font-weight: 800; margin: 0; color: var(--text-main); }
 .ad-kpi-label { margin: 3px 0 0; font-size: 12.5px; color: var(--text-sub); font-weight: 500; }
 

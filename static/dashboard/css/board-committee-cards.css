@@ -1,0 +1,127 @@
+/* ==========================================================
+   MSREC Admin — Board & Committee profile cards
+   Each member as a centred profile card (photo, name, role) instead
+   of a people-list row -- this is who represents the organisation
+   publicly, so it earns a nicer presentation than a plain table.
+========================================================== */
+
+.bc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 18px;
+}
+
+.bc-grid .bc-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  grid-template-columns: none;
+  gap: 0;
+  text-align: center;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 18px 18px;
+}
+.bc-grid .bc-card:hover {
+  background: var(--white);
+  border-color: color-mix(in srgb, var(--border), var(--teal) 35%);
+  box-shadow: var(--shadow-lg);
+}
+.bc-grid .bc-card.acct-row-suspended { opacity: 0.6; }
+
+.bc-card-status {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bc-card-photo {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  margin: 14px 0 14px;
+  flex-shrink: 0;
+  box-shadow:
+    0 0 0 4px var(--teal-light),
+    0 4px 14px rgba(16, 24, 40, 0.10);
+}
+.bc-card-photo img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+
+.bc-card-photo-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--teal);
+  letter-spacing: 0.02em;
+}
+.bc-card-photo-fallback.group-board       { background: var(--navy); box-shadow: 0 0 0 4px var(--navy-light), 0 4px 14px rgba(16, 24, 40, 0.10); }
+.bc-card-photo-fallback.group-committee   { background: var(--purple); box-shadow: 0 0 0 4px var(--purple-light), 0 4px 14px rgba(16, 24, 40, 0.10); }
+.bc-card-photo-fallback.group-secretariat { background: var(--teal); box-shadow: 0 0 0 4px var(--teal-light), 0 4px 14px rgba(16, 24, 40, 0.10); }
+
+.bc-card-name {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.3;
+}
+
+.bc-card-role {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--text-sub);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.bc-card-tag {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--gray-light);
+  color: var(--text-sub);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.bc-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 14px;
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+.bc-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.bc-card-foot .acct-btn-edit { flex: 1; justify-content: center; }
+.bc-card-foot .acct-inline-form { display: flex; }
+.bc-card-foot .acct-btn-delete {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .bc-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+}

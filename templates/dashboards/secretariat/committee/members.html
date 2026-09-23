@@ -90,12 +90,13 @@
             {% endif %}
 
             <div class="acct-info">
-              <h4>
-                {{ member.display_name }}
+              <h4>{{ member.display_name }}</h4>
+              <p class="cmt-position">{{ member.role_title }}</p>
+              <div class="cmt-badges">
                 <span class="badge-tag {% if member.group == 'board' %}navy{% elif member.group == 'committee' %}purple{% else %}teal{% endif %}">{{ member.get_group_display }}</span>
                 {% if not member.is_active %}<span class="badge-tag red">Hidden</span>{% endif %}
-              </h4>
-              <p>{{ member.role_title }}{% if member.tag %} &middot; {{ member.tag }}{% endif %}</p>
+              </div>
+              {% if member.tag %}<p class="cmt-tag">{{ member.tag }}</p>{% endif %}
             </div>
 
             <div class="acct-meta">

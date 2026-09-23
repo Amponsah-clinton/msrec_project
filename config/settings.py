@@ -100,6 +100,7 @@ TEMPLATES = [
                 "accounts.context_processors.profile_avatar",
                 "pages.context_processors.site_settings",
                 "applicant_dashboard.context_processors.notif_bell",
+                "secretariat_dashboard.context_processors.unread_messages",
             ],
         },
     },

@@ -192,41 +192,43 @@
 
           {% admin_attention_panel %}
 
-          <section class="panel actions-panel">
-            <h2>Quick Actions</h2>
-            <div class="actions-list">
-              <a href="{% url 'admin_dashboard:accounts' %}" class="qa-btn qa-teal">
-                <span class="qa-left">
-                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                  Add New User
-                </span>
-                <svg class="qa-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-              </a>
-              <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="qa-btn qa-blue">
-                <span class="qa-left">
-                  <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M19 8v6M22 11h-6"/></svg>
-                  Approve Role Requests
-                </span>
-                <svg class="qa-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-              </a>
-              <a href="{% url 'admin_dashboard:settings' %}" class="qa-btn qa-purple">
-                <span class="qa-left">
-                  <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg>
-                  Site Settings
-                </span>
-                <svg class="qa-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-              </a>
-              <a href="{% url 'admin_dashboard:inquiries' %}?tab=new" class="qa-btn qa-navy">
-                <span class="qa-left">
-                  <svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
-                  Answer Inquiries
-                </span>
-                <svg class="qa-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
-              </a>
-            </div>
-          </section>
-
         </div>
+
+        <!-- QUICK ACTIONS (below Recent Platform Activity) -->
+        <section class="panel actions-panel">
+          <h2>Quick Actions</h2>
+          <div class="actions-list">
+            <a href="{% url 'admin_dashboard:accounts' %}" class="qa-btn qa-teal">
+              <span class="qa-left">
+                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                Add New User
+              </span>
+              <svg class="qa-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+            <a href="{% url 'admin_dashboard:accounts' %}?tab=pending" class="qa-btn qa-blue">
+              <span class="qa-left">
+                <svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M19 8v6M22 11h-6"/></svg>
+                Approve Role Requests
+              </span>
+              <svg class="qa-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+            <a href="{% url 'admin_dashboard:settings' %}" class="qa-btn qa-purple">
+              <span class="qa-left">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.6 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+                Site Settings
+              </span>
+              <svg class="qa-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+            <a href="{% url 'admin_dashboard:inquiries' %}?tab=new" class="qa-btn qa-navy">
+              <span class="qa-left">
+                <svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+                Answer Inquiries
+              </span>
+              <svg class="qa-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+          </div>
+        </section>
+
       </div>
 
 {% endblock %}

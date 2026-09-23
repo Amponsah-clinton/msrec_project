@@ -182,9 +182,13 @@
 
 .cmt-member-card .acct-avatar { width: 76px; height: 76px; font-size: 22px; }
 
-.cmt-member-card .acct-info { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; width: 100%; }
+.cmt-member-card .acct-info { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 0; width: 100%; }
 .cmt-member-card .acct-info h4 { justify-content: center; text-align: center; margin: 0; }
 .cmt-member-card .acct-info p { white-space: normal; text-align: center; }
+
+.cmt-position { font-size: 12.5px; font-weight: 600; color: var(--text-sub); margin: 0; }
+.cmt-badges { display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.cmt-tag { font-size: 11.5px; color: var(--text-faint); margin: 0; }
 
 .cmt-member-card .acct-meta { flex-direction: row; justify-content: center; gap: 12px; flex-wrap: wrap; }
 

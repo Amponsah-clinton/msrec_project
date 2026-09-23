@@ -2024,13 +2024,16 @@ def audit_logs(request, template_name="dashboards/secretariat/audit-logs.html"):
     if prefix:
         scoped_qs = base_qs.filter(action__startswith=prefix)
 
-    paginator = Paginator(scoped_qs, 40)
+    paginator = Paginator(scoped_qs, 15)
     page = paginator.get_page(request.GET.get("page"))
     for log in page:
         log.category = _audit_log_category(log.action)
 
+    page_range = paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1)
+
     return render(request, template_name, {
         "page": page,
+        "page_range": page_range,
         "counts": counts,
         "active_tab": active_tab,
         "query": query,

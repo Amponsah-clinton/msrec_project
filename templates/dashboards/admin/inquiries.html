@@ -19,18 +19,21 @@
 {% block main_content %}
 
       <!-- SUMMARY STRIP -->
-      <section class="acct-summary inq-summary">
-        <div class="acct-summary-cell">
-          <span class="acct-summary-value">{{ counts.all }}</span>
-          <span class="acct-summary-label">Total Messages</span>
+      <section class="stats-grid compact inq-stats">
+        <div class="stat-card">
+          <div class="stat-icon blue"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg></div>
+          <p class="stat-label">Total Messages</p>
+          <p class="stat-value">{{ counts.all }}</p>
         </div>
-        <div class="acct-summary-cell warn">
-          <span class="acct-summary-value">{{ counts.new }}</span>
-          <span class="acct-summary-label">New / Unresolved</span>
+        <div class="stat-card">
+          <div class="stat-icon orange"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></div>
+          <p class="stat-label">New / Unresolved</p>
+          <p class="stat-value">{{ counts.new }}</p>
         </div>
-        <div class="acct-summary-cell">
-          <span class="acct-summary-value">{{ counts.resolved }}</span>
-          <span class="acct-summary-label">Resolved</span>
+        <div class="stat-card">
+          <div class="stat-icon teal"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></div>
+          <p class="stat-label">Resolved</p>
+          <p class="stat-value">{{ counts.resolved }}</p>
         </div>
       </section>
 
@@ -63,7 +66,7 @@
                 <span class="message-snippet">{{ inquiry.message|truncatechars:64 }}</span>
                 <span class="message-row-meta">
                   <span class="badge-tag inq-reason-{{ inquiry.reason }}">{{ inquiry.get_reason_display }}</span>
-                  {% if inquiry.status == 'resolved' %}<span class="badge-tag green">Resolved</span>{% endif %}
+                  {% if inquiry.status == 'resolved' %}<span class="badge-tag teal">Resolved</span>{% endif %}
                 </span>
               </span>
               {% if inquiry.status == 'new' %}<span class="message-dot"></span>{% endif %}
@@ -131,15 +134,28 @@
             </div>
           </div>
 
-          <div class="thread-scroll">
-            <div class="msg-bubble in">
-              <p>{{ inquiry.message|linebreaksbr }}</p>
-              <span class="msg-time">{{ inquiry.name }} &middot; {{ inquiry.created_at|date:"d M Y, g:i A" }}</span>
+          <div class="thread-scroll inq-timeline">
+            <div class="inq-msg">
+              <span class="inq-msg-avatar initials cat-{{ inquiry.reason }}">{{ inquiry.name|slice:":2"|upper }}</span>
+              <div class="inq-msg-card">
+                <div class="inq-msg-card-head">
+                  <strong>{{ inquiry.name }}</strong>
+                  <span class="inq-msg-time">{{ inquiry.created_at|date:"d M Y, g:i A" }}</span>
+                </div>
+                <p>{{ inquiry.message|linebreaksbr }}</p>
+              </div>
             </div>
             {% if inquiry.reply_message %}
-            <div class="msg-bubble out">
-              <p>{{ inquiry.reply_message|linebreaksbr }}</p>
-              <span class="msg-time">{{ inquiry.replied_by.full_name|default:"MSREC Secretariat" }} &middot; {{ inquiry.replied_at|date:"d M Y, g:i A" }}</span>
+            <div class="inq-msg inq-msg-reply">
+              <span class="inq-msg-avatar inq-msg-avatar-staff"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>
+              <div class="inq-msg-card inq-msg-card-reply">
+                <div class="inq-msg-card-head">
+                  <strong>{{ inquiry.replied_by.full_name|default:"MSREC Secretariat" }}</strong>
+                  <span class="badge-tag teal">Reply sent</span>
+                  <span class="inq-msg-time">{{ inquiry.replied_at|date:"d M Y, g:i A" }}</span>
+                </div>
+                <p>{{ inquiry.reply_message|linebreaksbr }}</p>
+              </div>
             </div>
             {% endif %}
           </div>

@@ -6,6 +6,7 @@
 {% block extra_css %}
 <link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
 <link href="{% static 'dashboard/css/board-committee-admin.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/board-committee-cards.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block nav_content %}
@@ -31,9 +32,9 @@
           </button>
         </div>
 
-        <div class="acct-list" id="bcAdminList">
+        <div class="bc-grid" id="bcAdminList">
           {% for member in members %}
-          <div class="acct-row{% if not member.is_active %} acct-row-suspended{% endif %}" data-filter-item data-filter="{{ member.group }}"
+          <div class="acct-row bc-card{% if not member.is_active %} acct-row-suspended{% endif %}" data-filter-item data-filter="{{ member.group }}"
                data-search="{{ member.full_name|lower }} {{ member.role_title|lower }} {{ member.tag|lower }}"
                data-member-id="{{ member.pk }}"
                data-full-name="{{ member.full_name }}"
@@ -45,41 +46,40 @@
                data-is-active="{{ member.is_active|yesno:'1,0' }}"
                data-photo-url="{{ member.photo_url|default:'' }}">
 
-            {% if member.photo_url %}
-            <span class="acct-avatar"><img src="{{ member.photo_url }}" alt="{{ member.full_name }}"></span>
-            {% else %}
-            <span class="acct-avatar cat-committee">{{ member.initials }}</span>
-            {% endif %}
-
-            <div class="acct-info">
-              <h4>
-                {{ member.display_name }}
-                <span class="badge-tag {% if member.group == 'board' %}navy{% elif member.group == 'committee' %}purple{% else %}teal{% endif %}">{{ member.get_group_display }}</span>
-                {% if not member.is_active %}<span class="badge-tag red">Hidden</span>{% endif %}
-              </h4>
-              <p>{{ member.role_title }}{% if member.tag %} &middot; {{ member.tag }}{% endif %}</p>
+            <div class="bc-card-status">
+              <span class="badge-tag {% if member.group == 'board' %}navy{% elif member.group == 'committee' %}purple{% else %}teal{% endif %}">{{ member.get_group_display }}</span>
+              {% if not member.is_active %}<span class="badge-tag red">Hidden</span>{% endif %}
             </div>
 
-            <div class="acct-meta">
+            {% if member.photo_url %}
+            <span class="bc-card-photo"><img src="{{ member.photo_url }}" alt="{{ member.full_name }}"></span>
+            {% else %}
+            <span class="bc-card-photo bc-card-photo-fallback group-{{ member.group }}">{{ member.initials }}</span>
+            {% endif %}
+
+            <h4 class="bc-card-name">{{ member.display_name }}</h4>
+            <p class="bc-card-role">{{ member.role_title }}</p>
+            {% if member.tag %}<span class="bc-card-tag">{{ member.tag }}</span>{% endif %}
+
+            <div class="bc-card-meta">
               <span>Order {{ member.display_order }}</span>
+              <span>&middot;</span>
               <span>Added {{ member.created_at|date:"d M Y" }}</span>
             </div>
 
-            <div class="acct-actions">
-              <div class="acct-manage">
-                <button type="button" class="acct-btn acct-btn-edit" data-bc-edit>
-                  <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Edit
+            <div class="bc-card-foot">
+              <button type="button" class="acct-btn acct-btn-edit" data-bc-edit>
+                <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Edit
+              </button>
+              <form method="post" class="acct-inline-form" data-confirm="Remove {{ member.full_name }} from the Board &amp; Committee page? This cannot be undone." data-confirm-variant="danger" data-confirm-label="Remove">
+                {% csrf_token %}
+                <input type="hidden" name="member_id" value="{{ member.pk }}">
+                <input type="hidden" name="tab" value="{{ active_tab }}">
+                <input type="hidden" name="action" value="delete">
+                <button type="submit" class="acct-btn acct-btn-delete">
+                  <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                 </button>
-                <form method="post" class="acct-inline-form" data-confirm="Remove {{ member.full_name }} from the Board &amp; Committee page? This cannot be undone." data-confirm-variant="danger" data-confirm-label="Remove">
-                  {% csrf_token %}
-                  <input type="hidden" name="member_id" value="{{ member.pk }}">
-                  <input type="hidden" name="tab" value="{{ active_tab }}">
-                  <input type="hidden" name="action" value="delete">
-                  <button type="submit" class="acct-btn acct-btn-delete">
-                    <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Remove
-                  </button>
-                </form>
-              </div>
+              </form>
             </div>
           </div>
           {% empty %}

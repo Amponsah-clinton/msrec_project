@@ -29,6 +29,7 @@
   --red: #e0483f;
   --red-light: #fdeceb;
   --navy: #1b2a4a;
+  --navy-light: #e8ebf2;
   --gray: #6b7280;
   --gray-light: #eef1f5;
 
@@ -65,6 +66,7 @@
   --red: #f1685f;
   --red-light: rgba(241, 104, 95, 0.15);
   --navy: #24365c;
+  --navy-light: rgba(148, 163, 199, 0.18);
   --gray: #9aa1b0;
   --gray-light: rgba(154, 161, 176, 0.16);
 
@@ -99,6 +101,7 @@
     --red: #f1685f;
     --red-light: rgba(241, 104, 95, 0.15);
     --navy: #24365c;
+    --navy-light: rgba(148, 163, 199, 0.18);
     --gray: #9aa1b0;
     --gray-light: rgba(154, 161, 176, 0.16);
 

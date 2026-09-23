@@ -1,0 +1,99 @@
+/* ==========================================================
+   MSREC Admin — Resources
+   Each resource as a simple, self-contained card instead of a
+   people-list row: icon + category up top, title/description in
+   the middle, tags and actions pinned to the bottom so every card
+   in a row lines up regardless of description length.
+========================================================== */
+
+.res-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.res-grid .res-card {
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: none;
+  gap: 0;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  align-items: stretch;
+}
+.res-grid .res-card:hover { background: var(--white); box-shadow: var(--shadow); }
+.res-grid .res-card.acct-row-suspended { opacity: 0.65; }
+
+.res-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.res-card-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--teal-light);
+  color: var(--teal);
+}
+.res-card-icon svg { width: 18px; height: 18px; }
+
+.res-card-title {
+  margin: 0 0 6px;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  line-height: 1.35;
+}
+
+.res-card-desc {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-sub);
+  line-height: 1.55;
+  flex: 1;
+}
+
+.res-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 14px 0 14px;
+}
+
+.res-card-order {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  margin-left: auto;
+}
+
+.res-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.res-card-foot .acct-inline-form:last-child { margin-left: auto; }
+.res-card-foot .acct-btn-delete svg { margin: 0; }
+.res-card-foot .acct-btn-delete {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  justify-content: center;
+}
+
+@media (max-width: 480px) {
+  .res-grid { grid-template-columns: 1fr; }
+}
