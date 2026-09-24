@@ -2,7 +2,7 @@
    MSREC Committee member — Meetings & Agenda
    (Dashboard meeting widgets, Upcoming / Calendar / Previous Meetings,
    Meeting Agenda.) Layered on style.css's tokens and components
-   (.panel, .stat-card, .btn-primary, .badge-tag ...); nothing here
+   (.panel, .stat-card, .btn-primary, .badge ...); nothing here
    redefines a token, so light/dark theming comes for free.
    Every class is prefixed mm- to stay clear of the admin/secretariat
    meetings.css.
@@ -41,43 +41,12 @@
 .mm-datebox.sm .dow { display: none; }
 .mm-datebox.sm .day { padding-bottom: 6px; }
 
-.mm-pill {
-  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px;
-  border-radius: 100px; font-size: 11.5px; font-weight: 600; white-space: nowrap;
-  background: var(--gray-light); color: var(--gray);
-}
-.mm-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.mm-pill.accepted  { background: var(--green-light);  color: var(--green); }
-.mm-pill.pending   { background: var(--orange-light); color: var(--orange); }
-.mm-pill.declined  { background: var(--red-light);    color: var(--red); }
-.mm-pill.tentative { background: var(--purple-light); color: var(--purple); }
-.mm-pill.scheduled { background: var(--blue-light);   color: var(--blue); }
-.mm-pill.completed { background: var(--green-light);  color: var(--green); }
-.mm-pill.cancelled { background: var(--red-light);    color: var(--red); }
-.mm-pill.live { background: var(--red-light); color: var(--red); }
-.mm-pill.live::before { animation: mm-pulse 1.4s ease-in-out infinite; }
-.mm-pill.overdue  { background: var(--red-light);    color: var(--red); }
-.mm-pill.due-soon { background: var(--orange-light); color: var(--orange); }
-.mm-pill.on-track { background: var(--teal-light);   color: var(--teal); }
 @keyframes mm-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .35; transform: scale(1.5); } }
 
-.mm-chip {
-  display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 6px;
-  font-size: 11.5px; font-weight: 600; background: var(--hover-bg); color: var(--text-sub);
-  border: 1px solid var(--border);
-}
-.mm-chip svg { width: 12px; height: 12px; }
-.mm-chip.teal   { background: var(--teal-light);   color: var(--teal);   border-color: color-mix(in srgb, var(--teal) 22%, transparent); }
-.mm-chip.blue   { background: var(--blue-light);   color: var(--blue);   border-color: color-mix(in srgb, var(--blue) 22%, transparent); }
-.mm-chip.purple { background: var(--purple-light); color: var(--purple); border-color: color-mix(in srgb, var(--purple) 22%, transparent); }
-.mm-chip.orange { background: var(--orange-light); color: var(--orange); border-color: color-mix(in srgb, var(--orange) 22%, transparent); }
 
 .mm-count {
-  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
-  color: var(--orange); background: var(--orange-light); border-radius: 100px; padding: 3px 10px;
+  display: inline-flex; align-items: center; gap: 6px;
 }
-.mm-count.due { color: var(--red); background: var(--red-light); }
-.mm-count.ok { color: var(--teal); background: var(--teal-light); }
 
 .mm-meta { display: flex; flex-wrap: wrap; gap: 6px 18px; color: var(--text-sub); font-size: 13px; }
 .mm-meta > span { display: inline-flex; align-items: center; gap: 6px; }
@@ -369,6 +338,6 @@
   .mm-notes textarea { border: 1px solid #999; background: #fff; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .mm-pill.live::before { animation: none; }
-}
+/* Colour, size and shape are Bootstrap badges (badge text-bg-*); only the icon layout is kept. */
+.mm-chip { display: inline-flex; align-items: center; gap: 5px; }
+.mm-chip svg { width: 12px; height: 12px; }

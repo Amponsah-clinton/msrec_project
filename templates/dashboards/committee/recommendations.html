@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 
 {% block title %}Reviewer Recommendations | MSREC Committee{% endblock %}
@@ -40,7 +41,7 @@
   {% for p in protocols %}
     {% if p.is_recused %}
     <div class="pr-rec" style="padding:18px 22px;display:flex;gap:12px;align-items:center" data-search="{{ p.ref|lower }}">
-      <span class="pr-badge red">Recused</span><span class="pr-ref">{{ p.ref }}</span>
+      <span class="badge pr-badge text-bg-danger">Recused</span><span class="pr-ref">{{ p.ref }}</span>
       <span class="pr-muted">Reviewer recommendations are hidden because you recused yourself from this protocol.</span>
     </div>
     {% else %}
@@ -49,7 +50,7 @@
         <div>
           <div class="pr-rec-title">
             <span class="pr-ref">{{ p.ref }}</span>
-            <span class="pr-badge {{ p.consensus_badge }}">{{ p.consensus }}</span>
+            <span class="badge pr-badge {{ p.consensus_badge|bs_badge }}">{{ p.consensus }}</span>
           </div>
           <h3>{{ p.title }}</h3>
           <div class="pr-muted" style="margin-top:4px">{{ p.meeting.title }} &middot; {{ p.meeting.scheduled_at|date:"j M Y" }} &middot; {{ p.reviews_in }} of {{ p.reviews_assigned }} report{{ p.reviews_assigned|pluralize }} in</div>
@@ -70,7 +71,7 @@
           <header class="pr-rev-head">
             <span class="pr-avatar">{{ a.reviewer.initials }}</span>
             <div class="who"><strong>{{ a.reviewer.full_name }}</strong><small>Reviewer{% if a.completed_at %} &middot; submitted {{ a.completed_at|date:"j M Y" }}{% endif %}</small></div>
-            <span class="pr-badge {{ a.rec_badge }}">{{ a.rec_short }}</span>
+            <span class="badge pr-badge {{ a.rec_badge|bs_badge }}">{{ a.rec_short }}</span>
           </header>
           {% if a.recommendation_reason %}<div class="pr-block"><h4>Reasoning</h4><p>{{ a.recommendation_reason }}</p></div>{% endif %}
           {% if a.key_concerns %}<div class="pr-block concern"><h4>Key concerns</h4><p>{{ a.key_concerns }}</p></div>{% endif %}

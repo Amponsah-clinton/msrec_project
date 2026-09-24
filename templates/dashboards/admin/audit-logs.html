@@ -21,11 +21,11 @@
       <section class="panel acct-panel">
         <div class="audit-toolbar">
           <div class="filter-tabs acct-tabs" data-plain-tabs="true" style="margin:0;">
-            <a href="?tab=all" class="filter-tab{% if active_tab == 'all' %} active{% endif %}">All <span class="count">{{ counts.all }}</span></a>
-            <a href="?tab=users" class="filter-tab{% if active_tab == 'users' %} active{% endif %}">Users <span class="count">{{ counts.users }}</span></a>
-            <a href="?tab=applications" class="filter-tab{% if active_tab == 'applications' %} active{% endif %}">Applications <span class="count">{{ counts.applications }}</span></a>
-            <a href="?tab=reviews" class="filter-tab{% if active_tab == 'reviews' %} active{% endif %}">Reviews <span class="count">{{ counts.reviews }}</span></a>
-            <a href="?tab=roles" class="filter-tab{% if active_tab == 'roles' %} active{% endif %}">Role Decisions <span class="count">{{ counts.roles }}</span></a>
+            <a href="?tab=all" class="filter-tab{% if active_tab == 'all' %} active{% endif %}">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></a>
+            <a href="?tab=users" class="filter-tab{% if active_tab == 'users' %} active{% endif %}">Users <span class="count badge rounded-pill text-bg-secondary">{{ counts.users }}</span></a>
+            <a href="?tab=applications" class="filter-tab{% if active_tab == 'applications' %} active{% endif %}">Applications <span class="count badge rounded-pill text-bg-secondary">{{ counts.applications }}</span></a>
+            <a href="?tab=reviews" class="filter-tab{% if active_tab == 'reviews' %} active{% endif %}">Reviews <span class="count badge rounded-pill text-bg-secondary">{{ counts.reviews }}</span></a>
+            <a href="?tab=roles" class="filter-tab{% if active_tab == 'roles' %} active{% endif %}">Role Decisions <span class="count badge rounded-pill text-bg-secondary">{{ counts.roles }}</span></a>
           </div>
           <form method="get" class="search-box audit-search">
             <input type="hidden" name="tab" value="{{ active_tab }}">

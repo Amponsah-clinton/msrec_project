@@ -7,7 +7,6 @@
 <link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/reviewer-identity.css' %}">
 {% endblock %}
 
@@ -96,11 +95,11 @@
       <!-- TABS + LIST -->
       <section class="panel acct-panel">
         <div class="filter-tabs acct-tabs" data-filters-target="#myReviewsList">
-          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count" data-count-key="all">{{ counts.all }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'new' %} active{% endif %}" data-filter="new">New <span class="count" data-count-key="new">{{ counts.new }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'accepted' %} active{% endif %}" data-filter="accepted">Accepted <span class="count" data-count-key="accepted">{{ counts.accepted }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'due_overdue' %} active{% endif %}" data-filter="due_overdue">Due &amp; Overdue <span class="count" data-count-key="due_overdue">{{ counts.due_overdue }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'completed' %} active{% endif %}" data-filter="completed">Completed <span class="count" data-count-key="completed">{{ counts.completed }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary" data-count-key="all">{{ counts.all }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'new' %} active{% endif %}" data-filter="new">New <span class="count badge rounded-pill text-bg-secondary" data-count-key="new">{{ counts.new }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'accepted' %} active{% endif %}" data-filter="accepted">Accepted <span class="count badge rounded-pill text-bg-secondary" data-count-key="accepted">{{ counts.accepted }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'due_overdue' %} active{% endif %}" data-filter="due_overdue">Due &amp; Overdue <span class="count badge rounded-pill text-bg-secondary" data-count-key="due_overdue">{{ counts.due_overdue }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'completed' %} active{% endif %}" data-filter="completed">Completed <span class="count badge rounded-pill text-bg-secondary" data-count-key="completed">{{ counts.completed }}</span></button>
         </div>
 
         <div class="app-card-grid" id="myReviewsList">
@@ -113,10 +112,10 @@
                 <h4>{{ assignment.application.title }}</h4>
                 <p>{{ assignment.application.reference_no|default:"No reference yet" }}</p>
               </div>
-              {% if assignment.tab_value == 'new' %}<span class="badge-tag orange">New</span>
-              {% elif assignment.tab_value == 'accepted' %}<span class="badge-tag blue">Accepted</span>
-              {% elif assignment.tab_value == 'due_overdue' %}<span class="badge-tag red">Due / Overdue</span>
-              {% elif assignment.tab_value == 'completed' %}<span class="badge-tag green">Completed</span>
+              {% if assignment.tab_value == 'new' %}<span class="badge text-bg-warning">New</span>
+              {% elif assignment.tab_value == 'accepted' %}<span class="badge text-bg-primary">Accepted</span>
+              {% elif assignment.tab_value == 'due_overdue' %}<span class="badge text-bg-danger">Due / Overdue</span>
+              {% elif assignment.tab_value == 'completed' %}<span class="badge text-bg-success">Completed</span>
               {% endif %}
             </div>
             <div class="app-card-body">

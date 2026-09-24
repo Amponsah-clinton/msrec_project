@@ -25,7 +25,7 @@
 .rv-scope .panel-header h2,
 .rv-scope .page-head-text h2,
 .rv-scope .topbar-title h1 {
-  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-family: "IBM Plex Serif", Georgia, "Times New Roman", serif;
   font-weight: 600;
   letter-spacing: -0.012em;
 }
@@ -35,7 +35,7 @@
    dashboard, so only reshape them inside .rv-scope. Circle chip -> the
    same rounded-square shape the Settings pages' .rv-ico already uses,
    with a hairline border in the icon's own hue standing in for the flat
-   pastel fill everywhere else uses alone -- same treatment .badge-tag
+   pastel fill everywhere else uses alone -- same treatment .badge
    already gets, just extended to the icon chips. Nothing added to the
    card's own edge; the border lives on the icon, not the card. */
 .rv-scope .stat-card {

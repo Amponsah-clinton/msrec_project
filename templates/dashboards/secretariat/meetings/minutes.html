@@ -81,8 +81,8 @@
         <div class="meeting-summary-main">
           <div class="meeting-summary-title-row">
             <h3>{{ meeting.title }}</h3>
-            <span class="badge-tag {% if meeting.status == 'scheduled' %}blue{% elif meeting.status == 'completed' %}green{% else %}red{% endif %}">{{ meeting.get_status_display }}</span>
-            <span class="badge-tag teal">{{ meeting.get_meeting_type_display }}</span>
+            <span class="badge {% if meeting.status == 'scheduled' %}text-bg-primary{% elif meeting.status == 'completed' %}text-bg-success{% else %}text-bg-danger{% endif %}">{{ meeting.get_status_display }}</span>
+            <span class="badge text-bg-info">{{ meeting.get_meeting_type_display }}</span>
           </div>
           <div class="meeting-summary-meta">
             <span class="msc-chip"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>{{ meeting.scheduled_at|date:"l, d M Y" }}</span>

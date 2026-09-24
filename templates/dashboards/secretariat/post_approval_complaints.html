@@ -57,9 +57,9 @@
 <div class="sc-scope">
 
       <div class="filter-tabs acct-tabs" data-filters-target="#concernsTable">
-        <button type="button" class="filter-tab active" data-filter="all">All <span class="count">{{ counts.all }}</span></button>
-        <button type="button" class="filter-tab" data-filter="new">New <span class="count">{{ counts.new }}</span></button>
-        <button type="button" class="filter-tab" data-filter="resolved">Resolved <span class="count">{{ counts.resolved }}</span></button>
+        <button type="button" class="filter-tab active" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></button>
+        <button type="button" class="filter-tab" data-filter="new">New <span class="count badge rounded-pill text-bg-secondary">{{ counts.new }}</span></button>
+        <button type="button" class="filter-tab" data-filter="resolved">Resolved <span class="count badge rounded-pill text-bg-secondary">{{ counts.resolved }}</span></button>
       </div>
 
       <section class="panel reviews-panel">
@@ -82,10 +82,10 @@
                   <strong style="display:block; color:var(--text-main);">{{ concern.name }}</strong>
                   <span style="font-size:11.5px; color:var(--text-sub);">{{ concern.email }}</span>
                 </td>
-                <td data-label="Reason"><span class="badge-tag {% if concern.reason == 'complaints' %}red{% else %}orange{% endif %}">{{ concern.get_reason_display }}</span></td>
+                <td data-label="Reason"><span class="badge {% if concern.reason == 'complaints' %}text-bg-danger{% else %}text-bg-warning{% endif %}">{{ concern.get_reason_display }}</span></td>
                 <td data-label="Message" style="max-width:320px;">{{ concern.message|truncatechars:90 }}</td>
                 <td data-label="Received"><span class="due-main">{{ concern.created_at|date:"d M Y" }}</span></td>
-                <td data-label="Status">{% if concern.status == 'new' %}<span class="badge-tag orange">New</span>{% else %}<span class="badge-tag green">Resolved</span>{% endif %}</td>
+                <td data-label="Status">{% if concern.status == 'new' %}<span class="badge text-bg-warning">New</span>{% else %}<span class="badge text-bg-success">Resolved</span>{% endif %}</td>
                 <td data-label="Action">
                   <button type="button" class="action-btn" aria-label="Review" data-open-modal="concern-{{ concern.pk }}">
                     <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>

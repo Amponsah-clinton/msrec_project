@@ -496,7 +496,7 @@
           <div class="ap-fees-grid">
             {% for card in fee_cards %}
             <div class="ap-fee-card{% if card.featured %} ap-fee-card-featured{% endif %}">
-              {% if card.featured %}<span class="ap-fee-badge">Most common</span>{% endif %}
+              {% if card.featured %}<span class="badge rounded-pill ap-fee-badge text-bg-success">Most common</span>{% endif %}
               <h3>{{ card.title }}</h3>
               <p class="ap-fee-amount">
                 {% if not card.amount %}Contact us

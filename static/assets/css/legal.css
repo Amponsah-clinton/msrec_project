@@ -9,8 +9,8 @@
 
 body.legal-page {
   margin: 0;
-  --legal-heading-font: "Fraunces", "Georgia", serif;
-  --legal-body-font: "Inter", "Roboto", sans-serif;
+  --legal-heading-font: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --legal-body-font: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-family: var(--legal-body-font);
 }
 
@@ -79,13 +79,9 @@ body.legal-page {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 11.5px;
-  font-weight: 600;
-  color: #5c6b69;
-  background: #f7faf9;
-  border: 1px solid #eef3f1;
   padding: 7px 13px;
-  border-radius: 50px;
+  font-size: 11.5px;
+  color: #5c6b69;
 }
 .legal-meta-chip i { color: var(--accent-color); font-size: 12px; }
 

@@ -46,8 +46,8 @@
 
     <header class="mn-head">
       <div class="mn-badges">
-        <span class="mm-chip teal">{{ meeting.get_meeting_type_display }}</span>
-        {% if meeting.minutes.is_finalized %}<span class="mm-pill completed">Finalised</span>{% else %}<span class="mm-pill pending">Draft</span>{% endif %}
+        <span class="badge mm-chip text-bg-info">{{ meeting.get_meeting_type_display }}</span>
+        {% if meeting.minutes.is_finalized %}<span class="badge mm-pill text-bg-success">Finalised</span>{% else %}<span class="badge mm-pill text-bg-warning">Draft</span>{% endif %}
       </div>
       <h2>{{ meeting.title }}</h2>
       <p class="mn-when">{{ meeting.scheduled_at|date:"l, j F Y" }} &middot; {{ meeting.scheduled_at|date:"g:i A" }} &ndash; {{ meeting.ends_at|date:"g:i A" }}{% if meeting.location %} &middot; {{ meeting.location }}{% endif %}</p>
@@ -83,7 +83,7 @@
           {% if d.details %}<em>{{ d.details }}</em>{% endif %}
         </div>
         <div class="mn-decision-side">
-          <span class="mm-chip teal">{{ d.get_outcome_display }}</span>
+          <span class="badge mm-chip text-bg-info">{{ d.get_outcome_display }}</span>
           {% if d.total_votes %}<small>{{ d.votes_for }} for &middot; {{ d.votes_against }} against &middot; {{ d.votes_abstain }} abstain</small>{% endif %}
         </div>
       </div>

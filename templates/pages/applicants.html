@@ -195,43 +195,43 @@
       <div class="ap-doc-list">
         <div class="ap-doc-row">
           <span class="ap-doc-name"><i class="bi bi-file-earmark-text"></i> Completed Application Form</span>
-          <span class="ap-doc-tag ap-doc-tag-always">Always required</span>
+          <span class="badge rounded-pill ap-doc-tag text-bg-success">Always required</span>
         </div>
         <div class="ap-doc-row">
           <span class="ap-doc-name"><i class="bi bi-file-earmark-text"></i> Research Protocol / Proposal</span>
-          <span class="ap-doc-tag ap-doc-tag-always">Always required</span>
+          <span class="badge rounded-pill ap-doc-tag text-bg-success">Always required</span>
         </div>
         <div class="ap-doc-row">
           <span class="ap-doc-name"><i class="bi bi-file-earmark-text"></i> Informed Consent Form(s)</span>
-          <span class="ap-doc-tag ap-doc-tag-always">Always required</span>
+          <span class="badge rounded-pill ap-doc-tag text-bg-success">Always required</span>
         </div>
         <div class="ap-doc-row">
           <span class="ap-doc-name"><i class="bi bi-file-earmark-text"></i> Data Management &amp; Confidentiality Plan</span>
-          <span class="ap-doc-tag ap-doc-tag-always">Always required</span>
+          <span class="badge rounded-pill ap-doc-tag text-bg-success">Always required</span>
         </div>
         <div class="ap-doc-row">
           <span class="ap-doc-name"><i class="bi bi-file-earmark-text"></i> CV of Principal Investigator</span>
-          <span class="ap-doc-tag ap-doc-tag-always">Always required</span>
+          <span class="badge rounded-pill ap-doc-tag text-bg-success">Always required</span>
         </div>
         <div class="ap-doc-row">
           <span class="ap-doc-name"><i class="bi bi-file-earmark-plus"></i> Supervisor Approval Letter</span>
-          <span class="ap-doc-tag ap-doc-tag-conditional">Conditional: student applicants</span>
+          <span class="badge rounded-pill ap-doc-tag text-bg-warning">Conditional: student applicants</span>
         </div>
         <div class="ap-doc-row">
           <span class="ap-doc-name"><i class="bi bi-file-earmark-plus"></i> Institutional Support / Collaboration Letter</span>
-          <span class="ap-doc-tag ap-doc-tag-conditional">Conditional: external institutions</span>
+          <span class="badge rounded-pill ap-doc-tag text-bg-warning">Conditional: external institutions</span>
         </div>
         <div class="ap-doc-row">
           <span class="ap-doc-name"><i class="bi bi-file-earmark-plus"></i> Recruitment Materials (flyers, ads, scripts)</span>
-          <span class="ap-doc-tag ap-doc-tag-conditional">Conditional: if recruiting</span>
+          <span class="badge rounded-pill ap-doc-tag text-bg-warning">Conditional: if recruiting</span>
         </div>
         <div class="ap-doc-row">
           <span class="ap-doc-name"><i class="bi bi-file-earmark-plus"></i> Data Collection Instruments</span>
-          <span class="ap-doc-tag ap-doc-tag-conditional">Conditional: surveys / interview guides</span>
+          <span class="badge rounded-pill ap-doc-tag text-bg-warning">Conditional: surveys / interview guides</span>
         </div>
         <div class="ap-doc-row">
           <span class="ap-doc-name"><i class="bi bi-file-earmark-plus"></i> Evidence of Prior Ethics Training</span>
-          <span class="ap-doc-tag ap-doc-tag-conditional">Conditional: where required</span>
+          <span class="badge rounded-pill ap-doc-tag text-bg-warning">Conditional: where required</span>
         </div>
       </div>
     </section>
@@ -255,19 +255,19 @@
         <div class="rt-tabs-panels">
           <div class="rt-panel active" data-rt-panel="exempt">
             <p>For minimal-risk studies using existing, de-identified data, or standard educational-practice evaluations. Screened and determined by the Secretariat, with no full Committee vote required.</p>
-            <span class="rt-duration"><i class="bi bi-clock"></i> Typical turnaround: 5 to 7 business days</span>
+            <span class="badge rounded-pill rt-duration text-bg-light border"><i class="bi bi-clock"></i> Typical turnaround: 5 to 7 business days</span>
           </div>
           <div class="rt-panel" data-rt-panel="expedited">
             <p>For minimal-risk studies that involve direct participant contact but present low complexity. Reviewed by one or two designated reviewers rather than the full Committee.</p>
-            <span class="rt-duration"><i class="bi bi-clock"></i> Typical turnaround: 10 to 12 business days</span>
+            <span class="badge rounded-pill rt-duration text-bg-light border"><i class="bi bi-clock"></i> Typical turnaround: 10 to 12 business days</span>
           </div>
           <div class="rt-panel" data-rt-panel="full">
             <p>For studies involving more than minimal risk, vulnerable populations, or sensitive data. Reviewed and voted on by the full multidisciplinary Committee at a scheduled meeting.</p>
-            <span class="rt-duration"><i class="bi bi-clock"></i> Typical turnaround: 15 to 21 business days</span>
+            <span class="badge rounded-pill rt-duration text-bg-light border"><i class="bi bi-clock"></i> Typical turnaround: 15 to 21 business days</span>
           </div>
           <div class="rt-panel" data-rt-panel="amendment">
             <p>For changes to an already-approved protocol: procedures, personnel or consent materials. Reviewed at a level proportional to the scale of the change.</p>
-            <span class="rt-duration"><i class="bi bi-clock"></i> Typical turnaround: 5 to 10 business days</span>
+            <span class="badge rounded-pill rt-duration text-bg-light border"><i class="bi bi-clock"></i> Typical turnaround: 5 to 10 business days</span>
           </div>
         </div>
       </div>
@@ -286,7 +286,7 @@
         <div class="ap-fees-grid">
           {% for card in fee_cards %}
           <div class="ap-fee-card{% if card.featured %} ap-fee-card-featured{% endif %}">
-            {% if card.featured %}<span class="ap-fee-badge">Most common</span>{% endif %}
+            {% if card.featured %}<span class="badge rounded-pill ap-fee-badge text-bg-success">Most common</span>{% endif %}
             <h3>{{ card.title }}</h3>
             <p class="ap-fee-amount">
               {% if not card.amount %}Contact us

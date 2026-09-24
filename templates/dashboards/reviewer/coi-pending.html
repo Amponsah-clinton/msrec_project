@@ -102,11 +102,11 @@
                 </div>
               </div>
               {% if assignment.days_overdue > 0 %}
-                <span class="badge-tag red">Overdue {{ assignment.days_overdue }}d</span>
+                <span class="badge text-bg-danger">Overdue {{ assignment.days_overdue }}d</span>
               {% elif assignment.due_urgency == 'danger' %}
-                <span class="badge-tag orange">Due soon</span>
+                <span class="badge text-bg-warning">Due soon</span>
               {% else %}
-                <span class="badge-tag blue">Accepted</span>
+                <span class="badge text-bg-primary">Accepted</span>
               {% endif %}
             </div>
             <div class="coi-card-meta">

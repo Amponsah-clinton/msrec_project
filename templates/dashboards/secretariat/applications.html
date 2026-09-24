@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 
 {% block title %}Applications | MSREC Secretariat{% endblock %}
@@ -62,14 +63,14 @@
       <!-- TABS + LIST -->
       <section class="panel acct-panel">
         <div class="filter-tabs acct-tabs" data-filters-target="#secAppsList" data-counts-url="{% url 'secretariat_dashboard:applications_counts' %}">
-          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count" data-count-key="all">{{ counts.all }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'submitted' %} active{% endif %}" data-filter="submitted">New <span class="count" data-count-key="submitted">{{ counts.submitted }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'under_review' %} active{% endif %}" data-filter="under_review">Under Review <span class="count" data-count-key="under_review">{{ counts.under_review }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'with_committee' %} active{% endif %}" data-filter="with_committee">With Committee <span class="count" data-count-key="with_committee">{{ counts.with_committee }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'revisions' %} active{% endif %}" data-filter="revisions">Revisions <span class="count" data-count-key="revisions">{{ counts.revisions }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'revised' %} active{% endif %}" data-filter="revised">Revised <span class="count" data-count-key="revised">{{ counts.revised }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'approved' %} active{% endif %}" data-filter="approved">Approved <span class="count" data-count-key="approved">{{ counts.approved }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'not_approved' %} active{% endif %}" data-filter="not_approved">Not Approved <span class="count" data-count-key="not_approved">{{ counts.not_approved }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary" data-count-key="all">{{ counts.all }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'submitted' %} active{% endif %}" data-filter="submitted">New <span class="count badge rounded-pill text-bg-secondary" data-count-key="submitted">{{ counts.submitted }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'under_review' %} active{% endif %}" data-filter="under_review">Under Review <span class="count badge rounded-pill text-bg-secondary" data-count-key="under_review">{{ counts.under_review }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'with_committee' %} active{% endif %}" data-filter="with_committee">With Committee <span class="count badge rounded-pill text-bg-secondary" data-count-key="with_committee">{{ counts.with_committee }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'revisions' %} active{% endif %}" data-filter="revisions">Revisions <span class="count badge rounded-pill text-bg-secondary" data-count-key="revisions">{{ counts.revisions }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'revised' %} active{% endif %}" data-filter="revised">Revised <span class="count badge rounded-pill text-bg-secondary" data-count-key="revised">{{ counts.revised }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'approved' %} active{% endif %}" data-filter="approved">Approved <span class="count badge rounded-pill text-bg-secondary" data-count-key="approved">{{ counts.approved }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'not_approved' %} active{% endif %}" data-filter="not_approved">Not Approved <span class="count badge rounded-pill text-bg-secondary" data-count-key="not_approved">{{ counts.not_approved }}</span></button>
         </div>
 
         <div class="app-card-grid" id="secAppsList">
@@ -87,15 +88,15 @@
               {% if application.has_completed_review %}<span class="app-card-flag" title="A reviewer has submitted their assessment -- it's ready for your decision"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 13 4 4L19 7"/></svg> Ready for Decision</span>{% endif %}
             </div>
             <div class="app-card-badges">
-              {% if application.tab == 'submitted' %}<span class="badge-tag orange">New</span>
-              {% elif application.tab == 'under_review' and application.has_completed_review %}<span class="badge-tag purple">Under Review &middot; Reviewer Responded</span>
-              {% elif application.tab == 'under_review' %}<span class="badge-tag blue">Under Review</span>
-              {% elif application.tab == 'with_committee' %}<span class="badge-tag purple">With Committee</span>
-              {% elif application.tab == 'revisions' %}<span class="badge-tag red">Revisions Requested</span>
-              {% elif application.tab == 'approved' %}<span class="badge-tag green">Approved</span>
-              {% elif application.tab == 'not_approved' %}<span class="badge-tag red">Not Approved</span>
+              {% if application.tab == 'submitted' %}<span class="badge text-bg-warning">New</span>
+              {% elif application.tab == 'under_review' and application.has_completed_review %}<span class="badge text-bg-purple">Under Review &middot; Reviewer Responded</span>
+              {% elif application.tab == 'under_review' %}<span class="badge text-bg-primary">Under Review</span>
+              {% elif application.tab == 'with_committee' %}<span class="badge text-bg-purple">With Committee</span>
+              {% elif application.tab == 'revisions' %}<span class="badge text-bg-danger">Revisions Requested</span>
+              {% elif application.tab == 'approved' %}<span class="badge text-bg-success">Approved</span>
+              {% elif application.tab == 'not_approved' %}<span class="badge text-bg-danger">Not Approved</span>
               {% endif %}
-              {% if application.resubmitted_at %}<span class="badge-tag blue" title="Resubmitted {{ application.resubmitted_at|date:'j M Y' }}">Revised</span>{% endif %}
+              {% if application.resubmitted_at %}<span class="badge text-bg-primary" title="Resubmitted {{ application.resubmitted_at|date:'j M Y' }}">Revised</span>{% endif %}
             </div>
             <div class="app-card-body">
               <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>{{ application.reference_no|default:"No reference yet" }}</span>
@@ -241,7 +242,7 @@
               <div class="acct-modal-body">
                 <div class="stage-row">
                   <span class="field-hint">Exact stage</span>
-                  <span class="badge-tag {% if application.tab == 'submitted' %}orange{% elif application.tab == 'under_review' %}blue{% elif application.tab == 'with_committee' %}purple{% elif application.tab == 'revisions' %}red{% elif application.tab == 'approved' %}green{% elif application.tab == 'not_approved' %}red{% endif %}">{{ application.get_status_display }}</span>
+                  <span class="badge {% if application.tab == 'submitted' %}text-bg-warning{% elif application.tab == 'under_review' %}text-bg-primary{% elif application.tab == 'with_committee' %}text-bg-purple{% elif application.tab == 'revisions' %}text-bg-danger{% elif application.tab == 'approved' %}text-bg-success{% elif application.tab == 'not_approved' %}text-bg-danger{% else %}text-bg-secondary{% endif %}">{{ application.get_status_display }}</span>
                 </div>
 
                 {% for a in application.assignments %}
@@ -250,10 +251,10 @@
                     <span class="acct-avatar cat-reviewers">{{ a.reviewer.initials }}</span>
                     <div>
                       <strong>{{ a.reviewer.full_name }}</strong>
-                      {% if a.status == 'new' %}<span class="badge-tag orange">New</span>
-                      {% elif a.status == 'accepted' %}<span class="badge-tag blue">Accepted</span>
-                      {% elif a.status == 'declined' %}<span class="badge-tag red">Declined</span>
-                      {% elif a.status == 'completed' %}<span class="badge-tag green">Completed</span>
+                      {% if a.status == 'new' %}<span class="badge text-bg-warning">New</span>
+                      {% elif a.status == 'accepted' %}<span class="badge text-bg-primary">Accepted</span>
+                      {% elif a.status == 'declined' %}<span class="badge text-bg-danger">Declined</span>
+                      {% elif a.status == 'completed' %}<span class="badge text-bg-success">Completed</span>
                       {% endif %}
                     </div>
                   </div>
@@ -261,7 +262,7 @@
                   <p class="field-hint sc-flush">Declined -- assign a different reviewer below.</p>
                   {% elif a.status == 'completed' %}
                   <div style="display:flex; align-items:center; gap:10px;">
-                    {% if a.recommendation %}<span class="badge-tag {{ a.recommendation_badge }}">{{ a.get_recommendation_display }}</span>{% endif %}
+                    {% if a.recommendation %}<span class="badge {{ a.recommendation_badge|bs_badge }}">{{ a.get_recommendation_display }}</span>{% endif %}
                     <a href="{% url 'secretariat_dashboard:application_detail' application.pk %}#reviewer-assessments" class="app-card-view">View Response <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
                   </div>
                   {% else %}

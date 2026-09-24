@@ -104,21 +104,6 @@
 .cmt-empty-line { margin: 6px 2px; font-size: 12.5px; color: var(--text-faint); }
 
 /* ---------------- Status pills (expiry state) ---------------- */
-.cmt-pill {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  white-space: nowrap;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  padding: 4px 10px;
-  border-radius: 20px;
-}
-.cmt-pill-current  { background: var(--green-light);  color: var(--green); }
-.cmt-pill-expiring { background: var(--orange-light); color: var(--orange); }
-.cmt-pill-expired  { background: var(--red-light);    color: var(--red); }
-.cmt-pill-ongoing  { background: var(--gray-light);   color: var(--gray); }
 
 /* ---------------- List toolbar (filter tabs + search + add) ---------------- */
 .cmt-toolbar {
@@ -227,3 +212,5 @@
   .cmt-stat-grid { grid-template-columns: 1fr 1fr; }
   .cmt-toolbar { flex-direction: column; align-items: stretch; }
 }
+
+.cmt-pill { flex-shrink: 0; }

@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load admin_shell %}
 
 {% block title %}Admin Dashboard | MSREC{% endblock %}
@@ -115,11 +116,11 @@
                   <td data-label="Study Title">{{ application.title }}</td>
                   <td data-label="Applicant">{{ application.applicant.full_name }}</td>
                   <td data-label="Status">
-                    {% if application.status == 'submitted' %}<span class="badge-tag orange">New</span>
-                    {% elif application.status == 'under_review' %}<span class="badge-tag blue">Under Review</span>
-                    {% elif application.status == 'revisions_required' %}<span class="badge-tag orange">Revisions Required</span>
-                    {% elif application.status == 'approved' %}<span class="badge-tag green">Approved</span>
-                    {% elif application.status == 'not_approved' %}<span class="badge-tag red">Not Approved</span>
+                    {% if application.status == 'submitted' %}<span class="badge text-bg-warning">New</span>
+                    {% elif application.status == 'under_review' %}<span class="badge text-bg-primary">Under Review</span>
+                    {% elif application.status == 'revisions_required' %}<span class="badge text-bg-warning">Revisions Required</span>
+                    {% elif application.status == 'approved' %}<span class="badge text-bg-success">Approved</span>
+                    {% elif application.status == 'not_approved' %}<span class="badge text-bg-danger">Not Approved</span>
                     {% endif %}
                   </td>
                   <td data-label="Submitted"><span class="due-main">{{ application.submitted_at|date:"d M Y" }}</span></td>
@@ -184,7 +185,7 @@
                   <p class="doc-name">{{ row.label }}</p>
                   <span class="doc-meta">{{ row.blurb }}</span>
                 </div>
-                <div class="doc-trailing"><span class="badge-tag {{ row.tone }}">{{ row.count }}</span></div>
+                <div class="doc-trailing"><span class="badge {{ row.tone|bs_badge }}">{{ row.count }}</span></div>
               </div>
               {% endfor %}
             </div>

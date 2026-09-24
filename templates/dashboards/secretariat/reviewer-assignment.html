@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 
 {% block title %}Reviewer Assignment | MSREC Secretariat{% endblock %}
@@ -58,10 +59,10 @@
 
       <section class="panel acct-panel">
         <div class="filter-tabs acct-tabs" data-filters-target="#raPanels" data-plain-tabs="true">
-          <button type="button" class="filter-tab{% if active_tab == 'assign' %} active{% endif %}" data-filter="assign" data-ra-tab="assign">Assign Reviewer <span class="count" data-count-key="assign">{{ counts.assign }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}" data-filter="pending" data-ra-tab="pending">Pending Assignments <span class="count" data-count-key="pending">{{ counts.pending }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'completed' %} active{% endif %}" data-filter="completed" data-ra-tab="completed">Completed Reviews <span class="count" data-count-key="completed">{{ counts.completed }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'workload' %} active{% endif %}" data-filter="workload" data-ra-tab="workload">Reviewer Workload <span class="count" data-count-key="workload">{{ counts.workload }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'assign' %} active{% endif %}" data-filter="assign" data-ra-tab="assign">Assign Reviewer <span class="count badge rounded-pill text-bg-secondary" data-count-key="assign">{{ counts.assign }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}" data-filter="pending" data-ra-tab="pending">Pending Assignments <span class="count badge rounded-pill text-bg-secondary" data-count-key="pending">{{ counts.pending }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'completed' %} active{% endif %}" data-filter="completed" data-ra-tab="completed">Completed Reviews <span class="count badge rounded-pill text-bg-secondary" data-count-key="completed">{{ counts.completed }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'workload' %} active{% endif %}" data-filter="workload" data-ra-tab="workload">Reviewer Workload <span class="count badge rounded-pill text-bg-secondary" data-count-key="workload">{{ counts.workload }}</span></button>
         </div>
 
         <div id="raPanels">
@@ -127,9 +128,9 @@
                   </div>
                 </div>
                 <div class="pending-card-meta">
-                  {% if assignment.tab_value == 'new' %}<span class="badge-tag orange">New</span>
-                  {% elif assignment.tab_value == 'accepted' %}<span class="badge-tag blue">Accepted</span>
-                  {% elif assignment.tab_value == 'due_overdue' %}<span class="badge-tag red">Due / Overdue</span>
+                  {% if assignment.tab_value == 'new' %}<span class="badge text-bg-warning">New</span>
+                  {% elif assignment.tab_value == 'accepted' %}<span class="badge text-bg-primary">Accepted</span>
+                  {% elif assignment.tab_value == 'due_overdue' %}<span class="badge text-bg-danger">Due / Overdue</span>
                   {% endif %}
                   {% if assignment.due_date %}<span class="due-meta"><svg class="due-meta-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Due {{ assignment.due_date|date:"d M Y" }}</span>{% endif %}
                   <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Assigned {{ assignment.assigned_at|date:"d M Y" }}</span>
@@ -196,8 +197,8 @@
                   </div>
                 </div>
                 <div class="pending-card-meta">
-                  <span class="badge-tag green">Completed</span>
-                  {% if assignment.recommendation %}<span class="badge-tag {{ assignment.recommendation_badge }}">{{ assignment.get_recommendation_display }}</span>{% endif %}
+                  <span class="badge text-bg-success">Completed</span>
+                  {% if assignment.recommendation %}<span class="badge {{ assignment.recommendation_badge|bs_badge }}">{{ assignment.get_recommendation_display }}</span>{% endif %}
                   {% if assignment.completed_at %}<span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>Completed {{ assignment.completed_at|date:"d M Y" }}</span>{% endif %}
                 </div>
                 <a href="{% url 'secretariat_dashboard:application_detail' assignment.application.pk %}#reviewer-assessments" class="app-card-view">View Assessment &amp; Decide <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
@@ -238,7 +239,7 @@
                       </div>
                     </td>
                     <td data-label="Availability">
-                      <span class="availability-badge availability-{{ reviewer.reviewer_availability }}"><i></i>{{ reviewer.get_reviewer_availability_display }}</span>
+                      <span class="badge {{ reviewer.reviewer_availability|state_badge }}"><i></i>{{ reviewer.get_reviewer_availability_display }}</span>
                     </td>
                     <td data-label="Active"><span class="workload-count{% if reviewer.active_count == 0 %} zero{% else %} light{% endif %}">{{ reviewer.active_count }}</span></td>
                     <td data-label="Overdue"><span class="workload-count{% if reviewer.overdue_count > 0 %} overdue{% else %} zero{% endif %}">{{ reviewer.overdue_count }}</span></td>

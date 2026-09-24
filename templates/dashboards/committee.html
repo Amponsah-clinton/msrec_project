@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 
 {% block title %}Committee Member Dashboard | MSREC{% endblock %}
@@ -53,8 +54,8 @@
   <div>
     <div class="mm-hero-kicker">
       <span class="eyebrow">{% if m.is_live %}Happening now{% else %}Your next meeting{% endif %}</span>
-      <span class="mm-chip teal">{{ m.get_meeting_type_display }}</span>
-      {% if m.my_part %}<span class="mm-pill {{ m.my_part.rsvp_status }}">{{ m.my_part.get_rsvp_status_display }}</span>{% endif %}
+      <span class="badge mm-chip text-bg-info">{{ m.get_meeting_type_display }}</span>
+      {% if m.my_part %}<span class="badge mm-pill {{ m.my_part.rsvp_status|state_badge }}">{{ m.my_part.get_rsvp_status_display }}</span>{% endif %}
     </div>
     <h2><a href="{% url 'committee_dashboard:agenda' %}?meeting={{ m.pk }}">{{ m.title }}</a></h2>
     <div class="mm-meta">
@@ -105,11 +106,11 @@
         <a href="{% url 'reviewer_dashboard:review_application' a.pk %}">{{ a.application.title }}</a>
         <small>{{ a.application.reference_no|default:"Reference pending" }}{% if a.due_date %} &middot; Due {{ a.due_date|date:"d M Y" }}{% endif %}</small>
       </div>
-      {% if a.days_to_deadline is None %}<span class="mm-pill on-track">No deadline</span>
-      {% elif a.days_to_deadline < 0 %}<span class="mm-pill overdue">Overdue</span>
-      {% elif a.days_to_deadline == 0 %}<span class="mm-pill due-soon">Due today</span>
-      {% elif a.days_to_deadline <= 3 %}<span class="mm-pill due-soon">{{ a.days_to_deadline }} day{{ a.days_to_deadline|pluralize }} left</span>
-      {% else %}<span class="mm-pill on-track">{{ a.days_to_deadline }} days left</span>
+      {% if a.days_to_deadline is None %}<span class="badge mm-pill text-bg-info">No deadline</span>
+      {% elif a.days_to_deadline < 0 %}<span class="badge mm-pill text-bg-danger">Overdue</span>
+      {% elif a.days_to_deadline == 0 %}<span class="badge mm-pill text-bg-warning">Due today</span>
+      {% elif a.days_to_deadline <= 3 %}<span class="badge mm-pill text-bg-warning">{{ a.days_to_deadline }} day{{ a.days_to_deadline|pluralize }} left</span>
+      {% else %}<span class="badge mm-pill text-bg-info">{{ a.days_to_deadline }} days left</span>
       {% endif %}
     </li>
     {% endfor %}
@@ -165,7 +166,7 @@
         <li>
           <div class="mm-datebox sm"><span class="mon">{{ m.scheduled_at|date:"M" }}</span><span class="day">{{ m.scheduled_at|date:"d" }}</span></div>
           <div class="body"><a href="{% url 'committee_dashboard:agenda' %}?meeting={{ m.pk }}">{{ m.title }}</a><small>{{ m.scheduled_at|date:"D, g:i A" }} &middot; {{ m.get_mode_display }}</small></div>
-          {% if m.my_part %}<span class="mm-pill {{ m.my_part.rsvp_status }}">{{ m.my_part.get_rsvp_status_display }}</span>{% endif %}
+          {% if m.my_part %}<span class="badge mm-pill {{ m.my_part.rsvp_status|state_badge }}">{{ m.my_part.get_rsvp_status_display }}</span>{% endif %}
         </li>
         {% endfor %}
       </ul>

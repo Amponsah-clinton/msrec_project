@@ -22,10 +22,10 @@
       <section class="panel acct-panel">
         <div class="bc-admin-toolbar">
           <div class="filter-tabs acct-tabs" data-filters-target="#bcAdminList">
-            <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count">{{ counts.all }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'board' %} active{% endif %}" data-filter="board">Board <span class="count">{{ counts.board }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'committee' %} active{% endif %}" data-filter="committee">Committee <span class="count">{{ counts.committee }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'secretariat' %} active{% endif %}" data-filter="secretariat">Secretariat <span class="count">{{ counts.secretariat }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'board' %} active{% endif %}" data-filter="board">Board <span class="count badge rounded-pill text-bg-secondary">{{ counts.board }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'committee' %} active{% endif %}" data-filter="committee">Committee <span class="count badge rounded-pill text-bg-secondary">{{ counts.committee }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'secretariat' %} active{% endif %}" data-filter="secretariat">Secretariat <span class="count badge rounded-pill text-bg-secondary">{{ counts.secretariat }}</span></button>
           </div>
           <button type="button" class="acct-btn acct-btn-approve" id="bcAddOpen">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add Member
@@ -47,8 +47,8 @@
                data-photo-url="{{ member.photo_url|default:'' }}">
 
             <div class="bc-card-status">
-              <span class="badge-tag {% if member.group == 'board' %}navy{% elif member.group == 'committee' %}purple{% else %}teal{% endif %}">{{ member.get_group_display }}</span>
-              {% if not member.is_active %}<span class="badge-tag red">Hidden</span>{% endif %}
+              <span class="badge {% if member.group == 'board' %}text-bg-dark{% elif member.group == 'committee' %}text-bg-purple{% else %}text-bg-info{% endif %}">{{ member.get_group_display }}</span>
+              {% if not member.is_active %}<span class="badge text-bg-danger">Hidden</span>{% endif %}
             </div>
 
             {% if member.photo_url %}

@@ -47,23 +47,6 @@
   white-space: nowrap;
 }
 
-.availability-badge {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10.5px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 4px 9px 4px 7px;
-  border-radius: 20px;
-  white-space: nowrap;
-}
-.availability-badge i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.availability-available   { background: var(--green-light); color: var(--green); }
-.availability-limited     { background: var(--orange-light); color: var(--orange); }
-.availability-unavailable { background: var(--red-light); color: var(--red); }
 
 .reviewer-card-meta {
   display: flex;
@@ -80,18 +63,6 @@
   flex-wrap: wrap;
   gap: 6px;
 }
-.tag-pill {
-  display: inline-flex;
-  align-items: center;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 4px 9px;
-  border-radius: 20px;
-  background: var(--teal-light);
-  color: var(--teal);
-  white-space: nowrap;
-}
-.tag-pill.alt { background: var(--purple-light); color: var(--purple); }
 
 .reviewer-card-bio {
   margin: 0;
@@ -145,3 +116,5 @@
   .availability-form { width: 100%; }
   .availability-select { width: 100%; }
 }
+
+.availability-badge { flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.03em; }

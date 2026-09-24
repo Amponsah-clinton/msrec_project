@@ -212,3 +212,5 @@ body.site-search-open { overflow: hidden; }
   .site-search-bar input { font-size: 15px; }
   .site-search-hintkeys span:not(:last-child) { display: none; }
 }
+
+.site-search-overlay kbd { font-family: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace; }

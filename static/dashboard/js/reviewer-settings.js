@@ -140,7 +140,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!val) score = 0;
 
       strengthEl.dataset.score = String(score);
-      if (pill) pill.textContent = val ? labels[score] : "Enter a new password";
+      if (pill) {
+        pill.textContent = val ? labels[score] : "Enter a new password";
+        // Bootstrap badge colour by strength: none/too short -> secondary, weak -> danger,
+        // fair/good -> warning, strong -> success.
+        const tones = ["text-bg-secondary", "text-bg-danger", "text-bg-warning", "text-bg-warning", "text-bg-success"];
+        pill.classList.remove("text-bg-secondary", "text-bg-danger", "text-bg-warning", "text-bg-success");
+        pill.classList.add(tones[score]);
+      }
     }
 
     pwInput.addEventListener("input", updateStrength);

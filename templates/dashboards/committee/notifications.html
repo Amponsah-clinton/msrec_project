@@ -6,7 +6,6 @@
 {% block extra_css %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/reviewer-settings.css' %}">
 <link rel="stylesheet" href="{% static 'dashboard/css/reviewer-identity.css' %}">
 <link rel="stylesheet" href="{% static 'dashboard/css/committee-account.css' %}">
@@ -43,7 +42,7 @@
       <p class="rv-kpi-label">Committee notifications</p>
     </div>
     <div class="rv-kpi">
-      <div class="rv-kpi-top"><span class="rv-ico orange"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>{% if unread_count %}<span class="rv-kpi-trend orange">New</span>{% endif %}</div>
+      <div class="rv-kpi-top"><span class="rv-ico orange"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>{% if unread_count %}<span class="badge rv-kpi-trend text-bg-warning">New</span>{% endif %}</div>
       <p class="rv-kpi-value">{{ unread_count }}</p>
       <p class="rv-kpi-label">Unread</p>
     </div>
@@ -53,7 +52,7 @@
       <p class="rv-kpi-label">Upcoming meetings</p>
     </div>
     <div class="rv-kpi">
-      <div class="rv-kpi-top"><span class="rv-ico red"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></span>{% if pending_rsvp_count %}<span class="rv-kpi-trend red">Reply</span>{% endif %}</div>
+      <div class="rv-kpi-top"><span class="rv-ico red"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></span>{% if pending_rsvp_count %}<span class="badge rv-kpi-trend text-bg-danger">Reply</span>{% endif %}</div>
       <p class="rv-kpi-value">{{ pending_rsvp_count }}</p>
       <p class="rv-kpi-label">Meetings awaiting your RSVP</p>
     </div>
@@ -63,9 +62,9 @@
     <section class="panel" style="padding:0;">
       <div class="rv-notif-toolbar">
         <div class="filter-tabs" data-filters-target="#cmFeed" style="margin:0;">
-          <button type="button" class="filter-tab active" data-filter="all">All <span class="count">{{ feed_count }}</span></button>
-          <button type="button" class="filter-tab" data-filter="alert">Alerts <span class="count">{{ alert_count }}</span></button>
-          <button type="button" class="filter-tab" data-filter="update">Updates <span class="count">{{ update_count }}</span></button>
+          <button type="button" class="filter-tab active" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary">{{ feed_count }}</span></button>
+          <button type="button" class="filter-tab" data-filter="alert">Alerts <span class="count badge rounded-pill text-bg-secondary">{{ alert_count }}</span></button>
+          <button type="button" class="filter-tab" data-filter="update">Updates <span class="count badge rounded-pill text-bg-secondary">{{ update_count }}</span></button>
         </div>
         <label class="rv-unread-toggle">
           <input type="checkbox" data-cm-unread-toggle> Unread only
@@ -117,7 +116,7 @@
             <strong>{{ p.meeting.title }}</strong>
             <em>{{ p.meeting.scheduled_at|date:"D, g:i A" }}{% if p.meeting.location %} &middot; {{ p.meeting.location }}{% endif %}</em>
           </span>
-          <span class="badge-tag {% if p.rsvp_status == 'accepted' %}green{% elif p.rsvp_status == 'declined' %}red{% elif p.rsvp_status == 'tentative' %}orange{% else %}purple{% endif %}">{{ p.get_rsvp_status_display }}</span>
+          <span class="badge {% if p.rsvp_status == 'accepted' %}text-bg-success{% elif p.rsvp_status == 'declined' %}text-bg-danger{% elif p.rsvp_status == 'tentative' %}text-bg-warning{% else %}text-bg-purple{% endif %}">{{ p.get_rsvp_status_display }}</span>
         </a>
         {% empty %}
         <p class="field-hint" style="margin:0;">No meetings scheduled for you yet.</p>

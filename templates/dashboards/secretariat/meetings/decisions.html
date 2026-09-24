@@ -84,7 +84,7 @@
                 <span class="cell-sub">{{ d.meeting.title }} &middot; {{ d.decided_at|date:"d M Y" }}{% if d.application %} &middot; {{ d.application.reference_no }}{% endif %}</span>
               </div>
               <div class="decision-card-actions">
-                <span class="badge-tag {% if d.outcome == 'approved' %}green{% elif d.outcome == 'approved_conditions' %}teal{% elif d.outcome == 'rejected' %}red{% elif d.outcome == 'deferred' or d.outcome == 'tabled' %}orange{% elif d.outcome == 'modifications' %}blue{% else %}gray{% endif %}">{{ d.get_outcome_display }}</span>
+                <span class="badge {% if d.outcome == 'approved' %}text-bg-success{% elif d.outcome == 'approved_conditions' %}text-bg-info{% elif d.outcome == 'rejected' %}text-bg-danger{% elif d.outcome == 'deferred' or d.outcome == 'tabled' %}text-bg-warning{% elif d.outcome == 'modifications' %}text-bg-primary{% else %}text-bg-secondary{% endif %}">{{ d.get_outcome_display }}</span>
                 <form method="post" action="{% url 'secretariat_dashboard:decision_delete' d.pk %}" data-confirm="Remove this decision?" data-confirm-variant="danger">
                   {% csrf_token %}
                   <button type="submit" class="icon-btn decision-delete-btn" aria-label="Delete"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg></button>
@@ -94,9 +94,9 @@
             {% if d.details %}<p class="decision-card-details">{{ d.details }}</p>{% endif %}
             {% if d.total_votes %}
             <div class="vote-pills">
-              <span class="vote-pill vp-for">For <strong>{{ d.votes_for }}</strong></span>
-              <span class="vote-pill vp-against">Against <strong>{{ d.votes_against }}</strong></span>
-              <span class="vote-pill vp-abstain">Abstain <strong>{{ d.votes_abstain }}</strong></span>
+              <span class="badge vote-pill text-bg-success">For <strong>{{ d.votes_for }}</strong></span>
+              <span class="badge vote-pill text-bg-danger">Against <strong>{{ d.votes_against }}</strong></span>
+              <span class="badge vote-pill text-bg-secondary">Abstain <strong>{{ d.votes_abstain }}</strong></span>
             </div>
             {% endif %}
           </div>

@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 
 {% block title %}Committee | MSREC Admin{% endblock %}
@@ -212,7 +213,7 @@
                 <strong>{{ a.member.full_name }}</strong>
                 <span>{{ a.seat_title }}</span>
               </div>
-              <span class="cmt-pill cmt-pill-{{ a.expiry_state }}">
+              <span class="badge cmt-pill {{ a.expiry_state|state_badge }}">
                 {% if a.expiry_state == "expired" %}Expired {{ a.end_date|date:"d M Y" }}{% else %}Due {{ a.end_date|date:"d M Y" }}{% endif %}
               </span>
             </div>
@@ -235,7 +236,7 @@
                 <strong>{{ t.member.full_name }}</strong>
                 <span>{{ t.course_title }}</span>
               </div>
-              <span class="cmt-pill cmt-pill-{{ t.expiry_state }}">
+              <span class="badge cmt-pill {{ t.expiry_state|state_badge }}">
                 {% if t.expiry_state == "expired" %}Expired {{ t.expiry_date|date:"d M Y" }}{% else %}Due {{ t.expiry_date|date:"d M Y" }}{% endif %}
               </span>
             </div>
@@ -259,7 +260,7 @@
               <strong>{{ c.member.full_name }}</strong>
               <span>{{ c.description|truncatechars:70 }}</span>
             </div>
-            <span class="badge-tag {% if c.status == 'pending' %}orange{% elif c.status == 'reviewed' %}blue{% elif c.status == 'recused' %}purple{% else %}green{% endif %}">{{ c.get_status_display }}</span>
+            <span class="badge {% if c.status == 'pending' %}text-bg-warning{% elif c.status == 'reviewed' %}text-bg-primary{% elif c.status == 'recused' %}text-bg-purple{% else %}text-bg-success{% endif %}">{{ c.get_status_display }}</span>
           </div>
           {% empty %}
           <p class="cmt-empty-line">No conflict-of-interest records yet.</p>

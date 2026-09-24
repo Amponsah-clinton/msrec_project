@@ -46,7 +46,7 @@
 {% for p in awaiting %}
 <div class="pr-decl-row needs">
   <div>
-    <div class="pr-card-top"><span class="pr-ref">{{ p.ref }}</span><span class="mm-chip teal">{{ p.review_type }}</span></div>
+    <div class="pr-card-top"><span class="pr-ref">{{ p.ref }}</span><span class="badge mm-chip text-bg-info">{{ p.review_type }}</span></div>
     <h3><a href="{% url 'committee_dashboard:protocol_detail' p.pk %}">{{ p.title }}</a></h3>
     <div class="pr-card-meta">
       {% if p.pi_name %}<span><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>{{ p.pi_name }}{% if p.institution %}, {{ p.institution }}{% endif %}</span>{% endif %}
@@ -69,7 +69,7 @@
 {% for p in declared %}
 <div class="pr-decl-row">
   <div>
-    <div class="pr-card-top"><span class="pr-ref">{{ p.ref }}</span>{% include "dashboards/committee/_pr_decl_badge.html" %}{% if p.decl.has_conflict %}<span class="mm-chip orange">{{ p.decl.get_conflict_type_display }}</span>{% endif %}</div>
+    <div class="pr-card-top"><span class="pr-ref">{{ p.ref }}</span>{% include "dashboards/committee/_pr_decl_badge.html" %}{% if p.decl.has_conflict %}<span class="badge mm-chip text-bg-warning">{{ p.decl.get_conflict_type_display }}</span>{% endif %}</div>
     <h3><a href="{% url 'committee_dashboard:protocol_detail' p.pk %}">{{ p.title }}</a></h3>
     <div class="pr-card-meta">
       <span><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>{{ p.meeting.title }} &middot; {{ p.meeting.scheduled_at|date:"j M Y" }}</span>

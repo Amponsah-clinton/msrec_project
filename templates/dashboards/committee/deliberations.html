@@ -43,8 +43,8 @@
     <div>
       <div class="pr-card-top">
         <span class="pr-ref">{{ p.ref }}</span>
-        <span class="mm-chip teal">{{ p.review_type }}</span>
-        {% if p.is_recused %}<span class="pr-badge red">Recused</span>{% elif p.status == 'none' %}<span class="pr-badge orange">Declare to join</span>{% elif p.status == 'pending' %}<span class="pr-badge orange">Awaiting Chair</span>{% endif %}
+        <span class="badge mm-chip text-bg-info">{{ p.review_type }}</span>
+        {% if p.is_recused %}<span class="badge pr-badge text-bg-danger">Recused</span>{% elif p.status == 'none' %}<span class="badge pr-badge text-bg-warning">Declare to join</span>{% elif p.status == 'pending' %}<span class="badge pr-badge text-bg-warning">Awaiting Chair</span>{% endif %}
       </div>
       <h3><a href="{% url 'committee_dashboard:deliberation_thread' p.pk %}">{{ p.title }}</a></h3>
       <div class="pr-card-meta">

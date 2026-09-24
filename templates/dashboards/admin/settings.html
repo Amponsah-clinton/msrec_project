@@ -155,14 +155,14 @@
                 <div class="field-grid">
                   <div class="field field-wide">
                     <label for="paystackPublicKey">Public Key
-                      {% if using_env_public_key %}<span class="settings-badge">Using server default</span>{% endif %}
+                      {% if using_env_public_key %}<span class="badge settings-badge text-bg-secondary">Using server default</span>{% endif %}
                     </label>
                     <input type="text" id="paystackPublicKey" name="paystack_public_key" value="{{ site.paystack_public_key }}" placeholder="{{ env_paystack_public_key }}" autocomplete="off">
                     <p class="field-hint">Safe to show client-side &mdash; sent to the browser on the payment page.</p>
                   </div>
                   <div class="field field-wide">
                     <label for="paystackSecretKey">Secret Key
-                      {% if using_env_secret_key %}<span class="settings-badge">Using server default</span>{% endif %}
+                      {% if using_env_secret_key %}<span class="badge settings-badge text-bg-secondary">Using server default</span>{% endif %}
                     </label>
                     <input type="password" id="paystackSecretKey" name="paystack_secret_key" placeholder="{% if paystack_secret_key_masked %}{{ paystack_secret_key_masked }}{% else %}Not set{% endif %}" autocomplete="off">
                     <p class="field-hint">Never shown once saved. Leave blank to keep the current key &mdash; type a new one only to replace it.</p>
@@ -538,7 +538,6 @@
             <div class="form-section">
               <div class="apd-head">
                 <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg> Approval Documents</h3>
-                <p class="section-note">When a study is approved, the applicant receives an email with two PDFs attached: the <strong>approval letter</strong> and the <strong>certificate of ethical clearance</strong>. Write the wording here &mdash; the <code>{placeholders}</code> are filled in for each study. Both documents are signed by the Chair set under <a href="#certificates" data-apd-tab-link="certificates">Certificates</a>.</p>
               </div>
 
               <div class="apd-seg" role="tablist" aria-label="Document">
@@ -569,7 +568,7 @@
                 <input type="hidden" name="section" value="email">
                 <input type="hidden" name="tab" value="approval-docs">
                 <div class="apd-card-head">
-                  <div><h4>Approval email</h4><p>Sent to the applicant, with both PDFs attached.</p></div>
+                  <div><h4>Approval email</h4></div>
                 </div>
                 <div class="field"><label for="apdEmailSubject">Subject <span class="apd-req">*</span></label>
                   <input type="text" id="apdEmailSubject" name="email_subject" maxlength="200" value="{{ t.email_subject }}" required></div>
@@ -577,7 +576,7 @@
                   <input type="text" id="apdEmailHeading" name="email_heading" maxlength="200" value="{{ t.email_heading }}" required></div>
                 <div class="field"><label for="apdEmailBody">Message <span class="apd-req">*</span></label>
                   <textarea id="apdEmailBody" name="email_body" rows="11" required>{{ t.email_body }}</textarea>
-                  <p class="field-hint">Leave a blank line between paragraphs. The approval reference and verification code are shown in a box under the first paragraph.</p></div>
+                  <p class="field-hint">A blank line starts a new paragraph.</p></div>
                 <div class="apd-actions">
                   <button type="submit" class="apd-link-danger" form="apdReset-email">Restore defaults</button>
                   <div class="apd-actions-right">
@@ -594,7 +593,7 @@
                 <input type="hidden" name="section" value="letter">
                 <input type="hidden" name="tab" value="approval-docs">
                 <div class="apd-card-head">
-                  <div><h4>Approval letter</h4><p>A4 on MSREC letterhead: reference, date and addressee are added automatically.</p></div>
+                  <div><h4>Approval letter</h4></div>
                 </div>
                 <div class="apd-grid">
                   <div class="field apd-span"><label for="apdLetterSubject">Subject line <span class="apd-req">*</span></label>
@@ -605,13 +604,12 @@
                     <input type="text" id="apdLetterSignOff" name="letter_sign_off" maxlength="120" value="{{ t.letter_sign_off }}"></div>
                 </div>
                 <div class="field"><label for="apdLetterBody">Letter body <span class="apd-req">*</span></label>
-                  <textarea id="apdLetterBody" name="letter_body" rows="8" required>{{ t.letter_body }}</textarea>
-                  <p class="field-hint">Leave a blank line between paragraphs.</p></div>
+                  <textarea id="apdLetterBody" name="letter_body" rows="8" required>{{ t.letter_body }}</textarea></div>
                 <div class="field"><label for="apdLetterCondHeading">Conditions heading</label>
                   <input type="text" id="apdLetterCondHeading" name="letter_conditions_heading" maxlength="120" value="{{ t.letter_conditions_heading }}"></div>
                 <div class="field"><label for="apdLetterConditions">Conditions of approval</label>
                   <textarea id="apdLetterConditions" name="letter_conditions" rows="7">{{ t.letter_conditions }}</textarea>
-                  <p class="field-hint">One condition per line &mdash; they're numbered automatically. Leave empty to omit the list.</p></div>
+                  <p class="field-hint">One per line.</p></div>
                 <div class="field"><label for="apdLetterClosing">Closing paragraph</label>
                   <textarea id="apdLetterClosing" name="letter_closing" rows="3">{{ t.letter_closing }}</textarea></div>
                 <div class="apd-toggles">
@@ -627,6 +625,98 @@
                 </div>
               </form>
 
+              <!-- Approval letter: letterhead images -->
+              <section class="apd-card" data-apd-card="letter" hidden>
+                <div class="apd-card-head">
+                  <div><h4>Letterhead</h4><p>Header on page 1, footer on every page, edge to edge.</p></div>
+                </div>
+
+                <div class="apd-lh">
+                  <div class="apd-a4-wrap">
+                    <div class="apd-a4" aria-label="A4 preview">
+                      <div class="apd-a4-header{% if t.header_url %} has-img{% endif %}" id="apdA4Header">
+                        <img id="apdA4HeaderImg" alt="" {% if t.header_url %}src="{{ t.header_url }}"{% else %}hidden{% endif %}>
+                        <span class="apd-a4-builtin">Built-in letterhead</span>
+                      </div>
+                      <div class="apd-a4-body">
+                        <i style="width:38%"></i><i style="width:74%"></i><i style="width:88%"></i><i style="width:82%"></i><i style="width:90%"></i>
+                        <i style="width:60%"></i><i class="gap"></i><i style="width:86%"></i><i style="width:92%"></i><i style="width:48%"></i>
+                      </div>
+                      <div class="apd-a4-footer{% if t.footer_url %} has-img{% endif %}" id="apdA4Footer">
+                        <img id="apdA4FooterImg" alt="" {% if t.footer_url %}src="{{ t.footer_url }}"{% else %}hidden{% endif %}>
+                        <span class="apd-a4-builtin">Built-in footer</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="apd-lh-forms">
+                    {% for kind, label, url, tip in letter_image_slots %}
+                    <form method="post" enctype="multipart/form-data" class="apd-lh-form" data-apd-lh="{{ kind }}">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="update_letter_image">
+                      <input type="hidden" name="kind" value="{{ kind }}">
+                      <input type="hidden" name="tab" value="approval-docs">
+                      <div class="apd-lh-title"><strong>{{ label }}</strong>{% if url %}<span class="apd-tag">Uploaded</span>{% else %}<span class="apd-tag muted">Built-in</span>{% endif %}</div>
+                      <label class="apd-file">
+                        <input type="file" name="image" accept="image/png,image/jpeg,image/webp" required data-apd-preview="{% if kind == 'header' %}apdA4HeaderImg{% else %}apdA4FooterImg{% endif %}" data-apd-preview-box="{% if kind == 'header' %}apdA4Header{% else %}apdA4Footer{% endif %}">
+                        <span class="apd-file-btn"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg> Choose image</span>
+                        <span class="apd-file-name">PNG, JPG or WEBP</span>
+                      </label>
+                      <p class="apd-lh-tip">{{ tip }}</p>
+                      <div class="apd-lh-buttons">
+                        <button type="submit" class="btn-primary">Upload {{ kind }}</button>
+                        {% if url %}<button type="submit" name="remove" value="1" class="apd-link-danger" formnovalidate data-apd-confirm="Remove the {{ kind }} image? The built-in {{ kind }} will be used instead.">Remove</button>{% endif %}
+                      </div>
+                    </form>
+                    {% endfor %}
+                  </div>
+                </div>
+              </section>
+
+              <!-- Approval letter: signatory -->
+              <section class="apd-card" data-apd-card="letter" hidden>
+                <div class="apd-card-head">
+                  <div><h4>Letter signatory</h4><p>{% if t.letter_sign_name %}Signed by <strong>{{ t.letter_sign_name }}</strong>.{% else %}Signed by the Chair unless you add someone here.{% endif %}</p></div>
+                </div>
+
+                <div class="apd-sign">
+                  <div class="cs-preview apd-sign-preview">
+                    <span class="cs-preview-tag">On the letter</span>
+                    <div class="cs-sheet apd-sign-sheet">
+                      <div class="apd-sign-hello">Yours sincerely,</div>
+                      <div class="cs-sig-box apd-sign-box">
+                        <img id="apdSignImg" alt="" {% if t.sign_url %}src="{{ t.sign_url }}"{% else %}hidden{% endif %}>
+                        <span class="cs-sig-empty" id="apdSignEmpty" {% if t.sign_url %}hidden{% endif %}>Signature appears here</span>
+                      </div>
+                      <div class="cs-name apd-sign-name" id="apdSignName">{{ t.letter_sign_name|default:"Signatory's name" }}</div>
+                      <div class="cs-title apd-sign-title" id="apdSignTitle">{{ t.letter_sign_title }}</div>
+                    </div>
+                  </div>
+
+                  <form method="post" enctype="multipart/form-data" class="apd-sign-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_letter_signatory">
+                    <input type="hidden" name="tab" value="approval-docs">
+                    <div class="apd-grid">
+                      <div class="field"><label for="apdSignNameInput">Name <span class="apd-req">*</span></label>
+                        <input type="text" id="apdSignNameInput" name="sign_name" maxlength="150" value="{{ t.letter_sign_name }}" placeholder="e.g. Mrs. Abena Osei" required></div>
+                      <div class="field"><label for="apdSignTitleInput">Title</label>
+                        <input type="text" id="apdSignTitleInput" name="sign_title" maxlength="150" value="{{ t.letter_sign_title }}" placeholder="e.g. Secretary to the Committee"></div>
+                    </div>
+                    <label class="apd-file">
+                      <input type="file" name="signature_file" accept="image/png,image/jpeg,image/webp" data-apd-sign-preview="apdSignImg" data-apd-sign-empty="apdSignEmpty">
+                      <span class="apd-file-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> {% if t.sign_url %}Replace signature{% else %}Upload signature{% endif %}</span>
+                      <span class="apd-file-name">PNG or JPG</span>
+                    </label>
+                    {% if t.sign_url %}<label class="apd-toggle apd-toggle-inline"><input type="checkbox" name="remove_signature" value="1"><span>Remove the saved signature</span></label>{% endif %}
+                    <div class="apd-actions">
+                      {% if t.letter_sign_name %}<button type="submit" name="use_chair" value="1" class="apd-link-danger" formnovalidate data-apd-confirm="Sign the letter with the Chair again? The custom signatory and its signature will be removed.">Use the Chair instead</button>{% else %}<span></span>{% endif %}
+                      <div class="apd-actions-right"><button type="submit" class="btn-primary">Save signatory</button></div>
+                    </div>
+                  </form>
+                </div>
+              </section>
+
               <!-- Certificate -->
               <form method="post" class="apd-card" data-apd-card="certificate" id="apdForm-certificate" hidden>
                 {% csrf_token %}
@@ -634,7 +724,7 @@
                 <input type="hidden" name="section" value="certificate">
                 <input type="hidden" name="tab" value="approval-docs">
                 <div class="apd-card-head">
-                  <div><h4>Certificate of ethical clearance</h4><p>A4 landscape. The study title sits between the intro and the statement and is sized to fit, however long.</p></div>
+                  <div><h4>Certificate</h4></div>
                 </div>
 
                 <div class="apd-cert-sketch" aria-hidden="true">
@@ -655,8 +745,7 @@
                 <div class="field"><label for="apdCertStatement">Statement under the study title <span class="apd-req">*</span></label>
                   <textarea id="apdCertStatement" name="cert_statement" rows="4" required>{{ t.cert_statement }}</textarea></div>
                 <div class="field"><label for="apdCertSeal">Seal caption</label>
-                  <input type="text" id="apdCertSeal" name="cert_seal_caption" maxlength="24" value="{{ t.cert_seal_caption }}">
-                  <p class="field-hint">Up to 24 characters, printed inside the round seal.</p></div>
+                  <input type="text" id="apdCertSeal" name="cert_seal_caption" maxlength="24" value="{{ t.cert_seal_caption }}"></div>
                 <p class="apd-toggles-label">Show on the certificate</p>
                 <div class="apd-toggles">
                   <label class="apd-toggle"><input type="checkbox" name="cert_show_reference" {% if t.cert_show_reference %}checked{% endif %}><span>Reference number</span></label>
@@ -683,8 +772,6 @@
               <form method="post" id="apdReset-certificate" data-confirm="Restore the certificate to the default wording? Your edits will be replaced." data-confirm-label="Restore" hidden>
                 {% csrf_token %}<input type="hidden" name="action" value="reset_approval_template"><input type="hidden" name="section" value="certificate"><input type="hidden" name="tab" value="approval-docs">
               </form>
-
-              {% if t.updated_by %}<p class="apd-updated">Last changed {{ t.updated_at|date:"j M Y, H:i" }} by {{ t.updated_by.full_name }}.</p>{% endif %}
               {% endwith %}
             </div>
           </div>

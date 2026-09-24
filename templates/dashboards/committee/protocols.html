@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 
 {% block title %}Protocols for Committee Review | MSREC Committee{% endblock %}
@@ -45,7 +46,7 @@
     <div>
       <div class="pr-card-top">
         <span class="pr-ref">{{ p.ref }}</span>
-        <span class="mm-chip teal">{{ p.review_type }}</span>
+        <span class="badge mm-chip text-bg-info">{{ p.review_type }}</span>
         {% include "dashboards/committee/_pr_decl_badge.html" %}
       </div>
       <h3><a href="{% url 'committee_dashboard:protocol_detail' p.pk %}">{{ p.title }}</a></h3>
@@ -72,7 +73,7 @@
     </div>
     <div class="pr-card-side">
       {% if p.is_recused %}<span class="pr-muted">Details hidden while recused</span>
-      {% else %}<span class="pr-badge {{ p.consensus_badge }}">{{ p.consensus }}</span>{% endif %}
+      {% else %}<span class="badge pr-badge {{ p.consensus_badge|bs_badge }}">{{ p.consensus }}</span>{% endif %}
       <a href="{% url 'committee_dashboard:protocol_detail' p.pk %}" class="btn-primary">{% if p.is_recused %}View{% else %}Review protocol{% endif %}</a>
     </div>
   </article>

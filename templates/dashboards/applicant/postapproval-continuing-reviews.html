@@ -42,7 +42,7 @@
         <div class="revision-top">
           <div class="revision-title">
             <h3>{{ card.application.title }}</h3>
-            <span>{{ card.application.reference_no|default:"&mdash;" }} &nbsp;&bull;&nbsp; <span class="badge-tag {% if card.stage == 2 %}orange{% else %}blue{% endif %}">Annual Review</span></span>
+            <span>{{ card.application.reference_no|default:"&mdash;" }} &nbsp;&bull;&nbsp; <span class="badge {% if card.stage == 2 %}text-bg-warning{% else %}text-bg-primary{% endif %}">Annual Review</span></span>
           </div>
           <div class="revision-due">
             <span class="due-label">Approval Expires</span>

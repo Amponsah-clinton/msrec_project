@@ -70,6 +70,7 @@ def connect():
     _register("pages.TrainingRecord", "pages.documents_storage", "certificate_path")
     _register("pages.ResourceDocument", "pages.resources_storage", "file_path")
     _register("applicant_dashboard.TeamMember", "applicant_dashboard.team_storage", "photo_path")
+    _register("pages.ApprovalDocumentTemplate", "pages.storage", "letter_header_path", "letter_footer_path", "letter_sign_path")
 
     from django.apps import apps
 

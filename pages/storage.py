@@ -158,6 +158,43 @@ def upload_chair_signature(png_bytes):
     return CHAIR_SIGNATURE_PATH
 
 
+def upload_letter_image(image_bytes, ext, kind):
+    """Upload a processed letterhead header/footer image (see pages/
+    letter_images.py) to the "profile" bucket. Every upload gets a new,
+    unique name -- Supabase serves an overwritten object from its CDN cache
+    for a while, so reusing one name would keep printing the old artwork.
+    The caller deletes the previous object once this one is stored.
+    Returns the object path, or None if Storage isn't configured / failed."""
+    if not image_bytes or not _configured():
+        return None
+
+    import uuid
+
+    object_path = f"site/letter-{kind}-{uuid.uuid4().hex[:12]}.{ext}"
+    content_type = "image/png" if ext == "png" else "image/jpeg"
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{object_path}"
+    req = urllib.request.Request(
+        url,
+        data=image_bytes,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+            "apikey": settings.SUPABASE_SERVICE_KEY,
+            "Content-Type": content_type,
+            "x-upsert": "true",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            if resp.status not in (200, 201):
+                logger.warning("Supabase Storage upload of %s returned status %s", object_path, resp.status)
+                return None
+    except urllib.error.URLError:
+        logger.exception("Supabase Storage upload failed for %s", object_path)
+        return None
+    return object_path
+
+
 def download_object(object_path):
     """Raw bytes of one object in the "profile" bucket (server-side, with the
     service key), or None if unconfigured / missing / the fetch failed --

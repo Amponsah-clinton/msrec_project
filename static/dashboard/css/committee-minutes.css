@@ -20,7 +20,7 @@
 .mn-banner { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--orange-light); color: var(--text-main); font-size: 13px; }
 .mn-banner[hidden] { display: none; }
 .mn-badges { display: flex; gap: 8px; margin-bottom: 10px; }
-.mn-head h2 { margin: 0; font-family: "Fraunces", Georgia, serif; font-size: 24px; font-weight: 600; line-height: 1.25; }
+.mn-head h2 { margin: 0; font-family: "IBM Plex Serif", Georgia, "Times New Roman", serif; font-size: 24px; font-weight: 600; line-height: 1.25; }
 .mn-when { margin: 6px 0 0; font-size: 13px; color: var(--text-sub); }
 
 .mn-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0; margin: 22px 0 0; border: 1px solid var(--border); border-radius: 12px; }

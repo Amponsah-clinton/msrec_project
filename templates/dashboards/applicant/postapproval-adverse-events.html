@@ -47,7 +47,7 @@
         <div class="revision-top">
           <div class="revision-title">
             <h3>{{ submission.application.title }}</h3>
-            <span>{{ submission.application.reference_no|default:"&mdash;" }}{% if submission.form_data.severity %} &nbsp;&bull;&nbsp; <span class="badge-tag {% if submission.is_serious %}red{% else %}gray{% endif %}">{{ submission.form_data.severity }}</span>{% endif %}</span>
+            <span>{{ submission.application.reference_no|default:"&mdash;" }}{% if submission.form_data.severity %} &nbsp;&bull;&nbsp; <span class="badge {% if submission.is_serious %}text-bg-danger{% else %}text-bg-secondary{% endif %}">{{ submission.form_data.severity }}</span>{% endif %}</span>
           </div>
           <div class="revision-due">
             <span class="due-label">Reported</span>

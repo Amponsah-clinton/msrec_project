@@ -72,3 +72,53 @@
     });
   });
 })();
+
+/* Letterhead uploads: show the chosen artwork in the miniature A4 right away
+   (client-side only -- the real processing happens when it's uploaded), and
+   confirm before removing. */
+(function () {
+  var root = document.getElementById("approval-docs");
+  if (!root) return;
+
+  root.querySelectorAll("[data-apd-preview]").forEach(function (input) {
+    input.addEventListener("change", function () {
+      var file = input.files && input.files[0];
+      var img = document.getElementById(input.getAttribute("data-apd-preview"));
+      var box = document.getElementById(input.getAttribute("data-apd-preview-box"));
+      var label = input.closest(".apd-file").querySelector(".apd-file-name");
+      if (!file || !img) return;
+      img.src = URL.createObjectURL(file);
+      img.hidden = false;
+      if (box) box.classList.add("has-img");
+      if (label) label.textContent = file.name;
+    });
+  });
+
+  root.querySelectorAll("[data-apd-sign-preview]").forEach(function (input) {
+    input.addEventListener("change", function () {
+      var file = input.files && input.files[0];
+      var img = document.getElementById(input.getAttribute("data-apd-sign-preview"));
+      var empty = document.getElementById(input.getAttribute("data-apd-sign-empty"));
+      var label = input.closest(".apd-file").querySelector(".apd-file-name");
+      if (!file) return;
+      img.src = URL.createObjectURL(file);
+      img.hidden = false;
+      if (empty) empty.hidden = true;
+      if (label) label.textContent = file.name;
+    });
+  });
+
+  var nameInput = document.getElementById("apdSignNameInput");
+  var titleInput = document.getElementById("apdSignTitleInput");
+  var nameOut = document.getElementById("apdSignName");
+  var titleOut = document.getElementById("apdSignTitle");
+  if (nameInput && nameOut) nameInput.addEventListener("input", function () { nameOut.textContent = nameInput.value.trim() || "Signatory's name"; });
+  if (titleInput && titleOut) titleInput.addEventListener("input", function () { titleOut.textContent = titleInput.value.trim(); });
+
+  // Buttons that remove something ask first (submit is cancelled on "no").
+  root.querySelectorAll("[data-apd-confirm]").forEach(function (btn) {
+    btn.addEventListener("click", function (evt) {
+      if (!window.confirm(btn.getAttribute("data-apd-confirm"))) evt.preventDefault();
+    });
+  });
+})();

@@ -36,7 +36,7 @@
 .meeting-body { flex: 1; min-width: 0; }
 .meeting-body-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .meeting-body h4 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text-main); }
-.meeting-body-top .badge-tag { flex-shrink: 0; }
+.meeting-body-top .badge { flex-shrink: 0; }
 
 .meeting-meta {
   display: flex;

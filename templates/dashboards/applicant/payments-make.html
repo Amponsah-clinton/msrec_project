@@ -53,7 +53,7 @@
               {% for item in outstanding %}
               <tr>
                 <td data-label="Study Title">{{ item.application.title }}</td>
-                <td data-label="Review Type"><span class="badge-tag blue">{{ item.application.review_type|default:"Not specified" }}</span></td>
+                <td data-label="Review Type"><span class="badge text-bg-primary">{{ item.application.review_type|default:"Not specified" }}</span></td>
                 <td data-label="Amount Due" class="ref-cell">GHS {{ item.amount|floatformat:"2g" }}</td>
                 <td data-label="Prepared"><span class="due-main">{{ item.application.created_at|date:"d M Y" }}</span></td>
                 <td data-label="Action">

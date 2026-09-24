@@ -101,7 +101,7 @@
           <div class="fee-schedule-row{% if not fee.requires_payment %} is-free{% endif %}">
             <div class="fee-schedule-top">
               <strong>{{ fee.label }}</strong>
-              {% if fee.requires_payment %}<span class="fee-schedule-badge"><i></i>Fee required</span>{% else %}<span class="fee-schedule-badge free"><i></i>Free</span>{% endif %}
+              {% if fee.requires_payment %}<span class="badge fee-schedule-badge text-bg-info">Fee required</span>{% else %}<span class="badge fee-schedule-badge text-bg-secondary">Free</span>{% endif %}
             </div>
             <div class="fee-schedule-input">
               <span class="fee-currency">{{ fee.currency }}</span>
@@ -117,10 +117,10 @@
       <!-- TABS + LIST -->
       <section class="panel acct-panel">
         <div class="filter-tabs acct-tabs" data-filters-target="#financeList">
-          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count">{{ counts.all }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'success' %} active{% endif %}" data-filter="success">Successful <span class="count">{{ counts.success }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}" data-filter="pending">Pending <span class="count">{{ counts.pending }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'failed' %} active{% endif %}" data-filter="failed">Failed <span class="count">{{ counts.failed }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'success' %} active{% endif %}" data-filter="success">Successful <span class="count badge rounded-pill text-bg-secondary">{{ counts.success }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}" data-filter="pending">Pending <span class="count badge rounded-pill text-bg-secondary">{{ counts.pending }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'failed' %} active{% endif %}" data-filter="failed">Failed <span class="count badge rounded-pill text-bg-secondary">{{ counts.failed }}</span></button>
         </div>
 
         <form method="get" class="finance-filter-bar" id="financeFilterForm">
@@ -167,9 +167,9 @@
                 <td data-label="Purpose">{{ payment.purpose }}</td>
                 <td data-label="Amount" class="ref-cell">{{ payment.currency }} {{ payment.amount }}</td>
                 <td data-label="Status">
-                  {% if payment.status == 'success' %}<span class="badge-tag green">Successful</span>
-                  {% elif payment.status == 'pending' %}<span class="badge-tag orange">Pending</span>
-                  {% else %}<span class="badge-tag red">Failed</span>{% endif %}
+                  {% if payment.status == 'success' %}<span class="badge text-bg-success">Successful</span>
+                  {% elif payment.status == 'pending' %}<span class="badge text-bg-warning">Pending</span>
+                  {% else %}<span class="badge text-bg-danger">Failed</span>{% endif %}
                 </td>
                 <td data-label="Date"><span class="due-main">{{ payment.created_at|date:"d M Y, g:i A" }}</span></td>
               </tr>

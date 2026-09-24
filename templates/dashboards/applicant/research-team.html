@@ -80,7 +80,7 @@
               <span class="team-avatar initials" style="background:var(--navy);">{{ request.user.initials }}</span>
             {% endif %}
             <div class="team-info">
-              <h4>{{ request.user.full_name }} <span class="badge-tag navy">Principal Investigator</span></h4>
+              <h4>{{ request.user.full_name }} <span class="badge text-bg-dark">Principal Investigator</span></h4>
               <p>Named on every application you submit</p>
             </div>
             <div class="team-contact">
@@ -88,7 +88,7 @@
               <span>{{ request.user.department|default:request.user.institution }}</span>
             </div>
             <div class="team-actions">
-              <span class="badge-tag green">You</span>
+              <span class="badge text-bg-success">You</span>
             </div>
           </div>
 
@@ -96,7 +96,7 @@
           <div class="team-row">
             <span class="team-avatar initials" style="background:var(--teal);">{{ row.initials }}</span>
             <div class="team-info">
-              <h4>{{ row.name }}{% if row.role %} <span class="badge-tag blue">{{ row.role }}</span>{% endif %}</h4>
+              <h4>{{ row.name }}{% if row.role %} <span class="badge text-bg-primary">{{ row.role }}</span>{% endif %}</h4>
               <p>{{ row.application.reference_no|default:"Reference pending" }} &middot; {{ row.application.title }}</p>
             </div>
             <div class="team-contact">

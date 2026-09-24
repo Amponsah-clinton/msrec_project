@@ -47,9 +47,9 @@
               <span class="doc-meta">Decision Letter &nbsp;&bull;&nbsp; Issued {{ application.decided_at|default:application.revision_requested_at|date:"d M Y" }}</span>
             </div>
             <div class="doc-trailing">
-              {% if application.status == 'approved' %}<span class="badge-tag green">Approved</span>
-              {% elif application.status == 'not_approved' %}<span class="badge-tag red">Not Approved</span>
-              {% elif application.status == 'revisions_required' %}<span class="badge-tag orange">Revisions Required</span>{% endif %}
+              {% if application.status == 'approved' %}<span class="badge text-bg-success">Approved</span>
+              {% elif application.status == 'not_approved' %}<span class="badge text-bg-danger">Not Approved</span>
+              {% elif application.status == 'revisions_required' %}<span class="badge text-bg-warning">Revisions Required</span>{% endif %}
               <div class="doc-actions">
                 <a class="action-btn" aria-label="Open letter" href="{% url 'applicant_dashboard:application_letter' application.pk 'decision' %}">
                   <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>

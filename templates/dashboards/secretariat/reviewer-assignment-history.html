@@ -59,8 +59,8 @@
             <div class="acct-info">
               <h4>
                 {{ log.user.full_name }}
-                {% if log.action == 'approved' %}<span class="badge-tag green">Approved as Reviewer</span>
-                {% else %}<span class="badge-tag red">Reviewer Request Declined</span>{% endif %}
+                {% if log.action == 'approved' %}<span class="badge text-bg-success">Approved as Reviewer</span>
+                {% else %}<span class="badge text-bg-danger">Reviewer Request Declined</span>{% endif %}
               </h4>
               <p>{{ log.user.email }}{% if log.note %} &middot; {{ log.note }}{% endif %}</p>
             </div>

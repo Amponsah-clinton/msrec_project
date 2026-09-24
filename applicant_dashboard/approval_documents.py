@@ -62,7 +62,7 @@ INK = colors.HexColor("#14233f")
 INK_SOFT = colors.HexColor("#56607a")
 TEAL = colors.HexColor("#0f8a86")
 HAIR = colors.HexColor("#d9dee6")
-TINT = colors.HexColor("#f5f8f9")
+BODY = colors.HexColor("#1b1f27")   # near-black body text, softer than pure black
 
 
 # ---------------------------------------------------------------------------
@@ -180,6 +180,12 @@ def letter_content(application, template=None):
         "show_summary": t.letter_show_summary,
         "show_verification": t.letter_show_verification and bool(v["reference_no"]),
         "addressee": [x for x in (v["applicant_name"], _department(application), v["institution"]) if x],
+        "signatory": {"name": (t.letter_sign_name or "").strip() or v["chair_name"],
+                      "title": ((t.letter_sign_title or "").strip() if (t.letter_sign_name or "").strip() else v["chair_title"]),
+                      "custom": bool((t.letter_sign_name or "").strip()),
+                      "image_url": (t.letter_image_url("signature") if (t.letter_sign_name or "").strip() else None)},
+        "header_url": t.letter_image_url("header"),
+        "footer_url": t.letter_image_url("footer"),
     }
 
 
@@ -257,10 +263,23 @@ def _qr_drawing(text, size):
     return drawing
 
 
-def _signature_flowable(max_w=56 * mm, max_h=15 * mm):
+def letter_signatory(values, template=None):
+    """Who signs the approval letter: dict(name, title, image bytes|None,
+    custom). A signatory set in Site Settings > Approval Documents wins;
+    otherwise it's the Chair, signature included."""
+    from pages import storage as pages_storage
     from pages.certificate_signatory import chair_signature_bytes
 
-    png = chair_signature_bytes()
+    t = _template(template)
+    name = (t.letter_sign_name or "").strip()
+    if name:
+        image = pages_storage.download_object(t.letter_sign_path) if t.letter_sign_path else None
+        return {"name": name, "title": (t.letter_sign_title or "").strip(), "image": image, "custom": True}
+    return {"name": values["chair_name"], "title": values["chair_title"],
+            "image": chair_signature_bytes(), "custom": False}
+
+
+def _signature_flowable(png, max_w=56 * mm, max_h=15 * mm):
     if not png:
         return Spacer(1, 14 * mm)
     try:
@@ -292,6 +311,7 @@ class _NumberedCanvas(rl_canvas.Canvas):
 
     def __init__(self, *args, **kwargs):
         self._footer_text = kwargs.pop("footer_text", "")
+        self._footer_image = kwargs.pop("footer_image", None)  # (ImageReader, x, width, height) or None
         super().__init__(*args, **kwargs)
         self._saved = []
 
@@ -308,6 +328,15 @@ class _NumberedCanvas(rl_canvas.Canvas):
         super().save()
 
     def _draw_footer(self, total):
+        if self._footer_image:
+            # The uploaded footer artwork sits at the very foot of the page;
+            # only the page number is added, just above it.
+            reader, x, w, h = self._footer_image
+            self.drawImage(reader, x, 0, width=w, height=h, mask="auto")
+            self.setFont("Helvetica", 7.5)
+            self.setFillColor(INK_SOFT)
+            self.drawRightString(LETTER_W - MARGIN_X, h + 3.2 * mm, f"Page {self._pageNumber} of {total}")
+            return
         self.setStrokeColor(HAIR)
         self.setLineWidth(0.5)
         self.line(MARGIN_X, 16 * mm, LETTER_W - MARGIN_X, 16 * mm)
@@ -315,6 +344,48 @@ class _NumberedCanvas(rl_canvas.Canvas):
         self.setFillColor(INK_SOFT)
         self.drawString(MARGIN_X, 11.5 * mm, self._footer_text)
         self.drawRightString(LETTER_W - MARGIN_X, 11.5 * mm, f"Page {self._pageNumber} of {total}")
+
+
+# Letterhead artwork limits. Both images are laid out edge to edge (the
+# usual way letterhead is printed) and scaled DOWN, never up, when they'd
+# take too much of the page; a narrow image is centred rather than stretched.
+HEADER_MAX_H = 55 * mm
+FOOTER_MAX_H = 38 * mm
+
+
+def _letter_image(image_bytes, max_h):
+    """(ImageReader, x, width, height) fitted to A4, or None if the bytes
+    can't be read -- an unreadable image must never stop a letter being
+    issued, so the built-in letterhead is used instead."""
+    if not image_bytes:
+        return None
+    try:
+        reader = ImageReader(BytesIO(image_bytes))
+        iw, ih = reader.getSize()
+        width = LETTER_W
+        height = width * ih / iw
+        if height > max_h:
+            height = max_h
+            width = height * iw / ih
+        return reader, (LETTER_W - width) / 2, width, height
+    except Exception:
+        logger.exception("Couldn't read the letterhead image")
+        return None
+
+
+def _letterhead_images(template):
+    """Downloads and fits the uploaded header / footer (each may be None)."""
+    from pages import storage as pages_storage
+
+    t = _template(template)
+    header = _letter_image(pages_storage.download_object(t.letter_header_path), HEADER_MAX_H) if t.letter_header_path else None
+    footer = _letter_image(pages_storage.download_object(t.letter_footer_path), FOOTER_MAX_H) if t.letter_footer_path else None
+    return header, footer
+
+
+def _draw_header_image(c, header):
+    reader, x, w, h = header
+    c.drawImage(reader, x, LETTER_H - h, width=w, height=h, mask="auto")
 
 
 def _draw_letterhead(c, site):
@@ -353,13 +424,13 @@ def _draw_letterhead(c, site):
         c.drawRightString(LETTER_W - MARGIN_X, y, line)
         y -= 3.7 * mm
 
+    # A classic double rule: one firm line over one fine line, in navy.
     rule_y = LETTER_H - 38 * mm
-    c.setStrokeColor(TEAL)
-    c.setLineWidth(1.1)
+    c.setStrokeColor(INK)
+    c.setLineWidth(0.9)
     c.line(MARGIN_X, rule_y, LETTER_W - MARGIN_X, rule_y)
-    c.setStrokeColor(HAIR)
-    c.setLineWidth(0.4)
-    c.line(MARGIN_X, rule_y - 1.2 * mm, LETTER_W - MARGIN_X, rule_y - 1.2 * mm)
+    c.setLineWidth(0.3)
+    c.line(MARGIN_X, rule_y - 1.1 * mm, LETTER_W - MARGIN_X, rule_y - 1.1 * mm)
 
 
 def _draw_running_head(c, reference_no):
@@ -376,16 +447,18 @@ def render_letter_pdf(application, template=None):
     content = letter_content(application, template)
     v = content["values"]
     site = _site()
+    header_image, footer_image = _letterhead_images(template)
+    signatory = letter_signatory(v, template)
 
     styles = {
-        "body": ParagraphStyle("body", fontName="Times-Roman", fontSize=11, leading=15.2, textColor=INK,
+        "body": ParagraphStyle("body", fontName="Times-Roman", fontSize=11, leading=15.2, textColor=BODY,
                                alignment=TA_JUSTIFY, spaceAfter=7),
-        "plain": ParagraphStyle("plain", fontName="Times-Roman", fontSize=11, leading=15.2, textColor=INK),
+        "plain": ParagraphStyle("plain", fontName="Times-Roman", fontSize=11, leading=15.2, textColor=BODY),
         "subject": ParagraphStyle("subject", fontName="Times-Bold", fontSize=11.4, leading=15.5, textColor=INK,
                                   spaceBefore=2, spaceAfter=8),
         "meta": ParagraphStyle("meta", fontName="Helvetica", fontSize=8.6, leading=12, textColor=INK_SOFT),
-        "label": ParagraphStyle("label", fontName="Helvetica-Bold", fontSize=6.6, leading=8.5, textColor=TEAL),
-        "value": ParagraphStyle("value", fontName="Times-Roman", fontSize=10.6, leading=13.2, textColor=INK),
+        "label": ParagraphStyle("label", fontName="Helvetica", fontSize=7, leading=10, textColor=INK_SOFT),
+        "value": ParagraphStyle("value", fontName="Times-Roman", fontSize=10.6, leading=13.4, textColor=BODY),
         "heading": ParagraphStyle("heading", fontName="Times-Bold", fontSize=11.4, leading=15, textColor=INK,
                                   spaceBefore=6, spaceAfter=5),
         "small": ParagraphStyle("small", fontName="Helvetica", fontSize=8.4, leading=11.5, textColor=INK_SOFT),
@@ -409,31 +482,30 @@ def render_letter_pdf(application, template=None):
     story += [Paragraph(_esc(p), styles["body"]) for p in content["body"]]
 
     if content["show_summary"]:
-        def cell(label, value):
-            return [Paragraph(label, styles["label"]), Spacer(1, 0.8 * mm),
-                    Paragraph(_esc(value) or "&mdash;", styles["value"])]
-
-        col = (LETTER_W - 2 * MARGIN_X) / 3
-        summary = Table([
-            [cell("STUDY TITLE", v["study_title"]), "", ""],
-            [cell("PRINCIPAL INVESTIGATOR", v["investigator"]), cell("REFERENCE NUMBER", v["reference_no"]),
-             cell("REVIEW PATHWAY", v["review_pathway"])],
-            [cell("DATE OF APPROVAL", v["approval_date"]), cell("VALID UNTIL", v["valid_until"]),
-             cell("DECISION", "Approved")],
-        ], colWidths=[col] * 3)
+        rows = [
+            ("Study title", v["study_title"]),
+            ("Principal investigator", v["investigator"]),
+            ("Approval reference", v["reference_no"]),
+            ("Review pathway", v["review_pathway"]),
+            ("Date of approval", v["approval_date"]),
+            ("Valid until", v["valid_until"]),
+        ]
+        data = [[Paragraph(label.upper(), styles["label"]), Paragraph(_esc(value), styles["value"])]
+                for label, value in rows if value]
+        summary = Table(data, colWidths=[46 * mm, LETTER_W - 2 * MARGIN_X - 46 * mm])
         summary.setStyle(TableStyle([
-            ("SPAN", (0, 0), (2, 0)),
-            ("BACKGROUND", (0, 0), (-1, -1), TINT),
-            ("BOX", (0, 0), (-1, -1), 0.6, HAIR),
-            ("LINEBELOW", (0, 0), (-1, 1), 0.4, HAIR),
-            ("LINEAFTER", (0, 1), (1, -1), 0.4, HAIR),
+            ("LINEABOVE", (0, 0), (-1, 0), 0.8, INK),
+            ("LINEBELOW", (0, -1), (-1, -1), 0.8, INK),
+            ("LINEBELOW", (0, 0), (-1, -2), 0.3, HAIR),
             ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("TOPPADDING", (0, 0), (-1, -1), 5),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 5.5),
-            ("LEFTPADDING", (0, 0), (-1, -1), 8),
-            ("RIGHTPADDING", (0, 0), (-1, -1), 8),
+            ("TOPPADDING", (0, 0), (-1, -1), 3.4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 3.6),
+            ("LEFTPADDING", (0, 0), (-1, -1), 0),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+            # labels are small caps-style text: nudge them down to share a baseline with the values
+            ("TOPPADDING", (0, 0), (0, -1), 4.6),
         ]))
-        story += [Spacer(1, 1.5 * mm), summary, Spacer(1, 4 * mm)]
+        story += [Spacer(1, 1.5 * mm), summary, Spacer(1, 4.5 * mm)]
 
     if content["conditions"]:
         items = ListFlowable(
@@ -445,13 +517,14 @@ def render_letter_pdf(application, template=None):
         story += [KeepTogether([Paragraph(_esc(content["conditions_heading"]), styles["heading"]), items]),
                   Spacer(1, 3 * mm)]
 
-    story += [Paragraph(_esc(p), styles["body"]) for p in content["closing"]]
+    closing_paragraphs = [Paragraph(_esc(p), styles["body"]) for p in content["closing"]]
 
     sign = [Paragraph(_esc(content["sign_off"]), styles["plain"]), Spacer(1, 1.5 * mm),
-            _signature_flowable(), Spacer(1, 1 * mm)]
-    if v["chair_name"]:
-        sign.append(Paragraph(f"<b>{_esc(v['chair_name'])}</b>", styles["plain"]))
-    sign.append(Paragraph(_esc(v["chair_title"]), styles["plain"]))
+            _signature_flowable(signatory["image"]), Spacer(1, 1 * mm)]
+    if signatory["name"]:
+        sign.append(Paragraph(f"<b>{_esc(signatory['name'])}</b>", styles["plain"]))
+    if signatory["title"]:
+        sign.append(Paragraph(_esc(signatory["title"]), styles["plain"]))
 
     frame_w = LETTER_W - 2 * MARGIN_X
     if content["show_verification"]:
@@ -462,7 +535,7 @@ def render_letter_pdf(application, template=None):
                 Paragraph("Verify this approval", styles["small_bold"]),
                 Spacer(1, 1 * mm),
                 Paragraph(
-                    f"Scan the code or visit <font color='#0f8a86'>{_esc(host_path)}</font> and enter "
+                    f"Scan the code or visit {_esc(host_path)} and enter "
                     f"verification code <font name='Courier-Bold' color='#14233f'>{_esc(v['verification_code'])}</font>.",
                     styles["small"],
                 ),
@@ -485,25 +558,30 @@ def render_letter_pdf(application, template=None):
             ("TOPPADDING", (0, 0), (-1, -1), 0),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
         ]))
-        story += [KeepTogether([closing])]
+        story += [KeepTogether(closing_paragraphs + [closing])]
     else:
-        story += [Spacer(1, 3 * mm), KeepTogether(sign)]
+        story += [KeepTogether(closing_paragraphs + [Spacer(1, 3 * mm)] + sign)]
 
     buffer = BytesIO()
     doc = BaseDocTemplate(
         buffer, pagesize=A4, leftMargin=MARGIN_X, rightMargin=MARGIN_X, topMargin=22 * mm, bottomMargin=22 * mm,
         title=f"Approval Letter - {v['reference_no']}", author=COMMITTEE_NAME,
     )
-    first = Frame(MARGIN_X, 20 * mm, frame_w, LETTER_H - 44 * mm - 20 * mm, id="first", leftPadding=0, rightPadding=0,
+    # Page margins follow the artwork: the body starts a little below an
+    # uploaded header and stops a little above an uploaded footer.
+    first_top = (header_image[3] + 8 * mm) if header_image else 44 * mm
+    bottom = (footer_image[3] + 10 * mm) if footer_image else 20 * mm
+    first = Frame(MARGIN_X, bottom, frame_w, LETTER_H - first_top - bottom, id="first", leftPadding=0, rightPadding=0,
                   topPadding=0, bottomPadding=0)
-    later = Frame(MARGIN_X, 20 * mm, frame_w, LETTER_H - 24 * mm - 20 * mm, id="later", leftPadding=0, rightPadding=0,
+    later = Frame(MARGIN_X, bottom, frame_w, LETTER_H - 24 * mm - bottom, id="later", leftPadding=0, rightPadding=0,
                   topPadding=0, bottomPadding=0)
+    draw_first = (lambda c, d: _draw_header_image(c, header_image)) if header_image else (lambda c, d: _draw_letterhead(c, site))
     doc.addPageTemplates([
-        PageTemplate(id="first", frames=[first], onPage=lambda c, d: _draw_letterhead(c, site)),
+        PageTemplate(id="first", frames=[first], onPage=draw_first),
         PageTemplate(id="later", frames=[later], onPage=lambda c, d: _draw_running_head(c, v["reference_no"])),
     ])
-    footer = f"{COMMITTEE_NAME}  ·  Approval letter  ·  {v['reference_no']}"
-    doc.build(story, canvasmaker=lambda *a, **k: _NumberedCanvas(*a, footer_text=footer, **k))
+    footer = f"{COMMITTEE_NAME}  \u00b7  Approval letter  \u00b7  {v['reference_no']}"
+    doc.build(story, canvasmaker=lambda *a, **k: _NumberedCanvas(*a, footer_text=footer, footer_image=footer_image, **k))
     return buffer.getvalue()
 
 

@@ -59,7 +59,7 @@
               <tr>
                 <td data-label="Ref No." class="ref-cell">{{ submission.application.reference_no|default:"&mdash;" }}</td>
                 <td data-label="Study Title">{{ submission.application.title }}</td>
-                <td data-label="Amendment Type">{% if submission.form_data.amendment_type %}<span class="badge-tag teal">{{ submission.form_data.amendment_type }}</span>{% else %}<span class="badge-tag gray">Unspecified</span>{% endif %}</td>
+                <td data-label="Amendment Type">{% if submission.form_data.amendment_type %}<span class="badge text-bg-info">{{ submission.form_data.amendment_type }}</span>{% else %}<span class="badge text-bg-secondary">Unspecified</span>{% endif %}</td>
                 <td data-label="Submitted"><span class="due-main">{{ submission.submitted_at|date:"d M Y" }}</span></td>
                 <td data-label="Status">{% include "dashboards/applicant/_pa_status.html" with status=submission.status %}</td>
                 <td data-label="Action">

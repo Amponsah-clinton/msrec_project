@@ -56,9 +56,9 @@
       </div>
 
       <div class="filter-tabs" style="margin-bottom:18px;">
-        <a href="?tab=scheduled" class="filter-tab{% if active_tab == 'scheduled' %} active{% endif %}">Scheduled <span class="count">{{ counts.scheduled }}</span></a>
-        <a href="?tab=sent" class="filter-tab{% if active_tab == 'sent' %} active{% endif %}">Sent <span class="count">{{ counts.sent }}</span></a>
-        <a href="?tab=cancelled" class="filter-tab{% if active_tab == 'cancelled' %} active{% endif %}">Cancelled <span class="count">{{ counts.cancelled }}</span></a>
+        <a href="?tab=scheduled" class="filter-tab{% if active_tab == 'scheduled' %} active{% endif %}">Scheduled <span class="count badge rounded-pill text-bg-secondary">{{ counts.scheduled }}</span></a>
+        <a href="?tab=sent" class="filter-tab{% if active_tab == 'sent' %} active{% endif %}">Sent <span class="count badge rounded-pill text-bg-secondary">{{ counts.sent }}</span></a>
+        <a href="?tab=cancelled" class="filter-tab{% if active_tab == 'cancelled' %} active{% endif %}">Cancelled <span class="count badge rounded-pill text-bg-secondary">{{ counts.cancelled }}</span></a>
       </div>
 
       <div class="body-grid">
@@ -80,7 +80,7 @@
                     <strong style="color:var(--text-main);">{{ r.title }}</strong><br>
                     <span style="font-size:11.5px;color:var(--text-faint);">{{ r.message|truncatechars:60 }}{% if r.application %} &middot; {{ r.application.reference_no }}{% endif %}</span>
                   </td>
-                  <td data-label="Audience"><span class="badge-tag blue">{{ r.get_audience_display }}</span>{% if r.send_email %} <span class="badge-tag teal">Email</span>{% endif %}</td>
+                  <td data-label="Audience"><span class="badge text-bg-primary">{{ r.get_audience_display }}</span>{% if r.send_email %} <span class="badge text-bg-info">Email</span>{% endif %}</td>
                   <td data-label="Due"><span class="due-main">{% if active_tab == 'sent' %}{{ r.sent_at|date:"j M Y, g:i A" }}{% else %}{{ r.remind_at|date:"j M Y, g:i A" }}{% endif %}</span></td>
                   <td data-label="Action">
                     {% if r.status == 'scheduled' %}
@@ -95,9 +95,9 @@
                       </form>
                     </div>
                     {% elif r.status == 'sent' %}
-                    <span class="badge-tag green">Delivered</span>
+                    <span class="badge text-bg-success">Delivered</span>
                     {% else %}
-                    <span class="badge-tag gray">Cancelled</span>
+                    <span class="badge text-bg-secondary">Cancelled</span>
                     {% endif %}
                   </td>
                 </tr>

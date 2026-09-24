@@ -32,11 +32,6 @@
 .thread-header-avatar.initials.cat-technical-support    { background: var(--teal); }
 
 /* ---------------- Reason badges ---------------- */
-.badge-tag.inq-reason-secretariat          { background: var(--navy); color: #fff; border-color: var(--navy); }
-.badge-tag.inq-reason-application-support  { background: var(--blue-light); color: var(--blue); border-color: color-mix(in srgb, var(--blue) 22%, transparent); }
-.badge-tag.inq-reason-complaints           { background: var(--red-light); color: var(--red); border-color: color-mix(in srgb, var(--red) 22%, transparent); }
-.badge-tag.inq-reason-ethics-concerns      { background: var(--purple-light); color: var(--purple); border-color: color-mix(in srgb, var(--purple) 22%, transparent); }
-.badge-tag.inq-reason-technical-support    { background: var(--teal-light); color: var(--teal); border-color: color-mix(in srgb, var(--teal) 22%, transparent); }
 
 /* ---------------- List rows: unread accent + tighter rhythm ---------------- */
 .inq-shell .message-row { padding: 14px 18px 14px 16px; border-left: 3px solid transparent; }
@@ -54,21 +49,6 @@
 .inq-shell .thread-header-avatar { width: 42px; height: 42px; box-shadow: 0 0 0 2px var(--white), 0 1px 3px rgba(16, 24, 40, 0.14); }
 .inq-shell .thread-header-info strong { font-size: 14.5px; }
 
-.inq-status-pill {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 5px 12px;
-  border-radius: 999px;
-}
-.inq-status-pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.inq-status-new      { background: var(--orange-light); color: var(--orange); }
-.inq-status-resolved { background: var(--teal-light);   color: var(--teal); }
 
 .inq-header-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; margin-left: 4px; }
 .inq-inline-form { display: inline-flex; }
@@ -112,7 +92,7 @@
 
 .inq-msg-card-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .inq-msg-card-head strong { font-size: 12.5px; font-weight: 700; color: var(--text-main); }
-.inq-msg-card-head .badge-tag { font-size: 10px; padding: 2px 8px; }
+.inq-msg-card-head .badge { font-size: 10px; padding: 2px 8px; }
 .inq-msg-time { margin-left: auto; font-size: 10.5px; color: var(--text-faint); }
 
 .inq-msg-card-reply {
@@ -157,3 +137,5 @@
   .inq-status-pill { order: 1; }
   .inq-header-actions { order: 2; margin-left: auto; }
 }
+
+.inq-status-pill { flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.03em; }

@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 
 {% block title %}Reviewer Directory | MSREC Secretariat{% endblock %}
@@ -93,10 +94,10 @@
       <!-- TABS + DIRECTORY -->
       <section class="panel acct-panel">
         <div class="filter-tabs acct-tabs" data-filters-target="#reviewerDirList">
-          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count" data-count-key="all">{{ counts.all }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'available' %} active{% endif %}" data-filter="available">Available <span class="count" data-count-key="available">{{ counts.available }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'limited' %} active{% endif %}" data-filter="limited">Limited <span class="count" data-count-key="limited">{{ counts.limited }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'unavailable' %} active{% endif %}" data-filter="unavailable">Unavailable <span class="count" data-count-key="unavailable">{{ counts.unavailable }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary" data-count-key="all">{{ counts.all }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'available' %} active{% endif %}" data-filter="available">Available <span class="count badge rounded-pill text-bg-secondary" data-count-key="available">{{ counts.available }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'limited' %} active{% endif %}" data-filter="limited">Limited <span class="count badge rounded-pill text-bg-secondary" data-count-key="limited">{{ counts.limited }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'unavailable' %} active{% endif %}" data-filter="unavailable">Unavailable <span class="count badge rounded-pill text-bg-secondary" data-count-key="unavailable">{{ counts.unavailable }}</span></button>
         </div>
 
         <div class="reviewer-dir-grid" id="reviewerDirList">
@@ -107,10 +108,10 @@
             <div class="reviewer-card-top">
               <span class="acct-avatar cat-reviewers">{{ reviewer.initials }}</span>
               <div class="reviewer-card-heading">
-                <h4>{{ reviewer.full_name }}{% if reviewer.role == 'committee' %} <span class="badge-tag purple">Committee Member</span>{% endif %}</h4>
+                <h4>{{ reviewer.full_name }}{% if reviewer.role == 'committee' %} <span class="badge text-bg-purple">Committee Member</span>{% endif %}</h4>
                 <p>{{ reviewer.reviewer_profile.reviewerPosition|default:reviewer.position|default:"Reviewer" }}{% if reviewer.reviewer_profile.reviewerInstitution %} &middot; {{ reviewer.reviewer_profile.reviewerInstitution }}{% elif reviewer.institution %} &middot; {{ reviewer.institution }}{% endif %}</p>
               </div>
-              <span class="availability-badge availability-{{ reviewer.reviewer_availability }}">
+              <span class="badge {{ reviewer.reviewer_availability|state_badge }}">
                 <i></i>{{ reviewer.get_reviewer_availability_display }}
               </span>
             </div>
@@ -123,8 +124,8 @@
 
             {% if reviewer.reviewer_expertise_tags or reviewer.reviewer_research_area_tags %}
             <div class="reviewer-card-tags">
-              {% for tag in reviewer.reviewer_expertise_tags %}<span class="tag-pill">{{ tag }}</span>{% endfor %}
-              {% for tag in reviewer.reviewer_research_area_tags %}<span class="tag-pill alt">{{ tag }}</span>{% endfor %}
+              {% for tag in reviewer.reviewer_expertise_tags %}<span class="badge tag-pill text-bg-info">{{ tag }}</span>{% endfor %}
+              {% for tag in reviewer.reviewer_research_area_tags %}<span class="badge tag-pill text-bg-purple">{{ tag }}</span>{% endfor %}
             </div>
             {% endif %}
 

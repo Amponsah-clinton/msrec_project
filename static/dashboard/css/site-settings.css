@@ -57,19 +57,6 @@
   border-top: 1px solid var(--border);
 }
 
-.settings-badge {
-  display: inline-block;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--text-faint);
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 50px;
-  padding: 2px 9px;
-  margin-left: 6px;
-  vertical-align: middle;
-}
 
 .settings-logo-row {
   display: flex;
@@ -394,4 +381,59 @@
   .apd-actions { flex-direction: column-reverse; align-items: stretch; }
   .apd-actions-right { justify-content: stretch; }
   .apd-actions-right .btn-primary, .apd-actions-right .btn-secondary { flex: 1; justify-content: center; }
+}
+
+.settings-badge { margin-left: 6px; vertical-align: middle; }
+
+/* ---- Approval letter: letterhead + signatory ---- */
+.apd-card + .apd-card { margin-top: 16px; }
+.apd-lh { display: grid; grid-template-columns: 210px 1fr; gap: 24px; align-items: start; }
+.apd-a4-wrap { text-align: center; }
+/* A miniature A4 (210 : 297) that follows the PDF's own placement rules:
+   header edge to edge at the top (capped at 55 mm of 297), footer at the
+   foot (capped at 38 mm), wording in between. */
+.apd-a4 { position: relative; width: 100%; aspect-ratio: 210 / 297; background: #fff; border: 1px solid var(--border); border-radius: 3px; box-shadow: 0 2px 10px rgba(16, 24, 40, .1); overflow: hidden; }
+.apd-a4-header, .apd-a4-footer { position: absolute; left: 0; right: 0; display: flex; justify-content: center; }
+.apd-a4-header { top: 0; height: 18.5%; align-items: flex-start; }
+.apd-a4-footer { bottom: 0; height: 12.8%; align-items: flex-end; }
+.apd-a4-header img, .apd-a4-footer img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.apd-a4-header img { object-position: top center; }
+.apd-a4-footer img { object-position: bottom center; }
+.apd-a4-builtin { position: absolute; left: 8%; right: 8%; font: 600 8px/1.2 -apple-system, "Segoe UI", sans-serif; letter-spacing: .05em; text-transform: uppercase; color: #9aa4b2; text-align: center; padding: 6px 0; border-top: 2px solid #b7dcda; }
+.apd-a4-header .apd-a4-builtin { top: 12%; border-top: 0; border-bottom: 2px solid #b7dcda; }
+.apd-a4-footer .apd-a4-builtin { bottom: 4%; }
+.apd-a4-header.has-img .apd-a4-builtin, .apd-a4-footer.has-img .apd-a4-builtin { display: none; }
+.apd-a4-body { position: absolute; left: 11%; right: 11%; top: 24%; display: flex; flex-direction: column; gap: 5px; }
+.apd-a4-body i { display: block; height: 4px; border-radius: 2px; background: #e4e8ee; }
+.apd-a4-body i.gap { background: transparent; height: 6px; }
+.apd-a4-note { margin: 8px 0 0; font-size: 11px; color: var(--text-faint); }
+
+.apd-lh-forms { display: flex; flex-direction: column; gap: 16px; }
+.apd-lh-form { border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.apd-lh-title { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13.5px; color: var(--text-main); }
+.apd-tag { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: rgba(21, 154, 150, .12); color: var(--teal); }
+.apd-tag.muted { background: var(--hover-bg); color: var(--text-faint); }
+.apd-file { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; cursor: pointer; }
+.apd-file input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.apd-file-btn { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 14px; border: 1px solid var(--border); border-radius: 8px; font: 600 13px/1 inherit; color: var(--text-main); background: var(--white); transition: border-color .15s, color .15s; }
+.apd-file-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.apd-file:hover .apd-file-btn { border-color: var(--teal); color: var(--teal); }
+.apd-file-name { font-size: 12.5px; color: var(--text-sub); word-break: break-all; }
+.apd-lh-tip { margin: 8px 0 12px; font-size: 12px; color: var(--text-faint); line-height: 1.5; }
+.apd-lh-buttons { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+.apd-sign { display: grid; grid-template-columns: 280px 1fr; gap: 22px; align-items: start; }
+.apd-sign-preview { padding: 32px 14px 12px; }
+.apd-sign-sheet { padding: 12px 16px 14px; max-width: none; }
+.apd-sign-hello { font: 13px "Times New Roman", Georgia, serif; color: #14233f; margin-bottom: 2px; }
+.apd-sign-name { font-size: 16px; text-align: left; margin-top: 4px; }
+.apd-sign-title { text-align: left; letter-spacing: .06em; font-size: 10.5px; min-height: 1em; }
+.apd-sign-box { justify-content: flex-start; }
+.apd-sign-box img { max-height: 100%; }
+.apd-sign-form .field { margin-bottom: 12px; }
+.apd-toggle-inline { margin-top: 12px; }
+
+@media (max-width: 720px) {
+  .apd-lh, .apd-sign { grid-template-columns: 1fr; }
+  .apd-a4-wrap { max-width: 210px; margin: 0 auto; }
 }

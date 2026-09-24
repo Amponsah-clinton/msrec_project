@@ -38,6 +38,9 @@
 
       <article class="letter{% if kind == 'certificate' %} letter-certificate{% endif %}">
 
+        {% if kind == 'approval' and approval_letter.header_url %}
+        <img class="letter-header-img" src="{{ approval_letter.header_url }}" alt="">
+        {% else %}
         <header class="letter-head">
           <img class="letter-logo" src="{% if site_settings.logo_url %}{{ site_settings.logo_url }}{% else %}{% static 'assets/img/logo1.png' %}{% endif %}" alt="">
           <div class="letter-org">
@@ -52,6 +55,7 @@
             {% endif %}
           </div>
         </header>
+        {% endif %}
 
         {% if kind == 'certificate' %}
 
@@ -137,9 +141,13 @@
           {% if approval_letter %}
           <p>{{ approval_letter.sign_off }}</p>
           <div class="letter-sign">
-            {% if approval_letter.values.chair_name %}{% with sig=site_settings.chair_signature_url %}{% if sig %}<img src="{{ sig }}" alt="" style="max-height:52px;max-width:200px;display:block;margin-bottom:4px;">{% else %}<span class="letter-sign-line"></span>{% endif %}{% endwith %}{% else %}<span class="letter-sign-line"></span>{% endif %}
-            <strong>{{ approval_letter.values.chair_name|default:"The Chair" }}</strong>
-            <span>{{ approval_letter.values.chair_title }}</span>
+            {% if approval_letter.signatory.custom %}
+              {% if approval_letter.signatory.image_url %}<img src="{{ approval_letter.signatory.image_url }}" alt="" style="max-height:52px;max-width:200px;display:block;margin-bottom:4px;">{% else %}<span class="letter-sign-line"></span>{% endif %}
+            {% else %}
+              {% with sig=site_settings.chair_signature_url %}{% if sig %}<img src="{{ sig }}" alt="" style="max-height:52px;max-width:200px;display:block;margin-bottom:4px;">{% else %}<span class="letter-sign-line"></span>{% endif %}{% endwith %}
+            {% endif %}
+            <strong>{{ approval_letter.signatory.name|default:"The Chair" }}</strong>
+            {% if approval_letter.signatory.title %}<span>{{ approval_letter.signatory.title }}</span>{% endif %}
           </div>
           {% else %}
           <p>Yours sincerely,</p>
@@ -156,6 +164,9 @@
 
         {% if application.status == 'approved' %}{% verification_block application %}{% endif %}
 
+        {% if kind == 'approval' and approval_letter.footer_url %}
+        <img class="letter-footer-img" src="{{ approval_letter.footer_url }}" alt="">
+        {% endif %}
         <footer class="letter-foot">
           <p>
             This document was generated from the {{ site_settings.site_name|default:"MSREC" }} portal on

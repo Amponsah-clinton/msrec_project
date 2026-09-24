@@ -45,8 +45,8 @@
                 {% if highlight_label %}
                 <td data-label="{{ highlight_label }}">
                   {% if submission.highlight_value %}
-                    <span class="badge-tag {% if ptype == 'adverse_event' and submission.is_serious %}red{% else %}teal{% endif %}">{{ submission.highlight_value }}</span>
-                  {% else %}<span class="badge-tag gray">Unspecified</span>{% endif %}
+                    <span class="badge {% if ptype == 'adverse_event' and submission.is_serious %}text-bg-danger{% else %}text-bg-info{% endif %}">{{ submission.highlight_value }}</span>
+                  {% else %}<span class="badge text-bg-secondary">Unspecified</span>{% endif %}
                 </td>
                 {% endif %}
                 <td data-label="Submitted"><span class="due-main">{{ submission.submitted_at|date:"d M Y" }}</span></td>

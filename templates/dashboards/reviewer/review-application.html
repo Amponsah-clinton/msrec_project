@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 {% load review_filters %}
 
@@ -11,7 +12,6 @@
 <link href="{% static 'dashboard/css/reviewer-assessment.css' %}" rel="stylesheet">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/reviewer-identity.css' %}">
 {% endblock %}
 
@@ -76,9 +76,9 @@
           </div>
           <div class="review-hero-status">
             {% if assignment.status == 'completed' %}
-              <span class="badge-tag green">Completed</span>
+              <span class="badge text-bg-success">Completed</span>
             {% else %}
-              <span class="badge-tag teal">In Progress</span>
+              <span class="badge text-bg-info">In Progress</span>
             {% endif %}
             {% if assignment.due_date %}
             <span class="due-meta" style="font-size:12.5px; font-weight:700;">
@@ -184,7 +184,7 @@
             <h3 class="form-section-title"><span class="section-icon-badge teal"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/></svg></span> Reviewer Declaration</h3>
             <div class="assess-summary-row">
               <span class="assess-checklist-label">Conflict of interest</span>
-              {% if assignment.coi_has_conflict %}<span class="badge-tag orange">Potential conflict declared</span>{% else %}<span class="badge-tag green">None declared</span>{% endif %}
+              {% if assignment.coi_has_conflict %}<span class="badge text-bg-warning">Potential conflict declared</span>{% else %}<span class="badge text-bg-success">None declared</span>{% endif %}
             </div>
             {% if assignment.coi_has_conflict %}
             <div class="assess-summary-row"><span class="assess-checklist-label">Conflict details</span></div>
@@ -192,7 +192,7 @@
             {% endif %}
             <div class="assess-summary-row">
               <span class="assess-checklist-label">Confidentiality</span>
-              <span class="badge-tag green">Confirmed</span>
+              <span class="badge text-bg-success">Confirmed</span>
             </div>
           </div>
 
@@ -202,7 +202,7 @@
               {% for row in assignment.checklist_rows %}
               <div class="assess-summary-row">
                 <span class="assess-checklist-label">{{ row.label }}</span>
-                <span class="badge-tag {{ row.badge }}">{{ row.value_label }}</span>
+                <span class="badge {{ row.badge|bs_badge }}">{{ row.value_label }}</span>
               </div>
               {% endfor %}
             </div>
@@ -223,7 +223,7 @@
             <h3 class="form-section-title"><span class="section-icon-badge purple"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span> Recommendation</h3>
             <div class="assess-summary-row">
               <span class="assess-checklist-label">Decision</span>
-              <span class="badge-tag {{ assignment.recommendation_badge }}">{{ assignment.get_recommendation_display }}</span>
+              <span class="badge {{ assignment.recommendation_badge|bs_badge }}">{{ assignment.get_recommendation_display }}</span>
             </div>
             {% if assignment.recommendation_reason %}
             <div class="assess-summary-row"><span class="assess-checklist-label">Reason</span></div>

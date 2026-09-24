@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 
 {% block title %}Discussion — {{ p.ref }} | MSREC Committee{% endblock %}
@@ -18,9 +19,9 @@
 <section class="pr-hero">
   <div class="pr-hero-top">
     <span class="pr-ref">{{ p.ref }}</span>
-    <span class="mm-chip teal">{{ p.review_type }}</span>
+    <span class="badge mm-chip text-bg-info">{{ p.review_type }}</span>
     {% include "dashboards/committee/_pr_decl_badge.html" %}
-    {% if not p.is_recused %}<span class="pr-badge {{ p.consensus_badge }}">Reviewers: {{ p.consensus }}</span>{% endif %}
+    {% if not p.is_recused %}<span class="badge pr-badge {{ p.consensus_badge|bs_badge }}">Reviewers: {{ p.consensus }}</span>{% endif %}
   </div>
   <h2>{{ p.title }}</h2>
   <div class="mm-meta">

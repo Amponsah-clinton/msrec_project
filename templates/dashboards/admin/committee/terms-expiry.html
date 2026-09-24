@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 
 {% block title %}Terms &amp; Expiry | MSREC Admin{% endblock %}
@@ -162,10 +163,10 @@
       <section class="panel acct-panel">
         <div class="cmt-toolbar">
           <div class="filter-tabs cmt-toolbar-tabs">
-            <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count">{{ counts.all }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'expiring' %} active{% endif %}" data-filter="expiring">Expiring Soon <span class="count">{{ counts.expiring }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'expired' %} active{% endif %}" data-filter="expired">Expired <span class="count">{{ counts.expired }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'ongoing' %} active{% endif %}" data-filter="ongoing">Ongoing <span class="count">{{ counts.ongoing }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'expiring' %} active{% endif %}" data-filter="expiring">Expiring Soon <span class="count badge rounded-pill text-bg-secondary">{{ counts.expiring }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'expired' %} active{% endif %}" data-filter="expired">Expired <span class="count badge rounded-pill text-bg-secondary">{{ counts.expired }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'ongoing' %} active{% endif %}" data-filter="ongoing">Ongoing <span class="count badge rounded-pill text-bg-secondary">{{ counts.ongoing }}</span></button>
           </div>
         </div>
 
@@ -188,7 +189,7 @@
 
             <div class="acct-meta">
               <span>From {{ appointment.start_date|date:"d M Y" }}</span>
-              <span class="cmt-pill cmt-pill-{{ appointment.expiry_state }}">
+              <span class="badge cmt-pill {{ appointment.expiry_state|state_badge }}">
                 {% if appointment.expiry_state == "ongoing" %}Open-ended
                 {% elif appointment.expiry_state == "expired" %}Expired {{ appointment.end_date|date:"d M Y" }}
                 {% elif appointment.expiry_state == "expiring" %}Due {{ appointment.end_date|date:"d M Y" }}

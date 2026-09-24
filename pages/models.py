@@ -792,6 +792,17 @@ class ApprovalDocumentTemplate(models.Model):
     letter_sign_off = models.CharField(max_length=120, default=APPROVAL_LETTER_SIGN_OFF)
     letter_show_summary = models.BooleanField(default=True)
     letter_show_verification = models.BooleanField(default=True)
+    # Letterhead artwork for the approval letter (see pages/letter_images.py):
+    # object paths in the same public "profile" bucket as the Client Logos.
+    # Blank = the built-in text letterhead / footer.
+    letter_header_path = models.CharField(max_length=255, blank=True)
+    letter_footer_path = models.CharField(max_length=255, blank=True)
+    # Who signs the approval letter. Blank name = the Chair, exactly as on
+    # the certificates (Site Settings > Certificates); a name here overrides
+    # it for the letter only, with its own title and signature image.
+    letter_sign_name = models.CharField(max_length=150, blank=True)
+    letter_sign_title = models.CharField(max_length=150, blank=True)
+    letter_sign_path = models.CharField(max_length=255, blank=True)
 
     # Certificate of ethical clearance
     cert_title = models.CharField(max_length=60, default=APPROVAL_CERT_TITLE)
@@ -853,5 +864,14 @@ class ApprovalDocumentTemplate(models.Model):
         return obj
 
     def restore_defaults(self, section):
+        # Wording only -- uploaded letterhead images are kept (they're
+        # removed explicitly, not by restoring text).
         for field, value in self.DEFAULTS[section].items():
             setattr(self, field, value)
+
+    def letter_image_url(self, kind):
+        from . import storage
+
+        path = {"header": self.letter_header_path, "footer": self.letter_footer_path,
+                "signature": self.letter_sign_path}[kind]
+        return storage.public_url(path) if path else None

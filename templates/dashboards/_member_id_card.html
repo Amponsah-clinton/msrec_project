@@ -20,9 +20,9 @@ colours only, no gradients. Styles: static/dashboard/css/member-id.css.
       </button>
     </div>
     <div class="mid-meta">
-      <span class="mid-role">{% if u.committee_status == 'approved' %}Committee Member{% else %}Ethics Reviewer{% endif %}</span>
+      <span class="badge mid-role text-bg-primary">{% if u.committee_status == 'approved' %}Committee Member{% else %}Ethics Reviewer{% endif %}</span>
       <span class="mid-since">Member since {{ u.membership_confirmed_at|date:"j F Y" }}</span>
-      <span class="mid-status"><i></i> In good standing</span>
+      <span class="badge mid-status text-bg-success">In good standing</span>
     </div>
   </div>
 

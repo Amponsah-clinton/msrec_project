@@ -2334,6 +2334,129 @@ def _handle_settings_approval_template(request, site):
         )
 
 
+MAX_LETTER_IMAGE_UPLOAD = 12 * 1024 * 1024
+
+
+def _handle_settings_letter_image(request, site):
+    """Upload / replace / remove the approval letter's header or footer
+    image. Admin only. The processed image goes to Supabase Storage (the
+    same bucket as the Client Logos) and the previous one is deleted."""
+    from pages import letter_images
+    from pages.models import ApprovalDocumentTemplate
+
+    if not is_admin(request.user):
+        messages.error(request, "Only an administrator can change the letterhead.")
+        return
+    kind = request.POST.get("kind")
+    if kind not in ("header", "footer"):
+        messages.error(request, "That request could not be processed.")
+        return
+    field = f"letter_{kind}_path"
+    template = ApprovalDocumentTemplate.get_solo()
+    old_path = getattr(template, field)
+
+    if request.POST.get("remove"):
+        if old_path:
+            pages_storage.delete_object(old_path)
+            setattr(template, field, "")
+            template.updated_by = request.user
+            template.save()
+        messages.success(request, f"Letter {kind} image removed -- the built-in {kind} is used again.")
+        return
+
+    upload = request.FILES.get("image")
+    if not upload:
+        messages.error(request, f"Choose a {kind} image to upload.")
+        return
+    if not (upload.content_type or "").startswith("image/"):
+        messages.error(request, "The letterhead must be an image file (PNG, JPG or WEBP).")
+        return
+    if upload.size > MAX_LETTER_IMAGE_UPLOAD:
+        messages.error(request, "That image is too large -- keep it under 12 MB.")
+        return
+    try:
+        data, ext, width, height = letter_images.process_letter_image(upload.read(), kind)
+    except ValueError as exc:
+        messages.error(request, str(exc))
+        return
+    object_path = pages_storage.upload_letter_image(data, ext, kind)
+    if not object_path:
+        messages.error(request, f"The {kind} image couldn't be uploaded right now -- please try again.")
+        return
+    setattr(template, field, object_path)
+    template.updated_by = request.user
+    template.save()
+    if old_path and old_path != object_path:
+        pages_storage.delete_object(old_path)
+    messages.success(request, f"Letter {kind} image saved ({width} \u00d7 {height} px) -- it's used on the next letter.")
+
+
+def _handle_settings_letter_signatory(request, site):
+    """The approval letter's own signatory (name, title, signature image).
+    Leave the name blank to use the Chair instead. Admin only. The
+    signature goes through the same paper-removal / crop pipeline as the
+    Chair's and is stored in the "profile" bucket."""
+    from pages import signature as signature_tools
+    from pages.models import ApprovalDocumentTemplate
+
+    if not is_admin(request.user):
+        messages.error(request, "Only an administrator can change the letter signatory.")
+        return
+    template = ApprovalDocumentTemplate.get_solo()
+    old_path = template.letter_sign_path
+
+    if request.POST.get("use_chair"):
+        template.letter_sign_name = ""
+        template.letter_sign_title = ""
+        template.letter_sign_path = ""
+        template.updated_by = request.user
+        template.save()
+        if old_path:
+            pages_storage.delete_object(old_path)
+        messages.success(request, "The approval letter is now signed by the Chair.")
+        return
+
+    name = request.POST.get("sign_name", "").strip()
+    title = request.POST.get("sign_title", "").strip()
+    if not name:
+        messages.error(request, "Enter the signatory's name, or choose \"Use the Chair\".")
+        return
+    if len(name) > 150 or len(title) > 150:
+        messages.error(request, "The name and title must each be 150 characters or fewer.")
+        return
+
+    new_path = None
+    upload = request.FILES.get("signature_file")
+    if upload:
+        if not (upload.content_type or "").startswith("image/"):
+            messages.error(request, "The signature must be an image file (PNG or JPG).")
+            return
+        if upload.size > MAX_SIGNATURE_UPLOAD:
+            messages.error(request, "That signature image is too large -- keep it under 8 MB.")
+            return
+        try:
+            png = signature_tools.process_signature(upload.read())
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return
+        new_path = pages_storage.upload_letter_image(png, "png", "signature")
+        if not new_path:
+            messages.error(request, "The signature couldn't be uploaded right now -- please try again.")
+            return
+
+    template.letter_sign_name = name
+    template.letter_sign_title = title
+    if new_path:
+        template.letter_sign_path = new_path
+    elif request.POST.get("remove_signature"):
+        template.letter_sign_path = ""
+    template.updated_by = request.user
+    template.save()
+    if old_path and old_path != template.letter_sign_path:
+        pages_storage.delete_object(old_path)
+    messages.success(request, "Letter signatory saved -- it's used on the next approval letter.")
+
+
 def _handle_settings_approval_template_reset(request, site):
     from pages.models import ApprovalDocumentTemplate
 
@@ -2409,6 +2532,8 @@ def site_settings(request):
             "reset_auth_image": _handle_settings_auth_image_reset,
             "update_certificate_signatory": _handle_settings_certificate_signatory,
             "update_approval_template": _handle_settings_approval_template,
+            "update_letter_image": _handle_settings_letter_image,
+            "update_letter_signatory": _handle_settings_letter_signatory,
             "reset_approval_template": _handle_settings_approval_template_reset,
             "update_footer": _handle_settings_footer,
             "update_contact": _handle_settings_contact,
@@ -2486,6 +2611,8 @@ def site_settings(request):
         "auth_image_url": pages_storage.public_url(site.auth_image_path),
         "chair_signature_url": pages_storage.public_url(site.chair_signature_path),
         "approval_template": _approval_template_or_none(),
+        "letter_image_slots": _letter_image_slots(_approval_template_or_none()),
+        "chair_name_for_letter": _chair_name_for_letter(),
         "approval_placeholders": _approval_placeholders(),
         "paystack_secret_key_masked": _mask_secret(site.paystack_secret_key),
         "using_env_public_key": not site.paystack_public_key,
@@ -2586,7 +2713,27 @@ def certificate_preview(request):
 def _approval_template_or_none():
     from pages.models import ApprovalDocumentTemplate
 
-    return ApprovalDocumentTemplate.get_solo()
+    template = ApprovalDocumentTemplate.get_solo()
+    # Public (signed, proxied) URLs for the settings page previews.
+    template.header_url = template.letter_image_url("header")
+    template.footer_url = template.letter_image_url("footer")
+    template.sign_url = template.letter_image_url("signature") if template.letter_sign_name else None
+    return template
+
+
+def _letter_image_slots(template):
+    return [
+        ("header", "Header image", template.header_url,
+         "About 2480 px wide. Max height 55 mm."),
+        ("footer", "Footer image", template.footer_url,
+         "About 2480 px wide. Max height 38 mm."),
+    ]
+
+
+def _chair_name_for_letter():
+    from pages.certificate_signatory import chair_details
+
+    return chair_details()["name"]
 
 
 def _approval_placeholders():

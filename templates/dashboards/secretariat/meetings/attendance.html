@@ -81,8 +81,8 @@
         <div class="meeting-summary-main">
           <div class="meeting-summary-title-row">
             <h3>{{ meeting.title }}</h3>
-            <span class="badge-tag {% if meeting.status == 'scheduled' %}blue{% elif meeting.status == 'completed' %}green{% else %}red{% endif %}">{{ meeting.get_status_display }}</span>
-            <span class="badge-tag teal">{{ meeting.get_meeting_type_display }}</span>
+            <span class="badge {% if meeting.status == 'scheduled' %}text-bg-primary{% elif meeting.status == 'completed' %}text-bg-success{% else %}text-bg-danger{% endif %}">{{ meeting.get_status_display }}</span>
+            <span class="badge text-bg-info">{{ meeting.get_meeting_type_display }}</span>
           </div>
           <div class="meeting-summary-meta">
             <span class="msc-chip"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>{{ meeting.scheduled_at|date:"l, d M Y" }}</span>
@@ -113,7 +113,7 @@
                     </div>
                   </td>
                   <td data-label="Role">
-                    <span class="badge-tag {% if p.role_at_meeting == 'chair' %}navy{% elif p.role_at_meeting == 'secretary' %}teal{% elif p.role_at_meeting == 'guest' %}gray{% else %}blue{% endif %}">{{ p.get_role_at_meeting_display }}</span>
+                    <span class="badge {% if p.role_at_meeting == 'chair' %}text-bg-dark{% elif p.role_at_meeting == 'secretary' %}text-bg-info{% elif p.role_at_meeting == 'guest' %}text-bg-secondary{% else %}text-bg-primary{% endif %}">{{ p.get_role_at_meeting_display }}</span>
                     {% if not p.is_voting %}<span class="cell-sub">Non-voting</span>{% endif %}
                   </td>
                   <td data-label="RSVP">
@@ -129,7 +129,7 @@
                     <form method="post" action="{% url 'secretariat_dashboard:attendance_mark' p.pk %}">
                       {% csrf_token %}
                       <input type="hidden" name="field" value="attended">
-                      <button type="submit" class="badge-tag attendance-toggle {% if p.attended %}green{% else %}gray{% endif %}">
+                      <button type="submit" class="badge attendance-toggle {% if p.attended %}text-bg-success{% else %}text-bg-secondary{% endif %}">
                         {% if p.attended %}Checked in {{ p.checked_in_at|date:"g:i A" }}{% else %}Mark present{% endif %}
                       </button>
                     </form>

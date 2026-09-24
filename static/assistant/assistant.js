@@ -109,7 +109,7 @@
     committee: ["How do I RSVP for a meeting?", "How do I declare a conflict of interest?", "Where do I find protocols referred to the Committee?"],
     chair: ["How does quorum work?", "What decisions can the Committee make?", "When is Full Committee review needed?"],
     secretariat: ["What does administrative screening check?", "How are review pathways assigned?", "What are the current fees?"],
-    admin: ["What are the current fees?", "How are review pathways assigned?", "What does the Secretariat do?"]
+    admin: ["What are the current fees?", "How are review pathways assigned?", "How long does an application take?"]
   };
   function renderChips() {
     chips.innerHTML = "";

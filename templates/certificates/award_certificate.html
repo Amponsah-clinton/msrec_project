@@ -106,9 +106,16 @@
   }
   /* The title of the work (the study reviewed) on its own lines, sized to
      fit by the script at the bottom however long it is. */
-  .has-work .certify{ margin-top:5mm; }
-  .has-work .recipient{ font-size:12.5mm; }
-  .has-work .message{ margin-top:4.5mm; max-width:215mm; }
+  /* Tighter vertical rhythm so the title has room, as in the PDF. */
+  .has-work{ inset:19mm 30mm 15mm; }
+  .has-work .letterhead{ gap:1.6mm; }
+  .has-work .letterhead img{ height:11mm; }
+  .has-work .title{ margin-top:4mm; font-size:12.5mm; }
+  .has-work .certify{ margin-top:3.5mm; font-size:4.6mm; }
+  .has-work .recipient{ font-size:10.5mm; margin-top:2mm; padding-bottom:1.6mm; }
+  .has-work .message{ margin-top:3mm; max-width:220mm; font-size:4.9mm; line-height:1.42; }
+  .has-work .signing{ padding-top:3mm; }
+  .has-work .footer{ margin-top:3mm; }
   .work-title{
     margin:2.2mm 0 0; max-width:222mm;
     font-family:"Cormorant Garamond", Georgia, serif; font-weight:600; font-style:italic;

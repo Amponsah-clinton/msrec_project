@@ -47,8 +47,8 @@
     <div class="gd-body">
       <div class="gd-title">
         <h3>{{ doc.title }}</h3>
-        {% if doc.version %}<span class="mm-chip">{{ doc.version }}</span>{% endif %}
-        {% if doc.is_new %}<span class="gd-new">New</span>{% elif doc.is_updated %}<span class="mm-chip blue">Updated</span>{% endif %}
+        {% if doc.version %}<span class="badge mm-chip text-bg-secondary">{{ doc.version }}</span>{% endif %}
+        {% if doc.is_new %}<span class="badge gd-new text-bg-primary">New</span>{% elif doc.is_updated %}<span class="badge mm-chip text-bg-primary">Updated</span>{% endif %}
       </div>
       {% if doc.description %}<p class="gd-desc">{{ doc.description }}</p>{% endif %}
       <div class="gd-meta">
@@ -61,7 +61,7 @@
       {% if doc.download_url %}
       <a class="btn-primary" href="{{ doc.download_url }}" target="_blank" rel="noopener noreferrer">
         <svg viewBox="0 0 24 24" width="16" height="16"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>Open</a>
-      {% else %}<span class="mm-chip orange">File not attached yet</span>{% endif %}
+      {% else %}<span class="badge mm-chip text-bg-warning">File not attached yet</span>{% endif %}
     </div>
   </article>
   {% endfor %}

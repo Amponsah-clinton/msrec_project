@@ -57,12 +57,12 @@
 <div class="sc-scope">
 
       <div class="filter-tabs acct-tabs" data-filters-target="#paTable">
-        <button type="button" class="filter-tab active" data-filter="all">All <span class="count">{{ counts.all }}</span></button>
-        <button type="button" class="filter-tab" data-filter="submitted">Submitted <span class="count">{{ counts.submitted }}</span></button>
-        <button type="button" class="filter-tab" data-filter="under_review">Under Review <span class="count">{{ counts.under_review }}</span></button>
-        <button type="button" class="filter-tab" data-filter="action_required">Action Required <span class="count">{{ counts.action_required }}</span></button>
-        <button type="button" class="filter-tab" data-filter="approved">Approved <span class="count">{{ counts.approved }}</span></button>
-        <button type="button" class="filter-tab" data-filter="acknowledged">Acknowledged <span class="count">{{ counts.acknowledged }}</span></button>
+        <button type="button" class="filter-tab active" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></button>
+        <button type="button" class="filter-tab" data-filter="submitted">Submitted <span class="count badge rounded-pill text-bg-secondary">{{ counts.submitted }}</span></button>
+        <button type="button" class="filter-tab" data-filter="under_review">Under Review <span class="count badge rounded-pill text-bg-secondary">{{ counts.under_review }}</span></button>
+        <button type="button" class="filter-tab" data-filter="action_required">Action Required <span class="count badge rounded-pill text-bg-secondary">{{ counts.action_required }}</span></button>
+        <button type="button" class="filter-tab" data-filter="approved">Approved <span class="count badge rounded-pill text-bg-secondary">{{ counts.approved }}</span></button>
+        <button type="button" class="filter-tab" data-filter="acknowledged">Acknowledged <span class="count badge rounded-pill text-bg-secondary">{{ counts.acknowledged }}</span></button>
       </div>
 
       <section class="panel reviews-panel">
@@ -88,8 +88,8 @@
                 {% if highlight_label %}
                 <td data-label="{{ highlight_label }}">
                   {% if submission.highlight_value %}
-                    <span class="badge-tag {% if ptype == 'adverse_event' and submission.is_serious %}red{% else %}teal{% endif %}">{{ submission.highlight_value }}</span>
-                  {% else %}<span class="badge-tag gray">Unspecified</span>{% endif %}
+                    <span class="badge {% if ptype == 'adverse_event' and submission.is_serious %}text-bg-danger{% else %}text-bg-info{% endif %}">{{ submission.highlight_value }}</span>
+                  {% else %}<span class="badge text-bg-secondary">Unspecified</span>{% endif %}
                 </td>
                 {% endif %}
                 <td data-label="Submitted"><span class="due-main">{{ submission.submitted_at|date:"d M Y" }}</span></td>

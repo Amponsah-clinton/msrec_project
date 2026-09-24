@@ -449,20 +449,6 @@ body.applicants-page {
 .ap-doc-tag {
   flex-shrink: 0;
   font-size: 11.5px;
-  font-weight: 700;
-  padding: 5px 12px;
-  border-radius: 50px;
-  white-space: nowrap;
-}
-
-.ap-doc-tag-always {
-  color: #1f7a5c;
-  background: color-mix(in srgb, #1f7a5c, transparent 90%);
-}
-
-.ap-doc-tag-conditional {
-  color: #b06a15;
-  background: color-mix(in srgb, #b06a15, transparent 90%);
 }
 
 /* ---------------- Review Types — tabbed card (reused pattern) ---------------- */
@@ -527,12 +513,9 @@ body.applicants-page {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--accent-color);
-  background: color-mix(in srgb, var(--accent-color), transparent 92%);
   padding: 8px 16px;
-  border-radius: 50px;
+  font-size: 13px;
+  color: var(--accent-color);
 }
 
 /* ---------------- Fees — photo band with dark overlay ---------------- */
@@ -584,12 +567,7 @@ body.applicants-page {
   position: absolute;
   top: -12px;
   left: 24px;
-  background: var(--accent-color);
-  color: #fff;
   font-size: 11px;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 50px;
 }
 
 .ap-fee-card h3 {

@@ -12,8 +12,8 @@
 
 body.bc-page {
   margin: 0;
-  --bc-heading-font: "Fraunces", "Georgia", serif;
-  --bc-body-font: "Inter", "Roboto", sans-serif;
+  --bc-heading-font: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --bc-body-font: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-family: var(--bc-body-font);
 }
 
@@ -296,11 +296,8 @@ body.bc-page {
   align-items: center;
   gap: 8px;
   padding: 9px 15px;
-  border-radius: 50px;
-  background: color-mix(in srgb, var(--accent-color), transparent 92%);
-  color: var(--heading-color);
   font-size: 12.5px;
-  font-weight: 600;
+  color: var(--heading-color);
 }
 .bc-tag i { color: var(--accent-color); font-size: 13px; }
 

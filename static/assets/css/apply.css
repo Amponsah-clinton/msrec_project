@@ -506,15 +506,8 @@ body.apply-page { margin: 0; font-family: var(--default-font); }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #e2e9e7;
-  color: #5c6b69;
-  font-size: 11px;
-  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 5px 12px;
-  border-radius: 50px;
-  margin-bottom: 14px;
 }
 .apply-official h2 {
   margin: 0 0 6px;

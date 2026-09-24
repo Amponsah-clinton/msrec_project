@@ -377,3 +377,8 @@
 /* Conditions of approval (Site Settings > Approval Documents) */
 .letter-conditions { margin: 0 0 14px; padding-left: 22px; }
 .letter-conditions li { margin: 0 0 6px; line-height: 1.6; }
+
+/* Uploaded letterhead artwork (Site Settings > Approval Documents) */
+.letter-header-img, .letter-footer-img { display: block; width: 100%; height: auto; }
+.letter-header-img { margin-bottom: 18px; }
+.letter-footer-img { margin-top: 22px; }

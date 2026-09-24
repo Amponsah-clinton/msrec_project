@@ -50,14 +50,14 @@
       <!-- TABS + LIST -->
       <section class="panel acct-panel">
         <div class="filter-tabs acct-tabs" data-filters-target="#adminAppsList">
-          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count" data-count-key="all">{{ counts.all }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'submitted' %} active{% endif %}" data-filter="submitted">New <span class="count" data-count-key="submitted">{{ counts.submitted }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'under_review' %} active{% endif %}" data-filter="under_review">Under Review <span class="count" data-count-key="under_review">{{ counts.under_review }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'with_committee' %} active{% endif %}" data-filter="with_committee">With Committee <span class="count" data-count-key="with_committee">{{ counts.with_committee }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'revisions' %} active{% endif %}" data-filter="revisions">Revisions <span class="count" data-count-key="revisions">{{ counts.revisions }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'revised' %} active{% endif %}" data-filter="revised">Revised <span class="count" data-count-key="revised">{{ counts.revised }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'approved' %} active{% endif %}" data-filter="approved">Approved <span class="count" data-count-key="approved">{{ counts.approved }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'not_approved' %} active{% endif %}" data-filter="not_approved">Not Approved <span class="count" data-count-key="not_approved">{{ counts.not_approved }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary" data-count-key="all">{{ counts.all }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'submitted' %} active{% endif %}" data-filter="submitted">New <span class="count badge rounded-pill text-bg-secondary" data-count-key="submitted">{{ counts.submitted }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'under_review' %} active{% endif %}" data-filter="under_review">Under Review <span class="count badge rounded-pill text-bg-secondary" data-count-key="under_review">{{ counts.under_review }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'with_committee' %} active{% endif %}" data-filter="with_committee">With Committee <span class="count badge rounded-pill text-bg-secondary" data-count-key="with_committee">{{ counts.with_committee }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'revisions' %} active{% endif %}" data-filter="revisions">Revisions <span class="count badge rounded-pill text-bg-secondary" data-count-key="revisions">{{ counts.revisions }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'revised' %} active{% endif %}" data-filter="revised">Revised <span class="count badge rounded-pill text-bg-secondary" data-count-key="revised">{{ counts.revised }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'approved' %} active{% endif %}" data-filter="approved">Approved <span class="count badge rounded-pill text-bg-secondary" data-count-key="approved">{{ counts.approved }}</span></button>
+          <button type="button" class="filter-tab{% if active_tab == 'not_approved' %} active{% endif %}" data-filter="not_approved">Not Approved <span class="count badge rounded-pill text-bg-secondary" data-count-key="not_approved">{{ counts.not_approved }}</span></button>
         </div>
 
         <div class="acct-list" id="adminAppsList">
@@ -71,14 +71,14 @@
             <div class="acct-info">
               <h4>
                 {{ application.title }}
-                {% if application.tab == 'submitted' %}<span class="badge-tag orange">New</span>
-                {% elif application.tab == 'under_review' %}<span class="badge-tag blue">Under Review</span>
-                {% elif application.tab == 'with_committee' %}<span class="badge-tag purple">With Committee</span>
-                {% elif application.tab == 'revisions' %}<span class="badge-tag red">Revisions Requested</span>
-                {% elif application.tab == 'approved' %}<span class="badge-tag green">Approved</span>
-                {% elif application.tab == 'not_approved' %}<span class="badge-tag red">Not Approved</span>
+                {% if application.tab == 'submitted' %}<span class="badge text-bg-warning">New</span>
+                {% elif application.tab == 'under_review' %}<span class="badge text-bg-primary">Under Review</span>
+                {% elif application.tab == 'with_committee' %}<span class="badge text-bg-purple">With Committee</span>
+                {% elif application.tab == 'revisions' %}<span class="badge text-bg-danger">Revisions Requested</span>
+                {% elif application.tab == 'approved' %}<span class="badge text-bg-success">Approved</span>
+                {% elif application.tab == 'not_approved' %}<span class="badge text-bg-danger">Not Approved</span>
                 {% endif %}
-                {% if application.resubmitted_at %}<span class="badge-tag blue" title="Resubmitted {{ application.resubmitted_at|date:'j M Y' }}">Revised</span>{% endif %}
+                {% if application.resubmitted_at %}<span class="badge text-bg-primary" title="Resubmitted {{ application.resubmitted_at|date:'j M Y' }}">Revised</span>{% endif %}
               </h4>
               <p>{{ application.reference_no }} &middot; {{ application.applicant.full_name }}</p>
             </div>

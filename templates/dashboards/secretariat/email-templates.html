@@ -80,8 +80,8 @@
                 <h3>{{ template.name }}</h3>
                 <span>Updated {{ template.updated_at|date:"j M Y, g:i A" }}</span>
               </div>
-              <span class="badge-tag{% if template.category == 'decision' %} purple{% elif template.category == 'welcome' %} teal{% elif template.category == 'reminder' %} orange{% elif template.category == 'payment' %} green{% else %} blue{% endif %}">{{ template.get_category_display }}</span>
-              {% if not template.is_active %}<span class="badge-tag gray">Inactive</span>{% endif %}
+              <span class="badge{% if template.category == 'decision' %} text-bg-purple{% elif template.category == 'welcome' %} text-bg-info{% elif template.category == 'reminder' %} text-bg-warning{% elif template.category == 'payment' %} text-bg-success{% else %} text-bg-primary{% endif %}">{{ template.get_category_display }}</span>
+              {% if not template.is_active %}<span class="badge text-bg-secondary">Inactive</span>{% endif %}
             </div>
             <p style="font-size:12.5px;color:var(--text-sub);margin:0 0 10px;"><strong style="color:var(--text-main);">Subject:</strong> {{ template.subject }}</p>
             <p style="font-size:12.5px;color:var(--text-main);white-space:pre-line;margin:0 0 16px;line-height:1.6;">{{ template.body|truncatewords:32 }}</p>

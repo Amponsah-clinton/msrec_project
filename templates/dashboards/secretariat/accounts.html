@@ -83,12 +83,12 @@
       <section class="panel acct-panel">
         <div class="acct-toolbar">
           <div class="filter-tabs acct-tabs">
-            <a href="?tab=all" class="filter-tab{% if active_tab == 'all' %} active{% endif %}">All <span class="count">{{ counts.all }}</span></a>
-            <a href="?tab=pending" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}">Pending Approval <span class="count">{{ counts.pending }}</span></a>
-            <a href="?tab=applicants" class="filter-tab{% if active_tab == 'applicants' %} active{% endif %}">Applicants <span class="count">{{ counts.applicants }}</span></a>
-            <a href="?tab=reviewers" class="filter-tab{% if active_tab == 'reviewers' %} active{% endif %}">Reviewers <span class="count">{{ counts.reviewers }}</span></a>
-            <a href="?tab=committee" class="filter-tab{% if active_tab == 'committee' %} active{% endif %}">Committee <span class="count">{{ counts.committee }}</span></a>
-            <a href="?tab=admins" class="filter-tab{% if active_tab == 'admins' %} active{% endif %}">Admins <span class="count">{{ counts.admins }}</span></a>
+            <a href="?tab=all" class="filter-tab{% if active_tab == 'all' %} active{% endif %}">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></a>
+            <a href="?tab=pending" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}">Pending Approval <span class="count badge rounded-pill text-bg-secondary">{{ counts.pending }}</span></a>
+            <a href="?tab=applicants" class="filter-tab{% if active_tab == 'applicants' %} active{% endif %}">Applicants <span class="count badge rounded-pill text-bg-secondary">{{ counts.applicants }}</span></a>
+            <a href="?tab=reviewers" class="filter-tab{% if active_tab == 'reviewers' %} active{% endif %}">Reviewers <span class="count badge rounded-pill text-bg-secondary">{{ counts.reviewers }}</span></a>
+            <a href="?tab=committee" class="filter-tab{% if active_tab == 'committee' %} active{% endif %}">Committee <span class="count badge rounded-pill text-bg-secondary">{{ counts.committee }}</span></a>
+            <a href="?tab=admins" class="filter-tab{% if active_tab == 'admins' %} active{% endif %}">Admins <span class="count badge rounded-pill text-bg-secondary">{{ counts.admins }}</span></a>
           </div>
           <form method="get" class="search-box acct-search">
             <input type="hidden" name="tab" value="{{ active_tab }}">
@@ -117,15 +117,15 @@
             <div class="acct-info">
               <h4>
                 {{ u.full_name }}
-                {% if u.is_superuser or u.role == 'admin' %}<span class="badge-tag navy">Admin</span>{% endif %}
-                {% if u.reviewer_status == 'approved' %}<span class="badge-tag teal">Reviewer</span>{% endif %}
-                {% if u.role == 'committee' and u.committee_status == 'approved' %}<span class="badge-tag purple">Committee</span>{% endif %}
-                {% if u.reviewer_status == 'pending' %}<span class="badge-tag orange">Reviewer Requested</span>{% endif %}
-                {% if u.committee_status == 'pending' %}<span class="badge-tag orange">Committee Requested</span>{% endif %}
-                {% if u.reviewer_status == 'rejected' %}<span class="badge-tag red">Reviewer Declined</span>{% endif %}
-                {% if u.committee_status == 'rejected' %}<span class="badge-tag red">Committee Declined</span>{% endif %}
-                {% if u.category == 'applicants' %}<span class="badge-tag blue">Applicant</span>{% endif %}
-                {% if not u.is_active %}<span class="badge-tag red">Suspended</span>{% endif %}
+                {% if u.is_superuser or u.role == 'admin' %}<span class="badge text-bg-dark">Admin</span>{% endif %}
+                {% if u.reviewer_status == 'approved' %}<span class="badge text-bg-info">Reviewer</span>{% endif %}
+                {% if u.role == 'committee' and u.committee_status == 'approved' %}<span class="badge text-bg-purple">Committee</span>{% endif %}
+                {% if u.reviewer_status == 'pending' %}<span class="badge text-bg-warning">Reviewer Requested</span>{% endif %}
+                {% if u.committee_status == 'pending' %}<span class="badge text-bg-warning">Committee Requested</span>{% endif %}
+                {% if u.reviewer_status == 'rejected' %}<span class="badge text-bg-danger">Reviewer Declined</span>{% endif %}
+                {% if u.committee_status == 'rejected' %}<span class="badge text-bg-danger">Committee Declined</span>{% endif %}
+                {% if u.category == 'applicants' %}<span class="badge text-bg-primary">Applicant</span>{% endif %}
+                {% if not u.is_active %}<span class="badge text-bg-danger">Suspended</span>{% endif %}
               </h4>
               <p>{{ u.email }}{% if u.institution %} &middot; {{ u.institution }}{% endif %}{% if u.membership_ethics_id %} &middot; Ethics ID {{ u.membership_ethics_id }}{% endif %}</p>
             </div>

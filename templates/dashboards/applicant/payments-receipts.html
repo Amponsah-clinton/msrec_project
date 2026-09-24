@@ -46,7 +46,7 @@
           <span class="receipt-amount mono">{{ payment.currency }} {{ payment.amount|floatformat:"2g" }}</span>
           <span class="receipt-date">Paid {{ payment.paid_at|date:"d M Y" }}{% if payment.paystack_response.channel %} &bull; {{ payment.paystack_response.channel|title }}{% endif %}</span>
           <div class="receipt-card-foot">
-            <span class="badge-tag green">Paid</span>
+            <span class="badge text-bg-success">Paid</span>
             <a href="{% url 'applicant_dashboard:payment_receipt' payment.pk %}" class="btn-secondary" style="padding:7px 14px;font-size:12.5px;">
               <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg>
               Open

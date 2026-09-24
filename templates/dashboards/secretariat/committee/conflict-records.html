@@ -59,11 +59,11 @@
       <section class="panel acct-panel">
         <div class="cmt-toolbar">
           <div class="filter-tabs cmt-toolbar-tabs">
-            <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count">{{ counts.all }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}" data-filter="pending">Pending Review <span class="count">{{ counts.pending }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'reviewed' %} active{% endif %}" data-filter="reviewed">Reviewed <span class="count">{{ counts.reviewed }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'recused' %} active{% endif %}" data-filter="recused">Recused <span class="count">{{ counts.recused }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'resolved' %} active{% endif %}" data-filter="resolved">Resolved <span class="count">{{ counts.resolved }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}" data-filter="pending">Pending Review <span class="count badge rounded-pill text-bg-secondary">{{ counts.pending }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'reviewed' %} active{% endif %}" data-filter="reviewed">Reviewed <span class="count badge rounded-pill text-bg-secondary">{{ counts.reviewed }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'recused' %} active{% endif %}" data-filter="recused">Recused <span class="count badge rounded-pill text-bg-secondary">{{ counts.recused }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'resolved' %} active{% endif %}" data-filter="resolved">Resolved <span class="count badge rounded-pill text-bg-secondary">{{ counts.resolved }}</span></button>
           </div>
           <button type="button" class="acct-btn acct-btn-approve" data-open-modal="cnfAddOverlay">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Declare Conflict
@@ -87,7 +87,7 @@
             <div class="acct-info">
               <h4 class="cmt-row-title">
                 {{ record.member.full_name }}
-                <span class="badge-tag {% if record.status == 'pending' %}orange{% elif record.status == 'reviewed' %}blue{% elif record.status == 'recused' %}purple{% else %}teal{% endif %}">{{ record.get_status_display }}</span>
+                <span class="badge {% if record.status == 'pending' %}text-bg-warning{% elif record.status == 'reviewed' %}text-bg-primary{% elif record.status == 'recused' %}text-bg-purple{% else %}text-bg-info{% endif %}">{{ record.get_status_display }}</span>
               </h4>
               <p>{{ record.description|truncatechars:110 }}</p>
             </div>

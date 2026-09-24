@@ -11,8 +11,8 @@
 
 body.ab-page {
   margin: 0;
-  --ab-heading-font: "Fraunces", "Georgia", serif;
-  --ab-body-font: "Inter", "Roboto", sans-serif;
+  --ab-heading-font: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+  --ab-body-font: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   font-family: var(--ab-body-font);
 }
 
@@ -246,14 +246,7 @@ body.ab-page {
   padding-top: 16px;
   border-top: 1px dashed #eef3f1;
 }
-.ab-tag-list li {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--heading-color);
-  background: color-mix(in srgb, var(--accent-color), transparent 92%);
-  padding: 6px 12px;
-  border-radius: 50px;
-}
+
 
 .ab-inline-link {
   display: inline-flex;

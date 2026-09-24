@@ -50,8 +50,8 @@
               {% for application in applications %}
               <tr>
                 <td data-label="Ref No." class="ref-cell">{{ application.reference_no|default:"&mdash;" }}</td>
-                <td data-label="Study Title">{{ application.title }}{% if application.resubmitted_at %} <span class="badge-tag blue" title="Resubmitted {{ application.resubmitted_at|date:'j M Y' }}" style="font-size:10.5px; padding:2px 7px;">Revised</span>{% endif %}</td>
-                <td data-label="Outcome"><span class="badge-tag red">Not Approved</span></td>
+                <td data-label="Study Title">{{ application.title }}{% if application.resubmitted_at %} <span class="badge text-bg-primary" title="Resubmitted {{ application.resubmitted_at|date:'j M Y' }}" style="font-size:10.5px; padding:2px 7px;">Revised</span>{% endif %}</td>
+                <td data-label="Outcome"><span class="badge text-bg-danger">Not Approved</span></td>
                 <td data-label="Date"><span class="due-main">{{ application.decided_at|date:"d M Y" }}</span></td>
                 <td data-label="Action">
                   <a class="action-btn" aria-label="View" href="{% url 'applicant_dashboard:application_detail' application.pk %}">

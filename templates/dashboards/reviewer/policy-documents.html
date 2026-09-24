@@ -81,7 +81,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
             </span>
             <div class="doc-info">
-              <h4>{{ doc.title }}{% if doc.version %} <span class="badge-tag gray">{{ doc.version }}</span>{% endif %}</h4>
+              <h4>{{ doc.title }}{% if doc.version %} <span class="badge text-bg-secondary">{{ doc.version }}</span>{% endif %}</h4>
               {% if doc.description %}<p class="doc-desc">{{ doc.description }}</p>{% endif %}
               <p>Updated {{ doc.updated_at|date:"d M Y" }}</p>
             </div>

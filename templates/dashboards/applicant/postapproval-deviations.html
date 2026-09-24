@@ -60,7 +60,7 @@
               <tr>
                 <td data-label="Ref No." class="ref-cell">{{ submission.application.reference_no|default:"&mdash;" }}</td>
                 <td data-label="Study Title">{{ submission.application.title }}</td>
-                <td data-label="Deviation Type">{% if submission.form_data.deviation_type %}<span class="badge-tag purple">{{ submission.form_data.deviation_type }}</span>{% else %}<span class="badge-tag gray">Unspecified</span>{% endif %}</td>
+                <td data-label="Deviation Type">{% if submission.form_data.deviation_type %}<span class="badge text-bg-purple">{{ submission.form_data.deviation_type }}</span>{% else %}<span class="badge text-bg-secondary">Unspecified</span>{% endif %}</td>
                 <td data-label="Date Occurred"><span class="due-main">{% if submission.form_data.date_occurred %}{{ submission.form_data.date_occurred|as_date|date:"d M Y" }}{% else %}&mdash;{% endif %}</span></td>
                 <td data-label="Status">{% include "dashboards/applicant/_pa_status.html" with status=submission.status %}</td>
                 <td data-label="Action">

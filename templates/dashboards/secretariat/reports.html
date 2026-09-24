@@ -185,7 +185,7 @@
                   <td data-label="Study Title">{{ application.title }}</td>
                   <td data-label="Applicant">{{ application.applicant.full_name }}</td>
                   <td data-label="Status">
-                    <span class="badge-tag{% if application.status == 'approved' %} green{% elif application.status == 'not_approved' %} red{% elif application.status == 'under_review' %} purple{% elif application.status == 'revisions_required' %} orange{% else %} blue{% endif %}">{{ application.get_status_display }}</span>
+                    <span class="badge{% if application.status == 'approved' %} text-bg-success{% elif application.status == 'not_approved' %} text-bg-danger{% elif application.status == 'under_review' %} text-bg-purple{% elif application.status == 'revisions_required' %} text-bg-warning{% else %} text-bg-primary{% endif %}">{{ application.get_status_display }}</span>
                   </td>
                   <td data-label="Submitted">{{ application.submitted_at|date:"j M Y" }}</td>
                   <td data-label="Days Open">{{ application.days_open|default_if_none:"&mdash;" }}</td>
@@ -275,9 +275,9 @@
                 <tr>
                   <td data-label="#"><span class="rank-cell">{{ forloop.counter }}</span></td>
                   <td data-label="Reviewer">{{ reviewer.full_name }}</td>
-                  <td data-label="Active"><span class="badge-tag blue">{{ reviewer.active_count }}</span></td>
-                  <td data-label="Overdue">{% if reviewer.overdue_count %}<span class="badge-tag red">{{ reviewer.overdue_count }}</span>{% else %}<span class="badge-tag gray">0</span>{% endif %}</td>
-                  <td data-label="Completed"><span class="badge-tag green">{{ reviewer.completed_count }}</span></td>
+                  <td data-label="Active"><span class="badge text-bg-primary">{{ reviewer.active_count }}</span></td>
+                  <td data-label="Overdue">{% if reviewer.overdue_count %}<span class="badge text-bg-danger">{{ reviewer.overdue_count }}</span>{% else %}<span class="badge text-bg-secondary">0</span>{% endif %}</td>
+                  <td data-label="Completed"><span class="badge text-bg-success">{{ reviewer.completed_count }}</span></td>
                 </tr>
                 {% empty %}
                 <tr><td colspan="5" style="text-align:center; color:var(--text-faint); padding:24px 0;">No approved reviewers yet.</td></tr>
@@ -310,7 +310,7 @@
                 {% for log in committee.logs %}
                 <tr>
                   <td data-label="Member">{{ log.user.full_name }}</td>
-                  <td data-label="Action"><span class="badge-tag{% if log.action == 'approved' %} green{% else %} red{% endif %}">{{ log.get_action_display }}</span></td>
+                  <td data-label="Action"><span class="badge{% if log.action == 'approved' %} text-bg-success{% else %} text-bg-danger{% endif %}">{{ log.get_action_display }}</span></td>
                   <td data-label="Acted By">{{ log.acted_by.full_name|default:"&mdash;" }}</td>
                   <td data-label="Date">{{ log.created_at|date:"j M Y, g:i A" }}</td>
                 </tr>

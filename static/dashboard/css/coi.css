@@ -1,7 +1,7 @@
 /* ==========================================================
    MSREC Reviewer — Conflict of Interest (Pending / Previous Declarations)
    Same flat, token-driven language as the rest of the dashboard --
-   reuses .stat-card / .app-card-grid / .badge-tag / .empty-state from
+   reuses .stat-card / .app-card-grid / .badge / .empty-state from
    accounts.css rather than inventing a parallel component set, plus a
    handful of COI-specific touches: a coloured left accent per card so a
    long list still reads at a glance, and a declaration-detail quote

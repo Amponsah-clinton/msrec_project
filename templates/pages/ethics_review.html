@@ -4,7 +4,7 @@
 {% block title %}Ethics Review | Metascholar Research Ethics Committee{% endblock %}
 {% block description %}How MSREC reviews a protocol: administrative screening, reviewer assignment, assessment domains, decision categories, appeals, researcher responses, committee meetings and post-approval management.{% endblock %}
 {% block body_class %}er-page{% endblock %}
-{% block fonts %}<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">{% endblock %}
+{% block fonts %}{% endblock %}
 {% block extra_css %}
 <link href="{% static 'assets/css/ethics-review.css' %}" rel="stylesheet">
 {% endblock %}
@@ -436,12 +436,12 @@
           <span class="er-status-label"><i class="bi bi-info-circle"></i> Portal rule</span>
           <p>An expired study never silently remains &ldquo;Approved.&rdquo; The system distinguishes six clear statuses and controls exactly what actions are available in each one:</p>
           <div class="er-status-tags">
-            <span class="er-status-tag er-status-active">Active</span>
-            <span class="er-status-tag er-status-amber">Expiring</span>
-            <span class="er-status-tag er-status-red">Expired</span>
-            <span class="er-status-tag er-status-red">Suspended</span>
-            <span class="er-status-tag er-status-neutral">Closed</span>
-            <span class="er-status-tag er-status-neutral">Withdrawn</span>
+            <span class="badge rounded-pill text-bg-success">Active</span>
+            <span class="badge rounded-pill text-bg-warning">Expiring</span>
+            <span class="badge rounded-pill text-bg-danger">Expired</span>
+            <span class="badge rounded-pill text-bg-danger">Suspended</span>
+            <span class="badge rounded-pill text-bg-secondary">Closed</span>
+            <span class="badge rounded-pill text-bg-secondary">Withdrawn</span>
           </div>
         </div>
       </section>

@@ -47,7 +47,7 @@
               <span class="doc-meta">Approved {{ application.decided_at|date:"d M Y" }} &nbsp;&bull;&nbsp; Valid until {{ application.approval_expires_at|date:"d M Y" }}</span>
             </div>
             <div class="doc-trailing">
-              <span class="badge-tag green">Approved</span>
+              <span class="badge text-bg-success">Approved</span>
               <div class="doc-actions">
                 <a class="action-btn" aria-label="Open approval letter" title="View" href="{% url 'applicant_dashboard:application_letter' application.pk 'approval' %}">
                   <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>

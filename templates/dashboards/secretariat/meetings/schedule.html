@@ -193,7 +193,7 @@
                   </div>
                 </div>
                 <div class="meeting-card-foot">
-                  <span class="badge-tag blue">{{ m.participants.count }} invited</span>
+                  <span class="badge text-bg-primary">{{ m.participants.count }} invited</span>
                   <div class="meeting-card-links">
                     <a href="{% url 'secretariat_dashboard:meetings_agenda' %}?meeting={{ m.pk }}">Agenda</a>
                     <a href="{% url 'secretariat_dashboard:meetings_attendance' %}?meeting={{ m.pk }}">Attendance</a>

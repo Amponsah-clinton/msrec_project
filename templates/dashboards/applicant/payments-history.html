@@ -55,12 +55,12 @@
               <tr>
                 <td data-label="Date" class="ref-cell">{{ payment.paid_at|default:payment.created_at|date:"d M Y" }}</td>
                 <td data-label="Reference / Study">{{ payment.reference }}<br><span style="color:var(--text-faint);font-size:11.5px;">{{ payment.application.title|default:"&mdash;" }}</span></td>
-                <td data-label="Method">{% if payment.paystack_response.channel %}<span class="badge-tag teal">{{ payment.paystack_response.channel|title }}</span>{% else %}<span class="badge-tag gray">&mdash;</span>{% endif %}</td>
+                <td data-label="Method">{% if payment.paystack_response.channel %}<span class="badge text-bg-info">{{ payment.paystack_response.channel|title }}</span>{% else %}<span class="badge text-bg-secondary">&mdash;</span>{% endif %}</td>
                 <td data-label="Amount" class="ref-cell">{{ payment.currency }} {{ payment.amount|floatformat:"2g" }}</td>
                 <td data-label="Status">
-                  {% if payment.status == 'success' %}<span class="badge-tag green">Successful</span>
-                  {% elif payment.status == 'pending' %}<span class="badge-tag orange">Pending</span>
-                  {% else %}<span class="badge-tag red">Failed</span>{% endif %}
+                  {% if payment.status == 'success' %}<span class="badge text-bg-success">Successful</span>
+                  {% elif payment.status == 'pending' %}<span class="badge text-bg-warning">Pending</span>
+                  {% else %}<span class="badge text-bg-danger">Failed</span>{% endif %}
                 </td>
                 <td data-label="Receipt">
                   {% if payment.status == 'success' %}

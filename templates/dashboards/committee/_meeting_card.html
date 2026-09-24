@@ -1,3 +1,4 @@
+{% load bs_badges %}
 {# One meeting row. Expects `m`; `past` truthy for the Previous Meetings variant. #}
 {% with s=m.scheduled_at %}
 <article class="mm-card{% if m.status == 'cancelled' %} is-cancelled{% endif %}" data-type="{{ m.meeting_type }}" data-search="{{ m.title|lower }} {{ m.location|lower }} {{ m.get_meeting_type_display|lower }}">
@@ -10,8 +11,8 @@
   <div>
     <div class="mm-card-title">
       <h3><a href="{% url 'committee_dashboard:agenda' %}?meeting={{ m.pk }}">{{ m.title }}</a></h3>
-      {% if m.is_live %}<span class="mm-pill live">Live now</span>
-      {% elif past %}<span class="mm-pill {{ m.status }}">{% if m.status == 'scheduled' %}Ended{% else %}{{ m.get_status_display }}{% endif %}</span>
+      {% if m.is_live %}<span class="badge mm-pill text-bg-danger">Live now</span>
+      {% elif past %}<span class="badge mm-pill {{ m.status|state_badge }}">{% if m.status == 'scheduled' %}Ended{% else %}{{ m.get_status_display }}{% endif %}</span>
       {% endif %}
     </div>
     <div class="mm-meta">
@@ -22,11 +23,11 @@
     </div>
     {% if m.description %}<p class="mm-card-desc">{{ m.description|truncatechars:170 }}</p>{% endif %}
     <div class="mm-card-tags">
-      <span class="mm-chip teal">{{ m.get_meeting_type_display }}</span>
-      <span class="mm-chip">{{ m.get_mode_display }}</span>
-      <span class="mm-chip blue"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>{{ m.agenda_count }} agenda item{{ m.agenda_count|pluralize }}</span>
+      <span class="badge mm-chip text-bg-info">{{ m.get_meeting_type_display }}</span>
+      <span class="badge mm-chip text-bg-secondary">{{ m.get_mode_display }}</span>
+      <span class="badge mm-chip text-bg-primary"><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg>{{ m.agenda_count }} agenda item{{ m.agenda_count|pluralize }}</span>
       {% if past and m.my_part and m.status != 'cancelled' %}
-        {% if m.my_part.attended %}<span class="mm-chip teal"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>You attended</span>{% else %}<span class="mm-chip orange">Not recorded as attending</span>{% endif %}
+        {% if m.my_part.attended %}<span class="badge mm-chip text-bg-info"><svg viewBox="0 0 24 24"><path d="m5 12 5 5 9-10"/></svg>You attended</span>{% else %}<span class="badge mm-chip text-bg-warning">Not recorded as attending</span>{% endif %}
       {% endif %}
     </div>
   </div>
@@ -35,10 +36,10 @@
     {% if past %}
       <a href="{% url 'committee_dashboard:agenda' %}?meeting={{ m.pk }}" class="btn-secondary">View agenda</a>
     {% else %}
-      {% if m.is_live %}<span class="mm-count due">Happening now</span>
-      {% elif m.days_away == 0 %}<span class="mm-count due">Today</span>
-      {% elif m.days_away == 1 %}<span class="mm-count">Tomorrow</span>
-      {% else %}<span class="mm-count ok">In {{ m.days_away }} days</span>{% endif %}
+      {% if m.is_live %}<span class="badge mm-count text-bg-danger">Happening now</span>
+      {% elif m.days_away == 0 %}<span class="badge mm-count text-bg-danger">Today</span>
+      {% elif m.days_away == 1 %}<span class="badge mm-count text-bg-warning">Tomorrow</span>
+      {% else %}<span class="badge mm-count text-bg-info">In {{ m.days_away }} days</span>{% endif %}
       {% include "dashboards/committee/_rsvp.html" %}
       <a href="{% url 'committee_dashboard:agenda' %}?meeting={{ m.pk }}" class="btn-primary">Open agenda</a>
     {% endif %}

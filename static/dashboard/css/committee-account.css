@@ -9,7 +9,7 @@
 --------------------------------------------------------------------- */
 
 .topbar-title h1 {
-  font-family: "Fraunces", Georgia, "Times New Roman", serif;
+  font-family: "IBM Plex Serif", Georgia, "Times New Roman", serif;
   font-weight: 600;
   letter-spacing: -0.012em;
 }
@@ -102,7 +102,7 @@
 }
 .cm-seat h3 {
   margin: 4px 0 10px;
-  font-family: "Fraunces", Georgia, serif;
+  font-family: "IBM Plex Serif", Georgia, "Times New Roman", serif;
   font-size: 18px;
   font-weight: 600;
   line-height: 1.3;

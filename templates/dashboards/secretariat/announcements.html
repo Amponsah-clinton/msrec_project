@@ -72,7 +72,7 @@
                 </h3>
                 <span>{{ a.get_audience_display }} &middot; Posted {{ a.created_at|date:"j M Y" }}{% if a.expires_at %} &middot; Expires {{ a.expires_at|date:"j M Y" }}{% endif %}</span>
               </div>
-              <span class="badge-tag{% if a.live %} green{% else %} gray{% endif %}">{% if a.live %}Live{% else %}Hidden{% endif %}</span>
+              <span class="badge{% if a.live %} text-bg-success{% else %} text-bg-secondary{% endif %}">{% if a.live %}Live{% else %}Hidden{% endif %}</span>
             </div>
             <p style="font-size:12.5px;color:var(--text-main);white-space:pre-line;margin:0 0 16px;line-height:1.6;">{{ a.body }}</p>
             <div class="revision-actions">

@@ -68,7 +68,7 @@
             <div class="meeting-body">
               <div class="meeting-body-top">
                 <h4>{{ meeting.title }}</h4>
-                {% if meeting.meeting_link %}<span class="badge-tag teal">Virtual</span>{% elif meeting.location %}<span class="badge-tag blue">In-person</span>{% endif %}
+                {% if meeting.meeting_link %}<span class="badge text-bg-info">Virtual</span>{% elif meeting.location %}<span class="badge text-bg-primary">In-person</span>{% endif %}
               </div>
               <div class="meeting-meta">
                 <span><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>{{ meeting.scheduled_at|date:"l, d M Y \a\t g:i A" }}</span>

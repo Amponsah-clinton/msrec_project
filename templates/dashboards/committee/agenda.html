@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 
 {% block title %}Meeting Agenda | MSREC Committee{% endblock %}
@@ -36,9 +37,9 @@
   </div>
   <div>
     <div class="mm-card-title" style="margin-bottom:6px">
-      <span class="mm-chip teal">{{ meeting.get_meeting_type_display }}</span>
-      {% if meeting.is_live %}<span class="mm-pill live">Live now</span>
-      {% else %}<span class="mm-pill {{ meeting.status }}">{{ meeting.get_status_display }}</span>{% endif %}
+      <span class="badge mm-chip text-bg-info">{{ meeting.get_meeting_type_display }}</span>
+      {% if meeting.is_live %}<span class="badge mm-pill text-bg-danger">Live now</span>
+      {% else %}<span class="badge mm-pill {{ meeting.status|state_badge }}">{{ meeting.get_status_display }}</span>{% endif %}
     </div>
     <h2>{{ meeting.title }}</h2>
     {% if meeting.description %}<p class="sub">{{ meeting.description }}</p>{% else %}<p class="sub"></p>{% endif %}
@@ -76,13 +77,13 @@
               <div class="mm-item-time"><span>{{ item.starts|date:"g:i A" }} &ndash; {{ item.ends|date:"g:i A" }}</span><span class="dur">{{ item.duration_minutes }} min</span></div>
               <h3>{{ item.title }}</h3>
             </div>
-            <span class="mm-pill {% if item.status == 'discussed' %}completed{% elif item.status == 'deferred' %}tentative{% else %}scheduled{% endif %}">{{ item.get_status_display }}</span>
+            <span class="badge mm-pill {% if item.status == 'discussed' %}text-bg-success{% elif item.status == 'deferred' %}text-bg-purple{% else %}text-bg-primary{% endif %}">{{ item.get_status_display }}</span>
           </div>
           {% if item.description %}<p class="mm-item-desc">{{ item.description }}</p>{% endif %}
           {% if item.presenter or item.application %}
           <div class="mm-item-tags">
-            {% if item.application %}<span class="mm-chip purple" title="{{ item.application.title }}"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>{{ item.application.reference_no|default:"Protocol" }} &middot; {{ item.application.title|truncatechars:60 }}</span>{% endif %}
-            {% if item.presenter %}<span class="mm-chip"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>Presenter: {{ item.presenter }}</span>{% endif %}
+            {% if item.application %}<span class="badge mm-chip text-bg-purple" title="{{ item.application.title }}"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>{{ item.application.reference_no|default:"Protocol" }} &middot; {{ item.application.title|truncatechars:60 }}</span>{% endif %}
+            {% if item.presenter %}<span class="badge mm-chip text-bg-secondary"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg>Presenter: {{ item.presenter }}</span>{% endif %}
           </div>
           {% endif %}
 
@@ -122,7 +123,7 @@
     {% if can_rsvp %}
     <section class="panel">
       <h2>Your response</h2>
-      <span class="mm-rsvp-label">Current: <span class="mm-pill {{ meeting.my_part.rsvp_status }}" style="margin-left:6px">{{ meeting.my_part.get_rsvp_status_display }}</span></span>
+      <span class="mm-rsvp-label">Current: <span class="badge mm-pill {{ meeting.my_part.rsvp_status|state_badge }}" style="margin-left:6px">{{ meeting.my_part.get_rsvp_status_display }}</span></span>
       {% include "dashboards/committee/_rsvp.html" with m=meeting %}
     </section>
     {% endif %}
@@ -135,7 +136,7 @@
         <div><svg viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/></svg><div><dt>Format</dt><dd>{{ meeting.get_mode_display }}{% if meeting.mode != 'virtual' and meeting.location %} &middot; {{ meeting.location }}{% endif %}</dd></div></div>
         {% if meeting.chair %}<div><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg><div><dt>Chair</dt><dd>{{ meeting.chair.full_name }}</dd></div></div>{% endif %}
         {% if meeting.quorum_required %}<div><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg><div><dt>Quorum</dt><dd>{{ meeting.quorum_required }} voting member{{ meeting.quorum_required|pluralize }}</dd></div></div>{% endif %}
-        <div><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg><div><dt>Agenda time</dt><dd>{{ total_minutes }} min planned{% if over_time %} <span class="mm-chip orange" style="margin-left:4px">exceeds meeting length</span>{% endif %}</dd></div></div>
+        <div><svg viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/></svg><div><dt>Agenda time</dt><dd>{{ total_minutes }} min planned{% if over_time %} <span class="badge mm-chip text-bg-warning" style="margin-left:4px">exceeds meeting length</span>{% endif %}</dd></div></div>
       </dl>
       {% if meeting.mode != 'in_person' and meeting.meeting_link and meeting.status == 'scheduled' %}
       <a href="{{ meeting.meeting_link }}" target="_blank" rel="noopener noreferrer" class="btn-primary mm-join"><svg viewBox="0 0 24 24" width="16" height="16"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="m16 10 5-3v10l-5-3"/></svg>Join meeting</a>
@@ -146,10 +147,10 @@
     <section class="panel">
       <h2>Participants ({{ participants|length }})</h2>
       <div class="mm-rsvp-tally">
-        <span class="mm-pill accepted">{{ rsvp_counts.accepted|default:0 }} attending</span>
-        <span class="mm-pill tentative">{{ rsvp_counts.tentative|default:0 }} maybe</span>
-        <span class="mm-pill pending">{{ rsvp_counts.pending|default:0 }} awaiting</span>
-        <span class="mm-pill declined">{{ rsvp_counts.declined|default:0 }} declined</span>
+        <span class="badge mm-pill text-bg-success">{{ rsvp_counts.accepted|default:0 }} attending</span>
+        <span class="badge mm-pill text-bg-purple">{{ rsvp_counts.tentative|default:0 }} maybe</span>
+        <span class="badge mm-pill text-bg-warning">{{ rsvp_counts.pending|default:0 }} awaiting</span>
+        <span class="badge mm-pill text-bg-danger">{{ rsvp_counts.declined|default:0 }} declined</span>
       </div>
       <ul class="mm-roster">
         {% for p in participants %}

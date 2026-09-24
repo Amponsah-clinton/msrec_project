@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 
 {% block title %}Inquiries | MSREC Admin{% endblock %}
@@ -43,9 +44,9 @@
         <section class="panel messages-list-panel">
           <div class="messages-list-head">
             <div class="filter-tabs inq-tabs" data-filters-target="#inqList">
-              <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count">{{ counts.all }}</span></button>
-              <button type="button" class="filter-tab{% if active_tab == 'new' %} active{% endif %}" data-filter="new">New <span class="count">{{ counts.new }}</span></button>
-              <button type="button" class="filter-tab{% if active_tab == 'resolved' %} active{% endif %}" data-filter="resolved">Resolved <span class="count">{{ counts.resolved }}</span></button>
+              <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></button>
+              <button type="button" class="filter-tab{% if active_tab == 'new' %} active{% endif %}" data-filter="new">New <span class="count badge rounded-pill text-bg-secondary">{{ counts.new }}</span></button>
+              <button type="button" class="filter-tab{% if active_tab == 'resolved' %} active{% endif %}" data-filter="resolved">Resolved <span class="count badge rounded-pill text-bg-secondary">{{ counts.resolved }}</span></button>
             </div>
           </div>
 
@@ -65,8 +66,8 @@
                 </span>
                 <span class="message-snippet">{{ inquiry.message|truncatechars:64 }}</span>
                 <span class="message-row-meta">
-                  <span class="badge-tag inq-reason-{{ inquiry.reason }}">{{ inquiry.get_reason_display }}</span>
-                  {% if inquiry.status == 'resolved' %}<span class="badge-tag teal">Resolved</span>{% endif %}
+                  <span class="badge {{ inquiry.reason|inquiry_badge }}">{{ inquiry.get_reason_display }}</span>
+                  {% if inquiry.status == 'resolved' %}<span class="badge text-bg-info">Resolved</span>{% endif %}
                 </span>
               </span>
               {% if inquiry.status == 'new' %}<span class="message-dot"></span>{% endif %}
@@ -93,9 +94,9 @@
               <span><a href="mailto:{{ inquiry.email }}">{{ inquiry.email }}</a> &middot; {{ inquiry.get_reason_display }}</span>
             </div>
             {% if inquiry.status == 'new' %}
-            <span class="inq-status-pill inq-status-new">New</span>
+            <span class="badge inq-status-pill text-bg-warning">New</span>
             {% else %}
-            <span class="inq-status-pill inq-status-resolved">Resolved</span>
+            <span class="badge inq-status-pill text-bg-info">Resolved</span>
             {% endif %}
 
             <div class="inq-header-actions">
@@ -151,7 +152,7 @@
               <div class="inq-msg-card inq-msg-card-reply">
                 <div class="inq-msg-card-head">
                   <strong>{{ inquiry.replied_by.full_name|default:"MSREC Secretariat" }}</strong>
-                  <span class="badge-tag teal">Reply sent</span>
+                  <span class="badge text-bg-info">Reply sent</span>
                   <span class="inq-msg-time">{{ inquiry.replied_at|date:"d M Y, g:i A" }}</span>
                 </div>
                 <p>{{ inquiry.reply_message|linebreaksbr }}</p>

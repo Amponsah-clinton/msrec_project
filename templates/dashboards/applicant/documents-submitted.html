@@ -50,11 +50,11 @@
               <h3>{{ group.application.title }}</h3>
               <span class="doc-group-ref">{{ group.application.reference_no|default:"Reference pending" }}</span>
             </div>
-            {% if group.application.status == 'submitted' %}<span class="badge-tag orange">Submitted</span>
-            {% elif group.application.status == 'under_review' or group.application.status == 'with_committee' %}<span class="badge-tag purple">Under Review</span>
-            {% elif group.application.status == 'revisions_required' %}<span class="badge-tag orange">Revisions Required</span>
-            {% elif group.application.status == 'approved' %}<span class="badge-tag green">Approved</span>
-            {% elif group.application.status == 'not_approved' %}<span class="badge-tag red">Not Approved</span>
+            {% if group.application.status == 'submitted' %}<span class="badge text-bg-warning">Submitted</span>
+            {% elif group.application.status == 'under_review' or group.application.status == 'with_committee' %}<span class="badge text-bg-purple">Under Review</span>
+            {% elif group.application.status == 'revisions_required' %}<span class="badge text-bg-warning">Revisions Required</span>
+            {% elif group.application.status == 'approved' %}<span class="badge text-bg-success">Approved</span>
+            {% elif group.application.status == 'not_approved' %}<span class="badge text-bg-danger">Not Approved</span>
             {% endif %}
           </div>
           <div class="sd-card-grid">

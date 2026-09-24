@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static sc_extras %}
 
 {% block title %}{{ application.reference_no|default:"Application" }} | MSREC Secretariat{% endblock %}
@@ -71,11 +72,11 @@
             </div>
           </div>
           <div class="sc-detail-badges">
-            <span class="badge-tag {% if application.tab == 'submitted' %}orange{% elif application.tab == 'under_review' %}blue{% elif application.tab == 'revisions' %}red{% elif application.tab == 'approved' %}green{% elif application.tab == 'not_approved' %}red{% endif %}">
+            <span class="badge {% if application.tab == 'submitted' %}text-bg-warning{% elif application.tab == 'under_review' %}text-bg-primary{% elif application.tab == 'revisions' %}text-bg-danger{% elif application.tab == 'approved' %}text-bg-success{% elif application.tab == 'not_approved' %}text-bg-danger{% else %}text-bg-secondary{% endif %}">
               {{ application.get_status_display }}
             </span>
             {% if application.resubmitted_at %}
-            <span class="badge-tag blue" title="Resubmitted {{ application.resubmitted_at|date:'j M Y, g:i A' }}">
+            <span class="badge text-bg-primary" title="Resubmitted {{ application.resubmitted_at|date:'j M Y, g:i A' }}">
               <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
               Revised &middot; {{ application.revision_count }} round{{ application.revision_count|pluralize }}
             </span>
@@ -214,10 +215,10 @@
                 <p style="margin:0; font-size:12px; color:var(--text-sub);">{{ assignment.reviewer.email }}</p>
               </div>
             </div>
-            {% if assignment.status == 'new' %}<span class="badge-tag orange">New</span>
-            {% elif assignment.status == 'accepted' %}<span class="badge-tag blue">Accepted{% if assignment.due_date %} &middot; due {{ assignment.due_date|date:"d M Y" }}{% endif %}</span>
-            {% elif assignment.status == 'declined' %}<span class="badge-tag red">Declined</span>
-            {% elif assignment.status == 'completed' %}<span class="badge-tag green">Completed {{ assignment.completed_at|date:"d M Y" }}</span>
+            {% if assignment.status == 'new' %}<span class="badge text-bg-warning">New</span>
+            {% elif assignment.status == 'accepted' %}<span class="badge text-bg-primary">Accepted{% if assignment.due_date %} &middot; due {{ assignment.due_date|date:"d M Y" }}{% endif %}</span>
+            {% elif assignment.status == 'declined' %}<span class="badge text-bg-danger">Declined</span>
+            {% elif assignment.status == 'completed' %}<span class="badge text-bg-success">Completed {{ assignment.completed_at|date:"d M Y" }}</span>
             {% endif %}
           </div>
 
@@ -228,7 +229,7 @@
               {% for row in assignment.checklist_rows %}
               <div class="assess-summary-row">
                 <span class="assess-checklist-label">{{ row.label }}</span>
-                <span class="badge-tag {{ row.badge }}">{{ row.value_label }}</span>
+                <span class="badge {{ row.badge|bs_badge }}">{{ row.value_label }}</span>
               </div>
               {% endfor %}
             </div>
@@ -398,7 +399,7 @@
                 <div class="rr-source">
                   <div class="rr-source-meta">
                     <strong>{{ a.reviewer.full_name }}</strong>
-                    {% if a.recommendation %}<span class="badge-tag {{ a.recommendation_badge }}">{{ a.get_recommendation_display }}</span>{% endif %}
+                    {% if a.recommendation %}<span class="badge {{ a.recommendation_badge|bs_badge }}">{{ a.get_recommendation_display }}</span>{% endif %}
                   </div>
                   <p>{{ a.key_concerns|linebreaksbr }}</p>
                   <button type="button" class="rr-use" data-text="{{ a.key_concerns }}">

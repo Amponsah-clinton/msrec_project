@@ -6,7 +6,7 @@
 --------------------------------------------------- */
 
 .rv-scope {
-  --rv-font: "Fraunces", Georgia, "Times New Roman", serif;
+  --rv-font: "IBM Plex Serif", Georgia, "Times New Roman", serif;
 }
 
 .rv-scope h1, .rv-scope h2, .rv-scope h3, .rv-scope h4,
@@ -216,7 +216,7 @@
   flex-wrap: wrap;
 }
 
-.rv-hero-name .badge-tag { font-family: "Inter", sans-serif; }
+.rv-hero-name .badge { font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 
 .rv-hero-role { margin: 4px 0 0; font-size: 13px; color: var(--text-sub); }
 
@@ -465,12 +465,7 @@
 .rv-kpi-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
 .rv-kpi-top .rv-ico { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 .rv-kpi-top .rv-ico svg { width: 14px; height: 14px; }
-.rv-kpi-trend { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 999px; }
-.rv-kpi-trend.up     { background: var(--teal-light);   color: var(--teal); }
-.rv-kpi-trend.flat   { background: var(--gray-light);   color: var(--text-sub); }
-.rv-kpi-trend.orange { background: var(--orange-light); color: var(--orange); }
-.rv-kpi-trend.purple { background: var(--purple-light); color: var(--purple); }
-.rv-kpi-trend.red    { background: var(--red-light);    color: var(--red); }
+.rv-kpi-trend { font-size: 11px; }
 .rv-kpi-value { font-family: var(--rv-font); font-size: 24px; font-weight: 800; margin: 0; }
 .rv-kpi-label { margin: 2px 0 0; font-size: 12px; color: var(--text-sub); font-weight: 500; }
 
@@ -554,12 +549,12 @@
 .rv-scope .notif-row:not(.unread) .notif-body h4 { color: var(--text-sub); font-weight: 600; }
 
 /* Filter tab counts pick up their category's color instead of the shared
-   neutral pill -- only while inactive, so the active tab keeps the teal
+   neutral badge -- only while inactive, so the active tab keeps the primary
    highlight from style.css's .filter-tab.active .count. */
-.rv-scope .filter-tab[data-filter="assignment"]:not(.active) .count { background: var(--blue-light);   color: var(--blue); }
-.rv-scope .filter-tab[data-filter="coi"]:not(.active) .count        { background: var(--orange-light); color: var(--orange); }
-.rv-scope .filter-tab[data-filter="committee"]:not(.active) .count  { background: var(--purple-light); color: var(--purple); }
-.rv-scope .filter-tab[data-filter="system"]:not(.active) .count     { background: var(--gray-light);   color: var(--gray); }
+.rv-scope .filter-tab[data-filter="assignment"]:not(.active) .count { background-color: RGBA(var(--bs-primary-rgb), 1) !important; color: #fff !important; }
+.rv-scope .filter-tab[data-filter="coi"]:not(.active) .count { background-color: RGBA(var(--bs-warning-rgb), 1) !important; color: #000 !important; }
+.rv-scope .filter-tab[data-filter="committee"]:not(.active) .count { background-color: RGBA(var(--bs-purple-rgb), 1) !important; color: #fff !important; }
+.rv-scope .filter-tab[data-filter="system"]:not(.active) .count { background-color: RGBA(var(--bs-secondary-rgb), 1) !important; color: #fff !important; }
 
 /* ---------------- Security score donut ---------------- */
 
@@ -653,25 +648,11 @@
   display: block;
   transition: background-color 0.2s ease;
 }
-.rv-strength-pill {
-  flex-shrink: 0;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--gray-light);
-  color: var(--text-faint);
-  white-space: nowrap;
-  transition: background-color 0.2s ease, color 0.2s ease;
-}
+.rv-strength-pill { flex-shrink: 0; }
 .rv-strength[data-score="1"] .rv-strength-bars i:nth-child(1) { background: var(--red); }
-.rv-strength[data-score="1"] .rv-strength-pill { background: var(--red-light); color: var(--red); }
 .rv-strength[data-score="2"] .rv-strength-bars i:nth-child(-n+2) { background: var(--orange); }
-.rv-strength[data-score="2"] .rv-strength-pill { background: var(--orange-light); color: var(--orange); }
 .rv-strength[data-score="3"] .rv-strength-bars i:nth-child(-n+3) { background: #d4b106; }
-.rv-strength[data-score="3"] .rv-strength-pill { background: #fbf1c7; color: #a68b00; }
 .rv-strength[data-score="4"] .rv-strength-bars i { background: var(--green); }
-.rv-strength[data-score="4"] .rv-strength-pill { background: var(--green-light); color: var(--green); }
 
 .rv-pw-requirements {
   display: grid;

@@ -35,8 +35,8 @@
       <div class="revision-card neutral">
         <div class="revision-top">
           <div class="revision-title">
-            <h3>{{ application.title }}{% if application.resubmitted_at %} <span class="badge-tag blue" title="Resubmitted {{ application.resubmitted_at|date:'j M Y' }}" style="font-size:10.5px; padding:2px 7px;">Revised</span>{% endif %}</h3>
-            <span>{{ application.reference_no|default:"&mdash;" }}{% if application.review_type %} &nbsp;&bull;&nbsp; <span class="badge-tag purple">{{ application.review_type }}</span>{% endif %}</span>
+            <h3>{{ application.title }}{% if application.resubmitted_at %} <span class="badge text-bg-primary" title="Resubmitted {{ application.resubmitted_at|date:'j M Y' }}" style="font-size:10.5px; padding:2px 7px;">Revised</span>{% endif %}</h3>
+            <span>{{ application.reference_no|default:"&mdash;" }}{% if application.review_type %} &nbsp;&bull;&nbsp; <span class="badge text-bg-purple">{{ application.review_type }}</span>{% endif %}</span>
           </div>
         </div>
         <div class="pipeline-row">

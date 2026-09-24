@@ -122,7 +122,7 @@ def chat(request):
     # Sidebar links only mean anything for a signed-in user.
     nav = _clean_nav(body.get("nav")) if request.user.is_authenticated else []
 
-    system = knowledge.build_system_prompt(request, page, nav)
+    system = knowledge.build_system_prompt(request, page, nav, messages)
     reply, provider = llm.complete(system, messages)
     if not reply:
         logger.error("Assistant: every provider failed")

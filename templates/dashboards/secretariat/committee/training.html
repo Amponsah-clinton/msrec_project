@@ -1,4 +1,5 @@
 {% extends "dashboards/base.html" %}
+{% load bs_badges %}
 {% load static %}
 
 {% block title %}Training | MSREC Secretariat{% endblock %}
@@ -59,11 +60,11 @@
       <section class="panel acct-panel">
         <div class="cmt-toolbar">
           <div class="filter-tabs cmt-toolbar-tabs">
-            <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count">{{ counts.all }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'current' %} active{% endif %}" data-filter="current">Current <span class="count">{{ counts.current }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'expiring' %} active{% endif %}" data-filter="expiring">Expiring Soon <span class="count">{{ counts.expiring }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'expired' %} active{% endif %}" data-filter="expired">Expired <span class="count">{{ counts.expired }}</span></button>
-            <button type="button" class="filter-tab{% if active_tab == 'ongoing' %} active{% endif %}" data-filter="ongoing">No Expiry <span class="count">{{ counts.ongoing }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'current' %} active{% endif %}" data-filter="current">Current <span class="count badge rounded-pill text-bg-secondary">{{ counts.current }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'expiring' %} active{% endif %}" data-filter="expiring">Expiring Soon <span class="count badge rounded-pill text-bg-secondary">{{ counts.expiring }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'expired' %} active{% endif %}" data-filter="expired">Expired <span class="count badge rounded-pill text-bg-secondary">{{ counts.expired }}</span></button>
+            <button type="button" class="filter-tab{% if active_tab == 'ongoing' %} active{% endif %}" data-filter="ongoing">No Expiry <span class="count badge rounded-pill text-bg-secondary">{{ counts.ongoing }}</span></button>
           </div>
           <button type="button" class="acct-btn acct-btn-approve" data-open-modal="trnAddOverlay">
             <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Add Training Record
@@ -89,7 +90,7 @@
             <div class="acct-info">
               <h4 class="cmt-row-title">
                 {{ record.member.full_name }}
-                <span class="cmt-pill cmt-pill-{{ record.expiry_state }}">
+                <span class="badge cmt-pill {{ record.expiry_state|state_badge }}">
                   {% if record.expiry_state == "ongoing" %}No expiry
                   {% elif record.expiry_state == "expired" %}Expired {{ record.expiry_date|date:"d M Y" }}
                   {% elif record.expiry_state == "expiring" %}Due {{ record.expiry_date|date:"d M Y" }}

@@ -95,7 +95,7 @@ a.acct-page-nav:hover, a.acct-page-num:hover { background: var(--white); color: 
 
 @media (max-width: 640px) {
   .acct-toolbar { flex-direction: column; align-items: stretch; }
-  .acct-search { width: 100%; }
+  .acct-search { width: 100%; flex: 0 0 auto; }
 }
 
 /* ---------------- Finance: search/date/export bar ---------------- */
@@ -180,28 +180,6 @@ a.acct-page-nav:hover, a.acct-page-num:hover { background: var(--white); color: 
   color: var(--text-main);
   line-height: 1.35;
 }
-.fee-schedule-badge {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 3px 8px 3px 6px;
-  border-radius: 20px;
-  background: var(--teal-light);
-  color: var(--teal);
-  white-space: nowrap;
-}
-.fee-schedule-badge i {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: currentColor;
-}
-.fee-schedule-badge.free { background: var(--hover-bg); color: var(--text-faint); }
 
 .fee-schedule-input {
   display: flex;
@@ -732,3 +710,78 @@ a.acct-page-nav:hover, a.acct-page-num:hover { background: var(--white); color: 
   .acct-summary-cell:nth-child(-n+2) { border-bottom: 1px solid var(--border); }
   .acct-summary-cell:nth-child(3) { border-bottom: 1px solid var(--border); }
 }
+
+/* ---------------- Accounts table (admin) ----------------
+   A plain, dense ledger: hairline rules, small-caps headers, one line of
+   meaning per cell. Colour is kept for state (status dot, the pending
+   actions) rather than sprinkled across every cell. Reuses .reviews-table
+   so it stacks into cards on phones. */
+/* The older card layout styled .acct-row as a grid; in the table it must
+   behave as an ordinary table row (desktop only -- phones stack it). */
+@media (min-width: 761px) {
+  .acct-table tr.acct-row { display: table-row; padding: 0; gap: 0; border-top: 0; }
+}
+.acct-table-wrap { margin: 4px -18px 0; }
+.acct-table { min-width: 1000px; }
+.acct-table thead th { padding: 11px 14px; background: var(--bg); border-top: 1px solid var(--border); font-size: 11px; letter-spacing: .07em; }
+.acct-table thead th:first-child, .acct-table tbody td:first-child { padding-left: 18px; }
+.acct-table thead th:last-child, .acct-table tbody td:last-child { padding-right: 18px; }
+.acct-th-actions { text-align: right; }
+.acct-table tbody td { padding: 14px; vertical-align: middle; }
+.acct-table tbody tr.acct-row:hover { background: var(--hover-bg); }
+.acct-table .acct-row-suspended td { opacity: .62; }
+.acct-table .acct-row-suspended td.acct-td-actions { opacity: 1; }
+
+.acct-person { display: flex; align-items: center; gap: 11px; min-width: 190px; }
+.acct-person .acct-avatar { width: 36px; height: 36px; font-size: 12px; box-shadow: none; }
+.acct-person-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; }
+.acct-person-text strong { font-size: 13.5px; font-weight: 650; color: var(--text-main); white-space: nowrap; }
+.acct-person-text span { font-size: 12px; color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+
+.acct-cell { display: flex; flex-direction: column; gap: 2px; line-height: 1.35; min-width: 0; }
+.acct-main { font-size: 13px; color: var(--text-main); }
+.acct-table td[data-label="Joined"] .acct-main, .acct-table td[data-label="Joined"] .acct-sub, .acct-table td[data-label="Status"] .acct-sub { white-space: nowrap; }
+.acct-sub { font-size: 11.5px; color: var(--text-faint); }
+.acct-empty { color: var(--text-faint); }
+.acct-mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 12px; letter-spacing: .02em; color: var(--text-main); white-space: nowrap; }
+
+/* Role and status labels are Bootstrap badges (badge text-bg-*). */
+.acct-role, .acct-state { flex-shrink: 0; }
+
+.acct-td-actions { text-align: right; }
+.acct-actions-cell { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px 8px; }
+.acct-request { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; padding: 9px 10px; border: 1px solid var(--border); border-radius: 9px; background: var(--white); text-align: left; min-width: 208px; flex: 1 0 100%; }
+.acct-request-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--orange); }
+.acct-request-buttons { display: flex; gap: 6px; width: 100%; }
+.acct-request-buttons .acct-btn { flex: 1; justify-content: center; }
+
+.acct-icons { display: inline-flex; align-items: center; gap: 4px; }
+.acct-icon {
+  width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-sub); cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.acct-icon svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.acct-icon:hover { background: var(--hover-bg); border-color: var(--border); color: var(--text-main); }
+.acct-icon.is-warn:hover { color: var(--orange); }
+.acct-icon.is-ok:hover { color: var(--green); }
+.acct-icon.is-danger:hover { color: var(--red); background: var(--red-light); border-color: transparent; }
+
+.acct-empty-row td { padding: 0 !important; }
+.acct-empty-row:hover { background: transparent !important; }
+
+.acct-table-foot { padding: 12px 2px 8px; font-size: 12px; color: var(--text-faint); }
+.acct-table-foot strong { color: var(--text-sub); font-weight: 600; }
+
+@media (max-width: 760px) {
+  .acct-table-wrap { margin: 4px 0 0; }
+  .acct-table { min-width: 0; }
+  .acct-table tbody td:first-child, .acct-table tbody td:last-child { padding-left: 0; padding-right: 0; }
+  .acct-person { min-width: 0; }
+  .acct-person-text span { max-width: 190px; }
+  .acct-cell { align-items: flex-end; }
+  .acct-actions-cell { align-items: flex-end; width: 100%; }
+  .acct-request { width: 100%; }
+}
+
+.fee-schedule-badge { flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.03em; }

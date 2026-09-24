@@ -58,7 +58,7 @@
       <div class="filter-tabs" style="margin-bottom:18px;">
         <a href="?audience=all" class="filter-tab{% if active_audience == 'all' %} active{% endif %}">All</a>
         {% for value, label, count in audience_rows %}
-        <a href="?audience={{ value }}" class="filter-tab{% if active_audience == value %} active{% endif %}">{{ label }} <span class="count">{{ count }}</span></a>
+        <a href="?audience={{ value }}" class="filter-tab{% if active_audience == value %} active{% endif %}">{{ label }} <span class="count badge rounded-pill text-bg-secondary">{{ count }}</span></a>
         {% endfor %}
       </div>
 
@@ -84,7 +84,7 @@
                     </span>
                     {{ n.message }}
                   </td>
-                  <td data-label="Audience"><span class="badge-tag blue">{{ n.get_audience_display }}</span></td>
+                  <td data-label="Audience"><span class="badge text-bg-primary">{{ n.get_audience_display }}</span></td>
                   <td data-label="Sent"><span class="due-main">{{ n.created_at|date:"j M Y, g:i A" }}</span></td>
                 </tr>
                 {% empty %}

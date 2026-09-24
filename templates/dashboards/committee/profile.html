@@ -6,7 +6,6 @@
 {% block extra_css %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/reviewer-settings.css' %}">
 <link rel="stylesheet" href="{% static 'dashboard/css/reviewer-identity.css' %}">
 <link rel="stylesheet" href="{% static 'dashboard/css/committee-account.css' %}">
@@ -36,7 +35,7 @@
         <span class="rv-hero-status" title="Approved Committee member"></span>
       </div>
       <div class="rv-hero-info">
-        <h3 class="rv-hero-name">{{ request.user.full_name }} <span class="badge-tag purple">Committee Member</span></h3>
+        <h3 class="rv-hero-name">{{ request.user.full_name }} <span class="badge text-bg-purple">Committee Member</span></h3>
         <p class="rv-hero-role">{{ request.user.position|default:"Committee Member" }}{% if request.user.institution %} &middot; {{ request.user.institution }}{% endif %}</p>
         <div class="rv-hero-meta">
           <span><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg> {{ request.user.email }}</span>
@@ -202,9 +201,9 @@
             <span class="cm-seat-kicker">{{ seat.get_group_display }} seat</span>
             <h3>{{ current_appointment.seat_title }}</h3>
             <div class="cm-seat-status">
-              <span class="badge-tag {% if current_appointment.status == 'active' or current_appointment.status == 'renewed' %}green{% elif current_appointment.status == 'expired' %}red{% else %}orange{% endif %}">{{ current_appointment.get_status_display }}</span>
-              {% if current_appointment.expiry_state == 'expiring' %}<span class="badge-tag orange">Expires in {{ current_appointment.days_to_expiry }} day{{ current_appointment.days_to_expiry|pluralize }}</span>
-              {% elif current_appointment.expiry_state == 'ongoing' %}<span class="badge-tag blue">Open-ended term</span>{% endif %}
+              <span class="badge {% if current_appointment.status == 'active' or current_appointment.status == 'renewed' %}text-bg-success{% elif current_appointment.status == 'expired' %}text-bg-danger{% else %}text-bg-warning{% endif %}">{{ current_appointment.get_status_display }}</span>
+              {% if current_appointment.expiry_state == 'expiring' %}<span class="badge text-bg-warning">Expires in {{ current_appointment.days_to_expiry }} day{{ current_appointment.days_to_expiry|pluralize }}</span>
+              {% elif current_appointment.expiry_state == 'ongoing' %}<span class="badge text-bg-primary">Open-ended term</span>{% endif %}
             </div>
 
             {% if current_appointment.term_pct != None %}
@@ -290,7 +289,7 @@
             <strong>{{ t.course_title }}</strong>
             <em>{% if t.provider %}{{ t.provider }} &middot; {% endif %}{% if t.completed_date %}Completed {{ t.completed_date|date:"M Y" }}{% else %}Scheduled{% endif %}</em>
           </div>
-          {% if t.expiry_state == 'expired' %}<span class="badge-tag red">Expired</span>{% elif t.expiry_state == 'expiring' %}<span class="badge-tag orange">Expiring</span>{% elif t.expiry_state == 'current' %}<span class="badge-tag green">Current</span>{% endif %}
+          {% if t.expiry_state == 'expired' %}<span class="badge text-bg-danger">Expired</span>{% elif t.expiry_state == 'expiring' %}<span class="badge text-bg-warning">Expiring</span>{% elif t.expiry_state == 'current' %}<span class="badge text-bg-success">Current</span>{% endif %}
         </div>
         {% empty %}
         <p class="field-hint" style="margin:0;">No training recorded yet.</p>
@@ -306,7 +305,7 @@
             <strong>{{ c.related_to|default:"Declaration" }}</strong>
             <em>{{ c.date_declared|date:"j M Y" }}</em>
           </div>
-          <span class="badge-tag {% if c.status == 'resolved' %}green{% elif c.status == 'recused' %}purple{% else %}orange{% endif %}">{{ c.get_status_display }}</span>
+          <span class="badge {% if c.status == 'resolved' %}text-bg-success{% elif c.status == 'recused' %}text-bg-purple{% else %}text-bg-warning{% endif %}">{{ c.get_status_display }}</span>
         </div>
         {% empty %}
         <p class="field-hint" style="margin:0;">No conflicts declared on record.</p>

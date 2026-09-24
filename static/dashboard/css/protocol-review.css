@@ -10,14 +10,6 @@
 [hidden] { display: none !important; }
 .pr-ref { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: 12px; font-weight: 600; letter-spacing: -0.02em; color: var(--teal); }
 .pr-muted { color: var(--text-faint); font-size: 12.5px; }
-.pr-badge { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 100px; font-size: 11.5px; font-weight: 600; white-space: nowrap; background: var(--gray-light); color: var(--gray); }
-.pr-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-.pr-badge.green  { background: var(--green-light);  color: var(--green); }
-.pr-badge.teal   { background: var(--teal-light);   color: var(--teal); }
-.pr-badge.orange { background: var(--orange-light); color: var(--orange); }
-.pr-badge.purple { background: var(--purple-light); color: var(--purple); }
-.pr-badge.red    { background: var(--red-light);    color: var(--red); }
-.pr-badge.blue   { background: var(--blue-light);   color: var(--blue); }
 
 /* ---------------- Protocol cards ---------------- */
 .pr-list { display: flex; flex-direction: column; gap: 14px; }

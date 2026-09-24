@@ -6,7 +6,6 @@
 {% block extra_css %}
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/reviewer-settings.css' %}">
 <link rel="stylesheet" href="{% static 'dashboard/css/reviewer-identity.css' %}">
 {% endblock %}
@@ -103,7 +102,7 @@
         <div class="rv-kpi">
           <div class="rv-kpi-top">
             <span class="rv-ico blue"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/></svg></span>
-            <span class="rv-kpi-trend up">+3</span>
+            <span class="badge rv-kpi-trend text-bg-info">+3</span>
           </div>
           <p class="rv-kpi-value">9</p>
           <p class="rv-kpi-label">Total this month</p>
@@ -111,7 +110,7 @@
         <div class="rv-kpi">
           <div class="rv-kpi-top">
             <span class="rv-ico orange"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
-            <span class="rv-kpi-trend orange">Unread</span>
+            <span class="badge rv-kpi-trend text-bg-warning">Unread</span>
           </div>
           <p class="rv-kpi-value">4</p>
           <p class="rv-kpi-label">Needs your attention</p>
@@ -119,7 +118,7 @@
         <div class="rv-kpi">
           <div class="rv-kpi-top">
             <span class="rv-ico purple"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
-            <span class="rv-kpi-trend purple">Next</span>
+            <span class="badge rv-kpi-trend text-bg-purple">Next</span>
           </div>
           <p class="rv-kpi-value">2</p>
           <p class="rv-kpi-label">Upcoming meetings</p>
@@ -127,7 +126,7 @@
         <div class="rv-kpi">
           <div class="rv-kpi-top">
             <span class="rv-ico red"><svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg></span>
-            <span class="rv-kpi-trend red">Urgent</span>
+            <span class="badge rv-kpi-trend text-bg-danger">Urgent</span>
           </div>
           <p class="rv-kpi-value">1</p>
           <p class="rv-kpi-label">Due within 48 hours</p>
@@ -139,11 +138,11 @@
 
           <div class="rv-notif-toolbar">
             <div class="filter-tabs" data-filters-target="#notifFeed" style="margin:0;">
-              <button type="button" class="filter-tab active" data-filter="all">All <span class="count">9</span></button>
-              <button type="button" class="filter-tab" data-filter="assignment">Assignments <span class="count">3</span></button>
-              <button type="button" class="filter-tab" data-filter="coi">COI <span class="count">1</span></button>
-              <button type="button" class="filter-tab" data-filter="committee">Committee <span class="count">3</span></button>
-              <button type="button" class="filter-tab" data-filter="system">System <span class="count">2</span></button>
+              <button type="button" class="filter-tab active" data-filter="all">All <span class="count badge rounded-pill text-bg-secondary">9</span></button>
+              <button type="button" class="filter-tab" data-filter="assignment">Assignments <span class="count badge rounded-pill text-bg-secondary">3</span></button>
+              <button type="button" class="filter-tab" data-filter="coi">COI <span class="count badge rounded-pill text-bg-secondary">1</span></button>
+              <button type="button" class="filter-tab" data-filter="committee">Committee <span class="count badge rounded-pill text-bg-secondary">3</span></button>
+              <button type="button" class="filter-tab" data-filter="system">System <span class="count badge rounded-pill text-bg-secondary">2</span></button>
             </div>
             <label class="rv-unread-toggle">
               <input type="checkbox" data-rv-unread-toggle>
