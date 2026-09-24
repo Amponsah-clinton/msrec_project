@@ -7,7 +7,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const addOverlay = document.getElementById("resAddOverlay");
   const addOpen = document.getElementById("resAddOpen");
   if (addOverlay && addOpen) {
-    const closeAdd = () => { addOverlay.hidden = true; };
+    // In edit mode the modal is server-rendered open at ?edit=<id>; closing it
+    // returns to the plain list instead of just hiding it.
+    const closeAdd = () => {
+      if (addOverlay.dataset.editing) { window.location.href = addOverlay.dataset.closeUrl || window.location.pathname; return; }
+      addOverlay.hidden = true;
+    };
     addOpen.addEventListener("click", () => { addOverlay.hidden = false; });
     document.getElementById("resAddClose").addEventListener("click", closeAdd);
     document.getElementById("resAddCancel").addEventListener("click", closeAdd);
@@ -17,6 +22,17 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape" && !addOverlay.hidden) closeAdd();
     });
+  }
+
+  // ---------------- Training-only fields (card label + icon) ----------------
+  const categorySelect = document.getElementById("resCategory");
+  const trainingRows = document.querySelectorAll("[data-training-only]");
+  if (categorySelect && trainingRows.length) {
+    const syncTraining = () => {
+      trainingRows.forEach((row) => { row.hidden = categorySelect.value !== "training"; });
+    };
+    categorySelect.addEventListener("change", syncTraining);
+    syncTraining();
   }
 
   // ---------------- Search (composes with the dashboard-wide filter-tabs

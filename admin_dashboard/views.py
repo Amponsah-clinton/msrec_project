@@ -9,7 +9,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
+from django.core.validators import URLValidator, validate_email
 from urllib.parse import urlencode
 
 from django.core.paginator import Paginator
@@ -54,6 +54,7 @@ from pages.models import (
     ResourceDocument,
     SiteSettings,
     Testimonial,
+    TRAINING_ICONS,
     TrainingRecord,
 )
 from secretariat_dashboard.views import (
@@ -1250,36 +1251,84 @@ def board_committee(request):
 RESOURCE_TABS = {c for c, _ in ResourceDocument.Category.choices} | {"all"}
 
 
-def _handle_resource_add(request):
+_TRAINING_ICON_VALUES = {value for value, _label in TRAINING_ICONS}
+_RESOURCE_URL_VALIDATOR = URLValidator(schemes=["http", "https"])
+
+
+def _read_resource_form(request):
+    """Cleans the add/edit resource form. Returns a dict of model field values,
+    or None after flashing an error (bad category, missing title, bad link)."""
     category = request.POST.get("category", "")
     title = request.POST.get("title", "").strip()
-    description = request.POST.get("description", "").strip()
     external_url = request.POST.get("external_url", "").strip()
     display_order = request.POST.get("display_order", "").strip()
 
     if category not in {c for c, _ in ResourceDocument.Category.choices}:
         messages.error(request, "Choose a valid category.")
-        return
+        return None
     if not title:
         messages.error(request, "Title is required.")
-        return
+        return None
+    if external_url:
+        # Rendered into an href on the public page, so only http(s) is allowed.
+        try:
+            _RESOURCE_URL_VALIDATOR(external_url)
+        except ValidationError:
+            messages.error(request, "Enter a full web address starting with http:// or https://.")
+            return None
 
-    resource = ResourceDocument.objects.create(
-        category=category, title=title, description=description, external_url=external_url,
-        display_order=int(display_order) if display_order.isdigit() else 0,
-    )
+    icon = request.POST.get("icon", "")
+    return {
+        "category": category,
+        "title": title[:200],
+        "description": request.POST.get("description", "").strip(),
+        "external_url": external_url[:200],
+        "badge_label": request.POST.get("badge_label", "").strip()[:60],
+        "icon": icon if icon in _TRAINING_ICON_VALUES else "bi-mortarboard-fill",
+        "display_order": min(int(display_order), 32767) if display_order.isdigit() else 0,
+    }
 
+
+def _attach_resource_file(request, resource, title):
     upload = request.FILES.get("file")
-    if upload:
-        object_path = resources_storage.upload_document(upload, folder=f"{category}/{resource.pk}")
-        if object_path:
-            resource.file_path = object_path
-            resource.file_size = upload.size
-            resource.save(update_fields=["file_path", "file_size"])
-        else:
-            messages.warning(request, f"\"{title}\" was added, but the file couldn't be uploaded right now.")
+    if not upload:
+        return
+    old_path = resource.file_path
+    object_path = resources_storage.upload_document(upload, folder=f"{resource.category}/{resource.pk}")
+    if object_path:
+        resource.file_path = object_path
+        resource.file_size = upload.size
+        resource.save(update_fields=["file_path", "file_size"])
+        if old_path and old_path != object_path:
+            resources_storage.delete_object(old_path)
+    else:
+        messages.warning(request, f"\"{title}\" was saved, but the file couldn't be uploaded right now.")
 
-    messages.success(request, f"\"{title}\" added to {resource.get_category_display()}.")
+
+def _handle_resource_add(request):
+    data = _read_resource_form(request)
+    if not data:
+        return
+    resource = ResourceDocument.objects.create(**data)
+    _attach_resource_file(request, resource, resource.title)
+    messages.success(request, f"\"{resource.title}\" added to {resource.get_category_display()}.")
+
+
+def _handle_resource_edit(request, resource):
+    data = _read_resource_form(request)
+    if not data:
+        return False
+    for field, value in data.items():
+        setattr(resource, field, value)
+    resource.save()
+    if request.POST.get("remove_file") == "on" and resource.file_path and not request.FILES.get("file"):
+        resources_storage.delete_object(resource.file_path)
+        resource.file_path = ""
+        resource.file_size = 0
+        resource.save(update_fields=["file_path", "file_size"])
+    _attach_resource_file(request, resource, resource.title)
+    messages.success(request, f"\"{resource.title}\" updated.")
+    return True
 
 
 def _handle_resource_delete(request, resource):
@@ -1297,11 +1346,16 @@ def _handle_resource_toggle(request, resource):
 
 
 @login_required
-@admin_required
-def resources_library(request):
+@admin_or_secretariat_required
+def resources_library(request, template_name="dashboards/admin/resources.html"):
+    """The Resources manager. Shared by the Admin and Secretariat dashboards
+    (each passes its own template so the sidebar/topbar stay its own); every
+    add/edit/hide/delete goes straight to the resource_documents table and
+    the public Resources page."""
     if request.method == "POST":
         action = request.POST.get("action")
         tab = request.POST.get("tab", "all")
+        back = f"{request.path}?tab={tab}"
 
         if action == "add":
             _handle_resource_add(request)
@@ -1309,16 +1363,19 @@ def resources_library(request):
             resource_id = request.POST.get("resource_id", "")
             if not resource_id.isdigit():
                 messages.error(request, "That request could not be processed.")
-                return redirect(f"{request.path}?tab={tab}")
+                return redirect(back)
             resource = get_object_or_404(ResourceDocument, pk=resource_id)
 
             if action == "delete":
                 _handle_resource_delete(request, resource)
             elif action == "toggle":
                 _handle_resource_toggle(request, resource)
+            elif action == "edit":
+                if not _handle_resource_edit(request, resource):
+                    return redirect(f"{back}&edit={resource.pk}")
             else:
                 messages.error(request, "That request could not be processed.")
-        return redirect(f"{request.path}?tab={tab}")
+        return redirect(back)
 
     active_tab = request.GET.get("tab", "all")
     if active_tab not in RESOURCE_TABS:
@@ -1328,17 +1385,25 @@ def resources_library(request):
     for resource in resources:
         resource.download_url_ = resources_storage.public_url(resource.file_path)
 
+    editing = None
+    edit_id = request.GET.get("edit", "")
+    if edit_id.isdigit():
+        editing = get_object_or_404(ResourceDocument, pk=edit_id)
+        editing.download_url_ = resources_storage.public_url(editing.file_path)
+
     category_counts = [
         (value, label, sum(1 for r in resources if r.category == value))
         for value, label in ResourceDocument.Category.choices
     ]
 
-    return render(request, "dashboards/admin/resources.html", {
+    return render(request, template_name, {
         "resources": resources,
         "counts_all": len(resources),
         "category_counts": category_counts,
         "active_tab": active_tab,
         "categories": ResourceDocument.Category.choices,
+        "training_icons": TRAINING_ICONS,
+        "editing": editing,
     })
 
 

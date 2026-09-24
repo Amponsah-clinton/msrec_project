@@ -94,6 +94,10 @@ urlpatterns = [
         {"template_name": "dashboards/secretariat/accounts.html"}, name="users_access",
     ),
     path(
+        "resources/", admin_dashboard_views.resources_library,
+        {"template_name": "dashboards/secretariat/resources.html"}, name="resources_library",
+    ),
+    path(
         "profile-security/", admin_dashboard_views.profile_security,
         {"template_name": "dashboards/secretariat/profile-security.html"}, name="profile_security",
     ),

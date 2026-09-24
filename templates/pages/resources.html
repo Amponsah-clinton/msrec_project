@@ -421,52 +421,24 @@
 
         <div class="res-training-grid">
           {% for doc in resources_by_category.training %}
-          <a class="res-training-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
-            <span class="res-training-icon"><i class="bi bi-mortarboard-fill"></i></span>
+          {% with link=doc.download_url_|default:doc.external_url %}
+          <{% if link %}a href="{{ link }}" target="_blank" rel="noopener"{% else %}div{% endif %} class="res-training-card{% if not link %} is-unavailable{% endif %}" data-search="{{ doc.title|lower }} {{ doc.description|lower }} training">
+            <span class="res-training-icon"><i class="bi {{ doc.icon|default:'bi-mortarboard-fill' }}"></i></span>
             <div class="res-training-body">
-              <span class="badge rounded-pill res-training-tag text-bg-success">{% if doc.download_url_ %}Download{% else %}Online resource{% endif %}</span>
+              <span class="badge rounded-pill res-training-tag text-bg-success">{% if doc.badge_label %}{{ doc.badge_label }}{% elif doc.download_url_ %}Download{% else %}Online resource{% endif %}</span>
               <h4>{{ doc.title }}</h4>
-              <p>{{ doc.description }}</p>
+              {% if doc.description %}<p>{{ doc.description }}</p>{% endif %}
             </div>
+            {% if link %}
             <span class="res-training-cta">{% if doc.download_url_ %}Download{% else %}Start training{% endif %} <i class="bi bi-arrow-right"></i></span>
-          </a>
+            {% else %}
+            <span class="res-training-cta">Link coming soon</span>
+            {% endif %}
+          </{% if link %}a{% else %}div{% endif %}>
+          {% endwith %}
+          {% empty %}
+          <p class="res-training-empty">Training modules will be listed here soon.</p>
           {% endfor %}
-          <a class="res-training-card" href="#" data-search="foundations of research ethics course">
-            <span class="res-training-icon"><i class="bi bi-mortarboard-fill"></i></span>
-            <div class="res-training-body">
-              <span class="badge rounded-pill res-training-tag text-bg-success">Online course &middot; 2 hrs</span>
-              <h4>Foundations of Research Ethics</h4>
-              <p>The core principles &mdash; respect for persons, beneficence, justice and accountability &mdash; behind every MSREC decision.</p>
-            </div>
-            <span class="res-training-cta">Start training <i class="bi bi-arrow-right"></i></span>
-          </a>
-          <a class="res-training-card" href="#" data-search="good clinical practice gcp training">
-            <span class="res-training-icon"><i class="bi bi-clipboard2-pulse"></i></span>
-            <div class="res-training-body">
-              <span class="badge rounded-pill res-training-tag text-bg-success">Online course &middot; 3 hrs</span>
-              <h4>Good Clinical Practice (GCP)</h4>
-              <p>International standards for designing, conducting and reporting trials that involve human participants.</p>
-            </div>
-            <span class="res-training-cta">Start training <i class="bi bi-arrow-right"></i></span>
-          </a>
-          <a class="res-training-card" href="#" data-search="ai ethics responsible research training">
-            <span class="res-training-icon"><i class="bi bi-cpu"></i></span>
-            <div class="res-training-body">
-              <span class="badge rounded-pill res-training-tag text-bg-success">Online module &middot; 1.5 hrs</span>
-              <h4>AI Ethics &amp; Responsible Research</h4>
-              <p>Bias, transparency, human oversight and participant awareness for studies that involve AI or automated systems.</p>
-            </div>
-            <span class="res-training-cta">Start training <i class="bi bi-arrow-right"></i></span>
-          </a>
-          <a class="res-training-card" href="#" data-search="data protection confidentiality training">
-            <span class="res-training-icon"><i class="bi bi-shield-lock"></i></span>
-            <div class="res-training-body">
-              <span class="badge rounded-pill res-training-tag text-bg-success">Online module &middot; 1 hr</span>
-              <h4>Data Protection &amp; Confidentiality</h4>
-              <p>Practical handling of identifiable, sensitive and cross-border data across the research lifecycle.</p>
-            </div>
-            <span class="res-training-cta">Start training <i class="bi bi-arrow-right"></i></span>
-          </a>
         </div>
       </section>
 

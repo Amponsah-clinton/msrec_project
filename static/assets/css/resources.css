@@ -380,6 +380,11 @@ body.resources-page { margin: 0; font-family: var(--default-font); }
   color: inherit;
 }
 .res-training-card.is-filtered-out { display: none; }
+/* A module with no link or file yet: shown, but not clickable. */
+.res-training-card.is-unavailable { cursor: default; }
+.res-training-card.is-unavailable:hover { transform: none; box-shadow: none; border-color: #eef3f1; background: #fbfcfc; }
+.res-training-card.is-unavailable .res-training-cta { color: #5c6b69; }
+.res-training-empty { margin: 0; font-size: 14px; color: #5c6b69; }
 
 .res-training-icon {
   width: 44px; height: 44px;

@@ -507,6 +507,20 @@ class PolicyDocument(models.Model):
         return f"{self.title} ({self.get_category_display()})"
 
 
+# Icons an admin can pick for a Training card (Bootstrap Icons class names).
+TRAINING_ICONS = [
+    ("bi-mortarboard-fill", "Graduation cap"),
+    ("bi-clipboard2-pulse", "Clinical / health"),
+    ("bi-cpu", "AI / technology"),
+    ("bi-shield-lock", "Data protection"),
+    ("bi-book", "Course / reading"),
+    ("bi-journal-text", "Guide / notes"),
+    ("bi-laptop", "Online module"),
+    ("bi-people", "Group / workshop"),
+    ("bi-patch-check", "Certification"),
+]
+
+
 class ResourceDocument(models.Model):
     """One item on the public Resource Centre page
     (templates/pages/resources.html) -- an Application Form, Protocol
@@ -541,6 +555,12 @@ class ResourceDocument(models.Model):
     # Fallback for a Training entry that just links out to an external
     # course rather than a file hosted here -- blank means "no link".
     external_url = models.URLField(blank=True)
+
+    # Training entries only. The small label on the card ("Online course ·
+    # 2 hrs"); blank falls back to "Download" / "Online resource".
+    badge_label = models.CharField(max_length=60, blank=True)
+    # A Bootstrap Icons class for the card ("bi-cpu"); see TRAINING_ICONS.
+    icon = models.CharField(max_length=40, blank=True, default="bi-mortarboard-fill")
 
     # Unpublishing keeps the record (and any uploaded file) without
     # showing it on the public page -- same idea as GovernanceMember.is_active.

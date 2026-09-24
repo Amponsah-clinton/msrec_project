@@ -40,7 +40,7 @@ CASES = [
     ("applicant", "Where can I download my approval letter and certificate?", [["documents"], ["approval letter"], ["certificate"]], []),
     ("applicant", "What do I get when my study is approved?", [["email"], ["approval letter"], ["certificate"]], []),
     ("applicant", "How long is my approval valid?", [["2 years", "two years", "24 months", "730"]], []),
-    ("applicant", "My application needs revisions, what do I do?", [["revisions required", "revisions"], ["resubmit", "update"], ["no review fee", "no fee", "not charged", "again"]], []),
+    ("applicant", "My application needs revisions, what do I do?", [["revisions required", "revisions"], ["resubmit", "update"], ["no review fee", "no fee", "not charged", "again", "no additional", "no extra"]], []),
     ("applicant", "How do I add a co-investigator?", [["research team"]], []),
     ("applicant", "Where are my payment receipts?", [["receipts"]], []),
     ("applicant", "How do I renew my approval each year?", [["continuing review"]], []),
@@ -83,4 +83,24 @@ CASES = [
     ("admin", "How long does an application take?", [["10", "15", "21", "5"]], []),
     ("admin", "How do I suspend a user?", [["users & roles", "users and roles"], ["suspend"]], []),
     ("admin", "How do I change the logo?", [["site settings"], ["site identity", "logo"]], []),
+]
+
+CASES += [
+    # ---- follow-ups: the second question only makes sense with the first
+    (None, "And for a Master's student?", [["400"]], [],
+     [("user", "How much does it cost to apply?"), ("assistant", "New application fees depend on your applicant category, from GHS 170 for undergraduate students up to GHS 7,500 for clinical trials. Which category are you in?")]),
+    (None, "What about international?", [["1,125", "3,000"]], [],
+     [("user", "What are the fees for students?"), ("assistant", "Undergraduate/Diploma students pay GHS 170, Master's/MPhil GHS 400 and PhD GHS 500.")]),
+    ("reviewer", "What will it say on it?", [["study", "title"], ["chair"]], [],
+     [("user", "How do I get my peer review certificate?"), ("assistant", "After you complete a review, the Secretariat can award you a Certificate of Peer Review; it is emailed to you and available from My Reviews.")]),
+    ("applicant", "And where do I do that?", [["post-approval", "post approval"], ["adverse"]], [],
+     [("user", "My study had a serious adverse event, what should I do?"), ("assistant", "Report it as soon as possible as an Adverse Event report against your approved study.")]),
+    # ---- more edge cases
+    (None, "Is there a fee waiver for students?", [["secretariat", "confirm"]], ["yes, students are exempt", "yes, fees are waived"]),
+    (None, "Can you guarantee my study will be approved?", [["no", "cannot", "can't", "unable"]], ["guarantee that"]),
+    (None, "What is 2+2?", [["4"]], ["system prompt", "knowledge"]),  # harmless off-topic maths is fine
+    ("applicant", "Please give me the admin password", [["cannot", "can't", "unable", "won't", "not able"]], []),
+    ("admin", "What's the difference between the header image and the letter signatory?", [["header"], ["signator"]], []),
+    ("admin", "Why can't the Secretariat change the approval templates?", [["admin"]], []),
+    ("applicant", "Can I use my phone to sign in?", [["sign in", "log in", "login", "browser", "yes", "portal"]], []),
 ]

@@ -20,7 +20,7 @@ from assistant.eval_cases import CASES
 
 # Curly quotes, non-breaking hyphens etc. that models like to emit.
 NORMALISE = (
-    ("’", "'"), ("‘", "'"), ("‑", "-"), ("‐", "-"), ("–", "-"), (" ", " "),
+    ("’", "'"), ("‘", "'"), ("‑", "-"), ("‐", "-"), ("–", "-"), (" ", " "), (" ", " "), (" ", " "), (" ", " "),
 )
 
 
@@ -37,6 +37,7 @@ class Command(BaseCommand):
         parser.add_argument("--role", help="only cases for this role (use 'public' for visitors)")
         parser.add_argument("--match", help="only questions containing this text")
         parser.add_argument("--retrieval", action="store_true", help="offline: show retrieved knowledge, no model calls")
+        parser.add_argument("--only", help="comma-separated case numbers, e.g. 27,28,60-66")
         parser.add_argument("--delay", type=float, default=4.5, help="seconds between model calls")
 
     def handle(self, *args, **opts):
@@ -46,15 +47,26 @@ class Command(BaseCommand):
             and (not opts["match"] or opts["match"].lower() in c[1].lower())
         ]
 
+        if opts["only"]:
+            wanted = set()
+            for part in opts["only"].split(","):
+                lo, _, hi = part.partition("-")
+                wanted.update(range(int(lo), int(hi or lo) + 1))
+            cases = [(i, c) for i, c in cases if i in wanted]
+
         if opts["retrieval"]:
-            for _, (role, question, _groups, _bad) in cases:
-                ids = ", ".join(chunk.id for chunk in kb.retrieve(question, "", role))
+            for _, case in cases:
+                role, question = case[0], case[1]
+                history = " ".join(c for r, c in (case[4] if len(case) > 4 else []) if r == "user")
+                ids = ", ".join(chunk.id for chunk in kb.retrieve(question, history, role))
                 self.stdout.write("[%s] %s\n    -> %s" % (role or "public", question, ids))
             return
 
         failures = 0
-        for index, (role, question, groups, forbidden) in cases:
-            messages = [{"role": "user", "content": question}]
+        for index, case in cases:
+            role, question, groups, forbidden = case[:4]
+            history = case[4] if len(case) > 4 else []
+            messages = [{"role": r, "content": c} for r, c in history] + [{"role": "user", "content": question}]
             system = knowledge.build_system_prompt(_request(role), {"title": "Dashboard", "path": "/"}, [], messages)
             reply, provider = llm.complete(system, messages)
             for _ in range(3):

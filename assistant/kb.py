@@ -194,7 +194,8 @@ When you Approve, the applicant is emailed at once with the approval letter and 
 Letterhead: upload a header image (top of page 1) and a footer image (bottom of every page) for the approval letter; they're placed edge to edge on A4 (about 2480 px wide; header max height 55 mm, footer 38 mm, larger images are scaled down; blank margins trimmed). Letter signatory: name, title and signature image for the letter, or leave blank to use the Chair. Uploaded images are saved to Supabase Storage and the old file is deleted on replace/remove.""", frozenset({"admin"})),
     C("admin-finance", "Admin: finance and the fee schedule",
       "finance,payments,fee schedule,change fee,edit fee,export csv,total collected,paystack,revenue,price change,update price",
-      """Finance lists every payment (20 per page) with tabs (All, Successful, Pending, Failed), search, a date range and Export CSV. The Fee Schedule editor sets each fee; changes apply immediately to checkout and to the public Fees page and the application form. Secretariat sees the schedule read-only.""", frozenset({"admin", "secretariat"})),
+      """To change a fee: open Finance in the sidebar, find the Fee Schedule editor near the top of the page, type the new amount for that item and press Save on its row. It takes effect immediately for new checkouts, the public Fees page and the application form. (There is no separate "Fee Schedule" sidebar item.)
+The same Finance page lists every payment (20 per page) with tabs (All, Successful, Pending, Failed), search, a date range and Export CSV. Secretariat sees the schedule read-only.""", frozenset({"admin", "secretariat"})),
     C("admin-security", "Admin: security, audit logs, oversight",
       "access and security,audit log,audit logs,sessions,two factor adoption,staff sessions,adverse events,deviations,oversight,inquiries,reports and analytics,messages",
       """Access & Security shows two-factor adoption and active staff sessions (25 per page). Audit Logs record time-stamped staff actions (approvals, role decisions, settings). Adverse Events and Protocol Deviations give read-only oversight of those filings (the Secretariat triages them); admins are emailed and notified whenever one is filed. Inquiries holds Contact-page messages, answered by email from the dashboard. Reports & Analytics and Messages complete the sidebar.""", frozenset({"admin"})),
@@ -256,6 +257,9 @@ def retrieve(question, history_text="", role=None, limit=5, budget_chars=7500):
     q = (question or "").lower()
     ctx = (history_text or "").lower()
     q_tokens, ctx_tokens = _tokens(q), _tokens(ctx)
+    # A short follow-up ("and for a Master's student?") carries little on
+    # its own -- lean on what was being discussed.
+    follow = 2.5 if len(q_tokens) <= 4 else 1.0
     scored = []
     for chunk in CHUNKS:
         if not _audience_ok(chunk, role):
@@ -270,13 +274,13 @@ def retrieve(question, history_text="", role=None, limit=5, budget_chars=7500):
                 elif kw_tokens and kw_tokens <= q_tokens:
                     score += 3                       # same words, any order / filler between
                 elif kw_tokens and kw_tokens <= ctx_tokens:
-                    score += 0.8
+                    score += 0.8 * follow
             elif kw_tokens:
                 stem = next(iter(kw_tokens))
                 if stem in q_tokens:
                     score += 2
                 elif stem in ctx_tokens:
-                    score += 0.5
+                    score += 0.5 * follow
         score += len(_tokens(chunk.title) & q_tokens) * 1.5
         if score > 0:
             scored.append((score, chunk))
@@ -285,7 +289,7 @@ def retrieve(question, history_text="", role=None, limit=5, budget_chars=7500):
     # Drop weak matches once there's a clear front-runner, so a stray shared
     # word can't drag unrelated sections into the prompt.
     if scored:
-        floor = max(2.0, scored[0][0] * 0.35)
+        floor = max(1.0 if follow > 1 else 2.0, scored[0][0] * 0.35)
         scored = [pair for pair in scored if pair[0] >= floor]
 
     chosen, used = [], 0
