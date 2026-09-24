@@ -33,6 +33,7 @@
           <button type="button" class="settings-tab" data-target="applicant-faqs" role="tab" aria-selected="false">Applicant FAQs</button>
           {% if request.user.is_superuser or request.user.role == 'admin' %}<button type="button" class="settings-tab" data-target="certificates" role="tab" aria-selected="false">Certificates</button>{% endif %}
           {% if request.user.is_superuser or request.user.role == 'admin' %}<button type="button" class="settings-tab" data-target="approval-docs" role="tab" aria-selected="false">Approval Documents</button>{% endif %}
+          {% if request.user.is_superuser or request.user.role == 'admin' %}<button type="button" class="settings-tab" data-target="maintenance" role="tab" aria-selected="false">Maintenance</button>{% endif %}
         </div>
 
         <!-- Site Identity -->
@@ -778,6 +779,80 @@
         </section>
         {% endif %}
 
+        {% if request.user.is_superuser or request.user.role == 'admin' %}
+        <!-- Maintenance -->
+        <section class="settings-panel-section" id="maintenance">
+          <div class="panel settings-panel">
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> Site Maintenance</h3>
+
+              <div class="mt-status is-{{ maintenance_kind }}">
+                <span class="mt-dot"></span>
+                <div class="mt-status-text">
+                  <strong>{% if maintenance_kind == 'locked' %}Maintenance is on{% elif maintenance_kind == 'scheduled' %}Maintenance scheduled{% elif maintenance_kind == 'ended' %}Window ended{% else %}Site is live{% endif %}</strong>
+                  <span>{{ maintenance_summary }}</span>
+                </div>
+                <div class="mt-status-actions">
+                  {% if maintenance_kind == 'locked' or maintenance_kind == 'scheduled' %}
+                  <form method="post" data-confirm="Turn maintenance off and reopen the site now?" data-confirm-label="Reopen site">
+                    {% csrf_token %}<input type="hidden" name="action" value="maintenance_end_now"><input type="hidden" name="tab" value="maintenance">
+                    <button type="submit" class="btn-primary">End maintenance now</button>
+                  </form>
+                  {% else %}
+                  <form method="post" data-confirm="Lock the site for everyone except administrators right now?" data-confirm-variant="danger" data-confirm-label="Start maintenance">
+                    {% csrf_token %}<input type="hidden" name="action" value="maintenance_start_now"><input type="hidden" name="tab" value="maintenance">
+                    <button type="submit" class="btn-primary mt-btn-start">Start maintenance now</button>
+                  </form>
+                  {% endif %}
+                </div>
+              </div>
+
+              <form method="post" class="settings-form mt-form" id="maintenanceForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_maintenance">
+                <input type="hidden" name="tab" value="maintenance">
+
+                <label class="mt-switch">
+                  <input type="checkbox" name="maintenance_enabled" id="mtEnabled" {% if site.maintenance_enabled %}checked{% endif %}>
+                  <span class="mt-track"><i></i></span>
+                  <span class="mt-switch-text"><strong>Maintenance mode</strong><em>Visitors, applicants, reviewers and staff see the maintenance page. Administrators, the admin area and the login pages stay open.</em></span>
+                </label>
+
+                <div class="mt-when">
+                  <div class="field">
+                    <label for="mtStart">Starts</label>
+                    <input type="datetime-local" id="mtStart" name="maintenance_start" value="{{ maintenance_start_input }}">
+                  </div>
+                  <div class="field">
+                    <label for="mtEnd">Ends</label>
+                    <input type="datetime-local" id="mtEnd" name="maintenance_end" value="{{ maintenance_end_input }}">
+                  </div>
+                </div>
+                <div class="mt-quick" aria-label="Set the end time">
+                  <span>Set the end</span>
+                  <button type="button" data-mt-hours="1">+1 hour</button>
+                  <button type="button" data-mt-hours="2">+2 hours</button>
+                  <button type="button" data-mt-hours="4">+4 hours</button>
+                  <button type="button" data-mt-hours="24">+1 day</button>
+                  <button type="button" data-mt-clear>No end time</button>
+                </div>
+                <p class="field-hint">Times are in {{ maintenance_tz_label }}. Leave the start empty to lock as soon as it's switched on; with an end time, the site reopens by itself.</p>
+
+                <div class="field" style="margin-top:14px;">
+                  <label for="mtMessage">Message shown to visitors</label>
+                  <textarea id="mtMessage" name="maintenance_message" rows="3" maxlength="600" placeholder="{{ maintenance_default_message }}">{{ site.maintenance_message }}</textarea>
+                </div>
+
+                <div class="settings-form-actions mt-actions">
+                  <button type="submit" class="btn-secondary" formaction="{% url 'admin_dashboard:maintenance_preview' %}" formtarget="_blank" formnovalidate>Preview page</button>
+                  <button type="submit" class="btn-primary">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+        {% endif %}
+
         <!-- Testimonials -->
         <section class="settings-panel-section" id="testimonials">
           <div class="panel settings-full-panel">
@@ -927,6 +1002,7 @@
 {% block extra_js %}
 <script src="{% static 'dashboard/js/signature-pad.js' %}"></script>
 <script src="{% static 'dashboard/js/approval-templates.js' %}"></script>
+<script src="{% static 'dashboard/js/maintenance-settings.js' %}"></script>
 <script>
 (function () {
   var tabs = document.querySelectorAll('.settings-tab');

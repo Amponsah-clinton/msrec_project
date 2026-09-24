@@ -9,3 +9,11 @@ class PagesConfig(AppConfig):
         from . import storage_cleanup
 
         storage_cleanup.connect()
+
+        from django.db.models.signals import post_save
+
+        from . import maintenance
+        from .models import SiteSettings
+
+        post_save.connect(maintenance.clear_cache, sender=SiteSettings, weak=False,
+                          dispatch_uid="maintenance_clear_cache")

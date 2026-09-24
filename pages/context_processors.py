@@ -10,3 +10,24 @@ def site_settings(request):
     just above this in TEMPLATES' context_processors list.
     """
     return {"site_settings": SiteSettings.get_solo()}
+
+
+def maintenance(request):
+    """Two small flags for templates while maintenance is on:
+      maintenance_locked -- the site is locked right now (login page notice)
+      maintenance_admin_bar -- show an administrator the "maintenance is ON" bar
+    Cheap: the state is cached for a few seconds (see pages/maintenance.py)."""
+    from . import maintenance as m
+
+    try:
+        current = m.state()
+    except Exception:
+        return {}
+    if not current["active"]:
+        return {}
+    user = getattr(request, "user", None)
+    return {
+        "maintenance_locked": True,
+        "maintenance_end": current["end"],
+        "maintenance_admin_bar": m.is_bypass_user(user),
+    }

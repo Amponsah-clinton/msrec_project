@@ -20,6 +20,9 @@
             <h1>Welcome Back!</h1>
             <p class="login-sub">Access your research ethics account.</p>
 
+            {% if maintenance_locked %}
+              <div class="login-messages"><div class="login-message" style="border-left:3px solid #f5a524;">The site is under scheduled maintenance{% if maintenance_end %} until {{ maintenance_end|date:"j M Y, H:i" }} GMT{% endif %}. Only administrators can sign in right now.</div></div>
+            {% endif %}
             {% if messages %}
               <div class="login-messages">
                 {% for message in messages %}

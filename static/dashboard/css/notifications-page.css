@@ -1,0 +1,81 @@
+/* Notifications list page (templates/notifications/list.html). Solid colours
+   and the dashboard's own tokens, so it follows light/dark mode. */
+.np-panel { max-width: 980px; margin: 0 auto; }
+
+.np-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.np-tabs { flex-wrap: wrap; }
+.np-search { position: relative; flex: 1 1 220px; max-width: 320px; }
+.np-search svg { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; fill: none; stroke: var(--text-faint); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.np-search input {
+  width: 100%; height: 36px; padding: 0 12px 0 34px; font: inherit; font-size: 13px;
+  color: var(--text-main); background: var(--hover-bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+.np-search input:focus { outline: 2px solid var(--teal); outline-offset: 1px; background: var(--white); }
+
+.np-toolbar {
+  display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap;
+  padding: 10px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
+.np-toolbar form { margin: 0; }
+.np-spacer { flex: 1 1 auto; }
+.np-selectall { display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--text-sub); cursor: pointer; }
+.np-selected { font-size: 12.5px; color: var(--text-sub); }
+.np-bulk { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+.np-selected[hidden], .np-bulk[hidden] { display: none; }
+
+.np-btn {
+  display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 12px;
+  font: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-main); text-decoration: none;
+  background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-sm); cursor: pointer;
+}
+.np-btn:hover { border-color: var(--teal); color: var(--teal); }
+.np-btn-danger { color: var(--red); }
+.np-btn-danger:hover { border-color: var(--red); color: var(--red); background: var(--red-light); }
+.np-btn.is-disabled { opacity: .45; pointer-events: none; }
+
+.np-day { margin: 22px 0 6px; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); }
+.np-list { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+
+.np-row { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--white); }
+.np-row:last-child { border-bottom: none; }
+.np-row:hover { background: var(--hover-bg); }
+.np-row.is-unread, .np-row.is-unread:hover { background: var(--blue-light); }
+.np-row.is-selected { outline: 2px solid var(--teal); outline-offset: -2px; }
+.np-check { margin-top: 8px; flex-shrink: 0; width: 16px; height: 16px; cursor: pointer; }
+.np-row .notice-icon { width: 34px; height: 34px; }
+.np-row .notice-icon svg { width: 17px; height: 17px; }
+
+.np-body { flex: 1; min-width: 0; }
+.np-message { margin: 0; font-size: 13.5px; line-height: 1.5; color: var(--text-main); overflow-wrap: anywhere; }
+.np-row.is-unread .np-message { font-weight: 600; }
+.np-message a { color: inherit; text-decoration: none; }
+.np-message a:hover { color: var(--blue); text-decoration: underline; }
+.np-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-top: 6px; font-size: 11.5px; color: var(--text-faint); }
+
+.np-row-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.np-row-actions form { margin: 0; }
+.np-icon-btn {
+  width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-sub); background: transparent; border: none; border-radius: var(--radius-sm); cursor: pointer;
+}
+.np-icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.np-icon-btn:hover { background: var(--hover-bg); color: var(--teal); }
+.np-icon-danger:hover { background: var(--red-light); color: var(--red); }
+
+.np-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; }
+.np-pager-info { font-size: 12.5px; color: var(--text-sub); text-align: center; }
+
+.np-empty { text-align: center; padding: 56px 20px; }
+.np-empty h3 { margin: 12px 0 4px; font-size: 16px; }
+.np-empty p { margin: 0; font-size: 13px; color: var(--text-sub); }
+.np-empty-icon { display: inline-flex; width: 52px; height: 52px; align-items: center; justify-content: center; border-radius: 50%; background: var(--teal-light); color: var(--teal); }
+.np-empty-icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+.np-note { margin: 18px 0 0; font-size: 12px; color: var(--text-faint); text-align: center; }
+
+@media (max-width: 640px) {
+  .np-row { padding: 12px; gap: 10px; }
+  .np-row-actions { flex-direction: column; }
+  .np-search { max-width: none; }
+  .np-spacer { display: none; }
+}

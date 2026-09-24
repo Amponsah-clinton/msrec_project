@@ -48,6 +48,17 @@ class Notification(models.Model):
         from django.urls import reverse
         return reverse(self.link_url_name, kwargs=self.link_kwargs)
 
+    def safe_url(self):
+        """Like get_absolute_url(), but returns None instead of raising when the
+        target no longer resolves (a route renamed or removed since this
+        notification was written). Old notifications are kept indefinitely, so
+        their links can outlive the pages they point at."""
+        from django.urls import NoReverseMatch
+        try:
+            return self.get_absolute_url()
+        except NoReverseMatch:
+            return None
+
 
 class NotificationRead(models.Model):
     """Per-user read marker -- one row per (notification, user), the same
@@ -62,4 +73,25 @@ class NotificationRead(models.Model):
         db_table = "notification_reads"
         constraints = [
             models.UniqueConstraint(fields=["notification", "user"], name="unique_notification_read_per_user")
+        ]
+
+
+class NotificationDismissal(models.Model):
+    """One user deleting one notification from their own list.
+
+    Notifications are broadcast to a whole role (see Notification), so
+    deleting the row itself would remove it for everyone who holds that role.
+    A dismissal hides it for just this user -- the same per-user shape as
+    NotificationRead -- and everything else (the bell, unread counts, the
+    full list) skips dismissed notifications for that user only.
+    """
+
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name="dismissals")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notification_dismissals")
+    dismissed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "notification_dismissals"
+        constraints = [
+            models.UniqueConstraint(fields=["notification", "user"], name="unique_notification_dismissal_per_user")
         ]

@@ -1,45 +1,161 @@
 {% extends "dashboards/base.html" %}
+{% load static %}
 
 {% block title %}Notifications | MSREC{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/notifications-page.css' %}">
+{% endblock %}
+
 {% block nav_content %}
+{% if audience == 'admin' %}
+      {% include "dashboards/admin/_nav.html" with active="notifications" %}
+{% else %}
 <a href="{{ home_url }}" class="nav-item">
   <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></span>
   <span>Back to Dashboard</span>
 </a>
+{% endif %}
 {% endblock %}
 
 {% block topbar %}
+{% if audience == 'admin' %}
+      {% include "dashboards/admin/_topbar.html" with page_title="Notifications" page_subtitle="Every notification, new and old, stays here until you delete it" %}
+{% else %}
 <div class="topbar-title">
   <h1>Notifications</h1>
+  <p>Every notification, new and old, stays here until you delete it</p>
 </div>
-<div class="topbar-actions">
-  <form method="post" action="{% url 'notifications:mark_all_read' audience %}">
-    {% csrf_token %}
-    <input type="hidden" name="next" value="{% url 'notifications:list' audience %}">
-    <button class="mark-read" type="submit">Mark all as read</button>
-  </form>
-</div>
+{% endif %}
 {% endblock %}
 
 {% block main_content %}
-<div class="card" style="max-width: 720px; margin: 0 auto;">
-  <ul class="bell-list" style="max-height: none;">
-    {% for n in notifications %}
-    <li class="{% if not n.is_read %}unread{% endif %}">
+<section class="panel np-panel" id="npRoot">
+
+  <div class="np-head">
+    <div class="filter-tabs np-tabs" role="tablist" aria-label="Filter notifications">
+      <a href="?{% if query %}q={{ query|urlencode }}{% endif %}" class="filter-tab{% if state == 'all' %} active{% endif %}">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></a>
+      <a href="?filter=unread{% if query %}&amp;q={{ query|urlencode }}{% endif %}" class="filter-tab{% if state == 'unread' %} active{% endif %}">Unread <span class="count badge rounded-pill text-bg-secondary">{{ counts.unread }}</span></a>
+      <a href="?filter=read{% if query %}&amp;q={{ query|urlencode }}{% endif %}" class="filter-tab{% if state == 'read' %} active{% endif %}">Read <span class="count badge rounded-pill text-bg-secondary">{{ counts.read }}</span></a>
+    </div>
+    <form method="get" class="np-search" role="search">
+      {% if state != 'all' %}<input type="hidden" name="filter" value="{{ state }}">{% endif %}
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <input type="search" name="q" value="{{ query }}" placeholder="Search notifications..." aria-label="Search notifications">
+    </form>
+  </div>
+
+  {% if counts.all %}
+  <div class="np-toolbar">
+    <label class="np-selectall"><input type="checkbox" id="npSelectAll"> <span>Select all on this page</span></label>
+    <span class="np-selected" id="npSelected" hidden><strong id="npSelectedCount">0</strong> selected</span>
+
+    <div class="np-bulk" id="npBulk" hidden>
+      <form method="post" action="{% url 'notifications:bulk' audience %}" data-np-bulk>
+        {% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><input type="hidden" name="action" value="mark_read">
+        <button type="submit" class="np-btn">Mark read</button>
+      </form>
+      <form method="post" action="{% url 'notifications:bulk' audience %}" data-np-bulk>
+        {% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><input type="hidden" name="action" value="mark_unread">
+        <button type="submit" class="np-btn">Mark unread</button>
+      </form>
+      <form method="post" action="{% url 'notifications:bulk' audience %}" data-np-bulk data-confirm="Delete the selected notifications? This cannot be undone." data-confirm-variant="danger" data-confirm-label="Delete" id="npDeleteSelected">
+        {% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><input type="hidden" name="action" value="delete_selected">
+        <button type="submit" class="np-btn np-btn-danger">Delete selected</button>
+      </form>
+    </div>
+
+    <div class="np-spacer"></div>
+
+    {% if counts.unread %}
+    <form method="post" action="{% url 'notifications:mark_all_read' audience %}">
+      {% csrf_token %}<input type="hidden" name="next" value="{{ here }}">
+      <button type="submit" class="np-btn">Mark all as read</button>
+    </form>
+    {% endif %}
+    {% if counts.read %}
+    <form method="post" action="{% url 'notifications:bulk' audience %}" data-confirm="Delete all {{ counts.read }} read notification{{ counts.read|pluralize }}? Unread ones are kept." data-confirm-variant="danger" data-confirm-label="Delete read">
+      {% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><input type="hidden" name="action" value="delete_read">
+      <button type="submit" class="np-btn">Delete read</button>
+    </form>
+    {% endif %}
+    <form method="post" action="{% url 'notifications:bulk' audience %}" data-confirm="Delete all {{ counts.all }} notification{{ counts.all|pluralize }}, including unread ones? This cannot be undone." data-confirm-variant="danger" data-confirm-label="Delete all">
+      {% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><input type="hidden" name="action" value="delete_all">
+      <button type="submit" class="np-btn np-btn-danger">Delete all</button>
+    </form>
+  </div>
+  {% endif %}
+
+  {% if groups %}
+  {% for label, items in groups %}
+  <h3 class="np-day">{{ label }}</h3>
+  <ul class="np-list">
+    {% for n in items %}
+    <li class="np-row{% if not n.is_read %} is-unread{% endif %}" data-np-row>
+      <input type="checkbox" class="np-check" value="{{ n.pk }}" aria-label="Select this notification">
       <span class="notice-icon {{ n.icon }}">
         {% if n.icon == 'success' %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
         {% elif n.icon == 'warn' %}<svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
         {% else %}<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>{% endif %}
       </span>
-      <div class="notice-body">
-        <p><a href="{% url 'notifications:open' audience n.pk %}">{{ n.message }}</a></p>
-        <span class="notice-date">{{ n.created_at|date:"j M Y, g:i A" }}</span>
+      <div class="np-body">
+        <p class="np-message">
+          {% if n.target_url %}<a href="{% url 'notifications:open' audience n.pk %}">{{ n.message }}</a>{% else %}{{ n.message }}{% endif %}
+        </p>
+        <div class="np-meta">
+          {% if not n.is_read %}<span class="badge rounded-pill text-bg-primary">New</span>{% endif %}
+          {% if mixed_sources %}<span class="badge rounded-pill {% if n.audience == 'admin' %}text-bg-dark{% else %}text-bg-info{% endif %}">{{ n.get_audience_display }}</span>{% endif %}
+          <span title="{{ n.created_at|date:'j M Y, g:i A' }}">{{ n.created_at|date:"g:i A" }} &middot; {{ n.created_at|timesince }} ago</span>
+        </div>
+      </div>
+      <div class="np-row-actions">
+        <form method="post" action="{% url 'notifications:bulk' audience %}">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><input type="hidden" name="ids" value="{{ n.pk }}">
+          <input type="hidden" name="action" value="{% if n.is_read %}mark_unread{% else %}mark_read{% endif %}">
+          <button type="submit" class="np-icon-btn" title="{% if n.is_read %}Mark as unread{% else %}Mark as read{% endif %}" aria-label="{% if n.is_read %}Mark as unread{% else %}Mark as read{% endif %}">
+            {% if n.is_read %}<svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>{% else %}<svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>{% endif %}
+          </button>
+        </form>
+        <form method="post" action="{% url 'notifications:bulk' audience %}" data-confirm="Delete this notification? This cannot be undone." data-confirm-variant="danger" data-confirm-label="Delete">
+          {% csrf_token %}<input type="hidden" name="next" value="{{ here }}"><input type="hidden" name="ids" value="{{ n.pk }}"><input type="hidden" name="action" value="delete_selected">
+          <button type="submit" class="np-icon-btn np-icon-danger" title="Delete" aria-label="Delete this notification">
+            <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+          </button>
+        </form>
       </div>
     </li>
-    {% empty %}
-    <li class="notice-empty"><div class="notice-body"><p>No notifications yet.</p></div></li>
     {% endfor %}
   </ul>
-</div>
+  {% endfor %}
+
+  {% if page.paginator.num_pages > 1 %}
+  <nav class="np-pager" aria-label="Notification pages">
+    {% if page.has_previous %}<a class="np-btn" href="?page={{ page.previous_page_number }}{% if query_string %}&amp;{{ query_string|safe }}{% endif %}">&larr; Newer</a>{% else %}<span class="np-btn is-disabled">&larr; Newer</span>{% endif %}
+    <span class="np-pager-info">Page {{ page.number }} of {{ page.paginator.num_pages }} &middot; {{ page.paginator.count }} notification{{ page.paginator.count|pluralize }}</span>
+    {% if page.has_next %}<a class="np-btn" href="?page={{ page.next_page_number }}{% if query_string %}&amp;{{ query_string|safe }}{% endif %}">Older &rarr;</a>{% else %}<span class="np-btn is-disabled">Older &rarr;</span>{% endif %}
+  </nav>
+  {% endif %}
+
+  {% elif counts.all %}
+  <div class="np-empty">
+    <span class="np-empty-icon"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg></span>
+    <h3>No notifications match</h3>
+    <p>{% if query %}Nothing matches &ldquo;{{ query }}&rdquo;{% if state != 'all' %} in {{ state }} notifications{% endif %}.{% else %}You have no {{ state }} notifications.{% endif %} <a href="?">Show everything</a></p>
+  </div>
+  {% else %}
+  <div class="np-empty">
+    <span class="np-empty-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+    <h3>No notifications</h3>
+    <p>New activity{% if audience == 'admin' %} from across the platform{% endif %} will appear here, and stays until you delete it.</p>
+  </div>
+  {% endif %}
+
+  {% if counts.all %}
+  <p class="np-note">Deleting a notification only removes it from your own list. Other people who receive it keep theirs.</p>
+  {% endif %}
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/notifications-page.js' %}"></script>
 {% endblock %}

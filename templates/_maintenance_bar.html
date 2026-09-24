@@ -1,0 +1,24 @@
+{% comment %}
+Shown only to administrators while the site is locked (they're never locked
+out themselves, so without this it's easy to forget maintenance is on).
+Fed by pages.context_processors.maintenance.
+{% endcomment %}{% if maintenance_admin_bar %}
+<a class="mt-bar" href="{% url 'admin_dashboard:settings' %}#maintenance" title="Open maintenance settings">
+  <span class="mt-bar-dot"></span>
+  <span><b>Maintenance mode is on</b> &mdash; visitors can't use the site.{% if maintenance_end %} Reopens automatically {{ maintenance_end|date:"j M, H:i" }}.{% endif %}</span>
+  <span class="mt-bar-go">Manage &rarr;</span>
+</a>
+<style>
+  .mt-bar{
+    position:fixed; left:16px; bottom:16px; z-index:2147483000; display:flex; align-items:center; gap:11px;
+    max-width:min(560px,calc(100vw - 32px)); padding:10px 16px; border-radius:12px; text-decoration:none;
+    background:#14233f; color:#fff; font:500 13px/1.4 -apple-system,"Segoe UI",Roboto,sans-serif;
+    box-shadow:0 8px 28px rgba(20,35,63,.35);
+  }
+  .mt-bar b{ font-weight:700; }
+  .mt-bar-dot{ width:9px; height:9px; border-radius:50%; background:#f5a524; flex-shrink:0; box-shadow:0 0 0 4px rgba(245,165,36,.25); }
+  .mt-bar-go{ margin-left:6px; font-weight:700; white-space:nowrap; color:#9ad9d6; }
+  .mt-bar:hover .mt-bar-go{ color:#fff; }
+  @media print{ .mt-bar{ display:none; } }
+</style>
+{% endif %}

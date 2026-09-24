@@ -83,6 +83,9 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Last, so it can see the signed-in user: locks the site (except for
+    # admins, /admins/ and the login pages) while maintenance mode is on.
+    "pages.middleware.MaintenanceMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -100,6 +103,7 @@ TEMPLATES = [
                 "django.contrib.messages.context_processors.messages",
                 "accounts.context_processors.profile_avatar",
                 "pages.context_processors.site_settings",
+                "pages.context_processors.maintenance",
                 "applicant_dashboard.context_processors.notif_bell",
                 "secretariat_dashboard.context_processors.unread_messages",
                 "committee_dashboard.context_processors.reviewer_workload",

@@ -1,0 +1,197 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Scheduled maintenance | {{ site.site_name|default:"MSREC" }}</title>
+<link rel="icon" href="{% static 'assets/img/favicon.png' %}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14233f; --ink-soft:#56607a; --faint:#8b95a7; --line:#dfe4ec; --page:#f3f5f9; --card:#ffffff; --teal:#159a96;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{
+    min-height:100vh; background:var(--page); color:var(--ink);
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .preview-bar{
+    background:var(--ink); color:#fff; text-align:center; padding:9px 16px;
+    font-size:13px; letter-spacing:.01em;
+  }
+  .preview-bar b{ font-weight:600; }
+
+  .stage{
+    min-height:100vh; display:grid; grid-template-columns:minmax(0,1.02fr) minmax(0,.98fr);
+    align-items:center; gap:clamp(28px,5vw,88px);
+    max-width:1280px; margin:0 auto; padding:clamp(24px,5vw,72px);
+  }
+  .preview-bar + .stage{ min-height:calc(100vh - 38px); }
+
+  /* ---------------------------------------------------------- illustration */
+  .art{
+    position:relative; justify-self:center; width:100%; max-width:600px;
+    border-radius:28px; overflow:hidden; background:#dde3ef;
+    box-shadow:0 1px 2px rgba(20,35,63,.06), 0 24px 60px -24px rgba(20,35,63,.28);
+  }
+  .art img{ display:block; width:100%; height:auto; aspect-ratio:1/1; object-fit:cover; }
+
+  /* ---------------------------------------------------------------- copy */
+  .copy{ max-width:520px; }
+  .brand{ display:flex; align-items:center; gap:12px; margin-bottom:clamp(28px,5vh,52px); }
+  .brand img{ width:40px; height:auto; display:block; }
+  .brand span{ font-size:13.5px; font-weight:600; letter-spacing:.02em; color:var(--ink); line-height:1.3; }
+  .brand small{ display:block; font-weight:400; color:var(--faint); font-size:11.5px; letter-spacing:.04em; }
+
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:9px; margin:0 0 14px;
+    font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
+  }
+  .eyebrow::before{ content:""; width:22px; height:2px; background:currentColor; }
+
+  h1{
+    margin:0 0 16px; font-family:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+    font-weight:600; font-size:clamp(38px,5.4vw,58px); line-height:1.04; letter-spacing:-.01em; color:var(--ink);
+  }
+  .lede{ margin:0 0 30px; font-size:17px; line-height:1.65; color:var(--ink-soft); max-width:46ch; }
+
+  /* ---------------------------------------------------------- schedule */
+  .when{ margin:0 0 26px; padding:0; border-top:1px solid var(--line); }
+  .when div{ display:flex; justify-content:space-between; align-items:baseline; gap:16px; padding:13px 0; border-bottom:1px solid var(--line); }
+  .when dt{ font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); }
+  .when dd{ margin:0; text-align:right; font-size:15.5px; color:var(--ink); font-weight:600; }
+  .when dd span{ display:block; font-weight:400; font-size:13px; color:var(--ink-soft); }
+
+  /* --------------------------------------------------------- countdown */
+  .count{ margin:0 0 8px; }
+  .count-label{ font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); margin:0 0 10px; }
+  .clock{ display:flex; gap:10px; }
+  .cell{
+    flex:1 1 0; min-width:0; text-align:center; padding:12px 6px 10px; background:var(--card);
+    border:1px solid var(--line); border-radius:12px;
+  }
+  .cell b{
+    display:block; font:600 clamp(24px,3.6vw,30px)/1.15 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    font-variant-numeric:lining-nums tabular-nums; letter-spacing:.02em; color:var(--ink);
+  }
+  .cell small{ display:block; margin-top:3px; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase; color:var(--faint); }
+  .bar{ height:4px; margin-top:16px; background:var(--line); border-radius:99px; overflow:hidden; }
+  .bar i{ display:block; height:100%; width:0; background:var(--ink); border-radius:99px; transition:width 1s linear; }
+  .bar-note{ display:flex; justify-content:space-between; margin-top:7px; font-size:12px; color:var(--faint); }
+
+  .later{ margin:0 0 8px; font-size:15px; color:var(--ink-soft); }
+
+  /* ------------------------------------------------------------ footer */
+  .foot{ margin-top:34px; padding-top:20px; border-top:1px solid var(--line); display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px 24px; font-size:13.5px; color:var(--ink-soft); }
+  .foot a{ color:var(--ink); text-decoration:none; font-weight:600; border-bottom:1px solid var(--line); padding-bottom:1px; }
+  .foot a:hover{ border-color:var(--ink); }
+
+  @media (max-width:900px){
+    .stage{ grid-template-columns:1fr; gap:26px; padding:20px 18px 34px; align-items:start; }
+    .art{ max-width:440px; border-radius:22px; }
+    .copy{ max-width:none; }
+    .brand{ margin-bottom:22px; }
+    .lede{ font-size:16px; }
+  }
+  @media (max-width:420px){
+    .clock{ gap:6px; } .cell{ padding:10px 2px 8px; }
+    .when div{ flex-direction:column; gap:3px; } .when dd{ text-align:left; }
+  }
+  @media (prefers-reduced-motion:reduce){ .bar i{ transition:none; } }
+</style>
+</head>
+<body>
+{% if preview %}<div class="preview-bar"><b>Preview</b> &mdash; this is what visitors see while maintenance is on. Administrators are never shown this page.</div>{% endif %}
+
+<main class="stage">
+  <figure class="art" style="margin:0;">
+    <img src="{{ image }}" srcset="{{ image_small }} 700w, {{ image }} 1200w" sizes="(max-width: 900px) 92vw, 600px"
+         width="1200" height="1200" alt="A browser window showing an under-maintenance notice with two turning gears">
+  </figure>
+
+  <section class="copy" aria-labelledby="mt-title">
+    <div class="brand">
+      <img src="{% if site.logo_url %}{{ site.logo_url }}{% else %}{% static 'assets/img/MSREC_LOGO.png' %}{% endif %}" alt="">
+      <span>{{ site.site_name|default:"Metascholar Research Ethics Committee" }}{% if site.site_name and site.site_name != "Metascholar Research Ethics Committee" %}<small>Metascholar Research Ethics Committee</small>{% endif %}</span>
+    </div>
+
+    <p class="eyebrow">{% if state.scheduled %}Maintenance scheduled{% else %}Scheduled maintenance{% endif %}</p>
+    <h1 id="mt-title">{% if state.scheduled %}A short pause is coming.{% else %}We&rsquo;ll be back shortly.{% endif %}</h1>
+    <p class="lede">{{ message }}</p>
+
+    {% if start_local or end_local %}
+    <dl class="when">
+      {% if start_local %}
+      <div><dt>{% if state.scheduled %}Begins{% else %}Began{% endif %}</dt>
+        <dd>{{ start_local|date:"D j M Y" }}<span>{{ start_local|date:"H:i" }} {{ tz_label }}</span></dd></div>
+      {% endif %}
+      <div><dt>Expected back</dt>
+        {% if end_local %}<dd>{{ end_local|date:"D j M Y" }}<span>{{ end_local|date:"H:i" }} {{ tz_label }}</span></dd>
+        {% else %}<dd>To be announced</dd>{% endif %}</div>
+    </dl>
+    {% else %}
+    <p class="later">We&rsquo;ll be back as soon as the work is done.</p>
+    {% endif %}
+
+    {% if end_ms %}
+    <div class="count" id="countBlock" aria-live="off">
+      <p class="count-label">Time remaining</p>
+      <div class="clock">
+        <div class="cell"><b id="cd-d">00</b><small>Days</small></div>
+        <div class="cell"><b id="cd-h">00</b><small>Hours</small></div>
+        <div class="cell"><b id="cd-m">00</b><small>Minutes</small></div>
+        <div class="cell"><b id="cd-s">00</b><small>Seconds</small></div>
+      </div>
+      {% if start_ms %}
+      <div class="bar" role="progressbar" aria-label="Maintenance progress" aria-valuemin="0" aria-valuemax="100"><i id="barFill"></i></div>
+      <div class="bar-note"><span>{{ start_local|date:"H:i" }}</span><span id="barPct"></span><span>{{ end_local|date:"H:i" }}</span></div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <div class="foot">
+      <span>{% if contact_email %}Need help? <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>{% else %}Thank you for your patience.{% endif %}</span>
+      {% if not preview %}<a href="/login/?next=/admins/">Administrator sign in</a>{% endif %}
+    </div>
+  </section>
+</main>
+
+{% if end_ms %}
+<script>
+(function () {
+  var end = {{ end_ms }}, start = {{ start_ms|default:"null" }}, preview = {% if preview %}true{% else %}false{% endif %};
+  // Use the server's clock as the reference, so a wrong clock on the
+  // visitor's device doesn't skew the countdown.
+  var offset = {{ now_ms }} - Date.now();
+  var d = document.getElementById("cd-d"), h = document.getElementById("cd-h"), m = document.getElementById("cd-m"), s = document.getElementById("cd-s");
+  var fill = document.getElementById("barFill"), pct = document.getElementById("barPct");
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+  function tick() {
+    var now = Date.now() + offset, left = Math.max(0, Math.floor((end - now) / 1000));
+    d.textContent = pad(Math.floor(left / 86400));
+    h.textContent = pad(Math.floor(left % 86400 / 3600));
+    m.textContent = pad(Math.floor(left % 3600 / 60));
+    s.textContent = pad(left % 60);
+    if (fill && start) {
+      var p = Math.min(1, Math.max(0, (now - start) / (end - start)));
+      fill.style.width = (p * 100).toFixed(1) + "%";
+      if (pct) pct.textContent = Math.round(p * 100) + "%";
+    }
+    if (left === 0 && !preview) {
+      // The window is over: the server reopens the site by itself.
+      clearInterval(timer);
+      setTimeout(function () { location.reload(); }, 1500);
+    }
+  }
+  var timer = setInterval(tick, 1000);
+  tick();
+})();
+</script>
+{% endif %}
+</body>
+</html>

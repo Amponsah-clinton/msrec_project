@@ -113,5 +113,6 @@ dashboard page, not just the three full Messages pages.
 <script src="{% static 'dashboard/js/live-chat.js' %}"></script>
 {% block extra_js %}{% endblock %}
 {% include "assistant/_widget.html" with dashboard=True %}
+{% include "_maintenance_bar.html" %}
 </body>
 </html>

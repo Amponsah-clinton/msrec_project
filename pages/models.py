@@ -40,6 +40,14 @@ class SiteSettings(models.Model):
     # static/assets/img/about.jpg.
     auth_image_path = models.CharField(max_length=255, blank=True)
 
+    # ---- Maintenance mode (Site Settings > Maintenance; see pages/maintenance.py)
+    # `enabled` is the master switch; start/end are an optional window in
+    # it (both in UTC). With an end time the site reopens by itself.
+    maintenance_enabled = models.BooleanField(default=False)
+    maintenance_start = models.DateTimeField(null=True, blank=True)
+    maintenance_end = models.DateTimeField(null=True, blank=True)
+    maintenance_message = models.TextField(blank=True, default="")
+
     # ---- Certificate signatory ---------------------------------------------
     # The Chair is the only person named on an awarded certificate (Peer
     # Review, Membership). Set from Settings > Certificates; applied to every

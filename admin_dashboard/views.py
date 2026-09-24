@@ -2399,6 +2399,94 @@ def _handle_settings_approval_template(request, site):
         )
 
 
+# ---------------------------------------------------------------------
+# Site Settings > Maintenance (see pages/maintenance.py)
+# ---------------------------------------------------------------------
+
+MAINTENANCE_MESSAGE_MAX = 600
+
+
+def _parse_local_datetime(raw):
+    """A <input type="datetime-local"> value ("2026-09-25T02:00") read in
+    the site's timezone, or None if blank/invalid."""
+    from django.utils.dateparse import parse_datetime
+
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    parsed = parse_datetime(raw)
+    if parsed is None:
+        return None
+    if timezone.is_naive(parsed):
+        parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+    return parsed
+
+
+def _maintenance_summary(site):
+    """Plain-English description of the current maintenance state."""
+    from pages import maintenance
+
+    current = maintenance.state()
+    tz = timezone.get_current_timezone()
+    fmt = lambda value: timezone.localtime(value, tz).strftime("%a %d %b %Y, %H:%M")
+    if current["active"]:
+        tail = f"reopens automatically at {fmt(current['end'])}" if current["end"] else "stays locked until you end it"
+        return "locked", f"The site is locked for visitors \u2014 {tail}."
+    if current["scheduled"]:
+        return "scheduled", f"Maintenance is scheduled to begin {fmt(current['start'])}."
+    if current["ended"]:
+        return "ended", "The maintenance window has ended \u2014 the site is live again."
+    return "live", "The site is live."
+
+
+def _handle_settings_maintenance(request, site):
+    from pages import maintenance
+
+    if not is_admin(request.user):
+        messages.error(request, "Only an administrator can change maintenance mode.")
+        return
+    action = request.POST.get("action")
+    now = timezone.now().replace(second=0, microsecond=0)
+
+    if action == "maintenance_start_now":
+        site.maintenance_enabled = True
+        site.maintenance_start = now
+        if site.maintenance_end and site.maintenance_end <= now:
+            site.maintenance_end = None
+        site.save()
+        messages.success(request, "Maintenance is on \u2014 the site is now locked for everyone except administrators.")
+        return
+    if action == "maintenance_end_now":
+        site.maintenance_enabled = False
+        site.save()
+        messages.success(request, "Maintenance is off \u2014 the site is live again.")
+        return
+
+    enabled = bool(request.POST.get("maintenance_enabled"))
+    start = _parse_local_datetime(request.POST.get("maintenance_start"))
+    end = _parse_local_datetime(request.POST.get("maintenance_end"))
+    message = " ".join((request.POST.get("maintenance_message") or "").split())
+    if len(message) > MAINTENANCE_MESSAGE_MAX:
+        messages.error(request, f"Keep the message under {MAINTENANCE_MESSAGE_MAX} characters.")
+        return
+    if start and end and end <= start:
+        messages.error(request, "The end time must be after the start time.")
+        return
+
+    site.maintenance_enabled = enabled
+    site.maintenance_start = start
+    site.maintenance_end = end
+    site.maintenance_message = message
+    site.updated_by = request.user
+    site.save()
+
+    _kind, summary = _maintenance_summary(site)
+    if enabled and end and end <= now:
+        messages.warning(request, "Saved, but the end time has already passed, so nothing is locked. " + summary)
+    else:
+        messages.success(request, "Maintenance settings saved. " + summary)
+
+
 MAX_LETTER_IMAGE_UPLOAD = 12 * 1024 * 1024
 
 
@@ -2596,6 +2684,9 @@ def site_settings(request):
             "update_auth_image": _handle_settings_auth_image,
             "reset_auth_image": _handle_settings_auth_image_reset,
             "update_certificate_signatory": _handle_settings_certificate_signatory,
+            "update_maintenance": _handle_settings_maintenance,
+            "maintenance_start_now": _handle_settings_maintenance,
+            "maintenance_end_now": _handle_settings_maintenance,
             "update_approval_template": _handle_settings_approval_template,
             "update_letter_image": _handle_settings_letter_image,
             "update_letter_signatory": _handle_settings_letter_signatory,
@@ -2676,6 +2767,7 @@ def site_settings(request):
         "auth_image_url": pages_storage.public_url(site.auth_image_path),
         "chair_signature_url": pages_storage.public_url(site.chair_signature_path),
         "approval_template": _approval_template_or_none(),
+        **_maintenance_context(site),
         "letter_image_slots": _letter_image_slots(_approval_template_or_none()),
         "chair_name_for_letter": _chair_name_for_letter(),
         "approval_placeholders": _approval_placeholders(),
@@ -2812,3 +2904,49 @@ def _sample_work_title(sample, fallback):
 
     lead, title, tail = review_certificate_parts(sample)
     return {"message": lead, "work_title": title, "message_after": tail} if title else {"message": fallback(sample)}
+
+
+def _maintenance_context(site):
+    """Template values for the Site Settings > Maintenance tab."""
+    from pages import maintenance
+
+    tz = timezone.get_current_timezone()
+    to_input = lambda value: timezone.localtime(value, tz).strftime("%Y-%m-%dT%H:%M") if value else ""
+    kind, summary = _maintenance_summary(site)
+    default_start, default_end = maintenance.default_window()
+    return {
+        "maintenance_kind": kind,
+        "maintenance_summary": summary,
+        "maintenance_start_input": to_input(site.maintenance_start),
+        "maintenance_end_input": to_input(site.maintenance_end),
+        "maintenance_default_start": to_input(default_start),
+        "maintenance_default_message": maintenance.DEFAULT_MESSAGE,
+        "maintenance_tz_label": "GMT" if django_settings.TIME_ZONE == "UTC" else django_settings.TIME_ZONE,
+    }
+
+
+@login_required
+@admin_required
+def maintenance_preview(request):
+    """Shows the maintenance page exactly as visitors will see it. A POST
+    from the settings form previews the unsaved values; a GET uses what's
+    saved. With no times entered, a sample window is used so the countdown
+    and progress bar are visible."""
+    from datetime import timedelta
+
+    from pages import maintenance
+    from pages.middleware import maintenance_context
+
+    site = SiteSettings.get_solo()
+    source = request.POST if request.method == "POST" else None
+    start = _parse_local_datetime(source.get("maintenance_start")) if source else site.maintenance_start
+    end = _parse_local_datetime(source.get("maintenance_end")) if source else site.maintenance_end
+    message = " ".join((source.get("maintenance_message") if source else site.maintenance_message or "").split())
+    now = timezone.now()
+    if not start and not end:
+        start, end = now - timedelta(minutes=25), now + timedelta(minutes=95)
+    raw = {"enabled": True, "start": start, "end": end, "message": message or maintenance.DEFAULT_MESSAGE}
+    current = maintenance.state(raw=raw)
+    if end and end <= now:
+        current["seconds_left"] = 0
+    return render(request, "maintenance.html", maintenance_context(current, preview=True))
