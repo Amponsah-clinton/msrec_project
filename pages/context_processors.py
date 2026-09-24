@@ -16,6 +16,7 @@ def maintenance(request):
     """Two small flags for templates while maintenance is on:
       maintenance_locked -- the site is locked right now (login page notice)
       maintenance_admin_bar -- show an administrator the "maintenance is ON" bar
+                               (they only ever see it inside the admin area)
     Cheap: the state is cached for a few seconds (see pages/maintenance.py)."""
     from . import maintenance as m
 

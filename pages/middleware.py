@@ -42,7 +42,9 @@ class MaintenanceMiddleware:
         if maintenance.is_exempt_path(request.path):
             return None
         user = getattr(request, "user", None)
-        if maintenance.is_bypass_user(user):
+        # Administrators get no free pass on the site itself -- only on the
+        # few endpoints the admin area's own pages depend on.
+        if maintenance.is_bypass_user(user) and maintenance.is_admin_support_path(request.path):
             return None
         if user is not None and user.is_authenticated and maintenance.PAYMENT_CONFIRMATION.match(request.path):
             return None

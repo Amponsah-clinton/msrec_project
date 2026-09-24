@@ -16,8 +16,12 @@ optional window inside it:
 so a maintenance window that has an end time reopens the site
 automatically; nobody has to remember to switch it off.
 
-Who is let through (see MaintenanceMiddleware): administrators, the
-/admins/ area, the login / password-reset pages, static files, and the
+Who is let through (see MaintenanceMiddleware): ONLY the /admins/ area,
+the login / password-reset pages and static files -- for everyone, admins
+included, so an administrator signs in and lands in /admins/ to switch
+maintenance off. Every other page and dashboard is locked. Two narrow
+exceptions keep the admin area itself working: the file proxy and the
+notification feed (for signed-in administrators only), and the
 payment-confirmation callback of an applicant who has already paid.
 """
 import re
@@ -33,7 +37,7 @@ IMAGE_TAIL = "v1790268452/12_jebeyy.avif"
 
 DEFAULT_MESSAGE = (
     "The MSREC portal is offline for scheduled maintenance. Your applications, documents and "
-    "account details are safe — nothing is lost. Please check back shortly."
+    "account details are safe and nothing is lost. Please check back shortly."
 )
 
 CACHE_KEY = "pages:maintenance:v1"
@@ -55,8 +59,13 @@ def image_url(width=1200):
     return f"{IMAGE_BASE}/f_auto,q_auto,w_{width}/{IMAGE_TAIL}"
 
 
+# Endpoints the admin area's own pages call (images served through the
+# file proxy, the notification bell). Open to signed-in administrators only.
+ADMIN_SUPPORT_PREFIXES = ("/files/", "/notifications/")
+
+
 def is_bypass_user(user):
-    """Administrators are never locked out."""
+    """A signed-in administrator."""
     return bool(user and user.is_authenticated and (user.is_superuser or getattr(user, "role", "") == "admin"))
 
 
@@ -104,8 +113,17 @@ def state(now=None, raw=None):
     }
 
 
+def is_admin_support_path(path):
+    return path.startswith(ADMIN_SUPPORT_PREFIXES)
+
+
+# The same routes without their trailing slash (Django normally redirects
+# those first, but never let a missing slash be what locks someone out).
+EXEMPT_EXACT = ("/admins", "/login", "/logout", "/forgot-password", "/reset-password")
+
+
 def is_exempt_path(path):
-    return path.startswith(EXEMPT_PREFIXES)
+    return path.startswith(EXEMPT_PREFIXES) or path in EXEMPT_EXACT
 
 
 def retry_after_seconds(current):

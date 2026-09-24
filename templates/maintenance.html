@@ -49,10 +49,8 @@
   .brand small{ display:block; font-weight:400; color:var(--faint); font-size:11.5px; letter-spacing:.04em; }
 
   .eyebrow{
-    display:inline-flex; align-items:center; gap:9px; margin:0 0 14px;
-    font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
+    margin:0 0 14px; font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
   }
-  .eyebrow::before{ content:""; width:22px; height:2px; background:currentColor; }
 
   h1{
     margin:0 0 16px; font-family:"Cormorant Garamond",Georgia,"Times New Roman",serif;
@@ -106,7 +104,7 @@
 </style>
 </head>
 <body>
-{% if preview %}<div class="preview-bar"><b>Preview</b> &mdash; this is what visitors see while maintenance is on. Administrators are never shown this page.</div>{% endif %}
+{% if preview %}<div class="preview-bar"><b>Preview.</b> This is what visitors see while maintenance is on.</div>{% endif %}
 
 <main class="stage">
   <figure class="art" style="margin:0;">
@@ -116,7 +114,7 @@
 
   <section class="copy" aria-labelledby="mt-title">
     <div class="brand">
-      <img src="{% if site.logo_url %}{{ site.logo_url }}{% else %}{% static 'assets/img/MSREC_LOGO.png' %}{% endif %}" alt="">
+      <img src="{% if site.logo_url %}{{ site.logo_url }}{% else %}{% static 'assets/img/logo1.png' %}{% endif %}" alt="">
       <span>{{ site.site_name|default:"Metascholar Research Ethics Committee" }}{% if site.site_name and site.site_name != "Metascholar Research Ethics Committee" %}<small>Metascholar Research Ethics Committee</small>{% endif %}</span>
     </div>
 
@@ -156,7 +154,6 @@
 
     <div class="foot">
       <span>{% if contact_email %}Need help? <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>{% else %}Thank you for your patience.{% endif %}</span>
-      {% if not preview %}<a href="/login/?next=/admins/">Administrator sign in</a>{% endif %}
     </div>
   </section>
 </main>

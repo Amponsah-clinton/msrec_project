@@ -406,9 +406,25 @@ def signup(request):
     return render(request, "pages/signup.html", {"form": form})
 
 
+def _after_login(user, next_url=""):
+    """Where to send someone who is signed in. While maintenance mode locks
+    the site, an administrator always lands in the admin area (the only
+    place that's open), whatever dashboard their role would normally use
+    and even if a saved ?next= points at a locked page."""
+    from pages import maintenance
+
+    try:
+        locked = maintenance.state()["active"]
+    except Exception:
+        locked = False
+    if locked and maintenance.is_bypass_user(user):
+        return next_url if next_url.startswith("/admins/") else "admin_dashboard:home"
+    return next_url or user.dashboard_url_name()
+
+
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect(request.user.dashboard_url_name())
+        return redirect(_after_login(request.user))
 
     if request.method == "POST":
         form = LoginForm(request.POST, request=request)
@@ -423,8 +439,8 @@ def login_view(request):
             request.session["login_ip"] = request.META.get("REMOTE_ADDR", "")
             request.session["login_at"] = timezone.now().isoformat()
             messages.success(request, f"Welcome back, {user.first_name}.")
-            next_url = request.POST.get("next") or request.GET.get("next")
-            return redirect(next_url or user.dashboard_url_name())
+            next_url = request.POST.get("next") or request.GET.get("next") or ""
+            return redirect(_after_login(user, next_url))
         for error in form.non_field_errors():
             messages.error(request, error)
         return render(request, "pages/login.html", {"form": form}, status=400)
