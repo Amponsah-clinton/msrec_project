@@ -264,10 +264,10 @@
       <section class="panel actions-panel cm-appt">
         <div class="cm-side-head"><h2>Membership certificate</h2></div>
         <dl class="cm-facts">
-          <div><dt>Membership Ethics ID</dt><dd>{{ request.user.membership_ethics_id }}</dd></div>
+          <div><dt>MSREC Ethics ID</dt><dd>{{ request.user.membership_ethics_id }}</dd></div>
           <div><dt>Confirmed</dt><dd>{{ request.user.membership_confirmed_at|date:"j F Y" }}</dd></div>
         </dl>
-        <a class="btn-secondary cm-letter" href="{% url 'committee_dashboard:certificate_download' %}" target="_blank" rel="noopener">
+        <a class="btn-secondary cm-letter" href="{% url 'pages:membership_certificate' %}" target="_blank" rel="noopener">
           <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
           Download certificate
         </a>

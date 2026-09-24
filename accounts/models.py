@@ -8,8 +8,9 @@ from django.utils import timezone
 
 
 def generate_membership_ethics_id(user):
-    """MSREC/ETH/<user.pk, zero-padded>: the committee-membership ID shown
-    on a member's certificate and profile page. Keyed off the account's own
+    """MSREC/ETH/<user.pk, zero-padded>: the MSREC Ethics ID issued to every
+    approved Reviewer and Committee member, shown on their dashboard and on
+    their Membership Certificate. Keyed off the account's own
     primary key rather than a separate counter -- pk is already unique and
     already assigned by the time approve_role() calls this (the account
     exists; only its committee_status is changing), so there's no
@@ -306,14 +307,13 @@ class User(AbstractBaseUser, PermissionsMixin):
         """Approve a pending reviewer/committee request. Optionally makes
         it the account's primary (login-redirect) role.
 
-        Approving a Committee request is also what makes someone an MSREC
-        *member*: it issues a permanent membership_ethics_id (see
-        generate_membership_ethics_id) and stamps membership_confirmed_at,
-        which together unlock the "Download certificate" button on the
-        Committee dashboard's Profile page (committee_dashboard.certificate).
-        Only reviewers who are ALSO approved as Committee get membership --
-        being a Reviewer alone doesn't, by design (see the /apply
-        conversation this shipped from).
+        Approving either role is what makes someone an MSREC *member*: the
+        first approval issues a permanent membership_ethics_id (see
+        generate_membership_ethics_id) -- it never changes afterwards, even
+        when a Reviewer later joins the Committee -- and stamps
+        membership_confirmed_at. That date is re-stamped on a Committee
+        approval, because the Membership Certificate is re-issued then with
+        the higher role (accounts/membership.py).
 
         Approving a Committee request also unconditionally grants Reviewer
         access: every Committee member is a reviewer too (MSREC's Full
@@ -332,12 +332,15 @@ class User(AbstractBaseUser, PermissionsMixin):
             self.committee_status = self.RequestStatus.APPROVED
             self.reviewer_status = self.RequestStatus.APPROVED
             self.wants_reviewer = True
-            if not self.membership_ethics_id:
-                self.membership_ethics_id = generate_membership_ethics_id(self)
-                self.membership_confirmed_at = timezone.now()
-                update_fields += ["membership_ethics_id", "membership_confirmed_at"]
         else:
             raise ValueError("Only reviewer/committee requests go through approval.")
+        if not self.membership_ethics_id:
+            self.membership_ethics_id = generate_membership_ethics_id(self)
+            self.membership_confirmed_at = timezone.now()
+            update_fields += ["membership_ethics_id", "membership_confirmed_at"]
+        elif role == self.Role.COMMITTEE:
+            self.membership_confirmed_at = timezone.now()
+            update_fields.append("membership_confirmed_at")
         if promote:
             self.role = role
         self.save(update_fields=update_fields)

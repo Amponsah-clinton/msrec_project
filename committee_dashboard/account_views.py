@@ -20,7 +20,6 @@ from accounts.sessions import active_sessions_for
 from admin_dashboard.views import _handle_admin_remove_avatar, _handle_admin_update_avatar
 from meetings.models import Meeting, MeetingParticipant
 from notifications import services as notification_services
-from pages.certificate_signatory import chair_details
 from notifications.emails import send_password_changed_email
 from notifications.models import Notification
 from pages import documents_storage
@@ -274,43 +273,10 @@ def profile(request):
 @login_required
 @committee_required
 def certificate_download(request):
-    """Shows the requesting committee member's own Membership Certificate
-    as a full-page, print-ready HTML certificate (its own "Print / Save as
-    PDF" button covers getting a file, via the browser's native
-    print-to-PDF -- see templates/certificates/award_certificate.html).
-    membership_ethics_id is only ever set by User.approve_role once the
-    Secretariat/an admin confirms the Committee request (see
-    accounts.models.User.approve_role), so a 404 here means "not confirmed
-    yet" rather than a broken link. The PDF attached to the approval email
-    is a separate, simpler reportlab rendering (see
-    committee_dashboard/certificate.py) -- generating this exact HTML
-    design server-side would need a system HTML-to-PDF engine (WeasyPrint
-    + GTK3) this Windows dev box doesn't have installed."""
-    user = request.user
-    if not user.membership_ethics_id:
-        raise Http404("No membership certificate has been issued for this account yet.")
-
-    role_title = (user.committee_profile or {}).get("committeePosition") or user.position or "Committee Member"
-    approval = (
-        RoleApprovalLog.objects.filter(
-            user=user, role=User.Role.COMMITTEE, action=RoleApprovalLog.Action.APPROVED,
-        ).select_related("acted_by").order_by("-pk").first()
-    )
-    chair = User.objects.filter(role=User.Role.CHAIR, is_active=True).order_by("pk").first()
-    return render(request, "certificates/award_certificate.html", {
-        "cert_title": "Certificate",
-        "cert_subtitle": "of Membership",
-        "seal_caption": "MEMBERSHIP",
-        "recipient_name": user.full_name,
-        "message": (
-            f"has been confirmed as a member of the Metascholar Research Ethics Committee, "
-            f"serving as {role_title}, and is in good standing under the Committee's governing charter."
-        ),
-        "cert_id": user.membership_ethics_id,
-        "issued_on": user.membership_confirmed_at,
-        "chair": chair_details(),
-        "back_url": reverse("committee_dashboard:profile"),
-    })
+    """Kept for old links/bookmarks: the Membership Certificate now lives at
+    one URL for Reviewers and Committee members alike (see
+    accounts.views.membership_certificate)."""
+    return redirect("pages:membership_certificate")
 
 
 # ---------------------------------------------------------------------

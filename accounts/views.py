@@ -5,11 +5,14 @@ from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
 from notifications.emails import send_branded_email, send_password_changed_email
+from notifications.models import Notification
+from notifications.services import notify
 
 from . import storage
 from .forms import LoginForm, SignupForm
@@ -79,6 +82,21 @@ def _send_welcome_email(request, user):
         cta_url=login_url,
         preheader="Your MSREC account is ready.",
     )
+
+
+def _notify_staff_of_role_request(user, roles_text):
+    """Puts a new Reviewer/Committee application in the Admin and
+    Secretariat notification bells (both can approve it), linking straight
+    to the page where it's decided. Never blocks sign-up."""
+    message = f"New {roles_text} application from {user.full_name} — awaiting approval."[:255]
+    for audience, url_name in (
+        (Notification.Audience.ADMIN, "admin_dashboard:accounts"),
+        (Notification.Audience.SECRETARIAT, "secretariat_dashboard:users_access"),
+    ):
+        try:
+            notify(audience, message, icon=Notification.Icon.WARN, link_url_name=url_name)
+        except Exception:
+            pass
 
 
 def _send_role_pending_email(user):
@@ -351,6 +369,7 @@ def signup(request):
                 emailed = _send_role_pending_email(user)
                 role_labels = [User.Role(role).label for role in user.requested_roles]
                 roles_text = " and ".join(role_labels)
+                _notify_staff_of_role_request(user, roles_text)
                 confirmation_note = (
                     "we've emailed you a confirmation, and we'll notify you again as soon as it's reviewed."
                     if emailed else
@@ -432,3 +451,22 @@ def role_status(request):
     if not user.awaiting_role_only:
         return redirect(user.dashboard_url_name())
     return render(request, "pages/role-status.html")
+
+
+@login_required
+def membership_certificate(request):
+    """The signed-in Reviewer's / Committee member's own Membership
+    Certificate: the print-ready web version, or ?format=pdf for the same
+    PDF that was attached to their welcome email."""
+    from . import membership
+
+    user = request.user
+    if not membership.is_member(user):
+        raise Http404("No membership certificate has been issued for this account yet.")
+    if request.GET.get("format") == "pdf":
+        response = HttpResponse(membership.render_certificate_pdf(user), content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="{membership.certificate_filename(user)}"'
+        return response
+    context = membership.certificate_context(user)
+    context["back_url"] = reverse(user.dashboard_url_name())
+    return render(request, "certificates/award_certificate.html", context)

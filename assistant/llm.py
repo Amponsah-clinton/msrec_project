@@ -2,9 +2,9 @@
 
 Providers are tried in order and the first one that answers wins:
 
-  1. Gemini  -- GEMINI_MODEL           (default gemini-2.5-flash: fast)
-  2. Gemini  -- GEMINI_FALLBACK_MODEL  (default gemini-3.6-flash)
-  3. Groq    -- GROQ_MODEL             (default llama-3.3-70b-versatile)
+  1. Groq    -- GROQ_MODEL             (default openai/gpt-oss-120b: ~0.5s)
+  2. Gemini  -- GEMINI_MODEL           (default gemini-2.5-flash)
+  3. Gemini  -- GEMINI_FALLBACK_MODEL  (default gemini-3.6-flash)
 
 A provider with no API key configured is skipped, and a timeout, rate
 limit or server error just moves on to the next one, so a single
@@ -21,6 +21,7 @@ import urllib.error
 import urllib.request
 
 from django.conf import settings
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
@@ -76,16 +77,16 @@ def _groq(model, system, messages):
     key = getattr(settings, "GROQ_API_KEY", "")
     if not key or not model:
         return None
-    data = _post(
-        "https://api.groq.com/openai/v1/chat/completions",
-        {
-            "model": model,
-            "messages": [{"role": "system", "content": system}, *messages],
-            "temperature": TEMPERATURE,
-            "max_tokens": MAX_OUTPUT_TOKENS,
-        },
-        {"Authorization": f"Bearer {key}"},
-    )
+    payload = {
+        "model": model,
+        "messages": [{"role": "system", "content": system}, *messages],
+        "temperature": TEMPERATURE,
+        "max_tokens": MAX_OUTPUT_TOKENS,
+    }
+    if "gpt-oss" in model:
+        # Its reasoning tokens count against max_tokens -- keep them small.
+        payload["reasoning_effort"] = "low"
+    data = _post("https://api.groq.com/openai/v1/chat/completions", payload, {"Authorization": f"Bearer {key}"})
     choices = data.get("choices") or []
     if not choices:
         return None
@@ -97,15 +98,27 @@ def complete(system, messages):
     ending with the user's turn. Returns (reply_text, provider_label), or
     (None, None) if every provider failed."""
     chain = [
+        ("groq:" + settings.GROQ_MODEL, _groq, settings.GROQ_MODEL),
         ("gemini:" + settings.GEMINI_MODEL, _gemini, settings.GEMINI_MODEL),
         ("gemini:" + settings.GEMINI_FALLBACK_MODEL, _gemini, settings.GEMINI_FALLBACK_MODEL),
-        ("groq:" + settings.GROQ_MODEL, _groq, settings.GROQ_MODEL),
     ]
     for label, call, model in chain:
+        cool_key = "assistant:cooldown:" + label
+        if cache.get(cool_key):
+            continue  # rate-limited a moment ago; go straight to the next provider
         try:
             reply = call(model, system, messages)
         except urllib.error.HTTPError as exc:
             logger.warning("Assistant provider %s failed: HTTP %s", label, exc.code)
+            if exc.code == 429:
+                # Free tiers cap tokens per minute. Rest this provider for as
+                # long as it asks (Retry-After), within 5s..120s, instead of
+                # re-trying it -- and paying the round trip -- on every message.
+                try:
+                    wait = float(exc.headers.get("Retry-After") or 20)
+                except (TypeError, ValueError):
+                    wait = 20
+                cache.set(cool_key, 1, timeout=int(min(max(wait, 5), 120)))
             continue
         except (urllib.error.URLError, TimeoutError, ValueError, OSError) as exc:
             logger.warning("Assistant provider %s failed: %s", label, exc.__class__.__name__)

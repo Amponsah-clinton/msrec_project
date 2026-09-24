@@ -66,6 +66,7 @@ _DASHBOARD_HOME_URL_NAME = {
     Notification.Audience.CHAIR: "chair_dashboard:home",
     Notification.Audience.COMMITTEE: "committee_dashboard:home",
     Notification.Audience.SECRETARIAT: "secretariat_dashboard:home",
+    Notification.Audience.ADMIN: "admin_dashboard:home",
 }
 
 

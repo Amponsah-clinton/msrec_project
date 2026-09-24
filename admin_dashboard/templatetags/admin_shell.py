@@ -107,10 +107,30 @@ def _attention_items():
     return items
 
 
-@register.inclusion_tag("dashboards/admin/_bell.html")
-def admin_bell():
+@register.inclusion_tag("dashboards/admin/_bell.html", takes_context=True)
+def admin_bell(context):
+    """Two things in one bell: live events posted to the Admin audience
+    (new role applications, adverse events, deviations -- polled by
+    notif-bell.js) and the backlog of outstanding work below them. The
+    badge counts both: unread events plus outstanding items."""
+    from notifications import services as notification_services
+    from notifications.models import Notification
+
     items = _attention_items()
-    return {"items": items, "unread_count": len(items)}
+    request = context.get("request")
+    user = getattr(request, "user", None)
+    notifications, unread = [], 0
+    if user is not None and user.is_authenticated:
+        notifications = notification_services.for_user(user, Notification.Audience.ADMIN, limit=8)
+        unread = notification_services.unread_count(user, Notification.Audience.ADMIN)
+    return {
+        "request": request,
+        "items": items,
+        "notifications": notifications,
+        "unread": unread,
+        "badge_count": unread + len(items),
+        "attention_count": len(items),
+    }
 
 
 @register.inclusion_tag("dashboards/admin/_attention_panel.html")

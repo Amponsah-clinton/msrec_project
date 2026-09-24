@@ -239,12 +239,13 @@ def _date_block(c, cx, y, issued_at):
     _spaced(c, "DATE OF ISSUE", cx, y - 11 * mm, "Times-Roman", 8.5, 1.2, INK_SOFT)
 
 
-def render_review_certificate_pdf(assignment):
-    """Returns the PDF as raw bytes. Only call for an assignment that has
-    already been issued a certificate_id."""
+def render_certificate_pdf(*, title_tail, recipient_name, message, cert_id, issued_at, seal_caption, id_label="CERTIFICATE NO."):
+    """One MSREC certificate (white edition, signed by the Chair) as PDF
+    bytes -- the shared layout behind the Peer Review certificate below and
+    the Membership certificate (accounts/membership.py)."""
     buffer = BytesIO()
     c = rl_canvas.Canvas(buffer, pagesize=(PAGE_W, PAGE_H))
-    c.setTitle(f"MSREC Certificate of Peer Review - {assignment.certificate_id}")
+    c.setTitle(f"MSREC Certificate {title_tail} - {cert_id}")
 
     _border(c)
     mid = PAGE_W / 2
@@ -266,7 +267,7 @@ def render_review_certificate_pdf(assignment):
     c.restoreState()
 
     title_y = PAGE_H - 60 * mm
-    lead, tail = "Certificate ", "of Peer Review"
+    lead, tail = "Certificate ", title_tail
     lead_w = c.stringWidth(lead, "Times-Roman", 40)
     tail_w = c.stringWidth(tail, "Times-Italic", 40)
     start = mid - (lead_w + tail_w) / 2
@@ -281,7 +282,7 @@ def render_review_certificate_pdf(assignment):
     c.setFillColor(INK_SOFT)
     c.drawCentredString(mid, title_y - 22 * mm, "This is to certify that")
 
-    name = assignment.reviewer.full_name
+    name = recipient_name
     name_y = title_y - 36 * mm
     name_size = 34
     while name_size > 20 and c.stringWidth(name, "Times-Bold", name_size) > 200 * mm:
@@ -303,7 +304,7 @@ def render_review_certificate_pdf(assignment):
     c.setStrokeAlpha(1.0)
 
     body = Paragraph(
-        review_certificate_message(assignment),
+        message,
         ParagraphStyle("body", fontName="Times-Roman", fontSize=14, leading=21,
                        textColor=INK_SOFT, alignment=TA_CENTER),
     )
@@ -313,15 +314,28 @@ def render_review_certificate_pdf(assignment):
 
     from pages.certificate_signatory import chair_signature_bytes
 
-    chair = certificate_signatories(assignment)
+    chair = certificate_signatories()
     sign_y = 46 * mm
-    _date_block(c, mid - 82 * mm, sign_y, assignment.certificate_awarded_at)
+    _date_block(c, mid - 82 * mm, sign_y, issued_at)
     _chair_block(c, mid + 82 * mm, sign_y, chair, chair_signature_bytes(chair))
-    _seal(c, mid, sign_y + 6 * mm, "PEER REVIEW")
+    _seal(c, mid, sign_y + 6 * mm, seal_caption)
 
-    footer = f"CERTIFICATE NO. {assignment.certificate_id}"
+    footer = f"{id_label} {cert_id}"
     _spaced(c, footer, mid, 24 * mm, "Times-Roman", 8.5, 1.0, INK_SOFT)
 
     c.showPage()
     c.save()
     return buffer.getvalue()
+
+
+def render_review_certificate_pdf(assignment):
+    """Returns the PDF as raw bytes. Only call for an assignment that has
+    already been issued a certificate_id."""
+    return render_certificate_pdf(
+        title_tail="of Peer Review",
+        recipient_name=assignment.reviewer.full_name,
+        message=review_certificate_message(assignment),
+        cert_id=assignment.certificate_id,
+        issued_at=assignment.certificate_awarded_at,
+        seal_caption="PEER REVIEW",
+    )

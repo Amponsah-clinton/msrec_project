@@ -1,0 +1,55 @@
+{% load static %}{% comment %}
+The MSREC Ethics ID card, shown at the top of the Reviewer and Committee
+dashboards once an account is approved (see User.approve_role). Solid
+colours only, no gradients. Styles: static/dashboard/css/member-id.css.
+{% endcomment %}
+{% with u=request.user %}{% if u.membership_ethics_id %}
+<link rel="stylesheet" href="{% static 'dashboard/css/member-id.css' %}">
+<section class="mid-card" aria-label="Your MSREC Ethics ID">
+  <div class="mid-emblem" aria-hidden="true">
+    <svg viewBox="0 0 24 24"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5Z"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg>
+  </div>
+
+  <div class="mid-main">
+    <span class="mid-label">MSREC Ethics ID</span>
+    <div class="mid-id-row">
+      <strong class="mid-id" id="midValue">{{ u.membership_ethics_id }}</strong>
+      <button type="button" class="mid-copy" id="midCopy" title="Copy ID" aria-label="Copy your Ethics ID">
+        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg>
+        <span>Copy</span>
+      </button>
+    </div>
+    <div class="mid-meta">
+      <span class="mid-role">{% if u.committee_status == 'approved' %}Committee Member{% else %}Ethics Reviewer{% endif %}</span>
+      <span class="mid-since">Member since {{ u.membership_confirmed_at|date:"j F Y" }}</span>
+      <span class="mid-status"><i></i> In good standing</span>
+    </div>
+  </div>
+
+  <div class="mid-actions">
+    <a class="mid-btn mid-btn-primary" href="{% url 'pages:membership_certificate' %}?format=pdf">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      Download certificate
+    </a>
+    <a class="mid-btn" href="{% url 'pages:membership_certificate' %}" target="_blank" rel="noopener">
+      <svg viewBox="0 0 24 24"><path d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"/><path d="m8.5 13.5-1.5 7.5 5-3 5 3-1.5-7.5"/></svg>
+      View certificate
+    </a>
+  </div>
+</section>
+<script>
+(function () {
+  var btn = document.getElementById("midCopy");
+  if (!btn) return;
+  btn.addEventListener("click", function () {
+    var text = document.getElementById("midValue").textContent.trim();
+    var done = function () {
+      btn.classList.add("is-done");
+      btn.querySelector("span").textContent = "Copied";
+      setTimeout(function () { btn.classList.remove("is-done"); btn.querySelector("span").textContent = "Copy"; }, 1600);
+    };
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, function () {});
+  });
+})();
+</script>
+{% endif %}{% endwith %}

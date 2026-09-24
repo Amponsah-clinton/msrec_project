@@ -229,7 +229,7 @@
       </div>
 
       <div class="footer">
-        {% if cert_id %}<span>Certificate No. <b>{{ cert_id }}</b></span>{% endif %}
+        {% if cert_id %}<span>{{ cert_id_label|default:"Certificate No." }} <b>{{ cert_id }}</b></span>{% endif %}
       </div>
     </div>
   </section>

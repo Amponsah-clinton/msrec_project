@@ -1,0 +1,59 @@
+/* MSREC Ethics ID card (templates/dashboards/_member_id_card.html).
+   Solid colours only -- no gradients. Uses the dashboard's theme tokens so
+   it follows light/dark mode. */
+.mid-card {
+  display: flex; align-items: center; gap: 22px;
+  margin-bottom: 22px; padding: 22px 24px;
+  background: var(--white); border: 1px solid var(--border); border-left: 5px solid var(--teal);
+  border-radius: 14px; box-shadow: var(--shadow);
+}
+.mid-emblem {
+  width: 58px; height: 58px; flex-shrink: 0; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--navy); color: #fff;
+}
+.mid-emblem svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+
+.mid-main { flex: 1; min-width: 0; }
+.mid-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-faint); }
+.mid-id-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 10px; }
+.mid-id {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 30px; font-weight: 800; line-height: 1.1; letter-spacing: .04em; color: var(--text-main);
+}
+.mid-copy {
+  display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 10px;
+  border: 1px solid var(--border); border-radius: 8px; background: transparent; cursor: pointer;
+  font: 600 12px/1 inherit; color: var(--text-sub); transition: color .15s, border-color .15s;
+}
+.mid-copy svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mid-copy:hover { color: var(--teal); border-color: var(--teal); }
+.mid-copy.is-done { color: #1f9d63; border-color: #1f9d63; }
+
+.mid-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; font-size: 13px; color: var(--text-sub); }
+.mid-role {
+  display: inline-flex; align-items: center; height: 26px; padding: 0 11px; border-radius: 999px;
+  background: var(--teal); color: #fff; font-size: 12px; font-weight: 700; letter-spacing: .02em;
+}
+.mid-status { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: #1f9d63; }
+.mid-status i { width: 8px; height: 8px; border-radius: 50%; background: #1f9d63; }
+
+.mid-actions { display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.mid-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 38px; padding: 0 16px;
+  border: 1px solid var(--border); border-radius: 9px; background: transparent;
+  font-size: 13px; font-weight: 600; color: var(--text-main); text-decoration: none; white-space: nowrap;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.mid-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mid-btn:hover { border-color: var(--teal); color: var(--teal); }
+.mid-btn-primary { background: var(--teal); border-color: var(--teal); color: #fff; }
+.mid-btn-primary:hover { background: var(--navy); border-color: var(--navy); color: #fff; }
+
+@media (max-width: 760px) {
+  .mid-card { flex-wrap: wrap; gap: 16px; padding: 18px; }
+  .mid-emblem { width: 48px; height: 48px; }
+  .mid-id { font-size: 24px; }
+  .mid-actions { flex-direction: row; width: 100%; }
+  .mid-btn { flex: 1; }
+}

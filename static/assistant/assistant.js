@@ -103,10 +103,10 @@
   }
 
   var SUGGESTIONS = {
-    "": ["How do I apply for review?", "What are the fees?", "Does my study need ethics review?", "How long does review take?", "How do I verify an approval?"],
+    "": ["What are the fees?", "How do I register?", "What process does an application go through?"],
     applicant: ["How do I start a new application?", "Where do I pay my review fee?", "How do I report an adverse event?", "What happens after approval?"],
     reviewer: ["Why must I declare conflicts first?", "What do reviewers assess?", "How do I get my review certificate?"],
-    committee: ["How does quorum work?", "What decisions can the Committee make?", "How are conflicts handled at meetings?"],
+    committee: ["How do I RSVP for a meeting?", "How do I declare a conflict of interest?", "Where do I find protocols referred to the Committee?"],
     chair: ["How does quorum work?", "What decisions can the Committee make?", "When is Full Committee review needed?"],
     secretariat: ["What does administrative screening check?", "How are review pathways assigned?", "What are the current fees?"],
     admin: ["What are the current fees?", "How are review pathways assigned?", "What does the Secretariat do?"]

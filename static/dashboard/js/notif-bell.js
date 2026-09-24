@@ -12,7 +12,10 @@
   if (!endpoint) return;
 
   const badge = dropdown.querySelector(".bell-btn .badge");
-  const list = dropdown.querySelector(".bell-list");
+  const list = dropdown.querySelector(".bell-list[data-feed-list]") || dropdown.querySelector(".bell-list");
+  // Items the server counted into the badge that aren't feed rows (the
+  // admin bell's "Needs attention" backlog) -- kept in the badge on refresh.
+  const extraCount = parseInt(dropdown.dataset.extraCount || "0", 10) || 0;
   const markReadForm = dropdown.querySelector(".dropdown-head form");
   const POLL_MS = 20000;
   let previousCount = null;
@@ -45,8 +48,9 @@
     const changed = previousCount !== null && previousCount !== count;
     previousCount = count;
 
-    badge.textContent = count > 99 ? "99+" : String(count);
-    badge.hidden = count === 0;
+    const total = count + extraCount;
+    badge.textContent = total > 99 ? "99+" : String(total);
+    badge.hidden = total === 0;
 
     if (changed && count > 0) {
       badge.classList.remove("nav-badge-pulse");

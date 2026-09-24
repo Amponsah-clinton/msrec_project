@@ -2553,3 +2553,7 @@ svg {
 .confirm-modal-ok:hover { background: color-mix(in srgb, var(--orange), black 10%); }
 .confirm-modal-overlay.is-danger .confirm-modal-ok { background: var(--red); }
 .confirm-modal-overlay.is-danger .confirm-modal-ok:hover { background: color-mix(in srgb, var(--red), black 10%); }
+
+/* Admin bell: the "Needs attention" backlog under the live notifications */
+.bell-subhead { border-top: 1px solid var(--border); }
+.bell-subhead h4 { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); }

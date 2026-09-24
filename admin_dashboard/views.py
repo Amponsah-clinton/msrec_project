@@ -1,3 +1,4 @@
+import logging
 import csv
 from datetime import timedelta
 
@@ -90,6 +91,8 @@ def is_admin(user):
     return user.is_authenticated and (user.is_superuser or user.role == User.Role.ADMIN)
 
 
+logger = logging.getLogger(__name__)
+
 admin_required = user_passes_test(is_admin, login_url="pages:login")
 
 # Accounts, Site Settings, and Profile & Security are the three admin
@@ -116,45 +119,99 @@ def _categorize(user):
 
 
 def _send_role_approved_email(request, target, role):
-    """Tells an applicant their Reviewer/Committee Member request was
-    approved and that they can now log in to the matching dashboard.
-    Same fail_silently contract as the Contact-page reply email below --
-    a missing/misconfigured SMTP setup must never block the approval
-    itself, it just means this particular applicant doesn't get emailed
-    (they'll still see the unlocked dashboard next time they log in).
-    Returns True/False so the caller's flash message doesn't claim an
-    email went out when it actually didn't."""
+    """The welcome email for a newly approved Reviewer or Committee member:
+    their MSREC Ethics ID (issued by User.approve_role) shown prominently,
+    what they can do now, and their Membership Certificate attached as a
+    PDF. Same fail_silently contract as every other email here -- a mail
+    or PDF problem never blocks the approval itself. Returns True/False so
+    the caller's flash message doesn't claim an email went out when it
+    didn't."""
+    from accounts import membership
+
     role_label = User.Role(role).label
-    login_url = request.build_absolute_uri(reverse("pages:login"))
+    dashboard_url = request.build_absolute_uri(reverse("pages:login"))
+    kind, member_label = membership.membership_role(target)
+
     paragraphs = [
-        f"Hi {target.full_name},",
-        f"Good news — your request to join MSREC as a {role_label} has been approved. "
-        f"You can now log in and access the {role_label} dashboard whenever you're ready.",
+        f"Dear {target.full_name},",
+        f"Welcome to the Metascholar Research Ethics Committee. Your request to join MSREC as a "
+        f"{role_label} has been approved, and your account now has full access to the {role_label} dashboard.",
     ]
-    # Committee approval is also what makes someone an MSREC member (see
-    # accounts.models.User.approve_role) -- tell them their certificate and
-    # ethics ID are ready rather than leaving them to discover it.
-    if role == User.Role.COMMITTEE and target.membership_ethics_id:
+    if kind == "committee":
         paragraphs.append(
-            f"Your Membership Ethics ID is {target.membership_ethics_id}. Your Membership Certificate "
-            f"is ready to download from Profile on your Committee dashboard."
+            "As a Committee member you can take part in Committee meetings, deliberations and decisions on "
+            "protocols referred for full review. Every Committee member is also an approved Reviewer, so any "
+            "protocols assigned to you will appear under \"My Reviews\"."
         )
-        # Every approved Committee member is also a Reviewer (see
-        # accounts.models.User.approve_role) -- say so, since nothing else
-        # tells them this happened.
+    else:
         paragraphs.append(
-            "As a Committee member you're also an approved Reviewer -- open \"My Reviews\" from your "
-            "Committee dashboard to see any protocols assigned to you."
+            "As an Ethics Reviewer you'll receive protocols matched to your expertise under \"My Reviews\". "
+            "Before a protocol opens you'll be asked to declare any conflict of interest, and you can keep your "
+            "disciplines and experience up to date under \"Profile & Expertise\"."
         )
-    return send_branded_email(
-        subject=f"Your MSREC {role_label} request has been approved",
-        to=target.email,
-        heading="Your request has been approved",
-        paragraphs=paragraphs,
-        cta_text="Log in to MSREC",
-        cta_url=login_url,
-        preheader=f"Your {role_label} request has been approved.",
+    paragraphs.append(
+        "Your MSREC Membership Certificate is attached to this email. You can view or download it at any time "
+        "from your dashboard, where your Ethics ID is also displayed."
     )
+    certificate_line = len(paragraphs) - 1
+    paragraphs.append(
+        "Your login details are below. For your security, please change this password after you first "
+        "log in (Profile & Security)."
+    )
+    paragraphs.append("Thank you for supporting independent, rigorous and ethical research.")
+
+    attachments = []
+    try:
+        attachments.append(
+            (membership.certificate_filename(target), membership.render_certificate_pdf(target), "application/pdf")
+        )
+    except Exception:
+        logger.exception("Couldn't render the membership certificate for user %s", target.pk)
+        paragraphs[certificate_line] = (
+            "Your MSREC Membership Certificate is ready to view and download from your dashboard, "
+            "where your Ethics ID is also displayed."
+        )
+
+    # A fresh password, printed in this email so it carries the member's
+    # real login details. Applied to the account only once the email has
+    # actually been sent -- a mail failure must never lock anyone out.
+    login_password = _generate_login_password()
+    sent = send_branded_email(
+        subject=f"Welcome to MSREC — your {role_label} account is approved",
+        to=target.email,
+        heading=f"Welcome to MSREC, {target.first_name or target.full_name}",
+        paragraphs=paragraphs,
+        callout_label="Your MSREC Ethics ID",
+        callout_after=2,
+        callout_value=target.membership_ethics_id,
+        callout_note=(
+            f"{member_label} · Member since {target.membership_confirmed_at.strftime('%d %B %Y').lstrip('0')}"
+            if target.membership_confirmed_at else member_label
+        ),
+        cta_text="Go to my dashboard",
+        cta_url=dashboard_url,
+        preheader=f"Your {role_label} account is approved. Your Ethics ID is {target.membership_ethics_id}.",
+        attachments=attachments,
+        login_password=login_password,
+    )
+    if sent:
+        target.set_password(login_password)
+        target.save(update_fields=["password"])
+    return sent
+
+
+def _generate_login_password(length=12):
+    """A strong, readable password that always satisfies the site's
+    password rules (upper, lower, digit, symbol) and skips look-alike
+    characters (0/O, 1/l/I) so it's easy to type from an email."""
+    import secrets
+
+    upper, lower, digits, symbols = "ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnopqrstuvwxyz", "23456789", "#$%&*@!?"
+    chars = [secrets.choice(upper), secrets.choice(lower), secrets.choice(digits), secrets.choice(symbols)]
+    pool = upper + lower + digits + symbols
+    chars += [secrets.choice(pool) for _ in range(length - len(chars))]
+    secrets.SystemRandom().shuffle(chars)
+    return "".join(chars)
 
 
 def _handle_role_decision(request, target, role, action):

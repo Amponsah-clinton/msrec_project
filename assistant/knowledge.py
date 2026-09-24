@@ -12,6 +12,8 @@ point them to the right place.
 """
 from django.utils import timezone
 
+from .guides import PORTAL_OVERVIEW, guide_for
+
 STATIC_KNOWLEDGE = """
 # About MSREC
 MSREC (Metascholar Research Ethics Committee) is an independent, multidisciplinary research ethics committee established under Metascholar Limited (Ghana). It reviews ethically sensitive research and supports responsible research conduct across health & biomedical, social & behavioural/education, business & engineering, AI/ICT & digital systems, secondary data/evidence synthesis, and online/digital research.
@@ -163,15 +165,24 @@ def _user_context(request, page, nav):
     return "\n".join(parts)
 
 
+def _role_guide(request):
+    user = request.user
+    if not user.is_authenticated:
+        return ""
+    return guide_for(user.role or ("admin" if user.is_superuser else ""))
+
+
 def build_system_prompt(request, page, nav):
     pages = "\n".join(f"  - [{label}]({path})" for label, path in SITE_PAGES)
     today = timezone.localdate().strftime("%d %B %Y")
-    return "\n\n".join([
+    return "\n\n".join(part for part in [
         RULES.strip(),
         f"Today's date: {today}.",
         "# Who you're talking to\n" + _user_context(request, page, nav),
         STATIC_KNOWLEDGE.strip(),
+        PORTAL_OVERVIEW.strip(),
+        _role_guide(request).strip(),
         "# Live fee schedule (authoritative)\n" + _fee_lines(),
         "# Contacts (authoritative)\n" + _contact_lines(),
         "# Site pages\n" + pages,
-    ])
+    ] if part)
