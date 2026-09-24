@@ -181,3 +181,141 @@
   white-space: nowrap;
   max-width: 100%;
 }
+
+/* ---------------- Certificates: Chair signatory ----------------
+   The preview block is deliberately "paper": white in both themes, navy
+   ink and brand teal, the same proportions as the signatory block on the
+   certificate (a 70 x 20 mm signature space above the line). */
+.cs-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+.cs-head { padding-bottom: 16px; border-bottom: 1px solid var(--border); }
+.cs-head .form-section-title { margin-bottom: 6px; padding-bottom: 0; border-bottom: 0; }
+.cs-head-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.cs-link-btn {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px;
+  border: 1px solid var(--border); border-radius: 8px; background: transparent;
+  font-size: 12.5px; font-weight: 600; color: var(--text-main); text-decoration: none; white-space: nowrap;
+  transition: border-color .15s, color .15s;
+}
+.cs-link-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cs-link-btn:hover { border-color: var(--teal); color: var(--teal); }
+
+.cs-preview {
+  position: relative; border-radius: 14px; padding: 34px 20px 14px;
+  background:
+    radial-gradient(ellipse at 50% -20%, rgba(21, 154, 150, .10), transparent 60%),
+    linear-gradient(180deg, #f7fafb, #eef3f5);
+  border: 1px solid var(--border);
+}
+.cs-preview-tag {
+  position: absolute; top: 12px; left: 16px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #5f7a86;
+}
+.cs-sheet {
+  position: relative; max-width: 380px; margin: 0 auto; padding: 20px 30px 18px;
+  background: #fff; border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(20, 35, 63, .06), 0 10px 28px -8px rgba(20, 35, 63, .18);
+  font-family: "Cormorant Garamond", "EB Garamond", Georgia, "Times New Roman", serif;
+}
+/* thin teal frame, echoing the certificate border */
+.cs-sheet::before {
+  content: ""; position: absolute; inset: 6px; border: 1px solid rgba(15, 138, 134, .35); border-radius: 2px; pointer-events: none;
+}
+.cs-sig-box { aspect-ratio: 3.5 / 1; display: flex; align-items: flex-end; justify-content: center; }
+.cs-sig-box img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; margin-bottom: 2px; }
+.cs-sig-empty {
+  align-self: center; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 12px; color: #9aa4b2; font-style: italic;
+}
+.cs-line { height: 1px; background: #14233f; opacity: .55; }
+.cs-name { margin-top: 7px; text-align: center; font-size: 21px; font-weight: 700; color: #14233f; line-height: 1.2; }
+.cs-name.is-placeholder { color: #b3bac6; font-weight: 600; }
+.cs-title { margin-top: 3px; text-align: center; font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #56607a; }
+.cs-preview-status { display: flex; align-items: center; justify-content: center; gap: 7px; margin: 14px 0 0; font-size: 12px; color: #5f6b7a; text-align: center; }
+.cs-preview-status .dot { width: 8px; height: 8px; border-radius: 50%; background: #b3bac6; flex-shrink: 0; }
+.cs-preview-status .dot.ok { background: #1f9d63; }
+.cs-preview-status .dot.pending { background: #e59a1a; box-shadow: 0 0 0 3px rgba(229, 154, 26, .18); }
+.cs-preview-status .dot.err { background: #d64545; }
+
+.cs-form { margin-top: 22px; }
+.cs-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.cs-fields .field { margin: 0; }
+.cs-req { color: #d64545; }
+.cs-form input.is-invalid { border-color: #d64545; box-shadow: 0 0 0 3px rgba(214, 69, 69, .12); }
+
+.cs-sig-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 22px 0 10px; }
+.cs-sig-label { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.cs-seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--hover-bg); border: 1px solid var(--border); }
+.cs-seg-btn {
+  display: inline-flex; align-items: center; gap: 6px; border: 0; background: transparent; cursor: pointer;
+  padding: 7px 13px; border-radius: 7px; font: 600 12.5px/1 inherit; color: var(--text-sub);
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+.cs-seg-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cs-seg-btn:hover { color: var(--text-main); }
+.cs-seg-btn.active { background: var(--white); color: var(--teal); box-shadow: 0 1px 3px rgba(0, 0, 0, .10); }
+
+.cs-pad-wrap { position: relative; }
+.cs-pad {
+  display: block; width: 100%; border: 1px solid var(--border); border-radius: 12px; background: #fff;
+  touch-action: none; cursor: crosshair;
+}
+.cs-pad-wrap::after {  /* the baseline to sign on */
+  content: ""; position: absolute; left: 7%; right: 7%; bottom: 26%; height: 1px;
+  background: repeating-linear-gradient(90deg, #c5ccd6 0 6px, transparent 6px 11px); pointer-events: none;
+}
+.cs-pad-x { position: absolute; left: 4%; bottom: calc(26% - 3px); font-size: 17px; line-height: 1; color: #b3bac6; pointer-events: none; }
+.cs-pad-hint {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding-bottom: 8%;
+  font-family: "Cormorant Garamond", Georgia, serif; font-style: italic; font-size: 24px; color: #c5ccd6; pointer-events: none;
+}
+.cs-pad-foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 8px; }
+.cs-pad-actions { display: flex; gap: 4px; flex-shrink: 0; }
+.cs-hint { font-size: 12px; color: var(--text-faint); line-height: 1.5; }
+.cs-ghost-btn {
+  display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; cursor: pointer;
+  padding: 6px 9px; border-radius: 7px; font: 600 12.5px/1 inherit; color: var(--text-sub);
+}
+.cs-ghost-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.cs-ghost-btn:hover:not(:disabled) { background: var(--hover-bg); color: var(--text-main); }
+.cs-ghost-btn:disabled { opacity: .4; cursor: default; }
+
+.cs-drop {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center;
+  min-height: 170px; padding: 22px; border: 1.5px dashed var(--border); border-radius: 12px; cursor: pointer;
+  background: var(--hover-bg); transition: border-color .15s, background .15s;
+}
+.cs-drop input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.cs-drop:hover, .cs-drop.is-over { border-color: var(--teal); }
+.cs-drop.has-file { border-style: solid; border-color: var(--teal); }
+.cs-drop strong { font-size: 13.5px; color: var(--text-main); font-weight: 600; word-break: break-all; }
+.cs-drop strong u { color: var(--teal); text-decoration: none; }
+.cs-drop .cs-hint { max-width: 420px; }
+.cs-drop-icon {
+  width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+  background: rgba(21, 154, 150, .12); color: var(--teal); margin-bottom: 4px;
+}
+.cs-drop-icon svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.cs-actions { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border); }
+.cs-danger-link { border: 0; background: transparent; padding: 0; cursor: pointer; font: 600 13px/1 inherit; color: #d64545; }
+.cs-danger-link:hover { text-decoration: underline; }
+
+@media (max-width: 600px) {
+  .cs-head { flex-direction: column; }
+  .cs-fields { grid-template-columns: 1fr; }
+  .cs-sig-head { flex-direction: column; align-items: flex-start; }
+  .cs-pad-foot { flex-direction: column; align-items: flex-start; }
+  .cs-sheet { padding: 14px 16px 12px; }
+}
+
+/* Ink colour picker under the signature pad */
+.cs-inks { display: inline-flex; gap: 6px; }
+.cs-ink {
+  display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px;
+  border: 1px solid var(--border); border-radius: 999px; background: transparent; cursor: pointer;
+  font: 600 12px/1 inherit; color: var(--text-sub); transition: border-color .15s, color .15s, box-shadow .15s;
+}
+.cs-ink i { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .35); }
+.cs-ink:hover { color: var(--text-main); }
+.cs-ink.active { border-color: var(--teal); color: var(--text-main); box-shadow: 0 0 0 3px rgba(21, 154, 150, .12); }
+.cs-pad-tip { margin: 0 0 8px; }

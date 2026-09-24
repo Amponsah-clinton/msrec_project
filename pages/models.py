@@ -32,6 +32,24 @@ class SiteSettings(models.Model):
     # static/assets/img/c.png.
     hero_image_path = models.CharField(max_length=255, blank=True)
 
+    # Object path inside the same public "profile" bucket the Client Logos
+    # live in (see pages/storage.py's upload_auth_image()) -- the photo
+    # beside the Login / Forgot password / Reset password forms. Fixed
+    # "site/auth-image.<ext>" path, singleton like logo_path. Blank means
+    # "no custom image yet"; those pages fall back to the bundled
+    # static/assets/img/about.jpg.
+    auth_image_path = models.CharField(max_length=255, blank=True)
+
+    # ---- Certificate signatory ---------------------------------------------
+    # The Chair is the only person named on an awarded certificate (Peer
+    # Review, Membership). Set from Settings > Certificates; applied to every
+    # certificate, past and future, until changed. The signature is a
+    # background-free PNG in the same public "profile" bucket the Client
+    # Logos live in (see pages/storage.py's upload_chair_signature()).
+    chair_name = models.CharField(max_length=150, blank=True)
+    chair_title = models.CharField(max_length=150, blank=True, default="Chair of the Committee")
+    chair_signature_path = models.CharField(max_length=255, blank=True)
+
     # ---- Public-site footer (templates/base.html) -------------------------
     footer_about = models.TextField(blank=True, default=(
         "Metascholar Research Ethics Committee provides structured ethical review, "
@@ -62,6 +80,10 @@ class SiteSettings(models.Model):
     contact_ethics_email = models.EmailField(blank=True, default="ethics@msrec.org")
     contact_techsupport_email = models.EmailField(blank=True, default="techsupport@msrec.org")
     contact_phone = models.CharField(max_length=40, blank=True, default="+1 5589 55488 55")
+    # Shown as "Escalations" on the admin Help & Support page. Blank falls
+    # back to contact_phone (see the help-support template), so it only
+    # needs filling in when the urgent line differs from the public number.
+    support_escalation_phone = models.CharField(max_length=40, blank=True, default="")
 
     # ---- Payment gateway ---------------------------------------------------
     # Blank means "not overridden here" -- payments/paystack.py and
@@ -96,6 +118,20 @@ class SiteSettings(models.Model):
             return None
         from . import storage
         return storage.public_url(self.logo_path)
+
+    @property
+    def chair_signature_url(self):
+        if not self.chair_signature_path:
+            return None
+        from . import storage
+        return storage.public_url(self.chair_signature_path)
+
+    @property
+    def auth_image_url(self):
+        if not self.auth_image_path:
+            return None
+        from . import storage
+        return storage.public_url(self.auth_image_path)
 
     @property
     def hero_image_url(self):
@@ -339,6 +375,31 @@ class Testimonial(models.Model):
 
     def __str__(self):
         return self.org_name
+
+
+class ApplicantFAQ(models.Model):
+    """One question/answer in the /applicants/ page's FAQs accordion
+    (templates/pages/applicants.html) -- added, edited and removed from
+    admin_dashboard's Settings page (Applicant FAQs tab). The original six
+    are seeded by migration 0019, so the page reads the same until an admin
+    changes it; with no active rows the whole FAQs section is hidden.
+    """
+
+    question = models.CharField(max_length=300)
+    answer = models.TextField()
+    # Lower sorts first; blank lines in the answer become paragraph breaks.
+    display_order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "applicant_faqs"
+        ordering = ["display_order", "created_at", "pk"]
+
+    def __str__(self):
+        return self.question
 
 
 class CommitteeMeeting(models.Model):

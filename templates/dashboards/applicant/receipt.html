@@ -69,13 +69,13 @@
                   {% if payment.application %}<span class="letter-table-sub">{{ payment.application.title }}</span>{% endif %}
                 </td>
                 <td class="mono">{{ payment.application.reference_no|default:"&mdash;" }}</td>
-                <td class="amount-col mono">{{ payment.currency }} {{ payment.amount|floatformat:2 }}</td>
+                <td class="amount-col mono">{{ payment.currency }} {{ payment.amount|floatformat:"2g" }}</td>
               </tr>
             </tbody>
             <tfoot>
               <tr>
                 <td colspan="2">Total Paid</td>
-                <td class="amount-col mono">{{ payment.currency }} {{ payment.amount|floatformat:2 }}</td>
+                <td class="amount-col mono">{{ payment.currency }} {{ payment.amount|floatformat:"2g" }}</td>
               </tr>
             </tfoot>
           </table>

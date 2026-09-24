@@ -342,3 +342,34 @@
 
   @page { margin: 18mm 16mm; }
 }
+
+/* ---------------- Verification block (QR + code) ---------------- */
+
+.letter-verify {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 28px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  break-inside: avoid;
+}
+.letter-verify-qr {
+  flex: none;
+  width: 96px;
+  height: 96px;
+  background: #fff;
+}
+.letter-verify-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-align: left;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-sub);
+  overflow-wrap: anywhere;
+}
+.letter-verify-text strong { color: var(--text-main); font-size: 13px; }

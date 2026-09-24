@@ -1,9 +1,10 @@
+from django.core.cache import cache
 from django.http import JsonResponse
 from django.shortcuts import render
 
 from payments import fees
-from . import resources_storage, storage
-from .models import ClientLogo, GovernanceMember, Inquiry, ResourceDocument, SiteSettings, Testimonial
+from . import resources_storage, storage, verification
+from .models import ApplicantFAQ, ClientLogo, GovernanceMember, Inquiry, ResourceDocument, SiteSettings, Testimonial
 
 REASON_VALUES = {value for value, _ in Inquiry.Reason.choices}
 
@@ -133,7 +134,47 @@ def _applicants_fee_cards(schedule):
 
 def applicants(request):
     schedule = fees.schedule()
-    return render(request, "pages/applicants.html", {"fee_cards": _applicants_fee_cards(schedule)})
+    return render(request, "pages/applicants.html", {
+        "fee_cards": _applicants_fee_cards(schedule),
+        "faqs": list(ApplicantFAQ.objects.filter(is_active=True)),
+    })
+
+
+# Public, unauthenticated lookup -- capped per client so the approval
+# registry can't be enumerated or the verification codes brute-forced.
+VERIFY_LIMIT = 30
+VERIFY_WINDOW_SECONDS = 60
+
+
+def _verify_rate_limited(request):
+    key = f"verify-rate:{request.META.get('REMOTE_ADDR', 'unknown')}"
+    cache.add(key, 0, VERIFY_WINDOW_SECONDS)
+    try:
+        return cache.incr(key) > VERIFY_LIMIT
+    except ValueError:  # key expired between add() and incr()
+        cache.set(key, 1, VERIFY_WINDOW_SECONDS)
+        return False
+
+
+def verify(request):
+    return render(request, "pages/verify.html")
+
+
+def verify_lookup(request):
+    """GET /verify/lookup/?q=<approval number | verification code | verify URL>"""
+    if _verify_rate_limited(request):
+        response = JsonResponse(
+            {"ok": False, "error": "Too many lookups. Please wait a minute and try again."}, status=429
+        )
+        response["Retry-After"] = str(VERIFY_WINDOW_SECONDS)
+        return response
+
+    result = verification.lookup(request.GET.get("q", ""))
+    if result is None:
+        return JsonResponse({"ok": False, "error": "Enter an approval number or verification code first."}, status=400)
+    response = JsonResponse({"ok": True, **result})
+    response["Cache-Control"] = "no-store"
+    return response
 
 
 def contact(request):

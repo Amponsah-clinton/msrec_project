@@ -116,6 +116,111 @@ def upload_site_logo(uploaded_file):
     return object_path
 
 
+
+
+def upload_chair_signature(png_bytes):
+    """Upload/replace the Chair's certificate signature (a background-free
+    PNG produced by pages/signature.py) into the same "profile" bucket as
+    the Client Logos. Every save gets a new, unique object name -- Supabase
+    serves an overwritten object from its CDN cache for a while, so reusing
+    one fixed name would keep showing the old signature on certificates.
+    The caller deletes the previous object once the new one is stored.
+    Returns the object path, or None if Storage isn't configured or the
+    upload failed."""
+    if not png_bytes or not _configured():
+        return None
+
+    import uuid
+
+    CHAIR_SIGNATURE_PATH = f"site/chair-signature-{uuid.uuid4().hex[:12]}.png"
+
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{CHAIR_SIGNATURE_PATH}"
+    req = urllib.request.Request(
+        url,
+        data=png_bytes,
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+            "apikey": settings.SUPABASE_SERVICE_KEY,
+            "Content-Type": "image/png",
+            "x-upsert": "true",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            if resp.status not in (200, 201):
+                logger.warning("Supabase Storage upload of %s returned status %s", CHAIR_SIGNATURE_PATH, resp.status)
+                return None
+    except urllib.error.URLError:
+        logger.exception("Supabase Storage upload failed for %s", CHAIR_SIGNATURE_PATH)
+        return None
+
+    return CHAIR_SIGNATURE_PATH
+
+
+def download_object(object_path):
+    """Raw bytes of one object in the "profile" bucket (server-side, with the
+    service key), or None if unconfigured / missing / the fetch failed --
+    callers treat that as "leave it out", never as fatal."""
+    if not object_path or not _configured():
+        return None
+
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{object_path}"
+    req = urllib.request.Request(
+        url,
+        headers={
+            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+            "apikey": settings.SUPABASE_SERVICE_KEY,
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            return resp.read()
+    except urllib.error.URLError:
+        logger.exception("Supabase Storage download failed for %s", object_path)
+        return None
+
+
+def upload_auth_image(uploaded_file):
+    """Upload/replace the image shown beside the Login / Forgot password /
+    Reset password forms (SiteSettings.auth_image_path), into the same
+    "profile" bucket as the Client Logos. Fixed "site/auth-image.<ext>"
+    path -- re-uploading overwrites the previous image (via x-upsert).
+    Returns the object path, or None if Storage isn't configured or the
+    upload failed.
+    """
+    if not uploaded_file or not _configured():
+        return None
+
+    ext = ""
+    if "." in uploaded_file.name:
+        ext = "." + uploaded_file.name.rsplit(".", 1)[-1].lower()
+    object_path = f"site/auth-image{ext}"
+
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{object_path}"
+    req = urllib.request.Request(
+        url,
+        data=uploaded_file.read(),
+        method="POST",
+        headers={
+            "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+            "apikey": settings.SUPABASE_SERVICE_KEY,
+            "Content-Type": _content_type_for(uploaded_file),
+            "x-upsert": "true",
+        },
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            if resp.status not in (200, 201):
+                logger.warning("Supabase Storage upload of %s returned status %s", object_path, resp.status)
+                return None
+    except urllib.error.URLError:
+        logger.exception("Supabase Storage upload failed for %s", object_path)
+        return None
+
+    return object_path
+
+
 # Every carousel slide on the landing page's Clients section is displayed
 # at this exact box (see .clients .swiper-slide img in main.css) --
 # double that CSS size so retina screens don't upscale a blurry image.
@@ -280,6 +385,11 @@ def delete_object(object_path):
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             return resp.status in (200, 204)
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return True  # already gone -- nothing left to delete
+        logger.exception("Supabase Storage delete failed for %s", object_path)
+        return False
     except urllib.error.URLError:
         logger.exception("Supabase Storage delete failed for %s", object_path)
         return False

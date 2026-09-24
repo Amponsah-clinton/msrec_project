@@ -1,5 +1,5 @@
 {% extends "dashboards/base.html" %}
-{% load static %}
+{% load static verification_tags %}
 
 {% block title %}{% if kind == 'certificate' %}Ethics Clearance Certificate{% elif kind == 'approval' %}Approval Letter{% else %}Decision Letter{% endif %} | MSREC{% endblock %}
 
@@ -37,9 +37,9 @@
           <div class="letter-org">
             <h1>{{ site_settings.site_name|default:"MSREC" }}</h1>
             {% if site_settings.footer_address %}
-              {# The configured address already opens with the committee's
+              {% comment %} The configured address already opens with the committee's
                  own name, so printing the static descriptor above it too
-                 just says the same thing twice on a formal document. #}
+                 just says the same thing twice on a formal document. {% endcomment %}
               <p class="letter-org-address">{{ site_settings.footer_address|linebreaksbr }}</p>
             {% else %}
               <p>Metascholar Research Ethics Committee</p>
@@ -143,6 +143,8 @@
         </div>
 
         {% endif %}
+
+        {% if application.status == 'approved' %}{% verification_block application %}{% endif %}
 
         <footer class="letter-foot">
           <p>

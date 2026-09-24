@@ -5,6 +5,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'dashboard/css/admin-settings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/accounts.css' %}">
 {% endblock %}
 
 {% block nav_content %}
@@ -37,7 +38,7 @@
           <div class="ad-kpi-top">
             <span class="ad-ico blue"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg></span>
           </div>
-          <p class="ad-kpi-value">{{ sessions|length }}</p>
+          <p class="ad-kpi-value">{{ session_count }}</p>
           <p class="ad-kpi-label">Active staff sessions</p>
         </div>
         <div class="ad-kpi">
@@ -75,7 +76,7 @@
           </div>
         </section>
 
-        <section class="ad-card">
+        <section class="ad-card" id="sessions">
           <div class="ad-card-header">
             <span class="ad-ico blue"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg></span>
             <div class="ad-card-header-text">
@@ -84,7 +85,7 @@
             </div>
           </div>
           <div class="ad-card-body">
-            {% for session in sessions %}
+            {% for session in sessions_page %}
             <div class="session-row">
               <span class="session-icon"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="1"/><path d="M8 20h8M12 16v4"/></svg></span>
               <div class="session-info">
@@ -98,6 +99,38 @@
               <p>No staff sessions are currently active.</p>
             </div>
             {% endfor %}
+            {% if sessions_page.paginator.num_pages > 1 %}
+            <div class="acct-pagination">
+              <div class="acct-page-bar">
+                {% if sessions_page.has_previous %}
+                <a href="?page={{ sessions_page.previous_page_number }}#sessions" class="acct-page-nav" aria-label="Previous page">
+                  <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+                </a>
+                {% else %}
+                <span class="acct-page-nav disabled" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></span>
+                {% endif %}
+
+                {% for num in sessions_page_range %}
+                  {% if num == sessions_page.paginator.ELLIPSIS %}
+                  <span class="acct-page-ellipsis">&hellip;</span>
+                  {% elif num == sessions_page.number %}
+                  <span class="acct-page-num active">{{ num }}</span>
+                  {% else %}
+                  <a href="?page={{ num }}#sessions" class="acct-page-num">{{ num }}</a>
+                  {% endif %}
+                {% endfor %}
+
+                {% if sessions_page.has_next %}
+                <a href="?page={{ sessions_page.next_page_number }}#sessions" class="acct-page-nav" aria-label="Next page">
+                  <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                </a>
+                {% else %}
+                <span class="acct-page-nav disabled" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+                {% endif %}
+              </div>
+              <span class="acct-page-info">Page {{ sessions_page.number }} of {{ sessions_page.paginator.num_pages }} &middot; {{ sessions_page.paginator.count }} session{{ sessions_page.paginator.count|pluralize }}</span>
+            </div>
+            {% endif %}
           </div>
         </section>
 

@@ -17,6 +17,7 @@ urlpatterns = [
     path("applications/<int:pk>/", views.application_detail, name="application_detail"),
     path("applications/<int:pk>/pdf/", views.application_pdf, name="application_pdf"),
     path("applications/<int:pk>/edit/", views.application_edit, name="application_edit"),
+    path("post-approval/<str:ptype>/", views.post_approval, name="post_approval"),
     path("finance/", views.finance, name="finance"),
     # Broader than admin_required (secretariat included, not just
     # admin/superuser) -- messaging.views.staff_messages enforces that
@@ -41,6 +42,7 @@ urlpatterns = [
     path("committee/training/", views.training, name="committee_training"),
     path("committee/conflict-records/", views.conflict_records, name="conflict_records"),
     path("settings/", views.site_settings, name="settings"),
+    path("settings/certificate-preview/", views.certificate_preview, name="certificate_preview"),
     # Same underlying AuditLog table and categorization secretariat_dashboard's
     # own Audit Logs page already uses (see that module's audit_logs()) --
     # reused here with just this dashboard's own template, the same

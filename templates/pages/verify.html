@@ -9,7 +9,7 @@
 {% endblock %}
 
 {% block content %}
-  <main class="main verify-main">
+  <main class="main verify-main" data-lookup-url="{% url 'pages:verify_lookup' %}">
 
 
     <!-- ============ PAGE INTRO / HERO ============ -->
@@ -36,9 +36,9 @@
         <div class="verify-cert-card">
           <div class="verify-cert-ribbon"><i class="bi bi-patch-check-fill"></i> Verified</div>
           <span class="verify-cert-eyebrow">MSREC Approval Certificate</span>
-          <span class="verify-cert-number">MSREC/2024/0142</span>
+          <span class="verify-cert-number">MSREC/YYYY/0000</span>
           <div class="verify-cert-row"><span>Status</span><strong class="cert-ok">Approved</strong></div>
-          <div class="verify-cert-row"><span>Expires</span><strong>17 Mar 2026</strong></div>
+          <div class="verify-cert-row"><span>Expires</span><strong>DD Mon YYYY</strong></div>
           <div class="verify-cert-qr">
             <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
           </div>
@@ -70,20 +70,20 @@
           <div class="verify-panel active" data-panel="number">
             <label for="approvalNumber">Approval Number</label>
             <div class="verify-input-row">
-              <input type="text" id="approvalNumber" placeholder="e.g. MSREC/2024/0142" autocomplete="off">
+              <input type="text" id="approvalNumber" placeholder="e.g. MSREC/2026/0001" autocomplete="off">
               <button type="button" class="verify-btn" data-by="number"><i class="bi bi-search"></i> Verify</button>
             </div>
-            <p class="verify-hint">Printed at the top of your approval letter or certificate. Try the sample: <button type="button" class="verify-sample-btn" data-sample-target="approvalNumber" data-sample="MSREC/2024/0142">MSREC/2024/0142</button></p>
+            <p class="verify-hint">Printed at the top of your approval letter or certificate.</p>
           </div>
 
           <!-- Verification code -->
           <div class="verify-panel" data-panel="code">
             <label for="verificationCode">Verification Code</label>
             <div class="verify-input-row">
-              <input type="text" id="verificationCode" placeholder="e.g. VER-8842-XQ" autocomplete="off">
+              <input type="text" id="verificationCode" placeholder="e.g. VER-ABCD-2345" autocomplete="off">
               <button type="button" class="verify-btn" data-by="code"><i class="bi bi-search"></i> Verify</button>
             </div>
-            <p class="verify-hint">The short code beneath the QR code on your certificate. Try the sample: <button type="button" class="verify-sample-btn" data-sample-target="verificationCode" data-sample="VER-8842-XQ">VER-8842-XQ</button></p>
+            <p class="verify-hint">The short code beneath the QR code on your certificate.</p>
           </div>
 
           <!-- QR code -->
@@ -140,15 +140,6 @@
                 </label>
                 <canvas id="qrCanvas" hidden></canvas>
 
-                <button type="button" class="verify-qr-sample-card" id="qrSampleTrigger" title="Verify the sample certificate MSREC/2024/0142">
-                  <span id="qrSampleCode" class="verify-qr-sample-code" aria-hidden="true"></span>
-                  <span class="verify-qr-sample-info">
-                    <span class="verify-qr-sample-eyebrow">No QR handy?</span>
-                    <strong>Try the sample certificate</strong>
-                    <span class="verify-qr-sample-hint">Scan it above, or click to verify instantly</span>
-                  </span>
-                  <i class="bi bi-arrow-right verify-qr-sample-arrow"></i>
-                </button>
               </div>
 
             </div>

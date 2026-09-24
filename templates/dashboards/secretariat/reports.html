@@ -365,12 +365,12 @@
           <div class="stat-card">
             <div class="stat-icon green"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></div>
             <p class="stat-label">Total Collected</p>
-            <p class="stat-value">{{ financial.currency }} {{ financial.total_collected|floatformat:2 }}</p>
+            <p class="stat-value">{{ financial.currency }} {{ financial.total_collected|floatformat:"2g" }}</p>
           </div>
           <div class="stat-card">
             <div class="stat-icon orange"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
             <p class="stat-label">Pending</p>
-            <p class="stat-value">{{ financial.currency }} {{ financial.pending_amount|floatformat:2 }}</p>
+            <p class="stat-value">{{ financial.currency }} {{ financial.pending_amount|floatformat:"2g" }}</p>
           </div>
           <div class="stat-card">
             <div class="stat-icon blue"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg></div>
@@ -392,7 +392,7 @@
               <div class="column-chart-col">
                 <div class="column-chart-bar-wrap">
                   <div class="column-chart-bar" data-empty="{% if not row.total %}true{% endif %}" style="height: {% widthratio row.total financial.trend_max 100 %}%;">
-                    {% if row.total %}<span class="column-chart-value">{{ row.total|floatformat:0 }}</span>{% endif %}
+                    {% if row.total %}<span class="column-chart-value">{{ row.total|floatformat:"0g" }}</span>{% endif %}
                   </div>
                 </div>
                 <span class="column-chart-label">{{ row.label }}</span>
@@ -408,7 +408,7 @@
               <div class="bar-list">
                 {% for row in financial.by_type %}
                 <div>
-                  <div class="bar-row-label"><strong>{{ row.label }}</strong><span>{{ financial.currency }} {{ row.total|floatformat:0 }}</span></div>
+                  <div class="bar-row-label"><strong>{{ row.label }}</strong><span>{{ financial.currency }} {{ row.total|floatformat:"0g" }}</span></div>
                   <div class="bar-track"><div class="bar-fill green" style="width: {% widthratio row.total financial.by_type_max 100 %}%;"></div></div>
                 </div>
                 {% endfor %}

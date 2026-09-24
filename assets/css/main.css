@@ -2897,3 +2897,14 @@ section,
     padding-right: 20px;
   }
 }
+
+/* Footer "Powered by" credit link */
+.footer .copyright a {
+  color: #d4af37;
+  font-weight: 600;
+  transition: color 0.2s ease;
+}
+
+.footer .copyright a:hover {
+  color: #f0cf65;
+}

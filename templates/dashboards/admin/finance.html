@@ -32,7 +32,7 @@
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 1 3 2.5-1.3 2-3 2.5-3 1.1-3 2.5 1.3 2.5 3 2.5 3-1.1 3-2.5"/></svg>
           </div>
           <p class="stat-label">Total Collected</p>
-          <p class="stat-value">GHS {{ total_collected|floatformat:2 }}</p>
+          <p class="stat-value">GHS {{ total_collected|floatformat:"2g" }}</p>
         </div>
 
         <div class="stat-card">
@@ -88,11 +88,11 @@
 
       <!-- TABS + LIST -->
       <section class="panel acct-panel">
-        <div class="filter-tabs acct-tabs" data-filters-target="#financeList">
-          <button type="button" class="filter-tab{% if active_tab == 'all' %} active{% endif %}" data-filter="all">All <span class="count">{{ counts.all }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'success' %} active{% endif %}" data-filter="success">Successful <span class="count">{{ counts.success }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}" data-filter="pending">Pending <span class="count">{{ counts.pending }}</span></button>
-          <button type="button" class="filter-tab{% if active_tab == 'failed' %} active{% endif %}" data-filter="failed">Failed <span class="count">{{ counts.failed }}</span></button>
+        <div class="filter-tabs acct-tabs">
+          <a href="?tab=all{{ filter_qs }}" class="filter-tab{% if active_tab == 'all' %} active{% endif %}">All <span class="count">{{ counts.all }}</span></a>
+          <a href="?tab=success{{ filter_qs }}" class="filter-tab{% if active_tab == 'success' %} active{% endif %}">Successful <span class="count">{{ counts.success }}</span></a>
+          <a href="?tab=pending{{ filter_qs }}" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}">Pending <span class="count">{{ counts.pending }}</span></a>
+          <a href="?tab=failed{{ filter_qs }}" class="filter-tab{% if active_tab == 'failed' %} active{% endif %}">Failed <span class="count">{{ counts.failed }}</span></a>
         </div>
 
         <form method="get" class="finance-filter-bar" id="financeFilterForm">
@@ -127,17 +127,15 @@
               </tr>
             </thead>
             <tbody>
-              {% for payment in all_payments %}
-              <tr data-filter-item data-filter="{{ payment.status }}"
-                  data-search="{{ payment.reference|lower }} {{ payment.applicant.full_name|lower }} {{ payment.application.reference_no|default:''|lower }}"
-                  {% if active_tab != 'all' and payment.status != active_tab %}hidden{% endif %}>
+              {% for payment in page %}
+              <tr>
                 <td data-label="Reference" class="ref-cell">{{ payment.reference }}</td>
                 <td data-label="Applicant">
                   {{ payment.applicant.full_name }}
                   {% if payment.application %}<br><a href="{% url 'admin_dashboard:application_detail' payment.application.pk %}" style="font-size:11.5px;color:var(--text-faint);">{{ payment.application.reference_no }}</a>{% endif %}
                 </td>
                 <td data-label="Purpose">{{ payment.purpose }}</td>
-                <td data-label="Amount" class="ref-cell">{{ payment.currency }} {{ payment.amount }}</td>
+                <td data-label="Amount" class="ref-cell">{{ payment.currency }} {{ payment.amount|floatformat:"2g" }}</td>
                 <td data-label="Status">
                   {% if payment.status == 'success' %}<span class="badge-tag green">Successful</span>
                   {% elif payment.status == 'pending' %}<span class="badge-tag orange">Pending</span>
@@ -146,11 +144,45 @@
                 <td data-label="Date"><span class="due-main">{{ payment.created_at|date:"d M Y, g:i A" }}</span></td>
               </tr>
               {% empty %}
-              <tr><td colspan="6" style="text-align:center; color:var(--text-faint); padding:32px 0;">No payments recorded yet &mdash; they'll appear here the moment an applicant pays a review fee.</td></tr>
+              <tr><td colspan="6" style="text-align:center; color:var(--text-faint); padding:32px 0;">{% if has_active_filters or active_tab != 'all' %}No payments match the current filters.{% else %}No payments recorded yet &mdash; they'll appear here the moment an applicant pays a review fee.{% endif %}</td></tr>
               {% endfor %}
             </tbody>
           </table>
         </div>
+        {% if page.paginator.num_pages > 1 %}
+        <div class="acct-pagination">
+          <div class="acct-page-bar">
+            {% if page.has_previous %}
+            <a href="?tab={{ active_tab }}{{ filter_qs }}&amp;page={{ page.previous_page_number }}" class="acct-page-nav" aria-label="Previous page">
+              <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
+            </a>
+            {% else %}
+            <span class="acct-page-nav disabled" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg></span>
+            {% endif %}
+
+            {% for num in page_range %}
+              {% if num == page.paginator.ELLIPSIS %}
+              <span class="acct-page-ellipsis">&hellip;</span>
+              {% elif num == page.number %}
+              <span class="acct-page-num active">{{ num }}</span>
+              {% else %}
+              <a href="?tab={{ active_tab }}{{ filter_qs }}&amp;page={{ num }}" class="acct-page-num">{{ num }}</a>
+              {% endif %}
+            {% endfor %}
+
+            {% if page.has_next %}
+            <a href="?tab={{ active_tab }}{{ filter_qs }}&amp;page={{ page.next_page_number }}" class="acct-page-nav" aria-label="Next page">
+              <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+            </a>
+            {% else %}
+            <span class="acct-page-nav disabled" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></span>
+            {% endif %}
+          </div>
+          <span class="acct-page-info">Page {{ page.number }} of {{ page.paginator.num_pages }} &middot; {{ page.paginator.count }} payment{{ page.paginator.count|pluralize }}</span>
+        </div>
+        {% elif page.paginator.count %}
+        <div class="acct-pagination"><span class="acct-page-info">{{ page.paginator.count }} payment{{ page.paginator.count|pluralize }}</span></div>
+        {% endif %}
       </section>
 
 {% endblock %}

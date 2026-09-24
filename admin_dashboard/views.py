@@ -9,6 +9,8 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
+from urllib.parse import urlencode
+
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
@@ -20,16 +22,17 @@ from django.utils.dateparse import parse_datetime
 
 from accounts import storage
 from accounts.models import AuditLog, RoleApprovalLog, User
+from accounts.photos import delete_profile_photo
 from accounts.sessions import active_sessions_for, describe_user_agent
 from applicant_dashboard import oversight
 from applicant_dashboard import storage as application_storage
 from applicant_dashboard.application_pdf import render_application_pdf as application_pdf_render
-from applicant_dashboard.models import Application
+from applicant_dashboard.models import Application, POSTAPPROVAL_FIELDS, POSTAPPROVAL_TITLES, PostApprovalSubmission
 from applicant_dashboard.views import (
     _apply_posted_fields, _fee_schedule_context, _initial_data_for_template,
 )
 from messaging.access import is_staff_side
-from notifications.emails import send_branded_email
+from notifications.emails import send_branded_email, send_password_changed_email
 from pages import committee_services
 from pages import documents_storage
 from pages import hero_storage
@@ -38,6 +41,7 @@ from pages import storage as pages_storage
 from pages.models import (
     GOVERNANCE_TAG_CHOICES,
     GOVERNANCE_TITLE_CHOICES,
+    ApplicantFAQ,
     ClientLogo,
     CommitteeAppointment,
     CommitteeMeeting,
@@ -53,6 +57,7 @@ from pages.models import (
 )
 from secretariat_dashboard.views import (
     _audit_log_category, _committee_referral_context, _handle_refer_committee,
+    POSTAPPROVAL_HIGHLIGHT,
 )
 from payments import fees
 from payments import services as payment_services
@@ -719,6 +724,7 @@ def application_edit(request, pk):
 
 
 FINANCE_TABS = {"all", "success", "pending", "failed"}
+FINANCE_PAGE_SIZE = 20
 
 
 @login_required
@@ -754,8 +760,22 @@ def finance(request):
     if request.GET.get("export") == "csv":
         return payment_services.export_payments_csv(filtered_qs)
 
+    # Tabs, search and the date range are all applied server-side, so the
+    # paginator below always pages through exactly the rows they select.
+    paginator = Paginator(filtered_qs, FINANCE_PAGE_SIZE)
+    page = paginator.get_page(request.GET.get("page"))
+    page_range = paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1)
+    # Query-string tail (search + dates) that every tab/page link carries
+    # along, so switching tab or page never drops the active filters.
+    filter_qs = urlencode({
+        key: value for key, value in
+        (("q", query), ("date_from", date_from_raw), ("date_to", date_to_raw)) if value
+    })
+
     return render(request, "dashboards/admin/finance.html", {
-        "all_payments": list(filtered_qs),
+        "page": page,
+        "page_range": page_range,
+        "filter_qs": f"&{filter_qs}" if filter_qs else "",
         "counts": counts,
         "active_tab": active_tab,
         "total_collected": total_collected,
@@ -919,6 +939,9 @@ def reports_analytics_export(request):
 # Access & Security
 # ---------------------------------------------------------------------
 
+ACCESS_SESSIONS_PAGE_SIZE = 25
+
+
 @login_required
 @admin_required
 def access_security(request):
@@ -946,6 +969,9 @@ def access_security(request):
             "is_current": session.session_key == request.session.session_key,
         })
     sessions.sort(key=lambda row: row["login_at"] or now, reverse=True)
+    paginator = Paginator(sessions, ACCESS_SESSIONS_PAGE_SIZE)
+    sessions_page = paginator.get_page(request.GET.get("page"))
+    sessions_page_range = paginator.get_elided_page_range(sessions_page.number, on_each_side=1, on_ends=1)
 
     role_counts = _role_counts()
     inactive_count = User.objects.filter(is_active=False).count()
@@ -954,7 +980,9 @@ def access_security(request):
         "total_staff": total_staff,
         "two_factor_count": two_factor_count,
         "two_factor_pct": two_factor_pct,
-        "sessions": sessions,
+        "session_count": len(sessions),
+        "sessions_page": sessions_page,
+        "sessions_page_range": sessions_page_range,
         "role_counts": role_counts,
         "inactive_count": inactive_count,
     })
@@ -1022,6 +1050,7 @@ def _handle_admin_update_profile(request):
     user.save(update_fields=update_fields)
     if "password" in update_fields:
         update_session_auth_hash(request, user)
+        send_password_changed_email(user, request)
         messages.success(request, "Profile updated and password changed.")
     else:
         messages.success(request, "Profile updated.")
@@ -1041,20 +1070,18 @@ def _handle_admin_update_avatar(request):
         messages.error(request, "Couldn't upload your photo right now. Please try again.")
         return
 
+    old_path = request.user.profile_photo_path
     request.user.profile_photo_path = object_path
     request.user.save(update_fields=["profile_photo_path"])
+    if old_path and old_path != object_path:
+        delete_profile_photo(old_path)
     messages.success(request, "Profile photo updated.")
 
 
 def _handle_admin_remove_avatar(request):
     user = request.user
     if user.profile_photo_path:
-        if user.profile_photo_path.startswith("reviewers/"):
-            reviewer_storage.delete_object(user.profile_photo_path)
-        elif user.profile_photo_path.startswith("avatars/"):
-            application_storage.delete_object(user.profile_photo_path)
-        else:
-            storage.delete_object(user.profile_photo_path)
+        delete_profile_photo(user.profile_photo_path)
         user.profile_photo_path = ""
         user.save(update_fields=["profile_photo_path"])
     messages.success(request, "Profile photo removed.")
@@ -1711,6 +1738,112 @@ def _handle_settings_hero(request, site):
     messages.success(request, "Homepage hero image updated.")
 
 
+def _handle_settings_auth_image(request, site):
+    image = request.FILES.get("auth_image")
+    if not image:
+        messages.error(request, "Choose an image to upload.")
+        return
+    if not (image.content_type or "").startswith("image/"):
+        messages.error(request, "The sign-in page image must be an image file.")
+        return
+
+    old_path = site.auth_image_path
+    object_path = pages_storage.upload_auth_image(image)
+    if not object_path:
+        messages.error(request, "The image couldn't be uploaded right now -- please try again.")
+        return
+
+    site.auth_image_path = object_path
+    site.updated_by = request.user
+    site.save()
+    if old_path and old_path != object_path:
+        pages_storage.delete_object(old_path)
+    messages.success(request, "Sign-in page image updated.")
+
+
+def _handle_settings_auth_image_reset(request, site):
+    if site.auth_image_path:
+        pages_storage.delete_object(site.auth_image_path)
+        site.auth_image_path = ""
+        site.updated_by = request.user
+        site.save()
+    messages.success(request, "Sign-in page image reset to the default.")
+
+
+MAX_SIGNATURE_UPLOAD = 8 * 1024 * 1024
+
+
+def _handle_settings_certificate_signatory(request, site):
+    """The Chair's name, title and signature -- printed on every awarded
+    certificate. Admin only (Secretariat can open Settings, but must not
+    be able to change who signs certificates)."""
+    import base64
+    import binascii
+
+    from pages import signature as signature_tools
+
+    if not is_admin(request.user):
+        messages.error(request, "Only an administrator can change the certificate signatory.")
+        return
+
+    name = request.POST.get("chair_name", "").strip()
+    title = request.POST.get("chair_title", "").strip() or "Chair of the Committee"
+    if not name:
+        messages.error(request, "Enter the Chair's full name.")
+        return
+    if len(name) > 150 or len(title) > 150:
+        messages.error(request, "The name and title must each be 150 characters or fewer.")
+        return
+
+    raw = None
+    upload = request.FILES.get("signature_file")
+    drawn = request.POST.get("signature_data", "")
+    if upload:
+        if not (upload.content_type or "").startswith("image/"):
+            messages.error(request, "The signature must be an image file (PNG or JPG).")
+            return
+        if upload.size > MAX_SIGNATURE_UPLOAD:
+            messages.error(request, "That signature image is too large -- keep it under 8 MB.")
+            return
+        raw = upload.read()
+    elif drawn.startswith("data:image/png;base64,"):
+        try:
+            raw = base64.b64decode(drawn.split(",", 1)[1], validate=True)
+        except (binascii.Error, ValueError):
+            messages.error(request, "The drawn signature couldn't be read -- please draw it again.")
+            return
+        if len(raw) > MAX_SIGNATURE_UPLOAD:
+            messages.error(request, "That drawing is too large -- please redraw it.")
+            return
+
+    site.chair_name = name
+    site.chair_title = title
+    notice = "Certificate signatory saved -- it now appears on every certificate."
+
+    if raw:
+        try:
+            png = signature_tools.process_signature(raw)
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return
+        old_path = site.chair_signature_path
+        object_path = pages_storage.upload_chair_signature(png)
+        if object_path:
+            site.chair_signature_path = object_path
+            if old_path and old_path != object_path:
+                pages_storage.delete_object(old_path)
+        else:
+            notice = "Name and title saved, but the signature couldn't be uploaded right now -- please try again."
+    elif request.POST.get("remove_signature") and site.chair_signature_path:
+        pages_storage.delete_object(site.chair_signature_path)
+        site.chair_signature_path = ""
+        notice = "Signature removed. Certificates will show a blank line to sign by hand."
+
+    site.updated_by = request.user
+    site.save()
+    (messages.warning if "couldn't" in notice else messages.success)(request, notice)
+
+
 def _handle_settings_footer(request, site):
     footer_email = request.POST.get("footer_email", "").strip()
     if footer_email:
@@ -1755,6 +1888,7 @@ def _handle_settings_contact(request, site):
     for field, value in cleaned.items():
         setattr(site, field, value)
     site.contact_phone = request.POST.get("contact_phone", "").strip()
+    site.support_escalation_phone = request.POST.get("support_escalation_phone", "").strip()
     site.updated_by = request.user
     site.save()
     messages.success(request, "Contact page details updated.")
@@ -2031,6 +2165,48 @@ def _handle_settings_delete_testimonial(request, site):
     messages.success(request, f'"{org_name}" was removed from the landing page carousel.')
 
 
+def _read_faq_form(request):
+    """Returns (question, answer, display_order, is_active), or None after
+    flashing an error when the question or answer is blank."""
+    question = request.POST.get("faq_question", "").strip()
+    answer = request.POST.get("faq_answer", "").strip()
+    if not question or not answer:
+        messages.error(request, "Give the FAQ both a question and an answer.")
+        return None
+    try:
+        display_order = max(0, min(int(request.POST.get("faq_display_order") or 0), 32767))
+    except ValueError:
+        display_order = 0
+    return question[:300], answer, display_order, request.POST.get("faq_is_active") == "on"
+
+
+def _handle_settings_add_faq(request, site):
+    data = _read_faq_form(request)
+    if not data:
+        return
+    question, answer, display_order, is_active = data
+    ApplicantFAQ.objects.create(
+        question=question, answer=answer, display_order=display_order, is_active=is_active,
+    )
+    messages.success(request, "FAQ added to the Applicants page.")
+
+
+def _handle_settings_edit_faq(request, site):
+    faq = get_object_or_404(ApplicantFAQ, pk=request.POST.get("faq_id"))
+    data = _read_faq_form(request)
+    if not data:
+        return
+    faq.question, faq.answer, faq.display_order, faq.is_active = data
+    faq.save()
+    messages.success(request, "FAQ updated.")
+
+
+def _handle_settings_delete_faq(request, site):
+    faq = get_object_or_404(ApplicantFAQ, pk=request.POST.get("faq_id"))
+    faq.delete()
+    messages.success(request, "FAQ removed from the Applicants page.")
+
+
 @login_required
 @admin_or_secretariat_required
 def site_settings(request):
@@ -2040,6 +2216,9 @@ def site_settings(request):
         handler = {
             "update_identity": _handle_settings_identity,
             "update_hero": _handle_settings_hero,
+            "update_auth_image": _handle_settings_auth_image,
+            "reset_auth_image": _handle_settings_auth_image_reset,
+            "update_certificate_signatory": _handle_settings_certificate_signatory,
             "update_footer": _handle_settings_footer,
             "update_contact": _handle_settings_contact,
             "update_paystack": _handle_settings_paystack,
@@ -2055,6 +2234,9 @@ def site_settings(request):
             "add_testimonial": _handle_settings_add_testimonial,
             "edit_testimonial": _handle_settings_edit_testimonial,
             "delete_testimonial": _handle_settings_delete_testimonial,
+            "add_faq": _handle_settings_add_faq,
+            "edit_faq": _handle_settings_edit_faq,
+            "delete_faq": _handle_settings_delete_faq,
         }.get(request.POST.get("action"))
         if handler:
             handler(request, site)
@@ -2095,10 +2277,20 @@ def site_settings(request):
     if edit_testimonial_id:
         editing_testimonial = get_object_or_404(Testimonial, pk=edit_testimonial_id)
 
+    faqs = list(ApplicantFAQ.objects.all())
+    editing_faq = None
+    edit_faq_id = request.GET.get("edit_faq")
+    if edit_faq_id:
+        editing_faq = get_object_or_404(ApplicantFAQ, pk=edit_faq_id)
+
     return render(request, "dashboards/admin/settings.html", {
         "site": site,
+        "faqs": faqs,
+        "editing_faq": editing_faq,
         "logo_url": pages_storage.public_url(site.logo_path),
         "hero_image_url": hero_storage.public_url(site.hero_image_path),
+        "auth_image_url": pages_storage.public_url(site.auth_image_path),
+        "chair_signature_url": pages_storage.public_url(site.chair_signature_path),
         "paystack_secret_key_masked": _mask_secret(site.paystack_secret_key),
         "using_env_public_key": not site.paystack_public_key,
         "using_env_secret_key": not site.paystack_secret_key,
@@ -2111,4 +2303,82 @@ def site_settings(request):
         "client_logos": client_logos,
         "testimonials": testimonials,
         "editing_testimonial": editing_testimonial,
+    })
+
+
+# Read-only Administrator view of the safety-relevant post-approval filings
+# (Secretariat owns triage/status changes -- see secretariat_dashboard.views.
+# post_approval; this is the oversight copy).
+ADMIN_POSTAPPROVAL_TYPES = {
+    PostApprovalSubmission.Type.ADVERSE_EVENT: "Adverse Events",
+    PostApprovalSubmission.Type.DEVIATION: "Protocol Deviations",
+}
+
+
+@login_required
+@admin_required
+def post_approval(request, ptype):
+    if ptype not in ADMIN_POSTAPPROVAL_TYPES:
+        return HttpResponse(status=404)
+
+    field_defs = POSTAPPROVAL_FIELDS[ptype]
+    highlight_key, highlight_label = POSTAPPROVAL_HIGHLIGHT[ptype]
+    submissions = list(
+        PostApprovalSubmission.objects.filter(type=ptype)
+        .select_related("application", "applicant").order_by("-submitted_at")
+    )
+    for submission in submissions:
+        submission.detail_rows = [
+            {"label": label, "value": submission.form_data.get(key, "")}
+            for key, label, _widget, _choices in field_defs
+        ]
+        submission.highlight_value = submission.form_data.get(highlight_key, "")
+
+    return render(request, "dashboards/admin/post_approval.html", {
+        "ptype": ptype,
+        "type_label": ADMIN_POSTAPPROVAL_TYPES[ptype],
+        "type_title": POSTAPPROVAL_TITLES[ptype],
+        "submissions": submissions,
+        "highlight_label": highlight_label,
+    })
+
+
+@login_required
+@admin_required
+def certificate_preview(request):
+    """A sample Peer Review certificate carrying the Chair details saved in
+    Settings > Certificates, so an admin can check exactly how the name,
+    title and signature land before (or after) a real one is awarded.
+    ?format=pdf renders the emailed PDF version instead of the web one."""
+    from datetime import datetime
+    from types import SimpleNamespace
+
+    from pages.certificate_signatory import chair_details
+    from reviewer_dashboard.certificate import render_review_certificate_pdf, review_certificate_message
+
+    sample = SimpleNamespace(
+        certificate_id="MSREC-PR-SAMPLE",
+        certificate_awarded_at=timezone.localtime(),
+        certificate_awarded_by=request.user,
+        reviewer=SimpleNamespace(full_name="Dr. Ama Serwaa Mensah"),
+        application=SimpleNamespace(reference_no="MSREC/2026/0001"),
+        application_id=0,
+    )
+
+    if request.GET.get("format") == "pdf":
+        response = HttpResponse(render_review_certificate_pdf(sample), content_type="application/pdf")
+        response["Content-Disposition"] = 'inline; filename="certificate-preview.pdf"'
+        return response
+
+    return render(request, "certificates/award_certificate.html", {
+        "theme": "white",
+        "cert_title": "Certificate",
+        "cert_subtitle": "of Peer Review",
+        "seal_caption": "PEER REVIEW",
+        "recipient_name": sample.reviewer.full_name,
+        "message": review_certificate_message(sample),
+        "cert_id": sample.certificate_id,
+        "issued_on": sample.certificate_awarded_at,
+        "chair": chair_details(),
+        "back_url": reverse("admin_dashboard:settings") + "#certificates",
     })

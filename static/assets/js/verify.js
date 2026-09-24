@@ -1,60 +1,13 @@
 /* ==========================================================
    MSREC — Verify Approval page logic
-   Client-side demo registry lookup + QR scan (camera & upload).
-   No backend: swap REGISTRY / findRecord() for a real API call
-   when one exists.
+   Looks approvals up against the real registry via the server
+   (GET /verify/lookup/?q=…) and reads QR codes (camera & upload).
 ========================================================== */
 (function () {
   "use strict";
 
-  var REGISTRY = {
-    "MSREC/2024/0142": {
-      code: "VER-8842-XQ",
-      status: "approved",
-      title: "Community Perceptions of AI-Assisted Diagnostic Tools in Primary Care",
-      pi: "Dr. Ama Serwaa Mensah",
-      institution: "University of Ghana, School of Public Health",
-      reviewType: "Full Board Review",
-      riskLevel: "Minimal Risk",
-      approvedOn: "18 Mar 2024",
-      expiresOn: "17 Mar 2026"
-    },
-    "MSREC/2023/0087": {
-      code: "VER-5521-TM",
-      status: "expired",
-      title: "Longitudinal Study of Remote Learning Outcomes in Rural Districts",
-      pi: "Dr. Kwame Owusu-Ansah",
-      institution: "Metascholar Institute for Social Research",
-      reviewType: "Expedited Review",
-      riskLevel: "Minimal Risk",
-      approvedOn: "2 May 2023",
-      expiresOn: "1 May 2024"
-    },
-    "MSREC/2024/0210": {
-      code: "VER-9034-RP",
-      status: "suspended",
-      title: "Biomarker Sampling in Adolescent Nutrition Cohort",
-      pi: "Dr. Linda Boateng",
-      institution: "Accra Clinical Research Centre",
-      reviewType: "Full Board Review",
-      riskLevel: "Greater Than Minimal Risk",
-      approvedOn: "11 Jul 2024",
-      expiresOn: "10 Jul 2026",
-      note: "Suspended pending review of a reported protocol deviation. Do not rely on this approval until reinstated."
-    },
-    "MSREC/2025/0015": {
-      code: "VER-1187-CD",
-      status: "conditional",
-      title: "Evaluation of a Chatbot-Delivered Mental Health Screening Tool",
-      pi: "Dr. Nana Yaa Asantewaa",
-      institution: "Metascholar Institute for Digital Health",
-      reviewType: "Full Board Review",
-      riskLevel: "Minimal Risk",
-      approvedOn: "9 Feb 2025",
-      expiresOn: "Pending amendment",
-      note: "Approval is conditional on submission of a revised consent form to the Secretariat."
-    }
-  };
+  var pageEl = document.querySelector("main.verify-main");
+  var LOOKUP_URL = (pageEl && pageEl.getAttribute("data-lookup-url")) || "/verify/lookup/";
 
   var STATUS_META = {
     approved: { label: "Approved & Valid", icon: "bi-patch-check-fill", tone: "approved" },
@@ -63,26 +16,6 @@
     suspended: { label: "Approval Suspended", icon: "bi-x-octagon-fill", tone: "suspended" },
     notfound: { label: "Not Found", icon: "bi-search", tone: "notfound" }
   };
-
-  var CODE_INDEX = {};
-  Object.keys(REGISTRY).forEach(function (num) {
-    CODE_INDEX[REGISTRY[num].code.toUpperCase()] = num;
-  });
-
-  function normalize(str) {
-    return (str || "").trim().toUpperCase();
-  }
-
-  function findRecord(raw) {
-    var q = normalize(raw);
-    if (!q) return null;
-    if (REGISTRY[q]) return { number: q, record: REGISTRY[q] };
-    // tolerate missing slashes / spaces, e.g. "MSREC 2024 0142" or "MSREC20240142"
-    var loose = q.replace(/[\s\-]+/g, "/");
-    if (REGISTRY[loose]) return { number: loose, record: REGISTRY[loose] };
-    if (CODE_INDEX[q]) return { number: CODE_INDEX[q], record: REGISTRY[CODE_INDEX[q]] };
-    return { number: q, record: null };
-  }
 
   /* ---------------- Tabs ---------------- */
   var tabs = document.querySelectorAll(".verify-tab");
@@ -98,16 +31,6 @@
       var panel = document.querySelector('.verify-panel[data-panel="' + mode + '"]');
       if (panel) panel.classList.add("active");
       if (mode !== "qr") stopCamera();
-    });
-  });
-
-  /* ---------------- Sample fill buttons ---------------- */
-  document.querySelectorAll(".verify-sample-btn").forEach(function (btn) {
-    btn.addEventListener("click", function () {
-      var targetId = btn.getAttribute("data-sample-target");
-      var value = btn.getAttribute("data-sample");
-      var input = document.getElementById(targetId);
-      if (input) input.value = value;
     });
   });
 
@@ -128,13 +51,44 @@
     });
   });
 
+  var lookupSeq = 0;
+
+  function setBusy(busy) {
+    document.querySelectorAll(".verify-btn[data-by]").forEach(function (btn) {
+      btn.disabled = busy;
+      btn.classList.toggle("is-loading", busy);
+    });
+  }
+
   function runVerification(raw) {
-    var result = findRecord(raw);
-    if (!result) {
+    var query = (raw || "").trim();
+    if (!query) {
       showToast("Enter an approval number or verification code first.");
       return;
     }
-    renderResult(result.number, result.record);
+    var seq = ++lookupSeq;
+    setBusy(true);
+
+    fetch(LOOKUP_URL + "?q=" + encodeURIComponent(query), { headers: { Accept: "application/json" }, credentials: "same-origin" })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) { return { status: res.status, data: data }; });
+      })
+      .then(function (out) {
+        if (seq !== lookupSeq) return;
+        if (out.status === 429 || out.status === 400) {
+          showToast((out.data && out.data.error) || "That lookup couldn’t be completed.");
+        } else if (out.status >= 500 || !out.data || out.data.ok !== true) {
+          showToast("The registry couldn’t be reached right now. Please try again in a moment.");
+        } else {
+          renderResult(out.data);
+        }
+      })
+      .catch(function () {
+        if (seq === lookupSeq) showToast("Couldn’t reach the registry. Check your connection and try again.");
+      })
+      .then(function () {
+        if (seq === lookupSeq) setBusy(false);
+      });
   }
 
   /* ---------------- Result rendering ---------------- */
@@ -147,7 +101,9 @@
     return div.innerHTML;
   }
 
-  function renderResult(number, record) {
+  function renderResult(data) {
+    var record = data.found ? data : null;
+    var number = record ? record.number : data.query;
     var status = record ? record.status : "notfound";
     var meta = STATUS_META[status] || STATUS_META.notfound;
 
@@ -161,13 +117,13 @@
     if (!record) {
       html += '<div class="verify-not-found">' +
         '<i class="bi bi-file-earmark-x"></i>' +
-        '<p>No approval matches <strong>' + esc(number) + '</strong> in the MSREC registry. Double-check the number or code, or if this was presented to you as a valid approval, treat it as unverified and contact the Secretariat.</p>' +
+        '<p>No approval matches <strong>' + esc(number) + '</strong> in the MSREC registry of approved studies. Double-check the number or code, or if this was presented to you as a valid approval, treat it as unverified and contact the Secretariat.</p>' +
         '</div>';
     } else {
       if (status === "suspended") {
-        html += '<div class="verify-result-note tone-danger"><i class="bi bi-x-octagon-fill"></i><span>' + esc(record.note) + '</span></div>';
+        html += '<div class="verify-result-note tone-danger"><i class="bi bi-x-octagon-fill"></i><span>' + esc(record.note || "") + '</span></div>';
       } else if (status === "conditional") {
-        html += '<div class="verify-result-note tone-warn"><i class="bi bi-exclamation-circle-fill"></i><span>' + esc(record.note) + '</span></div>';
+        html += '<div class="verify-result-note tone-warn"><i class="bi bi-exclamation-circle-fill"></i><span>' + esc(record.note || "") + '</span></div>';
       } else if (status === "expired") {
         html += '<div class="verify-result-note tone-muted"><i class="bi bi-hourglass-bottom"></i><span>This approval’s validity period has ended. Any research activity under it should have stopped as of the expiry date.</span></div>';
       }
@@ -177,7 +133,6 @@
         detail("Principal Investigator", record.pi) +
         detail("Institution", record.institution) +
         detail("Review Type", record.reviewType) +
-        detail("Risk Level", record.riskLevel) +
         detail("Approved On", record.approvedOn) +
         detail("Valid Until", record.expiresOn) +
         detail("Verification Code", record.code) +
@@ -214,6 +169,7 @@
   }
 
   function detail(label, value, span2) {
+    if (value == null || String(value).trim() === "") return "";
     return '<div class="verify-detail' + (span2 ? " span-2" : "") + '"><dt>' + esc(label) + '</dt><dd>' + esc(value) + '</dd></div>';
   }
 
@@ -222,15 +178,24 @@
     return base + "?ref=" + encodeURIComponent(number);
   }
 
+  // What the QR encodes: the verify link itself, so a phone's built-in camera
+  // opens the page and verifies straight away (this page reads it back too).
   function buildVerifyPayload(number) {
-    return number;
+    return buildVerifyUrl(number);
   }
 
   /* ---------------- Auto-verify from ?ref= in URL ---------------- */
   (function autoVerifyFromQuery() {
     var params = new URLSearchParams(window.location.search);
-    var ref = params.get("ref");
-    if (ref) runVerification(ref);
+    var ref = params.get("ref") || params.get("code");
+    if (ref) {
+      var isCode = /^VER/i.test(ref.trim());
+      var tab = document.querySelector('.verify-tab[data-mode="' + (isCode ? "code" : "number") + '"]');
+      if (tab) tab.click();
+      var input = document.getElementById(isCode ? "verificationCode" : "approvalNumber");
+      if (input) input.value = ref;
+      runVerification(ref);
+    }
   })();
 
   /* ---------------- Toast ---------------- */
@@ -267,18 +232,6 @@
     document.body.removeChild(ta);
   }
 
-  /* ---------------- QR: sample code render ---------------- */
-  var qrSampleHolder = document.getElementById("qrSampleCode");
-  var SAMPLE_NUMBER = "MSREC/2024/0142";
-  if (qrSampleHolder && window.QRCode) {
-    new QRCode(qrSampleHolder, { text: SAMPLE_NUMBER, width: 48, height: 48, correctLevel: QRCode.CorrectLevel.M });
-  }
-
-  var qrSampleTrigger = document.getElementById("qrSampleTrigger");
-  if (qrSampleTrigger) {
-    qrSampleTrigger.addEventListener("click", function () { runVerification(SAMPLE_NUMBER); });
-  }
-
   /* ---------------- QR: file upload / drag-drop decode ---------------- */
   var qrFileInput = document.getElementById("qrFileInput");
   var qrDrop = document.querySelector(".verify-qr-drop");
@@ -296,7 +249,7 @@
       var imageData = ctx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
       var code = window.jsQR(imageData.data, imageData.width, imageData.height);
       if (code && code.data) {
-        setQrStatus("QR code recognized: " + code.data, "success");
+        setQrStatus("QR code recognized. Checking the registry…", "success");
         runVerification(code.data);
       } else {
         setQrStatus("Could not read a QR code in that image. Try a clearer photo.", "error");
@@ -379,7 +332,7 @@
       var imageData = scanCtx.getImageData(0, 0, scanCanvas.width, scanCanvas.height);
       var code = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
       if (code && code.data) {
-        setQrStatus("QR code recognized: " + code.data, "success");
+        setQrStatus("QR code recognized. Checking the registry…", "success");
         stopCamera();
         runVerification(code.data);
         return;

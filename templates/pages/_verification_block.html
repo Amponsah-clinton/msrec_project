@@ -1,0 +1,11 @@
+{% if reference_no %}
+<div class="letter-verify">
+  <img class="letter-verify-qr" src="{{ qr }}" alt="QR code to verify {{ reference_no }}" width="96" height="96">
+  <div class="letter-verify-text">
+    <strong>Verify this approval</strong>
+    <span>Scan the QR code, or enter the details at <span class="mono">{{ page_url }}</span></span>
+    <span>Approval number: <span class="mono">{{ reference_no }}</span></span>
+    <span>Verification code: <span class="mono">{{ code }}</span></span>
+  </div>
+</div>
+{% endif %}

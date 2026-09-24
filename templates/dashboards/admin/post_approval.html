@@ -1,0 +1,106 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}{{ type_label }} | MSREC Admin{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/application-form.css' %}" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'dashboard/css/secretariat.css' %}">
+{% endblock %}
+
+{% block nav_content %}
+{% include "dashboards/admin/_nav.html" with active=ptype %}
+{% endblock %}
+
+{% block topbar %}
+      {% include "dashboards/admin/_topbar.html" with page_title=type_label page_subtitle="Filed by applicants against approved studies (read-only; Secretariat handles triage)" search_id="paSearch" search_placeholder="Search by ref no, study, applicant..." %}
+{% endblock %}
+
+{% block main_content %}
+<div class="sc-scope">
+
+      
+
+      <section class="panel reviews-panel">
+        <div class="table-wrap" id="paTable">
+          <table class="reviews-table">
+            <thead>
+              <tr>
+                <th>Ref No.</th>
+                <th>Study Title</th>
+                <th>Applicant</th>
+                {% if highlight_label %}<th>{{ highlight_label }}</th>{% endif %}
+                <th>Submitted</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for submission in submissions %}
+              <tr data-filter-item>
+                <td data-label="Ref No." class="ref-cell">{{ submission.application.reference_no|default:"—" }}</td>
+                <td data-label="Study Title">{{ submission.application.title }}</td>
+                <td data-label="Applicant">{{ submission.applicant.full_name }}</td>
+                {% if highlight_label %}
+                <td data-label="{{ highlight_label }}">
+                  {% if submission.highlight_value %}
+                    <span class="badge-tag {% if ptype == 'adverse_event' and submission.is_serious %}red{% else %}teal{% endif %}">{{ submission.highlight_value }}</span>
+                  {% else %}<span class="badge-tag gray">Unspecified</span>{% endif %}
+                </td>
+                {% endif %}
+                <td data-label="Submitted"><span class="due-main">{{ submission.submitted_at|date:"d M Y" }}</span></td>
+                <td data-label="Status">{% include "dashboards/applicant/_pa_status.html" with status=submission.status %}</td>
+                <td data-label="Action">
+                  <button type="button" class="action-btn" aria-label="Review" data-open-modal="pa-{{ submission.pk }}">
+                    <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="7" style="text-align:center; color:var(--text-faint); padding:24px 0;">No {{ type_label|lower }} have been filed yet.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        <div class="panel-footer">
+          <span>{% if submissions %}Showing 1 to {{ submissions|length }} of {{ submissions|length }} entries{% else %}Nothing to show{% endif %}</span>
+        </div>
+      </section>
+
+      {% for submission in submissions %}
+      <div class="acct-modal-overlay" id="pa-{{ submission.pk }}" hidden data-modal-overlay>
+        <div class="acct-modal">
+          <div class="acct-modal-head">
+            <h3>{{ type_title }} &mdash; {{ submission.application.reference_no|default:submission.application.title }}</h3>
+            <button type="button" class="icon-btn" data-modal-close aria-label="Close">
+              <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="acct-modal-body">
+            <div class="field-grid">
+              <div class="field field-wide"><label>Study Title</label><p class="sc-field-value">{{ submission.application.title }}</p></div>
+              <div class="field"><label>Applicant</label><p class="sc-field-value">{{ submission.applicant.full_name }}</p></div>
+              <div class="field"><label>Status</label><p class="sc-field-value">{{ submission.get_status_display }}</p></div>
+              <div class="field"><label>Filed</label><p class="sc-field-value">{{ submission.submitted_at|date:"d M Y, H:i" }}</p></div>
+              {% for row in submission.detail_rows %}
+              <div class="field field-wide"><label>{{ row.label }}</label><p class="sc-field-value">{{ row.value|default:"Not provided" }}</p></div>
+              {% endfor %}
+            </div>
+
+            <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:4px;">
+              <a href="{% url 'admin_dashboard:application_detail' submission.application.pk %}" class="acct-btn acct-btn-edit">View Full Application</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/postapproval-review.js' %}"></script>
+{% endblock %}

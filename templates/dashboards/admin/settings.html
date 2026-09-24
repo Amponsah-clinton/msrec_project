@@ -7,6 +7,7 @@
 <link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
 <link href="{% static 'dashboard/css/application-form.css' %}" rel="stylesheet">
 <link href="{% static 'dashboard/css/site-settings.css' %}" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
 {% endblock %}
 
 {% block nav_content %}
@@ -29,6 +30,8 @@
           <button type="button" class="settings-tab" data-target="policy-library" role="tab" aria-selected="false">Policy Library</button>
           <button type="button" class="settings-tab" data-target="client-logos" role="tab" aria-selected="false">Client Logos</button>
           <button type="button" class="settings-tab" data-target="testimonials" role="tab" aria-selected="false">Testimonials</button>
+          <button type="button" class="settings-tab" data-target="applicant-faqs" role="tab" aria-selected="false">Applicant FAQs</button>
+          {% if request.user.is_superuser or request.user.role == 'admin' %}<button type="button" class="settings-tab" data-target="certificates" role="tab" aria-selected="false">Certificates</button>{% endif %}
         </div>
 
         <!-- Site Identity -->
@@ -97,6 +100,42 @@
                   <button type="submit" class="btn-primary">Save Hero Image</button>
                 </div>
               </form>
+            </div>
+
+            <div class="form-section" style="margin-top:28px;">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> Sign-in Page Image</h3>
+              <p class="section-note">The image shown beside the Login, Forgot Password and Reset Password forms.</p>
+
+              <form method="post" enctype="multipart/form-data" class="settings-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_auth_image">
+
+                <div class="settings-logo-row">
+                  <div class="settings-logo-preview">
+                    {% if auth_image_url %}
+                      <img src="{{ auth_image_url }}" alt="Current sign-in page image">
+                    {% else %}
+                      <img src="{% static 'assets/img/about.jpg' %}" alt="Default sign-in page image">
+                    {% endif %}
+                  </div>
+                  <div class="field field-wide" style="margin:0;">
+                    <label for="authImageUpload">{% if auth_image_url %}Replace image{% else %}Upload a custom image{% endif %}</label>
+                    <input type="file" id="authImageUpload" name="auth_image" accept="image/*" required>
+                    <p class="field-hint">Without one, the bundled default image is shown.</p>
+                  </div>
+                </div>
+
+                <div class="settings-form-actions">
+                  <button type="submit" class="btn-primary">Save Image</button>
+                </div>
+              </form>
+              {% if auth_image_url %}
+              <form method="post" style="margin-top:8px;" data-confirm="Reset the sign-in page image to the default?" data-confirm-label="Reset">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reset_auth_image">
+                <button type="submit" class="btn-secondary">Reset to default</button>
+              </form>
+              {% endif %}
             </div>
           </div>
         </section>
@@ -196,7 +235,7 @@
           <div class="panel settings-panel">
             <div class="form-section">
               <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg> Contact Page</h3>
-              <p class="section-note">The routing address shown for each enquiry type on the public Contact page.</p>
+              <p class="section-note">The routing address shown for each enquiry type on the public Contact page. Technical Support and the phone numbers also appear on the Help &amp; Support pages.</p>
 
               <form method="post" class="settings-form">
                 {% csrf_token %}
@@ -226,6 +265,12 @@
                   <div class="field">
                     <label for="contactPhone">Phone</label>
                     <input type="text" id="contactPhone" name="contact_phone" value="{{ site.contact_phone }}" maxlength="40">
+                    <p class="field-hint">Shown on the Contact page, dashboard sidebars and the Help &amp; Support pages.</p>
+                  </div>
+                  <div class="field">
+                    <label for="supportEscalationPhone">Escalations Phone</label>
+                    <input type="text" id="supportEscalationPhone" name="support_escalation_phone" value="{{ site.support_escalation_phone }}" maxlength="40" placeholder="{{ site.contact_phone }}">
+                    <p class="field-hint">Urgent platform-down line shown on the admin Help &amp; Support page. Leave blank to use the phone above.</p>
                   </div>
                 </div>
 
@@ -373,6 +418,118 @@
           </div>
         </section>
 
+        {% if request.user.is_superuser or request.user.role == 'admin' %}
+        <!-- Certificates -->
+        <section class="settings-panel-section" id="certificates">
+          <div class="panel settings-panel">
+            <div class="form-section">
+              <div class="cs-head">
+                <div>
+                  <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"/><path d="m8.5 13.5-1.5 7.5 5-3 5 3-1.5-7.5"/></svg> Certificate Signatory</h3>
+                  <p class="section-note" style="margin-bottom:0;">The Chair is the only person named and signing on every awarded certificate &mdash; Peer Review and Membership, past and future. Changes apply everywhere as soon as you save.</p>
+                </div>
+                <div class="cs-head-actions">
+                  <a href="{% url 'admin_dashboard:certificate_preview' %}" target="_blank" rel="noopener" class="cs-link-btn">
+                    <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    Preview certificate
+                  </a>
+                  <a href="{% url 'admin_dashboard:certificate_preview' %}?format=pdf" target="_blank" rel="noopener" class="cs-link-btn">
+                    <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+                    PDF
+                  </a>
+                </div>
+              </div>
+
+              <!-- Live preview: the certificate's own signatory block, at its true proportions -->
+              <div class="cs-preview" aria-label="Live preview of the signatory block">
+                <span class="cs-preview-tag">Live preview</span>
+                <div class="cs-sheet">
+                  <div class="cs-sig-box">
+                    <img id="csPrevSig" src="{{ chair_signature_url|default:'' }}" alt="" {% if not chair_signature_url %}hidden{% endif %}>
+                    <span id="csPrevSigEmpty" class="cs-sig-empty" {% if chair_signature_url %}hidden{% endif %}>Signature appears here</span>
+                  </div>
+                  <div class="cs-line"></div>
+                  <div class="cs-name" id="csPrevName" data-placeholder="Chairman's name">{{ site.chair_name|default:"Chairman's name" }}</div>
+                  <div class="cs-title" id="csPrevTitle">{{ site.chair_title|default:"Chair of the Committee" }}</div>
+                </div>
+                <p class="cs-preview-status" id="csStatus" data-saved="{% if chair_signature_url %}saved{% else %}none{% endif %}">
+                  {% if chair_signature_url %}<i class="dot ok"></i> Saved signature in use{% else %}<i class="dot"></i> No signature saved &mdash; certificates show a blank line to sign by hand{% endif %}
+                </p>
+              </div>
+
+              <form method="post" enctype="multipart/form-data" class="settings-form cs-form" id="certSignatoryForm" novalidate>
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_certificate_signatory">
+                <input type="hidden" name="signature_data" id="sigData">
+                <input type="hidden" name="signature_mode" id="sigMode" value="draw">
+
+                <div class="cs-fields">
+                  <div class="field">
+                    <label for="chairName">Chairman's full name <span class="cs-req">*</span></label>
+                    <input type="text" id="chairName" name="chair_name" maxlength="150" required value="{{ site.chair_name }}" placeholder="e.g. Prof. Efua Owusu" autocomplete="off">
+                  </div>
+                  <div class="field">
+                    <label for="chairTitle">Title under the name</label>
+                    <input type="text" id="chairTitle" name="chair_title" maxlength="150" value="{{ site.chair_title }}" placeholder="Chair of the Committee" autocomplete="off">
+                  </div>
+                </div>
+
+                <div class="cs-sig-head">
+                  <span class="cs-sig-label">Signature</span>
+                  <div class="cs-seg" role="tablist" aria-label="How to provide the signature">
+                    <button type="button" class="cs-seg-btn active" data-sig-mode="draw" aria-pressed="true">
+                      <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Sign online
+                    </button>
+                    <button type="button" class="cs-seg-btn" data-sig-mode="upload" aria-pressed="false">
+                      <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg> Upload image
+                    </button>
+                  </div>
+                </div>
+
+                <div id="sigDrawPane" class="cs-pane">
+                  <div class="cs-pad-wrap">
+                    <canvas id="sigPad" class="cs-pad" aria-label="Signature pad: draw the signature here"></canvas>
+                    <span class="cs-pad-x" aria-hidden="true">&times;</span>
+                    <span class="cs-pad-hint" id="sigPadHint" aria-hidden="true">Sign here</span>
+                  </div>
+                  <p class="cs-hint cs-pad-tip">Sign naturally with a mouse, finger or stylus &mdash; the line thickens when you slow down and thins when you move quickly, just like a pen. A stylus also responds to pressure.</p>
+                  <div class="cs-pad-foot">
+                    <div class="cs-inks" role="group" aria-label="Ink colour">
+                      <button type="button" class="cs-ink active" data-ink="blue" aria-pressed="true" title="Blue ink"><i style="background:#1d3b8f"></i> Blue ink</button>
+                      <button type="button" class="cs-ink" data-ink="black" aria-pressed="false" title="Black ink"><i style="background:#16181f"></i> Black ink</button>
+                    </div>
+                    <div class="cs-pad-actions">
+                      <button type="button" class="cs-ghost-btn" id="sigUndo" disabled>
+                        <svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg> Undo
+                      </button>
+                      <button type="button" class="cs-ghost-btn" id="sigClear" disabled>
+                        <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg> Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div id="sigUploadPane" class="cs-pane" hidden>
+                  <label class="cs-drop" id="sigDrop" for="sigFile">
+                    <input type="file" id="sigFile" name="signature_file" accept="image/png,image/jpeg,image/webp">
+                    <span class="cs-drop-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>
+                    <strong id="sigDropTitle">Drop a signature image here, or <u>browse</u></strong>
+                    <span class="cs-hint">PNG, JPG or WEBP up to 8&nbsp;MB. A photo or scan on plain paper works &mdash; the background is removed and the signature is cropped to fit.</span>
+                  </label>
+                </div>
+
+                <div class="cs-actions">
+                  {% if chair_signature_url %}
+                  <button type="submit" name="remove_signature" value="1" class="cs-danger-link" id="sigRemoveBtn" formnovalidate>Remove saved signature</button>
+                  {% else %}<span></span>{% endif %}
+                  <button type="submit" class="btn-primary" id="sigSave">Save Signatory</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </section>
+        {% endif %}
+
         <!-- Testimonials -->
         <section class="settings-panel-section" id="testimonials">
           <div class="panel settings-full-panel">
@@ -443,11 +600,84 @@
           </div>
         </section>
 
+        <!-- Applicant FAQs -->
+        <section class="settings-panel-section" id="applicant-faqs">
+          <div class="panel settings-full-panel">
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg> Applicant FAQs</h3>
+              <p class="section-note">The questions and answers in the FAQs section of the public <a href="{% url 'pages:applicants' %}" target="_blank" rel="noopener">Applicants page</a>. Changes appear there immediately.</p>
+
+              <form method="post" class="settings-form">
+                {% csrf_token %}
+                {% if editing_faq %}
+                  <input type="hidden" name="action" value="edit_faq">
+                  <input type="hidden" name="faq_id" value="{{ editing_faq.pk }}">
+                {% else %}
+                  <input type="hidden" name="action" value="add_faq">
+                {% endif %}
+
+                <div class="field-grid">
+                  <div class="field field-wide">
+                    <label for="faqQuestion">Question</label>
+                    <input type="text" id="faqQuestion" name="faq_question" maxlength="300" value="{{ editing_faq.question|default:'' }}" placeholder="e.g. How long does the review process take?" required>
+                  </div>
+                  <div class="field field-wide">
+                    <label for="faqAnswer">Answer</label>
+                    <textarea id="faqAnswer" name="faq_answer" rows="4" placeholder="The answer shown when the question is opened" required>{{ editing_faq.answer|default:"" }}</textarea>
+                    <p class="field-hint">Leave a blank line between paragraphs.</p>
+                  </div>
+                  <div class="field">
+                    <label for="faqOrder">Display Order</label>
+                    <input type="number" id="faqOrder" name="faq_display_order" value="{{ editing_faq.display_order|default:0 }}" min="0" max="32767">
+                    <p class="field-hint">Lower numbers appear first.</p>
+                  </div>
+                  <div class="field">
+                    <label for="faqActive">Visibility</label>
+                    <label style="display:flex;align-items:center;gap:8px;font-weight:500;">
+                      <input type="checkbox" id="faqActive" name="faq_is_active"{% if not editing_faq or editing_faq.is_active %} checked{% endif %}>
+                      Show on the Applicants page
+                    </label>
+                  </div>
+                </div>
+
+                <div class="settings-form-actions">
+                  {% if editing_faq %}<a href="{% url 'admin_dashboard:settings' %}#applicant-faqs" class="btn-secondary">Cancel</a>{% endif %}
+                  <button type="submit" class="btn-primary">{% if editing_faq %}Save Changes{% else %}Add FAQ{% endif %}</button>
+                </div>
+              </form>
+
+              <div class="policy-group">
+                <h4 class="policy-group-heading">Current FAQs <span class="count">({{ faqs|length }})</span></h4>
+                {% for faq in faqs %}
+                <div class="policy-doc-row">
+                  <div class="policy-doc-info">
+                    <strong>{{ faq.question }}</strong>
+                    <span>Order {{ faq.display_order }}{% if not faq.is_active %} &middot; Hidden{% endif %} &middot; Updated {{ faq.updated_at|date:"j M Y" }}</span>
+                  </div>
+                  <div class="policy-doc-actions">
+                    <a href="{% url 'admin_dashboard:settings' %}?edit_faq={{ faq.pk }}#applicant-faqs" class="btn-secondary" style="padding:6px 12px;font-size:12px;">Edit</a>
+                    <form method="post" data-confirm="Delete this FAQ? This can't be undone." data-confirm-variant="danger">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="delete_faq">
+                      <input type="hidden" name="faq_id" value="{{ faq.pk }}">
+                      <button type="submit" class="btn-secondary" style="padding:6px 12px;font-size:12px;color:var(--red);">Delete</button>
+                    </form>
+                  </div>
+                </div>
+                {% empty %}
+                <p class="doc-file-empty">No FAQs yet -- the FAQs section is hidden on the Applicants page until you add one.</p>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </section>
+
       </div>
 
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'dashboard/js/signature-pad.js' %}"></script>
 <script>
 (function () {
   var tabs = document.querySelectorAll('.settings-tab');

@@ -46,7 +46,7 @@
         <div class="stat-card">
           <div class="stat-icon green"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
           <p class="stat-label">Total Paid to MSREC</p>
-          <p class="stat-value">GHS {{ total_paid|floatformat:2 }}</p>
+          <p class="stat-value">GHS {{ total_paid|floatformat:"2g" }}</p>
         </div>
       </div>
 
@@ -81,7 +81,7 @@
               <div class="doc-icon receipt"><svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div>
               <div class="doc-info">
                 <h4 class="doc-name">{{ payment.purpose|default:"Review Fee" }} &mdash; Receipt #{{ payment.reference }}</h4>
-                <span class="doc-meta">{{ payment.application.reference_no|default:"&mdash;" }} &nbsp;&bull;&nbsp; Paid {{ payment.paid_at|date:"d M Y" }} &nbsp;&bull;&nbsp; {{ payment.currency }} {{ payment.amount|floatformat:2 }}</span>
+                <span class="doc-meta">{{ payment.application.reference_no|default:"&mdash;" }} &nbsp;&bull;&nbsp; Paid {{ payment.paid_at|date:"d M Y" }} &nbsp;&bull;&nbsp; {{ payment.currency }} {{ payment.amount|floatformat:"2g" }}</span>
               </div>
               <div class="doc-trailing"><div class="doc-actions">
                 <a class="action-btn" aria-label="Open receipt" href="{% url 'applicant_dashboard:payment_receipt' payment.pk %}">

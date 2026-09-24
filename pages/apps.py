@@ -4,3 +4,8 @@ from django.apps import AppConfig
 class PagesConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'pages'
+
+    def ready(self):
+        from . import storage_cleanup
+
+        storage_cleanup.connect()

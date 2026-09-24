@@ -500,8 +500,8 @@
               <h3>{{ card.title }}</h3>
               <p class="ap-fee-amount">
                 {% if not card.amount %}Contact us
-                {% elif card.amount.low == card.amount.high %}{{ card.amount.currency }} {{ card.amount.low|floatformat:0 }}
-                {% else %}{{ card.amount.currency }} {{ card.amount.low|floatformat:0 }}&ndash;{{ card.amount.high|floatformat:0 }}{% endif %}
+                {% elif card.amount.low == card.amount.high %}{{ card.amount.currency }} {{ card.amount.low|floatformat:"0g" }}
+                {% else %}{{ card.amount.currency }} {{ card.amount.low|floatformat:"0g" }}&ndash;{{ card.amount.high|floatformat:"0g" }}{% endif %}
               </p>
               <p class="ap-fee-note">{{ card.note }}</p>
               <ul>

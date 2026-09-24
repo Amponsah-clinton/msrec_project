@@ -12,12 +12,19 @@ notifications.services.notify(), one layer down.
 """
 import logging
 
+from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.utils.html import escape
 
 logger = logging.getLogger(__name__)
 
-LOGO_URL = "https://res.cloudinary.com/dmqizfpyz/image/upload/v1789467077/logo1_oozjis.png"
+LOGO_PATH = "/static/assets/img/MSREC_LOGO.png"
+
+
+def _logo_url():
+    # Email clients need an absolute, publicly reachable URL -- served by
+    # the site itself (WhiteNoise) so it can't go stale like a third-party link.
+    return f"{settings.SITE_URL.rstrip('/')}{LOGO_PATH}"
 
 # Same palette as the dashboard (static/dashboard/css/style.css :root) --
 # an email client can't read CSS custom properties, so these are the
@@ -104,7 +111,7 @@ def render_email_html(*, heading, paragraphs, cta_text=None, cta_url=None,
               <table role="presentation" cellpadding="0" cellspacing="0">
                 <tr>
                   <td style="vertical-align:middle;padding-right:10px;">
-                    <img src="{LOGO_URL}" width="36" height="36" alt="MSREC" style="display:block;border-radius:8px;">
+                    <img src="{_logo_url()}" width="36" height="36" alt="MSREC" style="display:block;border-radius:8px;">
                   </td>
                   <td style="vertical-align:middle;">
                     <div style="font-size:15px;font-weight:700;color:{NAVY};letter-spacing:.01em;line-height:1.3;">MSREC</div>
@@ -129,7 +136,7 @@ def render_email_html(*, heading, paragraphs, cta_text=None, cta_url=None,
           <tr>
             <td style="padding:20px 32px 28px;border-top:1px solid {BORDER};">
               <p style="margin:0 0 4px;font-size:12.5px;color:{TEXT_SUB};">Metascholar Research Ethics Committee (MSREC)</p>
-              <p style="margin:0;font-size:12px;color:{TEXT_FAINT};">This is an automated message &mdash; please don't reply directly to this email. For help, contact <a href="mailto:msrec@metascholar.edu" style="color:{TEAL_DARK};text-decoration:none;">msrec@metascholar.edu</a>.</p>
+              <p style="margin:0;font-size:12px;color:{TEXT_FAINT};">This is an automated message &mdash; please do not reply to this email. For any help, contact <a href="mailto:msrec@metascholar.edu" style="color:{TEAL_DARK};text-decoration:none;">msrec@metascholar.edu</a>.</p>
             </td>
           </tr>
 
@@ -198,3 +205,38 @@ def send_branded_email(*, subject, to, heading, paragraphs, cta_text=None,
     if not sent:
         logger.warning("Email %r to %r was not sent (0 messages delivered)", subject, recipient_list)
     return bool(sent)
+
+
+def send_password_changed_email(user, request=None):
+    """Security alert sent whenever an account's password changes, so the
+    owner can spot a change they didn't make. Never raises -- a mail
+    failure must not undo or block the password change itself."""
+    from django.urls import reverse
+    from django.utils import timezone
+
+    when = timezone.localtime().strftime("%d %b %Y, %H:%M %Z")
+    details = [f"Time: {when}"]
+    if request is not None:
+        ip = request.META.get("REMOTE_ADDR", "")
+        if ip:
+            details.append(f"IP address: {ip}")
+    try:
+        return send_branded_email(
+            subject="Your MSREC password was changed",
+            to=user.email,
+            heading="Your password was changed",
+            paragraphs=[
+                f"Hello {user.first_name or 'there'},",
+                "The password for your MSREC account was just changed.",
+                "  |  ".join(details),
+                "If this was you, no further action is needed.",
+                "If you did NOT make this change, reset your password immediately "
+                "and contact msrec@metascholar.edu.",
+            ],
+            cta_text="Reset my password",
+            cta_url=f"{settings.SITE_URL.rstrip('/')}{reverse('pages:forgot_password')}",
+            preheader="Your MSREC password was changed. If this wasn't you, act now.",
+        )
+    except Exception:
+        logger.exception("Password-changed alert failed for user %s", user.pk)
+        return False

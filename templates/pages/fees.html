@@ -38,7 +38,7 @@
                 <li>
                   <span class="fee-list-label">{{ row.label }}</span>
                   <span class="fee-list-amount">
-                    {% if row.fee and row.fee.requires_payment %}{{ row.fee.currency }} {{ row.fee.amount|floatformat:0 }}{% else %}Free{% endif %}
+                    {% if row.fee and row.fee.requires_payment %}{{ row.fee.currency }} {{ row.fee.amount|floatformat:"0g" }}{% else %}Free{% endif %}
                   </span>
                 </li>
                 {% endfor %}
@@ -60,7 +60,7 @@
             <p>For studies that may qualify for minimal-risk or exempt status. One flat fee, regardless of applicant category.</p>
           </div>
           <span class="fees-callout-amount">
-            {% if exemption_fee %}{{ exemption_fee.currency }} {{ exemption_fee.amount|floatformat:0 }}{% else %}&mdash;{% endif %}
+            {% if exemption_fee %}{{ exemption_fee.currency }} {{ exemption_fee.amount|floatformat:"0g" }}{% else %}&mdash;{% endif %}
           </span>
         </div>
       </div>
@@ -81,7 +81,7 @@
               <tr>
                 <td>{{ row.label }}</td>
                 <td class="fees-table-amount">
-                  {% if row.fee and row.fee.requires_payment %}{{ row.fee.currency }} {{ row.fee.amount|floatformat:0 }}{% else %}No fee{% endif %}
+                  {% if row.fee and row.fee.requires_payment %}{{ row.fee.currency }} {{ row.fee.amount|floatformat:"0g" }}{% else %}No fee{% endif %}
                 </td>
               </tr>
               {% endfor %}

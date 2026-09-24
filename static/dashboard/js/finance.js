@@ -1,50 +1,32 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // Tabs, search, date range and pagination are all server-side (see
+  // admin_dashboard.views.finance) -- the table only ever holds one page
+  // of rows, so filtering it in the browser would search 20 rows, not the
+  // full ledger. The topbar search box therefore just submits the GET
+  // filter form (which also drops any ?page= so results start at page 1).
   const searchInput = document.getElementById("financeSearch");
-  const list = document.getElementById("financeList");
-  const tabs = document.querySelector(".acct-tabs");
-
-  // The date-range "Apply"/"Export CSV" form is a real GET submit (dates
-  // and CSV export can't be done client-side against rows already in the
-  // DOM) -- keep its hidden q/tab fields in sync with the live search box
-  // and the (purely client-side, see script.js) active tab, so submitting
-  // it or exporting still honours whatever's currently selected/typed.
   const filterForm = document.getElementById("financeFilterForm");
   const filterQ = document.getElementById("financeFilterQ");
-  const filterTab = filterForm ? filterForm.querySelector('input[name="tab"]') : null;
-  if (searchInput && filterForm && filterQ) {
-    const syncQ = () => { filterQ.value = searchInput.value.trim(); };
-    searchInput.addEventListener("input", syncQ);
-    filterForm.addEventListener("submit", syncQ);
-    syncQ();
-  }
-  if (filterTab && tabs) {
-    tabs.querySelectorAll(".filter-tab[data-filter]").forEach((tab) => {
-      tab.addEventListener("click", () => { filterTab.value = tab.dataset.filter; });
-    });
-  }
+  if (!searchInput || !filterForm || !filterQ) return;
 
-  if (!searchInput || !list || !tabs) return;
+  const submitSearch = () => {
+    filterQ.value = searchInput.value.trim();
+    filterForm.requestSubmit ? filterForm.requestSubmit() : filterForm.submit();
+  };
 
-  const rows = Array.from(list.querySelectorAll("tbody tr[data-filter-item]"));
-  if (!rows.length) return;
+  // Keep the hidden q in sync so Apply / Export CSV honour what's typed.
+  searchInput.addEventListener("input", () => { filterQ.value = searchInput.value.trim(); });
+  filterForm.addEventListener("submit", () => { filterQ.value = searchInput.value.trim(); });
 
-  function currentFilter() {
-    const active = tabs.querySelector(".filter-tab.active");
-    return active ? active.dataset.filter : "all";
-  }
-
-  function applyFilters() {
-    const q = searchInput.value.trim().toLowerCase();
-    const filter = currentFilter();
-    rows.forEach((row) => {
-      const matchesTab = filter === "all" || row.dataset.filter === filter;
-      const matchesSearch = !q || row.dataset.search.includes(q);
-      row.hidden = !(matchesTab && matchesSearch);
-    });
-  }
-
-  searchInput.addEventListener("input", applyFilters);
-  tabs.querySelectorAll(".filter-tab").forEach((tab) => {
-    tab.addEventListener("click", applyFilters);
+  let timer = null;
+  searchInput.addEventListener("input", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (searchInput.value.trim() !== (filterQ.dataset.applied || "")) submitSearch();
+    }, 500);
   });
+  searchInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); clearTimeout(timer); submitSearch(); }
+  });
+  filterQ.dataset.applied = filterQ.value;
 });

@@ -43,7 +43,7 @@
           <div class="receipt-card-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></div>
           <h4>{{ payment.application.title|default:payment.purpose }}</h4>
           <span class="receipt-ref">{{ payment.reference }}{% if payment.application.reference_no %} &bull; {{ payment.application.reference_no }}{% endif %}</span>
-          <span class="receipt-amount mono">{{ payment.currency }} {{ payment.amount|floatformat:2 }}</span>
+          <span class="receipt-amount mono">{{ payment.currency }} {{ payment.amount|floatformat:"2g" }}</span>
           <span class="receipt-date">Paid {{ payment.paid_at|date:"d M Y" }}{% if payment.paystack_response.channel %} &bull; {{ payment.paystack_response.channel|title }}{% endif %}</span>
           <div class="receipt-card-foot">
             <span class="badge-tag green">Paid</span>

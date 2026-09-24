@@ -9,7 +9,7 @@ from django.shortcuts import redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
-from notifications.emails import send_branded_email
+from notifications.emails import send_branded_email, send_password_changed_email
 
 from . import storage
 from .forms import LoginForm, SignupForm
@@ -246,6 +246,8 @@ def reset_password(request):
         # spent the moment one of them succeeds -- an old code from an
         # earlier request must never remain usable after a reset.
         user.password_reset_codes.filter(used_at__isnull=True).update(used_at=timezone.now())
+
+        send_password_changed_email(user, request)
 
         del request.session[PASSWORD_RESET_SESSION_KEY]
         request.session.pop(PASSWORD_RESET_ATTEMPTS_KEY, None)

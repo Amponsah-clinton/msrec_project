@@ -15,6 +15,15 @@
     --brass:#8a6d2f;
     --rule:#c9b98f;
   }
+  /* White edition (reviewer Peer Review certificate): crisp white paper,
+     deep navy ink, brand teal in place of brass. */
+  .theme-white{
+    --paper:#ffffff;
+    --ink:#14233f;
+    --ink-soft:#56607a;
+    --brass:#0f8a86;
+    --rule:#b7dcda;
+  }
   *{ box-sizing:border-box; }
   html,body{ margin:0; background:#2b2b2b; }
   body{ font-family:"EB Garamond", Georgia, "Times New Roman", serif; color:var(--ink); }
@@ -40,6 +49,25 @@
     box-shadow:0 20px 50px rgba(0,0,0,.45);
   }
   .border{ position:absolute; inset:0; width:100%; height:100%; }
+  .watermark{
+    position:absolute; left:50%; top:52%; width:120mm; height:auto;
+    transform:translate(-50%,-50%); opacity:.045; pointer-events:none;
+  }
+  .theme-white .certificate-tint{
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(15,138,134,.07), transparent 55%),
+      radial-gradient(ellipse at 50% 100%, rgba(20,35,63,.05), transparent 50%);
+  }
+  .theme-white .title{ font-size:16mm; }
+  .theme-white .recipient{
+    border-bottom:0; padding-bottom:3.5mm; position:relative;
+  }
+  .theme-white .recipient::after{
+    content:""; position:absolute; left:6mm; right:6mm; bottom:0; height:.5mm;
+    background:linear-gradient(90deg, transparent, var(--brass) 20%, var(--brass) 80%, transparent);
+  }
+  .theme-white .org{ color:var(--brass); font-weight:500; }
 
   .content{
     position:absolute; inset:24mm 30mm 20mm;
@@ -82,6 +110,19 @@
     display:grid; grid-template-columns:1fr 36mm 1fr; column-gap:18mm; align-items:end;
   }
   .sig{ text-align:center; padding:0 4mm; }
+  /* The space allotted to the Chair's signature: 70 x 20 mm. The image is
+     fitted inside it by aspect ratio (never stretched or cropped) and rests
+     on the line. */
+  .sig-box{ height:20mm; display:flex; align-items:flex-end; justify-content:center; }
+  .sig-box img{ max-width:100%; max-height:100%; width:auto; height:auto; object-fit:contain; display:block; margin-bottom:.6mm; }
+  .sig .date{
+    min-height:6mm; font-family:"Cormorant Garamond", Georgia, serif; font-weight:600; font-size:5.4mm; color:var(--ink);
+  }
+  .sig.chair .line{ margin-top:0; }
+  .sig.chair .name{
+    margin-top:0; min-height:6mm;
+    font-family:"Cormorant Garamond", Georgia, serif; font-weight:600; font-size:5.4mm; color:var(--ink);
+  }
   .sig .name{
     min-height:6mm;
     font-family:"Cormorant Garamond", Georgia, serif; font-weight:600; font-size:5.4mm; color:var(--ink);
@@ -115,24 +156,29 @@
 
   <div class="stage">
   <div class="frame" id="certFrame">
-  <section class="certificate" aria-label="{{ cert_title }} {{ cert_subtitle }}">
+  <section class="certificate{% if theme == 'white' %} theme-white{% endif %}" aria-label="{{ cert_title }} {{ cert_subtitle }}">
 
     <svg class="border" viewBox="0 0 297 210" preserveAspectRatio="none" aria-hidden="true">
       <defs>
         <pattern id="lattice" width="3" height="3" patternUnits="userSpaceOnUse">
-          <path d="M0 1.5 L1.5 0 L3 1.5 L1.5 3 Z" fill="none" stroke="#8a6d2f" stroke-width=".18"/>
+          <path d="M0 1.5 L1.5 0 L3 1.5 L1.5 3 Z" fill="none" style="stroke:var(--brass)" stroke-width=".18"/>
         </pattern>
       </defs>
-      <rect x="7" y="7" width="283" height="196" fill="none" stroke="#1b2a4a" stroke-width=".6"/>
+      <rect x="7" y="7" width="283" height="196" fill="none" style="stroke:var(--ink)" stroke-width=".6"/>
       <rect x="9.5" y="9.5" width="278" height="191" fill="none" stroke="url(#lattice)" stroke-width="3"/>
-      <rect x="12" y="12" width="273" height="186" fill="none" stroke="#1b2a4a" stroke-width=".25"/>
-      <g fill="#8a6d2f">
+      <rect x="12" y="12" width="273" height="186" fill="none" style="stroke:var(--ink)" stroke-width=".25"/>
+      <g style="fill:var(--brass)">
         <rect x="10.4" y="10.4" width="3.2" height="3.2" transform="rotate(45 12 12)"/>
         <rect x="283.4" y="10.4" width="3.2" height="3.2" transform="rotate(45 285 12)"/>
         <rect x="10.4" y="196.4" width="3.2" height="3.2" transform="rotate(45 12 198)"/>
         <rect x="283.4" y="196.4" width="3.2" height="3.2" transform="rotate(45 285 198)"/>
       </g>
     </svg>
+
+    {% if theme == 'white' %}
+    <div class="certificate-tint" aria-hidden="true"></div>
+    <img class="watermark" src="{% if site_settings.logo_url %}{{ site_settings.logo_url }}{% else %}{% static 'assets/img/logo1.png' %}{% endif %}" alt="" aria-hidden="true">
+    {% endif %}
 
     <div class="content">
       <div class="letterhead">
@@ -148,40 +194,42 @@
       <p class="message">{{ message }}</p>
 
       <div class="signing">
-        <div class="sig">
-          <div class="name">{{ left_name }}</div>
-          <div class="line"></div>
-          <div class="role">{{ left_role }}</div>
+        <div class="sig chair">
+          <div class="sig-box"></div>
+          {# no rule here: only the Chair signs; this is just a date, and a line would read as a second signature space #}
+          <div class="line" style="visibility:hidden;"></div>
+          <div class="name">{% if issued_on %}{{ issued_on|date:"j F Y" }}{% else %}&nbsp;{% endif %}</div>
+          <div class="role">Date of Issue</div>
         </div>
 
         <svg class="seal" viewBox="0 0 120 120" aria-hidden="true">
           <defs>
             <path id="sealRing" d="M60 60 m-45 0 a45 45 0 1 1 90 0 a45 45 0 1 1 -90 0"/>
           </defs>
-          <g fill="none" stroke="#8a6d2f">
+          <g fill="none" style="stroke:var(--brass)">
             <circle cx="60" cy="60" r="57" stroke-width="1.4"/>
             <circle cx="60" cy="60" r="53" stroke-width=".5"/>
             <circle cx="60" cy="60" r="36" stroke-width=".8"/>
             <circle cx="60" cy="60" r="33" stroke-width=".4"/>
           </g>
-          <text fill="#8a6d2f" font-family="EB Garamond, Georgia, serif" font-size="7.4">
+          <text style="fill:var(--brass)" font-family="EB Garamond, Georgia, serif" font-size="7.4">
             <textPath href="#sealRing" startOffset="0" textLength="279" lengthAdjust="spacing">METASCHOLAR RESEARCH ETHICS COMMITTEE &#183; MSREC &#183;</textPath>
           </text>
-          <text x="60" y="59" text-anchor="middle" fill="#1b2a4a" font-family="Cormorant Garamond, Georgia, serif" font-weight="600" font-size="15" letter-spacing="1">MSREC</text>
-          <line x1="44" y1="65" x2="76" y2="65" stroke="#8a6d2f" stroke-width=".6"/>
-          <text x="60" y="74" text-anchor="middle" fill="#8a6d2f" font-family="EB Garamond, Georgia, serif" font-size="5.6" letter-spacing="1.4">{{ seal_caption|default:"ETHICS REVIEW" }}</text>
+          <text x="60" y="59" text-anchor="middle" style="fill:var(--ink)" font-family="Cormorant Garamond, Georgia, serif" font-weight="600" font-size="15" letter-spacing="1">MSREC</text>
+          <line x1="44" y1="65" x2="76" y2="65" style="stroke:var(--brass)" stroke-width=".6"/>
+          <text x="60" y="74" text-anchor="middle" style="fill:var(--brass)" font-family="EB Garamond, Georgia, serif" font-size="5.6" letter-spacing="1.4">{{ seal_caption|default:"ETHICS REVIEW" }}</text>
         </svg>
 
-        <div class="sig">
-          <div class="name">{{ right_name }}</div>
+        <div class="sig chair">
+          <div class="sig-box">{% if chair.signature_url %}<img src="{{ chair.signature_url }}" alt="Signature of {{ chair.name }}">{% endif %}</div>
           <div class="line"></div>
-          <div class="role">{{ right_role }}</div>
+          <div class="name">{{ chair.name }}</div>
+          <div class="role">{{ chair.title }}</div>
         </div>
       </div>
 
       <div class="footer">
         {% if cert_id %}<span>Certificate No. <b>{{ cert_id }}</b></span>{% endif %}
-        {% if issued_on %}<span>Issued <b>{{ issued_on|date:"j F Y" }}</b></span>{% endif %}
       </div>
     </div>
   </section>

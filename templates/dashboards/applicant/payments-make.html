@@ -54,7 +54,7 @@
               <tr>
                 <td data-label="Study Title">{{ item.application.title }}</td>
                 <td data-label="Review Type"><span class="badge-tag blue">{{ item.application.review_type|default:"Not specified" }}</span></td>
-                <td data-label="Amount Due" class="ref-cell">GHS {{ item.amount|floatformat:2 }}</td>
+                <td data-label="Amount Due" class="ref-cell">GHS {{ item.amount|floatformat:"2g" }}</td>
                 <td data-label="Prepared"><span class="due-main">{{ item.application.created_at|date:"d M Y" }}</span></td>
                 <td data-label="Action">
                   <a href="{% url 'applicant_dashboard:application_pay' item.application.pk %}" class="btn-primary" style="padding:8px 16px; font-size:12.5px;">

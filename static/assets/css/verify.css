@@ -913,3 +913,5 @@ body.verify-page {
 @media (max-width: 480px) {
   .verify-main { padding-top: 150px; }
 }
+
+.verify-btn.is-loading { opacity: 0.65; cursor: progress; }

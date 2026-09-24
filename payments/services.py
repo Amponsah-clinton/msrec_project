@@ -106,7 +106,7 @@ def verify_and_finalize(payment, *, on_success):
 
 
 def all_payments():
-    return Payment.objects.select_related("applicant", "application").order_by("-created_at")
+    return Payment.objects.select_related("applicant", "application").order_by("-created_at", "-pk")
 
 
 def status_counts(qs=None):

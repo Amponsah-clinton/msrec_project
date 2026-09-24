@@ -8,39 +8,45 @@ Two renderings share the wording and signatories defined here:
 
 The PDF is drawn straight onto a reportlab canvas rather than laid out with
 platypus flowables, so it can reproduce the HTML version's fixed A4
-composition -- navy ink on ivory, a brass lattice border, a line-art seal --
+composition -- navy ink on white, a teal lattice border, a line-art seal --
 instead of reading like a generic generated report.
+
+The design is the "white edition": crisp white paper, deep navy ink and the
+MSREC brand teal (in place of the older ivory-and-brass scheme).
 """
 import math
 from io import BytesIO
+from pathlib import Path
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
 from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.platypus import Paragraph
 
-from accounts.models import User
 
-PAPER = colors.HexColor("#fbf8f1")
-INK = colors.HexColor("#1b2a4a")
-INK_SOFT = colors.HexColor("#4a5670")
-BRASS = colors.HexColor("#8a6d2f")
-RULE = colors.HexColor("#c9b98f")
+PAPER = colors.HexColor("#ffffff")
+INK = colors.HexColor("#14233f")
+INK_SOFT = colors.HexColor("#56607a")
+BRASS = colors.HexColor("#0f8a86")  # brand teal (name kept: used throughout)
+RULE = colors.HexColor("#b7dcda")
+
+LOGO_PATH = Path(__file__).resolve().parent.parent / "static" / "assets" / "img" / "logo1.png"
 
 PAGE_W, PAGE_H = landscape(A4)
 
 
-def certificate_signatories(assignment):
-    """(secretariat name, chair name) for the signature lines -- the staff
-    member who actually awarded this certificate, and the Committee's
-    current Chair. Either can be "" (e.g. no Chair account exists yet),
-    in which case the certificate shows a bare line to sign by hand."""
-    awarded_by = assignment.certificate_awarded_by
-    chair = User.objects.filter(role=User.Role.CHAIR, is_active=True).order_by("pk").first()
-    return (awarded_by.full_name if awarded_by else ""), (chair.full_name if chair else "")
+def certificate_signatories(assignment=None):
+    """The Chair -- the only person named on a certificate (see pages.
+    certificate_signatory). Kept under its old name so callers stay simple;
+    `assignment` is unused now that the awarding staff member no longer
+    appears on the certificate."""
+    from pages.certificate_signatory import chair_details
+
+    return chair_details()
 
 
 def review_certificate_message(assignment):
@@ -69,11 +75,23 @@ def _border(c):
     c.setFillColor(PAPER)
     c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
 
+    # Soft brand-teal glow at the top edge and a faint navy one at the foot.
+    c.saveState()
+    for i in range(24):
+        c.setFillColor(BRASS)
+        c.setFillAlpha(0.0035 * (24 - i) / 24 * 4)
+        c.rect(0, PAGE_H - (i + 1) * 3 * mm, PAGE_W, 3 * mm, stroke=0, fill=1)
+    for i in range(16):
+        c.setFillColor(INK)
+        c.setFillAlpha(0.0025 * (16 - i) / 16 * 4)
+        c.rect(0, i * 3 * mm, PAGE_W, 3 * mm, stroke=0, fill=1)
+    c.restoreState()
+
     c.setStrokeColor(INK)
     c.setLineWidth(0.6 * mm * 0.75)
     c.rect(7 * mm, 7 * mm, PAGE_W - 14 * mm, PAGE_H - 14 * mm)
 
-    # Brass lattice band: a row of small diamonds running around the frame.
+    # Teal lattice band: a row of small diamonds running around the frame.
     c.setStrokeColor(BRASS)
     c.setLineWidth(0.35)
     step, half = 3 * mm, 1.5 * mm
@@ -113,6 +131,43 @@ def _border(c):
         c.restoreState()
 
 
+_LOGO_PNG = None
+
+
+def _logo_reader():
+    """The logo downscaled once per process: the bundled file is ~1 MB at
+    1254 px, far more than a 13 mm letterhead needs, and embedding it as-is
+    made every emailed certificate over a megabyte."""
+    global _LOGO_PNG
+    if _LOGO_PNG is None:
+        from PIL import Image
+
+        with Image.open(LOGO_PATH) as im:
+            im = im.convert("RGBA")
+            im.thumbnail((520, 520), Image.LANCZOS)
+            buf = BytesIO()
+            im.save(buf, format="PNG", optimize=True)
+            _LOGO_PNG = buf.getvalue()
+    return ImageReader(BytesIO(_LOGO_PNG))
+
+
+def _logo(c, cx, top, height, alpha=1.0, center_y=None):
+    """Draws the bundled MSREC logo, horizontally centred on cx. Silently
+    skipped if the file can't be read -- a missing logo must never stop a
+    certificate from being issued."""
+    try:
+        img = _logo_reader()
+        iw, ih = img.getSize()
+        w = height * iw / ih
+        y = (center_y - height / 2) if center_y is not None else (top - height)
+        c.saveState()
+        c.setFillAlpha(alpha)
+        c.drawImage(img, cx - w / 2, y, width=w, height=height, mask="auto")
+        c.restoreState()
+    except Exception:
+        pass
+
+
 def _seal(c, cx, cy, caption):
     c.setStrokeColor(BRASS)
     for r, w in [(18, 1.1), (16.7, 0.4), (11.3, 0.7), (10.3, 0.35)]:
@@ -143,15 +198,45 @@ def _seal(c, cx, cy, caption):
     _spaced(c, caption, cx, cy - 5 * mm, "Times-Roman", 5.2, 0.9, BRASS)
 
 
-def _signature(c, cx, y, name, role):
-    c.setFillColor(INK)
-    c.setFont("Times-Bold", 13)
-    if name:
-        c.drawCentredString(cx, y + 3 * mm, name)
+SIG_BOX_W, SIG_BOX_H = 70 * mm, 20 * mm  # the space the certificate allots to the signature
+
+
+def _signature_image(c, cx, y, png_bytes):
+    """Fits the (already cropped, background-free) signature into the
+    allotted box by aspect ratio, centred, resting just above the line."""
+    try:
+        img = ImageReader(BytesIO(png_bytes))
+        iw, ih = img.getSize()
+        scale = min(SIG_BOX_W / iw, SIG_BOX_H / ih)
+        w, h = iw * scale, ih * scale
+        c.drawImage(img, cx - w / 2, y + 1 * mm, width=w, height=h, mask="auto")
+    except Exception:
+        pass  # an unreadable image must never stop a certificate being issued
+
+
+def _chair_block(c, cx, y, details, signature_png):
+    """Signature above the line; the Chair's name and title beneath it."""
+    if signature_png:
+        _signature_image(c, cx, y, signature_png)
     c.setStrokeColor(INK)
     c.setLineWidth(0.5)
-    c.line(cx - 32 * mm, y, cx + 32 * mm, y)
-    _spaced(c, role.upper(), cx, y - 5 * mm, "Times-Roman", 8.5, 1.2, INK_SOFT)
+    c.line(cx - 35 * mm, y, cx + 35 * mm, y)
+    c.setFillColor(INK)
+    c.setFont("Times-Bold", 13)
+    if details["name"]:
+        c.drawCentredString(cx, y - 6 * mm, details["name"])
+    _spaced(c, details["title"].upper(), cx, y - 11 * mm, "Times-Roman", 8.5, 1.2, INK_SOFT)
+
+
+def _date_block(c, cx, y, issued_at):
+    """The date where the Chair's name sits and the caption where the title
+    sits, so both sides align -- but no rule above it: only the Chair signs,
+    and a line here would read as a second signature space."""
+    c.setFillColor(INK)
+    c.setFont("Times-Bold", 13)
+    if issued_at:
+        c.drawCentredString(cx, y - 6 * mm, issued_at.strftime("%d %B %Y").lstrip("0"))
+    _spaced(c, "DATE OF ISSUE", cx, y - 11 * mm, "Times-Roman", 8.5, 1.2, INK_SOFT)
 
 
 def render_review_certificate_pdf(assignment):
@@ -164,19 +249,23 @@ def render_review_certificate_pdf(assignment):
     _border(c)
     mid = PAGE_W / 2
 
-    _spaced(c, "METASCHOLAR RESEARCH ETHICS COMMITTEE", mid, PAGE_H - 34 * mm, "Times-Roman", 10, 2.4, INK_SOFT)
+    # Faint watermark behind the wording, then the letterhead logo.
+    _logo(c, mid, 0, 110 * mm, alpha=0.045, center_y=PAGE_H * 0.47)
+    _logo(c, mid, PAGE_H - 17 * mm, 13 * mm)
+
+    _spaced(c, "METASCHOLAR RESEARCH ETHICS COMMITTEE", mid, PAGE_H - 37 * mm, "Times-Roman", 10, 2.4, BRASS)
     c.setStrokeColor(RULE)
     c.setLineWidth(0.6)
-    c.line(mid - 22 * mm, PAGE_H - 39 * mm, mid - 4 * mm, PAGE_H - 39 * mm)
-    c.line(mid + 4 * mm, PAGE_H - 39 * mm, mid + 22 * mm, PAGE_H - 39 * mm)
+    c.line(mid - 22 * mm, PAGE_H - 41.5 * mm, mid - 4 * mm, PAGE_H - 41.5 * mm)
+    c.line(mid + 4 * mm, PAGE_H - 41.5 * mm, mid + 22 * mm, PAGE_H - 41.5 * mm)
     c.saveState()
-    c.translate(mid, PAGE_H - 39 * mm)
+    c.translate(mid, PAGE_H - 41.5 * mm)
     c.rotate(45)
     c.setFillColor(BRASS)
     c.rect(-0.9 * mm, -0.9 * mm, 1.8 * mm, 1.8 * mm, stroke=0, fill=1)
     c.restoreState()
 
-    title_y = PAGE_H - 58 * mm
+    title_y = PAGE_H - 60 * mm
     lead, tail = "Certificate ", "of Peer Review"
     lead_w = c.stringWidth(lead, "Times-Roman", 40)
     tail_w = c.stringWidth(tail, "Times-Italic", 40)
@@ -201,9 +290,17 @@ def render_review_certificate_pdf(assignment):
     c.setFillColor(INK)
     c.drawCentredString(mid, name_y, name)
     name_w = max(c.stringWidth(name, "Times-Bold", name_size), 90 * mm)
-    c.setStrokeColor(RULE)
-    c.setLineWidth(0.8)
-    c.line(mid - name_w / 2 - 6 * mm, name_y - 4 * mm, mid + name_w / 2 + 6 * mm, name_y - 4 * mm)
+    # Underline fades out at both ends (stepped, since PDF lines are flat).
+    span = name_w + 12 * mm
+    left = mid - span / 2
+    steps = 40
+    c.setStrokeColor(BRASS)
+    c.setLineWidth(0.9)
+    for i in range(steps):
+        t = (i + 0.5) / steps
+        c.setStrokeAlpha(min(1.0, min(t, 1 - t) * 5))
+        c.line(left + span * i / steps, name_y - 4 * mm, left + span * (i + 1) / steps, name_y - 4 * mm)
+    c.setStrokeAlpha(1.0)
 
     body = Paragraph(
         review_certificate_message(assignment),
@@ -214,15 +311,15 @@ def render_review_certificate_pdf(assignment):
     _, body_h = body.wrap(body_w, 40 * mm)
     body.drawOn(c, mid - body_w / 2, name_y - 12 * mm - body_h)
 
-    secretariat_name, chair_name = certificate_signatories(assignment)
-    sign_y = 44 * mm
-    _signature(c, mid - 82 * mm, sign_y, secretariat_name, "Secretariat")
-    _signature(c, mid + 82 * mm, sign_y, chair_name, "Chair of the Committee")
+    from pages.certificate_signatory import chair_signature_bytes
+
+    chair = certificate_signatories(assignment)
+    sign_y = 46 * mm
+    _date_block(c, mid - 82 * mm, sign_y, assignment.certificate_awarded_at)
+    _chair_block(c, mid + 82 * mm, sign_y, chair, chair_signature_bytes(chair))
     _seal(c, mid, sign_y + 6 * mm, "PEER REVIEW")
 
     footer = f"CERTIFICATE NO. {assignment.certificate_id}"
-    if assignment.certificate_awarded_at:
-        footer += f"      ISSUED {assignment.certificate_awarded_at.strftime('%d %B %Y').upper()}"
     _spaced(c, footer, mid, 24 * mm, "Times-Roman", 8.5, 1.0, INK_SOFT)
 
     c.showPage()

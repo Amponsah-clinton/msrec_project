@@ -1,5 +1,5 @@
 {% extends "dashboards/base.html" %}
-{% load static %}
+{% load static verification_tags %}
 
 {% block title %}{{ meta.label }} | MSREC Secretariat{% endblock %}
 
@@ -214,6 +214,8 @@
             <span>{{ site_settings.site_name|default:"MSREC" }}</span>
           </div>
         </div>
+
+        {% if not submission and application.status == 'approved' %}{% verification_block application %}{% endif %}
 
         <footer class="letter-foot">
           <p>

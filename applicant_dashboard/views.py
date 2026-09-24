@@ -8,7 +8,8 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.sessions.models import Session
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.db.models import Sum
+from django.conf import settings
+from django.db.models import Q, Sum
 from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -16,9 +17,10 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from accounts.models import User
+from accounts.photos import delete_profile_photo
 from accounts.sessions import active_sessions_for
 from messaging.services import unread_count_for_user
-from notifications.emails import send_branded_email
+from notifications.emails import send_branded_email, send_password_changed_email
 from notifications.models import Notification
 from notifications.services import notify
 from payments import fees
@@ -521,6 +523,7 @@ def _handle_update_profile(request):
         # without this the applicant would be logged out by their own
         # password change on the very page they just used to make it.
         update_session_auth_hash(request, user)
+        send_password_changed_email(user, request)
         messages.success(request, "Profile updated and password changed.")
     else:
         messages.success(request, "Profile updated.")
@@ -540,15 +543,18 @@ def _handle_update_avatar(request):
         messages.error(request, "Couldn't upload your photo right now. Please try again.")
         return
 
+    old_path = request.user.profile_photo_path
     request.user.profile_photo_path = object_path
     request.user.save(update_fields=["profile_photo_path"])
+    if old_path and old_path != object_path:
+        delete_profile_photo(old_path)
     messages.success(request, "Profile photo updated.")
 
 
 def _handle_remove_avatar(request):
     user = request.user
     if user.profile_photo_path:
-        storage.delete_object(user.profile_photo_path)
+        delete_profile_photo(user.profile_photo_path)
         user.profile_photo_path = ""
         user.save(update_fields=["profile_photo_path"])
     messages.success(request, "Profile photo removed.")
@@ -1114,6 +1120,47 @@ def postapproval_closure(request):
     return render(request, "dashboards/applicant/postapproval-closure.html", {"cards": cards})
 
 
+# Safety-relevant filings the Administrator must hear about directly (in
+# addition to Secretariat, who triage them).
+POSTAPPROVAL_ADMIN_ALERT_TYPES = (
+    PostApprovalSubmission.Type.ADVERSE_EVENT,
+    PostApprovalSubmission.Type.DEVIATION,
+)
+
+
+def _alert_admins_of_postapproval(request, submission, application):
+    title = POSTAPPROVAL_TITLES[submission.type]
+    ref = application.reference_no or application.title
+    notify(
+        Notification.Audience.ADMIN,
+        f"{request.user.full_name} filed a {title} for {ref}.",
+        icon=Notification.Icon.INFO,
+        link_url_name="admin_dashboard:post_approval",
+        link_kwargs={"ptype": submission.type},
+    )
+    admin_emails = list(
+        User.objects.filter(is_active=True).filter(Q(role=User.Role.ADMIN) | Q(is_superuser=True))
+        .exclude(email="").values_list("email", flat=True).distinct()
+    )
+    if not admin_emails:
+        return
+    field_defs = POSTAPPROVAL_FIELDS[submission.type]
+    details = [f"{label}: {submission.form_data.get(key) or 'Not provided'}" for key, label, *_rest in field_defs]
+    send_branded_email(
+        subject=f"New {title} filed: {ref}",
+        to=admin_emails,
+        heading=f"New {title} filed",
+        paragraphs=[
+            f"{request.user.full_name} ({request.user.email}) has filed a {title.lower()} "
+            f"for \"{application.title}\" ({ref}).",
+            *details,
+        ],
+        cta_text="View in dashboard",
+        cta_url=f"{settings.SITE_URL.rstrip('/')}{reverse('admin_dashboard:post_approval', kwargs={'ptype': submission.type})}",
+        preheader=f"A {title.lower()} was filed for {ref}.",
+    )
+
+
 def postapproval_new(request, ptype):
     if ptype not in POSTAPPROVAL_FIELDS:
         raise Http404("Unknown post-approval submission type.")
@@ -1127,7 +1174,7 @@ def postapproval_new(request, ptype):
     if request.method == "POST":
         application = get_object_or_404(applications, pk=request.POST.get("application"))
         form_data = {key: request.POST.get(key, "").strip() for key, *_rest in field_defs}
-        PostApprovalSubmission.objects.create(
+        submission = PostApprovalSubmission.objects.create(
             application=application, applicant=request.user, type=ptype, form_data=form_data,
         )
         notify(
@@ -1136,6 +1183,8 @@ def postapproval_new(request, ptype):
             f"for {application.reference_no or application.title}.",
             icon=Notification.Icon.INFO,
         )
+        if ptype in POSTAPPROVAL_ADMIN_ALERT_TYPES:
+            _alert_admins_of_postapproval(request, submission, application)
         messages.success(request, f"{POSTAPPROVAL_TITLES[ptype]} submitted.")
         return redirect(list_url_name)
 

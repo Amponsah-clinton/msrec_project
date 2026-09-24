@@ -115,10 +115,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const rows = Array.from(content.querySelectorAll(SEARCH_ROW_SELECTOR));
     if (!rows.length) {
-      // Nothing on this page is searchable — don't leave a live-looking
-      // box that silently does nothing.
-      input.disabled = true;
-      input.placeholder = "Nothing to search on this page";
+      // Nothing on this page is searchable — remove the box entirely
+      // rather than leave a live-looking one that silently does nothing.
+      const box = input.closest(".search-box") || input;
+      box.hidden = true;
+      box.style.display = "none";
       return;
     }
 

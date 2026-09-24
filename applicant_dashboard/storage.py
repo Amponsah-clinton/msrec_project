@@ -124,6 +124,11 @@ def delete_object(object_path):
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             return resp.status in (200, 204)
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            return True  # already gone -- nothing left to delete
+        logger.exception("Supabase Storage delete failed for %s", object_path)
+        return False
     except urllib.error.URLError:
         logger.exception("Supabase Storage delete failed for %s", object_path)
         return False

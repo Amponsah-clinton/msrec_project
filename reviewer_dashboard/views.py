@@ -11,9 +11,11 @@ from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 
 from accounts.models import AuditLog, User
+from accounts.photos import delete_profile_photo
 from accounts.sessions import active_sessions_for
 from applicant_dashboard import storage as application_storage
 from notifications import services as notification_services
+from notifications.emails import send_password_changed_email
 from notifications.models import Notification
 from notifications.services import notify
 from pages import documents_storage
@@ -522,19 +524,17 @@ def certificate_download(request, assignment_id):
 
     from .certificate import certificate_signatories, review_certificate_message
 
-    secretariat_name, chair_name = certificate_signatories(assignment)
+    chair = certificate_signatories(assignment)
     return render(request, "certificates/award_certificate.html", {
         "cert_title": "Certificate",
         "cert_subtitle": "of Peer Review",
+        "theme": "white",
         "seal_caption": "PEER REVIEW",
         "recipient_name": assignment.reviewer.full_name,
         "message": review_certificate_message(assignment),
         "cert_id": assignment.certificate_id,
         "issued_on": assignment.certificate_awarded_at,
-        "left_name": secretariat_name,
-        "left_role": "Secretariat",
-        "right_name": chair_name,
-        "right_role": "Chair of the Committee",
+        "chair": chair,
         "back_url": reverse("reviewer_dashboard:my_reviews"),
     })
 
@@ -627,15 +627,18 @@ def _handle_update_avatar(request):
         messages.error(request, "Couldn't upload your photo right now. Please try again.")
         return
 
+    old_path = request.user.profile_photo_path
     request.user.profile_photo_path = object_path
     request.user.save(update_fields=["profile_photo_path"])
+    if old_path and old_path != object_path:
+        delete_profile_photo(old_path)
     messages.success(request, "Profile photo updated.")
 
 
 def _handle_remove_avatar(request):
     user = request.user
     if user.profile_photo_path:
-        storage.delete_object(user.profile_photo_path)
+        delete_profile_photo(user.profile_photo_path)
         user.profile_photo_path = ""
         user.save(update_fields=["profile_photo_path"])
     messages.success(request, "Profile photo removed.")
@@ -727,6 +730,7 @@ def _handle_update_password(request):
     # password would immediately log you out of the page you just used
     # to change it.
     update_session_auth_hash(request, user)
+    send_password_changed_email(user, request)
     messages.success(request, "Password updated.")
 
 

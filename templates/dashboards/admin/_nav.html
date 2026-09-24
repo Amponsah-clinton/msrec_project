@@ -47,6 +47,16 @@ and all thirteen pages get it.
   <span>Resources</span>
 </a>
 
+<a href="{% url 'admin_dashboard:post_approval' 'adverse_event' %}" class="nav-item{% if active == 'adverse_event' %} active{% endif %}">
+  <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg></span>
+  <span>Adverse Events</span>
+</a>
+
+<a href="{% url 'admin_dashboard:post_approval' 'deviation' %}" class="nav-item{% if active == 'deviation' %} active{% endif %}">
+  <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M6 3v12"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></span>
+  <span>Protocol Deviations</span>
+</a>
+
 <a href="{% url 'admin_dashboard:finance' %}" class="nav-item{% if active == 'finance' %} active{% endif %}">
   <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
   <span>Finance</span>

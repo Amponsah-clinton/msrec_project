@@ -20,6 +20,8 @@ from accounts.sessions import active_sessions_for
 from admin_dashboard.views import _handle_admin_remove_avatar, _handle_admin_update_avatar
 from meetings.models import Meeting, MeetingParticipant
 from notifications import services as notification_services
+from pages.certificate_signatory import chair_details
+from notifications.emails import send_password_changed_email
 from notifications.models import Notification
 from pages import documents_storage
 from pages.models import GovernanceMember
@@ -306,10 +308,7 @@ def certificate_download(request):
         ),
         "cert_id": user.membership_ethics_id,
         "issued_on": user.membership_confirmed_at,
-        "left_name": approval.acted_by.full_name if approval and approval.acted_by else "",
-        "left_role": "Secretariat",
-        "right_name": chair.full_name if chair else "",
-        "right_role": "Chair of the Committee",
+        "chair": chair_details(),
         "back_url": reverse("committee_dashboard:profile"),
     })
 
@@ -342,6 +341,7 @@ def _handle_update_password(request):
     # Keeps this browser signed in -- changing your own password would
     # otherwise invalidate the very session you just used to change it.
     update_session_auth_hash(request, user)
+    send_password_changed_email(user, request)
     AuditLog.record(user, "user.password_changed", target=user, description="Password changed from Security page")
     messages.success(request, "Password updated.")
 
