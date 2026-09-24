@@ -49,8 +49,11 @@
             <div class="doc-trailing">
               <span class="badge-tag green">Approved</span>
               <div class="doc-actions">
-                <a class="action-btn" aria-label="Open approval letter" href="{% url 'applicant_dashboard:application_letter' application.pk 'approval' %}">
+                <a class="action-btn" aria-label="Open approval letter" title="View" href="{% url 'applicant_dashboard:application_letter' application.pk 'approval' %}">
                   <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </a>
+                <a class="action-btn" aria-label="Download approval letter (PDF)" title="Download PDF" href="{% url 'applicant_dashboard:application_document_pdf' application.pk 'approval' %}?download=1">
+                  <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
                 </a>
               </div>
             </div>

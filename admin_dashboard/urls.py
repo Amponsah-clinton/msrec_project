@@ -43,6 +43,7 @@ urlpatterns = [
     path("committee/conflict-records/", views.conflict_records, name="conflict_records"),
     path("settings/", views.site_settings, name="settings"),
     path("settings/certificate-preview/", views.certificate_preview, name="certificate_preview"),
+    path("settings/approval-preview/<str:kind>/", views.approval_template_preview, name="approval_template_preview"),
     # Same underlying AuditLog table and categorization secretariat_dashboard's
     # own Audit Logs page already uses (see that module's audit_logs()) --
     # reused here with just this dashboard's own template, the same

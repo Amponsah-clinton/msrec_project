@@ -522,7 +522,7 @@ def certificate_download(request, assignment_id):
     if not assignment.certificate_id:
         raise Http404("No certificate has been awarded for this review yet.")
 
-    from .certificate import certificate_signatories, review_certificate_message
+    from .certificate import certificate_signatories
 
     chair = certificate_signatories(assignment)
     return render(request, "certificates/award_certificate.html", {
@@ -531,7 +531,7 @@ def certificate_download(request, assignment_id):
         "theme": "white",
         "seal_caption": "PEER REVIEW",
         "recipient_name": assignment.reviewer.full_name,
-        "message": review_certificate_message(assignment),
+        **_work_title_context(assignment),
         "cert_id": assignment.certificate_id,
         "issued_on": assignment.certificate_awarded_at,
         "chair": chair,
@@ -870,3 +870,14 @@ def notifications(request):
         "quiet_hours_from": profile.get("quietHoursFrom", "21:00"),
         "quiet_hours_to": profile.get("quietHoursTo", "07:00"),
     })
+
+
+def _work_title_context(assignment):
+    """Peer Review certificate wording with the reviewed study's title set
+    on its own lines (see templates/certificates/award_certificate.html)."""
+    from .certificate import review_certificate_message, review_certificate_parts
+
+    lead, title, tail = review_certificate_parts(assignment)
+    if not title:
+        return {"message": review_certificate_message(assignment)}
+    return {"message": lead, "work_title": title, "message_after": tail}

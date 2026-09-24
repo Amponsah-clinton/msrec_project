@@ -1250,6 +1250,20 @@ def documents_certificates_receipts(request):
     })
 
 
+def application_document_pdf(request, pk, kind):
+    """The applicant's own approval letter / certificate of ethical
+    clearance as a PDF -- the same documents attached to their approval
+    email. ?download=1 saves instead of opening in the browser."""
+    from .approval_documents import pdf_response
+
+    if kind not in ("approval", "certificate"):
+        raise Http404("Unknown document type.")
+    application = get_object_or_404(
+        Application, pk=pk, applicant=request.user, status=Application.Status.APPROVED
+    )
+    return pdf_response(application, kind, download=bool(request.GET.get("download")))
+
+
 def application_letter(request, pk, kind):
     """A decision letter, approval letter, or ethics clearance certificate
     -- a plain printable page rendered live from the Application record,
@@ -1264,10 +1278,15 @@ def application_letter(request, pk, kind):
     application = get_object_or_404(
         Application, pk=pk, applicant=request.user, status__in=allowed_statuses
     )
+    from .approval_documents import certificate_content, letter_content
+
+    approved = application.status == Application.Status.APPROVED
     return render(request, "dashboards/applicant/letter.html", {
         "application": application,
         "kind": kind,
         "review_type_label": fees.label_for(application.review_type),
+        "approval_letter": letter_content(application) if approved else None,
+        "approval_certificate": certificate_content(application) if approved else None,
     })
 
 

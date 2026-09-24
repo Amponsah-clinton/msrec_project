@@ -15,6 +15,12 @@
         <p>{{ application.reference_no|default:"Reference pending" }}</p>
       </div>
       <div class="topbar-actions">
+        {% if application.status == 'approved' and kind != 'decision' %}
+        <a class="btn-primary" href="{% url 'applicant_dashboard:application_document_pdf' application.pk kind %}?download=1">
+          <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+          Download PDF
+        </a>
+        {% endif %}
         <button type="button" class="btn-secondary" onclick="window.print()">
           <svg viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
           Print / Save PDF
@@ -50,10 +56,10 @@
         {% if kind == 'certificate' %}
 
         <div class="letter-cert-body">
-          <p class="letter-cert-eyebrow">Certificate of Ethical Clearance</p>
-          <p class="letter-cert-intro">This is to certify that the research study described below has been reviewed and granted ethical clearance by the {{ site_settings.site_name|default:"MSREC" }}.</p>
+          <p class="letter-cert-eyebrow">{{ approval_certificate.title }} {{ approval_certificate.subtitle }}</p>
+          <p class="letter-cert-intro">{{ approval_certificate.intro }}</p>
           <h2 class="letter-cert-title">{{ application.title }}</h2>
-          <p class="letter-cert-pi">Principal Investigator &mdash; {{ application.applicant.full_name }}</p>
+          <p class="letter-cert-pi">{{ approval_certificate.statement }}</p>
           <dl class="letter-facts">
             <div><dt>Reference Number</dt><dd class="mono">{{ application.reference_no|default:"&mdash;" }}</dd></div>
             <div><dt>Review Pathway</dt><dd>{{ review_type_label }}</dd></div>
@@ -76,29 +82,24 @@
             {% if application.applicant.institution %}{{ application.applicant.institution }}{% endif %}
           </p>
 
+          {% if application.status == 'approved' and approval_letter %}
+          <p>{{ approval_letter.salutation }}</p>
+          <p class="letter-subject">{{ approval_letter.subject }}</p>
+          {% for paragraph in approval_letter.body %}<p>{{ paragraph }}</p>{% endfor %}
+          {% if approval_letter.conditions %}
+          <p><strong>{{ approval_letter.conditions_heading }}</strong></p>
+          <ol class="letter-conditions">{% for condition in approval_letter.conditions %}<li>{{ condition }}</li>{% endfor %}</ol>
+          {% endif %}
+          {% for paragraph in approval_letter.closing %}<p>{{ paragraph }}</p>{% endfor %}
+          {% else %}
           <p class="letter-subject">
-            RE: {% if kind == 'approval' %}Ethical Approval{% else %}Outcome of Ethics Review{% endif %} &mdash; {{ application.title }}
+            RE: Outcome of Ethics Review &mdash; {{ application.title }}
           </p>
 
           <p>Dear {{ application.applicant.full_name }},</p>
+          {% endif %}
 
           {% if application.status == 'approved' %}
-          <p>
-            I write on behalf of the {{ site_settings.site_name|default:"MSREC" }} to confirm that your application,
-            submitted under reference <strong>{{ application.reference_no }}</strong>, has been reviewed
-            under the <strong>{{ review_type_label }}</strong> pathway and has been <strong>approved</strong>.
-          </p>
-          <p>
-            This approval takes effect from {{ application.decided_at|date:"d F Y" }} and remains valid until
-            {{ application.approval_expires_at|date:"d F Y" }}. You may proceed with the study as described in
-            the approved protocol.
-          </p>
-          <p>
-            Approval is granted on the understanding that you will seek prior approval for any amendment to the
-            protocol, report adverse events and protocol deviations promptly, submit continuing review
-            documentation before the expiry date above, and notify the Committee on completion or early
-            termination of the study.
-          </p>
           {% elif application.status == 'not_approved' %}
           <p>
             I write on behalf of the {{ site_settings.site_name|default:"MSREC" }} regarding your application
@@ -133,6 +134,14 @@
           </p>
           {% endif %}
 
+          {% if approval_letter %}
+          <p>{{ approval_letter.sign_off }}</p>
+          <div class="letter-sign">
+            {% if approval_letter.values.chair_name %}{% with sig=site_settings.chair_signature_url %}{% if sig %}<img src="{{ sig }}" alt="" style="max-height:52px;max-width:200px;display:block;margin-bottom:4px;">{% else %}<span class="letter-sign-line"></span>{% endif %}{% endwith %}{% else %}<span class="letter-sign-line"></span>{% endif %}
+            <strong>{{ approval_letter.values.chair_name|default:"The Chair" }}</strong>
+            <span>{{ approval_letter.values.chair_title }}</span>
+          </div>
+          {% else %}
           <p>Yours sincerely,</p>
 
           <div class="letter-sign">
@@ -140,6 +149,7 @@
             <strong>The Secretariat</strong>
             <span>{{ site_settings.site_name|default:"MSREC" }}</span>
           </div>
+          {% endif %}
         </div>
 
         {% endif %}

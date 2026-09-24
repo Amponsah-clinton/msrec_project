@@ -319,3 +319,79 @@
 .cs-ink:hover { color: var(--text-main); }
 .cs-ink.active { border-color: var(--teal); color: var(--text-main); box-shadow: 0 0 0 3px rgba(21, 154, 150, .12); }
 .cs-pad-tip { margin: 0 0 8px; }
+
+/* ---------------- Approval Documents ----------------
+   Same calm vocabulary as the Certificates tab: flat panels, hairline
+   borders, brand teal only for what's interactive. */
+.apd-head .section-note { margin-bottom: 18px; }
+.apd-head code { font-size: 12px; background: var(--hover-bg); padding: 1px 5px; border-radius: 4px; }
+.apd-head a { color: var(--teal); font-weight: 600; }
+
+.apd-seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--hover-bg); border: 1px solid var(--border); margin-bottom: 14px; flex-wrap: wrap; }
+.apd-seg-btn {
+  display: inline-flex; align-items: center; gap: 7px; border: 0; background: transparent; cursor: pointer;
+  padding: 8px 14px; border-radius: 7px; font: 600 13px/1 inherit; color: var(--text-sub);
+  transition: background .15s, color .15s, box-shadow .15s;
+}
+.apd-seg-btn svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.apd-seg-btn:hover { color: var(--text-main); }
+.apd-seg-btn.active { background: var(--white); color: var(--teal); box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+
+.apd-chips {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 10px 12px; margin-bottom: 16px;
+  border: 1px dashed var(--border); border-radius: 10px;
+}
+.apd-chips-label { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-faint); margin-right: 2px; }
+.apd-chip {
+  border: 1px solid var(--border); background: var(--white); color: var(--text-main); cursor: pointer;
+  border-radius: 6px; padding: 4px 8px; font: 500 12px/1.2 "SFMono-Regular", Consolas, Menlo, monospace;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.apd-chip:hover { border-color: var(--teal); color: var(--teal); }
+.apd-chip.is-flash { background: var(--teal); border-color: var(--teal); color: #fff; }
+
+.apd-card { border: 1px solid var(--border); border-radius: 12px; padding: 18px 18px 14px; }
+.apd-card-head { margin-bottom: 14px; }
+.apd-card-head h4 { margin: 0 0 3px; font-size: 14.5px; font-weight: 700; color: var(--text-main); }
+.apd-card-head p { margin: 0; font-size: 12.5px; color: var(--text-sub); }
+.apd-card .field { margin-bottom: 14px; }
+.apd-card textarea { width: 100%; font: inherit; font-size: 14px; line-height: 1.55; resize: vertical; }
+.apd-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 14px; }
+.apd-span { grid-column: 1 / -1; }
+.apd-req { color: #d64545; }
+
+.apd-toggles-label { margin: 2px 0 8px; font-size: 13px; font-weight: 600; color: var(--text-main); }
+.apd-toggles { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 6px; }
+.apd-toggle {
+  display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border: 1px solid var(--border);
+  border-radius: 999px; cursor: pointer; font-size: 13px; color: var(--text-main); user-select: none;
+}
+.apd-toggle input { accent-color: var(--teal); width: 15px; height: 15px; margin: 0; }
+.apd-toggle:has(input:checked) { border-color: var(--teal); }
+
+.apd-actions { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+.apd-actions-right { display: flex; gap: 8px; flex-wrap: wrap; }
+.apd-link-danger { border: 0; background: none; padding: 0; cursor: pointer; font: 600 13px/1 inherit; color: #d64545; }
+.apd-link-danger:hover { text-decoration: underline; }
+.apd-updated { margin: 12px 0 0; font-size: 12px; color: var(--text-faint); }
+
+/* A thumbnail of the certificate's layout that follows the title fields. */
+.apd-cert-sketch {
+  display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center;
+  margin: 0 0 16px; padding: 16px 20px 14px; border-radius: 6px; background: #fff; color: #14233f;
+  border: 1px solid #d7e3e2; outline: 3px double #b7dcda; outline-offset: -8px;
+  font-family: "Times New Roman", Georgia, serif;
+}
+.apd-sk-title { font-size: 22px; line-height: 1.2; }
+.apd-sk-title b { font-weight: 400; }
+.apd-sk-title i { color: #0f8a86; }
+.apd-sk-intro { font-size: 12.5px; font-style: italic; color: #56607a; }
+.apd-sk-study { font-size: 14px; font-weight: 700; }
+.apd-sk-statement { font: 11px/1.4 -apple-system, "Segoe UI", sans-serif; color: #95a0ae; letter-spacing: .04em; }
+
+@media (max-width: 600px) {
+  .apd-grid { grid-template-columns: 1fr; }
+  .apd-actions { flex-direction: column-reverse; align-items: stretch; }
+  .apd-actions-right { justify-content: stretch; }
+  .apd-actions-right .btn-primary, .apd-actions-right .btn-secondary { flex: 1; justify-content: center; }
+}

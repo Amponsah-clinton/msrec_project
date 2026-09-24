@@ -104,6 +104,17 @@
     margin-top:6mm; max-width:185mm;
     font-size:5.1mm; line-height:1.5; color:var(--ink-soft);
   }
+  /* The title of the work (the study reviewed) on its own lines, sized to
+     fit by the script at the bottom however long it is. */
+  .has-work .certify{ margin-top:5mm; }
+  .has-work .recipient{ font-size:12.5mm; }
+  .has-work .message{ margin-top:4.5mm; max-width:215mm; }
+  .work-title{
+    margin:2.2mm 0 0; max-width:222mm;
+    font-family:"Cormorant Garamond", Georgia, serif; font-weight:600; font-style:italic;
+    font-size:6.6mm; line-height:1.25; color:var(--ink);
+  }
+  .has-work .message-after{ margin-top:2.4mm; }
 
   .signing{
     margin-top:auto; width:100%;
@@ -180,7 +191,7 @@
     <img class="watermark" src="{% if site_settings.logo_url %}{{ site_settings.logo_url }}{% else %}{% static 'assets/img/logo1.png' %}{% endif %}" alt="" aria-hidden="true">
     {% endif %}
 
-    <div class="content">
+    <div class="content{% if work_title %} has-work{% endif %}">
       <div class="letterhead">
         <img src="{% if site_settings.logo_url %}{{ site_settings.logo_url }}{% else %}{% static 'assets/img/logo1.png' %}{% endif %}" alt="">
         <div class="org">Metascholar Research Ethics Committee</div>
@@ -192,6 +203,10 @@
       <div class="certify">This is to certify that</div>
       <div class="recipient">{{ recipient_name }}</div>
       <p class="message">{{ message }}</p>
+      {% if work_title %}
+      <p class="work-title" id="certWork">{{ work_title }}</p>
+      {% if message_after %}<p class="message message-after">{{ message_after }}</p>{% endif %}
+      {% endif %}
 
       <div class="signing">
         <div class="sig chair">
@@ -250,6 +265,45 @@
     }
     fit();
     window.addEventListener("resize", fit);
+  })();
+
+  // Shrinks the study title (then the wording around it) until everything
+  // fits above the signatures -- so a title of any length stays on the
+  // certificate instead of pushing the signing row off the page.
+  (function () {
+    var content = document.querySelector(".content");
+    var work = document.getElementById("certWork");
+    if (!content || !work) return;
+    var messages = content.querySelectorAll(".message");
+    var fullTitle = work.textContent;
+    // Overflow = the last block (signatures / certificate number) ends
+    // below the content area. Measured on screen, so the frame's own
+    // scale-to-fit transform affects both sides equally.
+    function overflowing() {
+      var last = content.lastElementChild;
+      return last.getBoundingClientRect().bottom > content.getBoundingClientRect().bottom + 0.5;
+    }
+    function shrinkToFit() {
+      var size = 6.6;
+      work.textContent = fullTitle;
+      work.style.fontSize = size + "mm";
+      messages.forEach(function (m) { m.style.fontSize = ""; });
+      while (overflowing() && size > 3.8) { size -= 0.2; work.style.fontSize = size.toFixed(1) + "mm"; }
+      var msize = 5.1;
+      while (overflowing() && msize > 4.2) {
+        msize -= 0.1;
+        messages.forEach(function (m) { m.style.fontSize = msize.toFixed(1) + "mm"; });
+      }
+      if (overflowing()) {
+        var words = work.textContent.trim().split(/\s+/);
+        while (overflowing() && words.length > 4) {
+          words.pop();
+          work.textContent = words.join(" ").replace(/[,;:.]$/, "") + "\u2026";
+        }
+      }
+    }
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(shrinkToFit);
+    shrinkToFit();
   })();
 </script>
 </body>

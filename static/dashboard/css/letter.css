@@ -373,3 +373,7 @@
   overflow-wrap: anywhere;
 }
 .letter-verify-text strong { color: var(--text-main); font-size: 13px; }
+
+/* Conditions of approval (Site Settings > Approval Documents) */
+.letter-conditions { margin: 0 0 14px; padding-left: 22px; }
+.letter-conditions li { margin: 0 0 6px; line-height: 1.6; }

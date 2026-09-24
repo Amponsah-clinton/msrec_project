@@ -2264,6 +2264,138 @@ def _handle_settings_delete_faq(request, site):
     messages.success(request, "FAQ removed from the Applicants page.")
 
 
+# ---------------------------------------------------------------------
+# Site Settings > Approval Documents (email, letter, certificate wording)
+# ---------------------------------------------------------------------
+
+APPROVAL_TEXT_FIELDS = {
+    "email": ["email_subject", "email_heading", "email_body"],
+    "letter": ["letter_subject", "letter_salutation", "letter_body", "letter_conditions_heading",
+               "letter_conditions", "letter_closing", "letter_sign_off"],
+    "certificate": ["cert_title", "cert_subtitle", "cert_intro", "cert_statement", "cert_seal_caption"],
+}
+APPROVAL_FLAG_FIELDS = {
+    "email": [],
+    "letter": ["letter_show_summary", "letter_show_verification"],
+    "certificate": ["cert_show_reference", "cert_show_pathway", "cert_show_approval_date",
+                    "cert_show_valid_until", "cert_show_verification"],
+}
+APPROVAL_REQUIRED = {"email_subject", "email_heading", "email_body", "letter_subject", "letter_body",
+                     "cert_title", "cert_statement"}
+APPROVAL_SECTION_LABELS = {"email": "Approval email", "letter": "Approval letter",
+                           "certificate": "Certificate of ethical clearance"}
+
+
+def _apply_approval_fields(template, section, post):
+    """Copies one section's posted fields onto `template` (unsaved).
+    Returns the list of required fields left blank."""
+    from pages.models import ApprovalDocumentTemplate
+
+    missing = []
+    for field in APPROVAL_TEXT_FIELDS[section]:
+        value = post.get(field, "").replace("\r\n", "\n").strip()
+        limit = ApprovalDocumentTemplate._meta.get_field(field).max_length
+        if limit:
+            value = " ".join(value.split())[:limit]
+        if not value and field in APPROVAL_REQUIRED:
+            missing.append(field)
+            continue
+        setattr(template, field, value)
+    for field in APPROVAL_FLAG_FIELDS[section]:
+        setattr(template, field, bool(post.get(field)))
+    return missing
+
+
+def _handle_settings_approval_template(request, site):
+    from applicant_dashboard.approval_documents import unknown_placeholders
+    from pages.models import ApprovalDocumentTemplate
+
+    if not is_admin(request.user):
+        messages.error(request, "Only an administrator can change the approval documents.")
+        return
+    section = request.POST.get("section")
+    if section not in APPROVAL_TEXT_FIELDS:
+        messages.error(request, "That request could not be processed.")
+        return
+    template = ApprovalDocumentTemplate.get_solo()
+    missing = _apply_approval_fields(template, section, request.POST)
+    if missing:
+        messages.error(request, "Please fill in every required field before saving.")
+        return
+    template.updated_by = request.user
+    template.save()
+    unknown = unknown_placeholders(*(getattr(template, f) for f in APPROVAL_TEXT_FIELDS[section]))
+    messages.success(request, f"{APPROVAL_SECTION_LABELS[section]} saved -- it's used from the next approval onwards.")
+    if unknown:
+        messages.warning(
+            request,
+            "These placeholders aren't recognised and will print exactly as typed: "
+            + ", ".join("{" + key + "}" for key in unknown),
+        )
+
+
+def _handle_settings_approval_template_reset(request, site):
+    from pages.models import ApprovalDocumentTemplate
+
+    if not is_admin(request.user):
+        messages.error(request, "Only an administrator can change the approval documents.")
+        return
+    section = request.POST.get("section")
+    if section not in APPROVAL_TEXT_FIELDS:
+        messages.error(request, "That request could not be processed.")
+        return
+    template = ApprovalDocumentTemplate.get_solo()
+    template.restore_defaults(section)
+    template.updated_by = request.user
+    template.save()
+    messages.success(request, f"{APPROVAL_SECTION_LABELS[section]} restored to the default wording.")
+
+
+@login_required
+@admin_required
+def approval_template_preview(request, kind):
+    """Preview of the approval email / letter / certificate. A POST from
+    the settings form previews the unsaved edits; a GET shows what's
+    saved. Uses the most recently approved study (or a realistic sample)."""
+    from django.utils.html import escape
+
+    from applicant_dashboard import approval_documents as docs
+    from notifications.emails import render_email_html
+    from pages.models import ApprovalDocumentTemplate
+
+    section = {"email": "email", "letter": "letter", "certificate": "certificate"}.get(kind)
+    if section is None:
+        return HttpResponse(status=404)
+    template = ApprovalDocumentTemplate.get_solo()
+    if request.method == "POST":
+        _apply_approval_fields(template, section, request.POST)  # never saved
+    application = docs.preview_application()
+
+    if section == "letter":
+        response = HttpResponse(docs.render_letter_pdf(application, template), content_type="application/pdf")
+    elif section == "certificate":
+        response = HttpResponse(docs.render_certificate_pdf(application, template), content_type="application/pdf")
+    else:
+        content = docs.email_content(application, template)
+        v = content["values"]
+        html = render_email_html(
+            heading=content["heading"], paragraphs=content["paragraphs"],
+            cta_text="View my documents", cta_url=django_settings.SITE_URL,
+            callout_label="Approval reference", callout_value=v["reference_no"],
+            callout_note=f"Verification code {v['verification_code']}  \u00b7  Valid until {v['valid_until']}",
+            callout_after=1,
+        ).replace("cid:msrec-logo", "/static/assets/img/MSREC_LOGO.png")
+        banner = (
+            '<div style="font:600 13px/1.4 system-ui,sans-serif;background:#1b2a4a;color:#fff;padding:10px 16px;">'
+            f'Email preview &mdash; Subject: {escape(content["subject"])} &nbsp;&middot;&nbsp; '
+            'Attachments: approval letter (PDF), certificate of ethical clearance (PDF)</div>'
+        )
+        # the banner goes just inside <body>, ahead of the hidden preheader
+        return HttpResponse(html.replace('<div style="display:none', banner + '<div style="display:none', 1))
+    response["Content-Disposition"] = f'inline; filename="preview-{section}.pdf"'
+    return response
+
+
 @login_required
 @admin_or_secretariat_required
 def site_settings(request):
@@ -2276,6 +2408,8 @@ def site_settings(request):
             "update_auth_image": _handle_settings_auth_image,
             "reset_auth_image": _handle_settings_auth_image_reset,
             "update_certificate_signatory": _handle_settings_certificate_signatory,
+            "update_approval_template": _handle_settings_approval_template,
+            "reset_approval_template": _handle_settings_approval_template_reset,
             "update_footer": _handle_settings_footer,
             "update_contact": _handle_settings_contact,
             "update_paystack": _handle_settings_paystack,
@@ -2299,6 +2433,9 @@ def site_settings(request):
             handler(request, site)
         else:
             messages.error(request, "That request could not be processed.")
+        tab = request.POST.get("tab", "")
+        if tab and tab.replace("-", "").isalnum():
+            return redirect(reverse("admin_dashboard:settings") + "#" + tab)
         return redirect("admin_dashboard:settings")
 
     meetings = list(
@@ -2348,6 +2485,8 @@ def site_settings(request):
         "hero_image_url": hero_storage.public_url(site.hero_image_path),
         "auth_image_url": pages_storage.public_url(site.auth_image_path),
         "chair_signature_url": pages_storage.public_url(site.chair_signature_path),
+        "approval_template": _approval_template_or_none(),
+        "approval_placeholders": _approval_placeholders(),
         "paystack_secret_key_masked": _mask_secret(site.paystack_secret_key),
         "using_env_public_key": not site.paystack_public_key,
         "using_env_secret_key": not site.paystack_secret_key,
@@ -2418,7 +2557,10 @@ def certificate_preview(request):
         certificate_awarded_at=timezone.localtime(),
         certificate_awarded_by=request.user,
         reviewer=SimpleNamespace(full_name="Dr. Ama Serwaa Mensah"),
-        application=SimpleNamespace(reference_no="MSREC/2026/0001"),
+        application=SimpleNamespace(
+            reference_no="MSREC/2026/0001",
+            title="Community Perceptions of AI-Assisted Diagnostic Tools Among Nurses in Rural District Hospitals",
+        ),
         application_id=0,
     )
 
@@ -2433,9 +2575,28 @@ def certificate_preview(request):
         "cert_subtitle": "of Peer Review",
         "seal_caption": "PEER REVIEW",
         "recipient_name": sample.reviewer.full_name,
-        "message": review_certificate_message(sample),
+        **_sample_work_title(sample, review_certificate_message),
         "cert_id": sample.certificate_id,
         "issued_on": sample.certificate_awarded_at,
         "chair": chair_details(),
         "back_url": reverse("admin_dashboard:settings") + "#certificates",
     })
+
+
+def _approval_template_or_none():
+    from pages.models import ApprovalDocumentTemplate
+
+    return ApprovalDocumentTemplate.get_solo()
+
+
+def _approval_placeholders():
+    from applicant_dashboard.approval_documents import PLACEHOLDERS
+
+    return PLACEHOLDERS
+
+
+def _sample_work_title(sample, fallback):
+    from reviewer_dashboard.certificate import review_certificate_parts
+
+    lead, title, tail = review_certificate_parts(sample)
+    return {"message": lead, "work_title": title, "message_after": tail} if title else {"message": fallback(sample)}

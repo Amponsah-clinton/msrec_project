@@ -555,6 +555,19 @@ def document_letters(request, doc_type):
 
 @login_required
 @staff_required
+def approval_document_pdf(request, pk, kind):
+    """Staff copy of an approved study's approval letter / certificate of
+    ethical clearance -- the same PDFs the applicant was emailed."""
+    from applicant_dashboard.approval_documents import pdf_response
+
+    if kind not in ("approval", "certificate"):
+        return HttpResponse(status=404)
+    application = get_object_or_404(oversight.staff_queryset(), pk=pk, status=Application.Status.APPROVED)
+    return pdf_response(application, kind, download=bool(request.GET.get("download")))
+
+
+@login_required
+@staff_required
 def document_letter_view(request, doc_type, pk):
     meta = DOCUMENT_LETTER_META.get(doc_type)
     if meta is None:

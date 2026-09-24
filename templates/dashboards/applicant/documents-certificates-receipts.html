@@ -58,12 +58,15 @@
             <div class="doc-row">
               <div class="doc-icon certificate"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="m9 12.5-1.5 7 4.5-2 4.5 2-1.5-7"/></svg></div>
               <div class="doc-info">
-                <h4 class="doc-name">Ethics Clearance Certificate &mdash; {{ application.title }}</h4>
+                <h4 class="doc-name">Certificate of Ethical Clearance &mdash; {{ application.title }}</h4>
                 <span class="doc-meta">Certificate &nbsp;&bull;&nbsp; Issued {{ application.decided_at|date:"d M Y" }} &nbsp;&bull;&nbsp; Valid until {{ application.approval_expires_at|date:"d M Y" }}</span>
               </div>
               <div class="doc-trailing"><div class="doc-actions">
-                <a class="action-btn" aria-label="Open certificate" href="{% url 'applicant_dashboard:application_letter' application.pk 'certificate' %}">
+                <a class="action-btn" aria-label="Open certificate" title="View" href="{% url 'applicant_dashboard:application_document_pdf' application.pk 'certificate' %}" target="_blank" rel="noopener">
                   <svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </a>
+                <a class="action-btn" aria-label="Download certificate (PDF)" title="Download PDF" href="{% url 'applicant_dashboard:application_document_pdf' application.pk 'certificate' %}?download=1">
+                  <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
                 </a>
               </div></div>
             </div>

@@ -183,19 +183,14 @@ def send_decision_email(request, application, action):
     send_revisions_requested_email above. `action` is the same
     STATUS_ACTIONS key apply_transition was just called with; anything
     else is a no-op (returns False) since only these two are decisions."""
-    login_url = request.build_absolute_uri(reverse("pages:login"))
     if action == "approve":
-        subject = f"Application approved — {application.reference_no}"
-        heading = "Your application has been approved"
-        paragraphs = [
-            f"Hi {application.applicant.full_name},",
-            f"Congratulations — MSREC has approved \"{application.title}\" ({application.reference_no}). "
-            "Your ethics approval documents are available on your Applicant dashboard.",
-            "Any post-approval obligations (progress reports, amendments, adverse events) can also be "
-            "submitted from there for the lifetime of the study.",
-        ]
-        preheader = f"{application.reference_no} has been approved."
-    elif action == "not_approve":
+        # Wording from Site Settings > Approval Documents, with the approval
+        # letter and certificate of ethical clearance attached as PDFs.
+        from .approval_documents import send_approval_email
+
+        return send_approval_email(request, application)
+    login_url = request.build_absolute_uri(reverse("pages:login"))
+    if action == "not_approve":
         subject = f"Application decision — {application.reference_no}"
         heading = "Decision on your application"
         paragraphs = [

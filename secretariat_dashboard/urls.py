@@ -20,6 +20,7 @@ urlpatterns = [
     path("post-approval/<str:ptype>/", views.post_approval, name="post_approval"),
     path("document-letters/<str:doc_type>/", views.document_letters, name="document_letters"),
     path("document-letters/<str:doc_type>/<int:pk>/", views.document_letter_view, name="document_letter_view"),
+    path("approved/<int:pk>/<str:kind>/pdf/", views.approval_document_pdf, name="approval_document_pdf"),
     path("finance/", views.finance, name="finance"),
     # Same shared staff inbox as admin_dashboard's (messaging.access.
     # is_staff_side already treats Secretariat and Admin as one "staff

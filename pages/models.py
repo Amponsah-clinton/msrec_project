@@ -717,3 +717,141 @@ class ConflictDeclaration(models.Model):
 
     def __str__(self):
         return f"{self.member.full_name} — {self.get_status_display()}"
+
+
+# ---------------------------------------------------------------------------
+# Approval documents (Site Settings > Approval Documents)
+# ---------------------------------------------------------------------------
+# Wording for what an applicant receives when their study is approved: the
+# email, the approval letter PDF and the certificate of ethical clearance
+# PDF (see applicant_dashboard/approval_documents.py). Admin-editable, with
+# {placeholders} filled from each application. These defaults are also what
+# "Restore defaults" puts back.
+
+APPROVAL_EMAIL_SUBJECT = "Ethical approval granted — {reference_no}"
+APPROVAL_EMAIL_HEADING = "Your study has been approved"
+APPROVAL_EMAIL_BODY = (
+    "Dear {applicant_name},\n\n"
+    "Congratulations. The {committee_name} has approved your study “{study_title}” "
+    "(reference {reference_no}).\n\n"
+    "Your approval letter and your certificate of ethical clearance are attached to this email. "
+    "You can also download them at any time from Documents in your applicant dashboard.\n\n"
+    "Your approval is valid until {valid_until}. Please keep up with your post-approval obligations: "
+    "amendments before any change to the protocol, progress reports, prompt reporting of adverse events "
+    "and deviations, and a final report when the study ends."
+)
+
+APPROVAL_LETTER_SUBJECT = "Ethical approval — {study_title}"
+APPROVAL_LETTER_SALUTATION = "Dear {applicant_name},"
+APPROVAL_LETTER_BODY = (
+    "I write on behalf of the {committee_name} to confirm that your application, submitted under "
+    "reference {reference_no}, has been reviewed under the {review_pathway} pathway and has been "
+    "granted ethical approval.\n\n"
+    "This approval takes effect from {approval_date} and remains valid until {valid_until}. You may "
+    "now proceed with the study as described in the approved protocol and supporting documents."
+)
+APPROVAL_LETTER_CONDITIONS = (
+    "Conduct the study as described in the approved protocol and supporting documents.\n"
+    "Obtain the Committee's approval before implementing any amendment, except where immediate action "
+    "is needed to protect participants.\n"
+    "Report serious adverse events and protocol deviations to the Committee promptly.\n"
+    "Submit a continuing review before {valid_until} if the study will continue beyond that date.\n"
+    "Notify the Committee when the study is completed or terminated early, and submit a final report."
+)
+APPROVAL_LETTER_CLOSING = (
+    "We wish you every success with your research. Please quote reference {reference_no} in all "
+    "correspondence about this study."
+)
+APPROVAL_LETTER_SIGN_OFF = "Yours sincerely,"
+
+APPROVAL_CERT_TITLE = "Certificate"
+APPROVAL_CERT_SUBTITLE = "of Ethical Clearance"
+APPROVAL_CERT_INTRO = "This is to certify that the research study"
+APPROVAL_CERT_STATEMENT = (
+    "conducted by {investigator} has been independently reviewed by the {committee_name} and is "
+    "hereby granted ethical clearance under the {review_pathway} pathway."
+)
+
+
+class ApprovalDocumentTemplate(models.Model):
+    """Singleton (always pk=1, via get_solo) holding the approval email,
+    approval letter and clearance certificate wording."""
+
+    # Email
+    email_subject = models.CharField(max_length=200, default=APPROVAL_EMAIL_SUBJECT)
+    email_heading = models.CharField(max_length=200, default=APPROVAL_EMAIL_HEADING)
+    email_body = models.TextField(default=APPROVAL_EMAIL_BODY)
+
+    # Approval letter
+    letter_subject = models.CharField(max_length=300, default=APPROVAL_LETTER_SUBJECT)
+    letter_salutation = models.CharField(max_length=200, default=APPROVAL_LETTER_SALUTATION)
+    letter_body = models.TextField(default=APPROVAL_LETTER_BODY)
+    letter_conditions_heading = models.CharField(max_length=120, default="Conditions of approval")
+    letter_conditions = models.TextField(blank=True, default=APPROVAL_LETTER_CONDITIONS)
+    letter_closing = models.TextField(blank=True, default=APPROVAL_LETTER_CLOSING)
+    letter_sign_off = models.CharField(max_length=120, default=APPROVAL_LETTER_SIGN_OFF)
+    letter_show_summary = models.BooleanField(default=True)
+    letter_show_verification = models.BooleanField(default=True)
+
+    # Certificate of ethical clearance
+    cert_title = models.CharField(max_length=60, default=APPROVAL_CERT_TITLE)
+    cert_subtitle = models.CharField(max_length=80, default=APPROVAL_CERT_SUBTITLE)
+    cert_intro = models.CharField(max_length=200, default=APPROVAL_CERT_INTRO)
+    cert_statement = models.TextField(default=APPROVAL_CERT_STATEMENT)
+    cert_seal_caption = models.CharField(max_length=24, default="ETHICAL CLEARANCE")
+    cert_show_reference = models.BooleanField(default=True)
+    cert_show_pathway = models.BooleanField(default=True)
+    cert_show_approval_date = models.BooleanField(default=True)
+    cert_show_valid_until = models.BooleanField(default=True)
+    cert_show_verification = models.BooleanField(default=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    DEFAULTS = {
+        "email": {
+            "email_subject": APPROVAL_EMAIL_SUBJECT,
+            "email_heading": APPROVAL_EMAIL_HEADING,
+            "email_body": APPROVAL_EMAIL_BODY,
+        },
+        "letter": {
+            "letter_subject": APPROVAL_LETTER_SUBJECT,
+            "letter_salutation": APPROVAL_LETTER_SALUTATION,
+            "letter_body": APPROVAL_LETTER_BODY,
+            "letter_conditions_heading": "Conditions of approval",
+            "letter_conditions": APPROVAL_LETTER_CONDITIONS,
+            "letter_closing": APPROVAL_LETTER_CLOSING,
+            "letter_sign_off": APPROVAL_LETTER_SIGN_OFF,
+            "letter_show_summary": True,
+            "letter_show_verification": True,
+        },
+        "certificate": {
+            "cert_title": APPROVAL_CERT_TITLE,
+            "cert_subtitle": APPROVAL_CERT_SUBTITLE,
+            "cert_intro": APPROVAL_CERT_INTRO,
+            "cert_statement": APPROVAL_CERT_STATEMENT,
+            "cert_seal_caption": "ETHICAL CLEARANCE",
+            "cert_show_reference": True,
+            "cert_show_pathway": True,
+            "cert_show_approval_date": True,
+            "cert_show_valid_until": True,
+            "cert_show_verification": True,
+        },
+    }
+
+    class Meta:
+        db_table = "approval_document_templates"
+
+    def __str__(self):
+        return "Approval document templates"
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def restore_defaults(self, section):
+        for field, value in self.DEFAULTS[section].items():
+            setattr(self, field, value)

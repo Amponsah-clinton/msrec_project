@@ -137,6 +137,11 @@ _urlpatterns = [
         name="documents_certificates_receipts",
     ),
     path(
+        "applications/<int:pk>/letter/<str:kind>/pdf/",
+        views.application_document_pdf,
+        name="application_document_pdf",
+    ),
+    path(
         "applications/<int:pk>/letter/<str:kind>/",
         views.application_letter,
         name="application_letter",

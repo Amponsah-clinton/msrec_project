@@ -32,6 +32,7 @@
           <button type="button" class="settings-tab" data-target="testimonials" role="tab" aria-selected="false">Testimonials</button>
           <button type="button" class="settings-tab" data-target="applicant-faqs" role="tab" aria-selected="false">Applicant FAQs</button>
           {% if request.user.is_superuser or request.user.role == 'admin' %}<button type="button" class="settings-tab" data-target="certificates" role="tab" aria-selected="false">Certificates</button>{% endif %}
+          {% if request.user.is_superuser or request.user.role == 'admin' %}<button type="button" class="settings-tab" data-target="approval-docs" role="tab" aria-selected="false">Approval Documents</button>{% endif %}
         </div>
 
         <!-- Site Identity -->
@@ -530,6 +531,166 @@
         </section>
         {% endif %}
 
+        {% if request.user.is_superuser or request.user.role == 'admin' %}
+        <!-- Approval Documents -->
+        <section class="settings-panel-section" id="approval-docs">
+          <div class="panel settings-panel">
+            <div class="form-section">
+              <div class="apd-head">
+                <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/></svg> Approval Documents</h3>
+                <p class="section-note">When a study is approved, the applicant receives an email with two PDFs attached: the <strong>approval letter</strong> and the <strong>certificate of ethical clearance</strong>. Write the wording here &mdash; the <code>{placeholders}</code> are filled in for each study. Both documents are signed by the Chair set under <a href="#certificates" data-apd-tab-link="certificates">Certificates</a>.</p>
+              </div>
+
+              <div class="apd-seg" role="tablist" aria-label="Document">
+                <button type="button" class="apd-seg-btn active" data-apd-show="email" aria-pressed="true">
+                  <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg> Email
+                </button>
+                <button type="button" class="apd-seg-btn" data-apd-show="letter" aria-pressed="false">
+                  <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg> Approval letter
+                </button>
+                <button type="button" class="apd-seg-btn" data-apd-show="certificate" aria-pressed="false">
+                  <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="m9 12.5-1.5 7 4.5-2 4.5 2-1.5-7"/></svg> Certificate
+                </button>
+              </div>
+
+              <div class="apd-chips" aria-label="Placeholders">
+                <span class="apd-chips-label">Insert:</span>
+                {% for key, description in approval_placeholders %}
+                <button type="button" class="apd-chip" data-apd-insert="{{ '{' }}{{ key }}{{ '}' }}" title="{{ description }}">{{ '{' }}{{ key }}{{ '}' }}</button>
+                {% endfor %}
+              </div>
+
+              {% with t=approval_template %}
+
+              <!-- Email -->
+              <form method="post" class="apd-card" data-apd-card="email" id="apdForm-email">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_approval_template">
+                <input type="hidden" name="section" value="email">
+                <input type="hidden" name="tab" value="approval-docs">
+                <div class="apd-card-head">
+                  <div><h4>Approval email</h4><p>Sent to the applicant, with both PDFs attached.</p></div>
+                </div>
+                <div class="field"><label for="apdEmailSubject">Subject <span class="apd-req">*</span></label>
+                  <input type="text" id="apdEmailSubject" name="email_subject" maxlength="200" value="{{ t.email_subject }}" required></div>
+                <div class="field"><label for="apdEmailHeading">Heading <span class="apd-req">*</span></label>
+                  <input type="text" id="apdEmailHeading" name="email_heading" maxlength="200" value="{{ t.email_heading }}" required></div>
+                <div class="field"><label for="apdEmailBody">Message <span class="apd-req">*</span></label>
+                  <textarea id="apdEmailBody" name="email_body" rows="11" required>{{ t.email_body }}</textarea>
+                  <p class="field-hint">Leave a blank line between paragraphs. The approval reference and verification code are shown in a box under the first paragraph.</p></div>
+                <div class="apd-actions">
+                  <button type="submit" class="apd-link-danger" form="apdReset-email">Restore defaults</button>
+                  <div class="apd-actions-right">
+                    <button type="submit" class="btn-secondary" formaction="{% url 'admin_dashboard:approval_template_preview' 'email' %}" formtarget="_blank" formnovalidate>Preview</button>
+                    <button type="submit" class="btn-primary">Save email</button>
+                  </div>
+                </div>
+              </form>
+
+              <!-- Approval letter -->
+              <form method="post" class="apd-card" data-apd-card="letter" id="apdForm-letter" hidden>
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_approval_template">
+                <input type="hidden" name="section" value="letter">
+                <input type="hidden" name="tab" value="approval-docs">
+                <div class="apd-card-head">
+                  <div><h4>Approval letter</h4><p>A4 on MSREC letterhead: reference, date and addressee are added automatically.</p></div>
+                </div>
+                <div class="apd-grid">
+                  <div class="field apd-span"><label for="apdLetterSubject">Subject line <span class="apd-req">*</span></label>
+                    <input type="text" id="apdLetterSubject" name="letter_subject" maxlength="300" value="{{ t.letter_subject }}" required></div>
+                  <div class="field"><label for="apdLetterSalutation">Salutation</label>
+                    <input type="text" id="apdLetterSalutation" name="letter_salutation" maxlength="200" value="{{ t.letter_salutation }}"></div>
+                  <div class="field"><label for="apdLetterSignOff">Sign-off</label>
+                    <input type="text" id="apdLetterSignOff" name="letter_sign_off" maxlength="120" value="{{ t.letter_sign_off }}"></div>
+                </div>
+                <div class="field"><label for="apdLetterBody">Letter body <span class="apd-req">*</span></label>
+                  <textarea id="apdLetterBody" name="letter_body" rows="8" required>{{ t.letter_body }}</textarea>
+                  <p class="field-hint">Leave a blank line between paragraphs.</p></div>
+                <div class="field"><label for="apdLetterCondHeading">Conditions heading</label>
+                  <input type="text" id="apdLetterCondHeading" name="letter_conditions_heading" maxlength="120" value="{{ t.letter_conditions_heading }}"></div>
+                <div class="field"><label for="apdLetterConditions">Conditions of approval</label>
+                  <textarea id="apdLetterConditions" name="letter_conditions" rows="7">{{ t.letter_conditions }}</textarea>
+                  <p class="field-hint">One condition per line &mdash; they're numbered automatically. Leave empty to omit the list.</p></div>
+                <div class="field"><label for="apdLetterClosing">Closing paragraph</label>
+                  <textarea id="apdLetterClosing" name="letter_closing" rows="3">{{ t.letter_closing }}</textarea></div>
+                <div class="apd-toggles">
+                  <label class="apd-toggle"><input type="checkbox" name="letter_show_summary" {% if t.letter_show_summary %}checked{% endif %}><span>Approval details box</span></label>
+                  <label class="apd-toggle"><input type="checkbox" name="letter_show_verification" {% if t.letter_show_verification %}checked{% endif %}><span>Verification QR code</span></label>
+                </div>
+                <div class="apd-actions">
+                  <button type="submit" class="apd-link-danger" form="apdReset-letter">Restore defaults</button>
+                  <div class="apd-actions-right">
+                    <button type="submit" class="btn-secondary" formaction="{% url 'admin_dashboard:approval_template_preview' 'letter' %}" formtarget="_blank" formnovalidate>Preview PDF</button>
+                    <button type="submit" class="btn-primary">Save letter</button>
+                  </div>
+                </div>
+              </form>
+
+              <!-- Certificate -->
+              <form method="post" class="apd-card" data-apd-card="certificate" id="apdForm-certificate" hidden>
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_approval_template">
+                <input type="hidden" name="section" value="certificate">
+                <input type="hidden" name="tab" value="approval-docs">
+                <div class="apd-card-head">
+                  <div><h4>Certificate of ethical clearance</h4><p>A4 landscape. The study title sits between the intro and the statement and is sized to fit, however long.</p></div>
+                </div>
+
+                <div class="apd-cert-sketch" aria-hidden="true">
+                  <span class="apd-sk-title"><b id="apdSkTitle">{{ t.cert_title }}</b> <i id="apdSkSubtitle">{{ t.cert_subtitle }}</i></span>
+                  <span class="apd-sk-intro" id="apdSkIntro">{{ t.cert_intro }}</span>
+                  <span class="apd-sk-study">{study_title}</span>
+                  <span class="apd-sk-statement">statement &middot; details &middot; seal &middot; Chair's signature</span>
+                </div>
+
+                <div class="apd-grid">
+                  <div class="field"><label for="apdCertTitle">Title <span class="apd-req">*</span></label>
+                    <input type="text" id="apdCertTitle" name="cert_title" maxlength="60" value="{{ t.cert_title }}" required data-apd-sketch="apdSkTitle"></div>
+                  <div class="field"><label for="apdCertSubtitle">Title, second part (italic)</label>
+                    <input type="text" id="apdCertSubtitle" name="cert_subtitle" maxlength="80" value="{{ t.cert_subtitle }}" data-apd-sketch="apdSkSubtitle"></div>
+                  <div class="field apd-span"><label for="apdCertIntro">Line above the study title</label>
+                    <input type="text" id="apdCertIntro" name="cert_intro" maxlength="200" value="{{ t.cert_intro }}" data-apd-sketch="apdSkIntro"></div>
+                </div>
+                <div class="field"><label for="apdCertStatement">Statement under the study title <span class="apd-req">*</span></label>
+                  <textarea id="apdCertStatement" name="cert_statement" rows="4" required>{{ t.cert_statement }}</textarea></div>
+                <div class="field"><label for="apdCertSeal">Seal caption</label>
+                  <input type="text" id="apdCertSeal" name="cert_seal_caption" maxlength="24" value="{{ t.cert_seal_caption }}">
+                  <p class="field-hint">Up to 24 characters, printed inside the round seal.</p></div>
+                <p class="apd-toggles-label">Show on the certificate</p>
+                <div class="apd-toggles">
+                  <label class="apd-toggle"><input type="checkbox" name="cert_show_reference" {% if t.cert_show_reference %}checked{% endif %}><span>Reference number</span></label>
+                  <label class="apd-toggle"><input type="checkbox" name="cert_show_pathway" {% if t.cert_show_pathway %}checked{% endif %}><span>Review pathway</span></label>
+                  <label class="apd-toggle"><input type="checkbox" name="cert_show_approval_date" {% if t.cert_show_approval_date %}checked{% endif %}><span>Date of approval</span></label>
+                  <label class="apd-toggle"><input type="checkbox" name="cert_show_valid_until" {% if t.cert_show_valid_until %}checked{% endif %}><span>Valid until</span></label>
+                  <label class="apd-toggle"><input type="checkbox" name="cert_show_verification" {% if t.cert_show_verification %}checked{% endif %}><span>Verification QR code</span></label>
+                </div>
+                <div class="apd-actions">
+                  <button type="submit" class="apd-link-danger" form="apdReset-certificate">Restore defaults</button>
+                  <div class="apd-actions-right">
+                    <button type="submit" class="btn-secondary" formaction="{% url 'admin_dashboard:approval_template_preview' 'certificate' %}" formtarget="_blank" formnovalidate>Preview PDF</button>
+                    <button type="submit" class="btn-primary">Save certificate</button>
+                  </div>
+                </div>
+              </form>
+
+              <form method="post" id="apdReset-email" data-confirm="Restore the approval email to the default wording? Your edits will be replaced." data-confirm-label="Restore" hidden>
+                {% csrf_token %}<input type="hidden" name="action" value="reset_approval_template"><input type="hidden" name="section" value="email"><input type="hidden" name="tab" value="approval-docs">
+              </form>
+              <form method="post" id="apdReset-letter" data-confirm="Restore the approval letter to the default wording? Your edits will be replaced." data-confirm-label="Restore" hidden>
+                {% csrf_token %}<input type="hidden" name="action" value="reset_approval_template"><input type="hidden" name="section" value="letter"><input type="hidden" name="tab" value="approval-docs">
+              </form>
+              <form method="post" id="apdReset-certificate" data-confirm="Restore the certificate to the default wording? Your edits will be replaced." data-confirm-label="Restore" hidden>
+                {% csrf_token %}<input type="hidden" name="action" value="reset_approval_template"><input type="hidden" name="section" value="certificate"><input type="hidden" name="tab" value="approval-docs">
+              </form>
+
+              {% if t.updated_by %}<p class="apd-updated">Last changed {{ t.updated_at|date:"j M Y, H:i" }} by {{ t.updated_by.full_name }}.</p>{% endif %}
+              {% endwith %}
+            </div>
+          </div>
+        </section>
+        {% endif %}
+
         <!-- Testimonials -->
         <section class="settings-panel-section" id="testimonials">
           <div class="panel settings-full-panel">
@@ -678,6 +839,7 @@
 
 {% block extra_js %}
 <script src="{% static 'dashboard/js/signature-pad.js' %}"></script>
+<script src="{% static 'dashboard/js/approval-templates.js' %}"></script>
 <script>
 (function () {
   var tabs = document.querySelectorAll('.settings-tab');
