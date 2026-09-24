@@ -14,6 +14,7 @@ urlpatterns = [
     path("dashboard/secretariat/", include("secretariat_dashboard.urls")),
     path("admins/", include("admin_dashboard.urls")),
     path("notifications/", include("notifications.urls")),
+    path("assistant/", include("assistant.urls")),
 ]
 
 if settings.DEBUG:

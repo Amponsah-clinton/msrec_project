@@ -1,0 +1,102 @@
+{% comment %}
+"Scholar", the MSREC assistant mascot: original inline SVG (no stock art).
+A friendly support robot: rounded white head, teal screen face, orange
+headset with mic, and a speech bubble. Brand palette: teal #159a96, navy
+#1b2a4a, warm orange.
+
+  {% include "assistant/_mascot.html" with p="launch" %}              full figure + bubble
+  {% include "assistant/_mascot.html" with p="bust" bust=True %}        head + bubble (launcher)
+  {% include "assistant/_mascot.html" with p="avatar" head_only=True %} head only (chat avatar)
+
+`p` prefixes every gradient id so several copies can share one page.
+{% endcomment %}
+<svg class="msa-mascot{% if head_only %} msa-mascot--head{% endif %}" viewBox="{% if head_only %}16 4 166 166{% elif bust %}12 2 222 162{% else %}0 0 232 226{% endif %}" aria-hidden="true" focusable="false">
+  <defs>
+    <radialGradient id="{{ p }}-shell" cx="38%" cy="28%" r="80%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset=".62" stop-color="#f1f4f7"/>
+      <stop offset="1" stop-color="#d6dde5"/>
+    </radialGradient>
+    <linearGradient id="{{ p }}-screen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#8fe0e2"/>
+      <stop offset=".5" stop-color="#3fb8c2"/>
+      <stop offset="1" stop-color="#1c8fa0"/>
+    </linearGradient>
+    <radialGradient id="{{ p }}-orange" cx="35%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#ffc98a"/>
+      <stop offset=".55" stop-color="#f5a24a"/>
+      <stop offset="1" stop-color="#d9802a"/>
+    </radialGradient>
+    <linearGradient id="{{ p }}-bubble" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3fb3b8"/>
+      <stop offset="1" stop-color="#15898c"/>
+    </linearGradient>
+    <linearGradient id="{{ p }}-teal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4cc4c6"/>
+      <stop offset="1" stop-color="#159a96"/>
+    </linearGradient>
+  </defs>
+
+  {% if not head_only and not bust %}
+  <!-- body -->
+  <ellipse cx="100" cy="214" rx="50" ry="6" fill="#0d1b2e" opacity=".12"/>
+  <path d="M54 206 C54 170 76 156 100 156 C124 156 146 170 146 206 Z" fill="url(#{{ p }}-shell)" stroke="#cfd8e2" stroke-width="1.4"/>
+  <path d="M101 158 C98 176 98 192 100 206" fill="none" stroke="#c9d3de" stroke-width="1.2"/>
+  <rect x="50" y="198" width="100" height="12" rx="6" fill="url(#{{ p }}-teal)"/>
+  <circle cx="110" cy="176" r="4.2" fill="#1b2a4a"/>
+  <circle cx="111" cy="191" r="4.2" fill="#1b2a4a"/>
+  <circle cx="108.8" cy="174.8" r="1.2" fill="#fff" opacity=".6"/>
+  <ellipse cx="100" cy="156" rx="21" ry="6.5" fill="url(#{{ p }}-teal)"/>
+  {% endif %}
+
+  <!-- head -->
+  <rect x="96" y="30" width="8" height="20" rx="3" fill="#1b2a4a"/>
+  <rect x="40" y="46" width="120" height="108" rx="52" fill="url(#{{ p }}-shell)" stroke="#cfd8e2" stroke-width="1.4"/>
+  <path d="M58 64 C70 52 92 48 112 50" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".9"/>
+
+  <!-- headband arching over the head, antenna ball on top -->
+  <path d="M40 100 C34 4 166 4 160 100" fill="none" stroke="#1b2a4a" stroke-width="6.5" stroke-linecap="round"/>
+  <path d="M46 70 C56 30 84 22 96 22" fill="none" stroke="#3d5278" stroke-width="2" stroke-linecap="round" opacity=".8"/>
+  <circle cx="100" cy="21" r="11" fill="url(#{{ p }}-orange)"/>
+  <circle cx="96" cy="17" r="3.3" fill="#fff" opacity=".6"/>
+
+  <!-- face screen -->
+  <rect x="57" y="70" width="94" height="72" rx="27" fill="#1b2a4a"/>
+  <rect x="62" y="75" width="84" height="62" rx="23" fill="url(#{{ p }}-screen)"/>
+  <path d="M70 84 C78 78 96 77 110 78" fill="none" stroke="#fff" stroke-width="3.2" stroke-linecap="round" opacity=".45"/>
+
+  <!-- eyes -->
+  <g class="msa-eyes">
+    <ellipse cx="88" cy="103" rx="6.6" ry="9.4" fill="#10192a"/>
+    <ellipse cx="121" cy="103" rx="6.6" ry="9.4" fill="#10192a"/>
+    <circle cx="85.8" cy="99" r="2.3" fill="#fff"/>
+    <circle cx="118.8" cy="99" r="2.3" fill="#fff"/>
+  </g>
+  <!-- cheeks + smile -->
+  <ellipse cx="76" cy="119" rx="6.5" ry="4.2" fill="#ff8f98" opacity=".85"/>
+  <ellipse cx="133" cy="119" rx="6.5" ry="4.2" fill="#ff8f98" opacity=".85"/>
+  <path d="M95 115.5 Q104.5 130 114 115.5 Z" fill="#1b2a4a"/>
+  <path d="M98.6 121.4 Q104.5 127.6 110.4 121.4 Q104.5 118.8 98.6 121.4 Z" fill="#ff7c89"/>
+
+  <!-- headset: left cup -->
+  <circle cx="40" cy="104" r="22" fill="#1b2a4a"/>
+  <circle cx="36" cy="104" r="19" fill="url(#{{ p }}-orange)"/>
+  <circle cx="36" cy="104" r="11.5" fill="#e48d32"/>
+  <circle cx="36" cy="104" r="7" fill="url(#{{ p }}-teal)"/>
+  <circle cx="33.5" cy="101" r="2" fill="#fff" opacity=".6"/>
+  <!-- right cup -->
+  <path d="M156 86 C168 88 170 120 156 124 Z" fill="url(#{{ p }}-orange)"/>
+  <!-- mic boom -->
+  <path d="M162 118 C166 134 156 146 138 148" fill="none" stroke="#1b2a4a" stroke-width="3.2" stroke-linecap="round"/>
+  <rect x="124" y="142" width="16" height="11" rx="5.5" fill="url(#{{ p }}-orange)"/>
+
+  {% if not head_only %}
+  <!-- speech bubble -->
+  <g class="msa-bubble">
+    <path d="M172 12 H216 C225 12 230 18 230 27 V43 C230 52 225 58 216 58 H192 L182 68 L184 58 H172 C163 58 158 52 158 43 V27 C158 18 163 12 172 12 Z" fill="url(#{{ p }}-bubble)"/>
+    <circle class="msa-dot" cx="180" cy="35" r="4.4" fill="#fff"/>
+    <circle class="msa-dot" cx="194" cy="35" r="4.4" fill="#fff"/>
+    <circle class="msa-dot" cx="208" cy="35" r="4.4" fill="#fff"/>
+  </g>
+  {% endif %}
+</svg>

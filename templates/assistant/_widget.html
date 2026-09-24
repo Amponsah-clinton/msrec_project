@@ -1,0 +1,58 @@
+{% load static %}{% comment %}
+The MSREC Assistant ("Scholar") chat widget. Included once at the bottom of
+templates/base.html (public site) and templates/dashboards/base.html (every
+dashboard) -- pass dashboard=True from the latter so it picks up the
+dashboard's dark theme and sidebar links. Behaviour: static/assistant/
+assistant.js; server side: the `assistant` app.
+{% endcomment %}
+<link rel="stylesheet" href="{% static 'assistant/assistant.css' %}">
+<div class="msa{% if dashboard %} msa--dash{% endif %}" id="msrecAssistant"
+     data-endpoint="{% url 'assistant:chat' %}"
+     data-csrf="{{ csrf_token }}"
+     data-scope="{% if request.user.is_authenticated %}u{{ request.user.pk }}{% else %}public{% endif %}"
+     data-name="{% if request.user.is_authenticated %}{{ request.user.first_name }}{% endif %}"
+     data-role="{% if request.user.is_authenticated %}{% if request.user.is_superuser and not request.user.role %}admin{% else %}{{ request.user.role }}{% endif %}{% endif %}">
+
+  <div class="msa-teaser" id="msaTeaser" hidden>
+    <button type="button" class="msa-teaser-close" id="msaTeaserClose" aria-label="Dismiss">&times;</button>
+    <strong>Hi, I'm Scholar!</strong>
+    <span>Questions about applying, fees or ethics review? Ask me.</span>
+  </div>
+
+  <button type="button" class="msa-launcher" id="msaLauncher" aria-expanded="false" aria-controls="msaPanel" aria-label="Open the MSREC Assistant">
+    <span class="msa-launcher-bot">{% include "assistant/_mascot.html" with p="msaL" bust=True %}</span>
+    <span class="msa-launcher-close" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
+    </span>
+  </button>
+
+  <div class="msa-panel" id="msaPanel" role="dialog" aria-modal="false" aria-labelledby="msaTitle" hidden>
+    <header class="msa-head">
+      <span class="msa-head-avatar">{% include "assistant/_mascot.html" with p="msaH" head_only=True %}</span>
+      <div class="msa-head-text">
+        <strong id="msaTitle">Scholar</strong>
+        <span><i class="msa-online"></i> MSREC Assistant</span>
+      </div>
+      <button type="button" class="msa-icon-btn" id="msaReset" title="Start a new chat" aria-label="Start a new chat">
+        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+      </button>
+      <button type="button" class="msa-icon-btn" id="msaClose" title="Close" aria-label="Close the assistant">
+        <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+    </header>
+
+    <div class="msa-body" id="msaBody" aria-live="polite">
+      <div class="msa-log" id="msaLog"></div>
+      <div class="msa-chips" id="msaChips"></div>
+    </div>
+
+    <form class="msa-compose" id="msaForm" autocomplete="off">
+      <textarea id="msaInput" rows="1" maxlength="1500" placeholder="Ask about applying, fees, review…" aria-label="Your question"></textarea>
+      <button type="submit" class="msa-send" id="msaSend" aria-label="Send" disabled>
+        <svg viewBox="0 0 24 24"><path d="M5 12h13"/><path d="m12 5 7 7-7 7"/></svg>
+      </button>
+    </form>
+    <p class="msa-foot">Guidance only &mdash; decisions are made by the Committee. Please don't share confidential participant data.</p>
+  </div>
+</div>
+<script src="{% static 'assistant/assistant.js' %}" defer></script>

@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     "chair_dashboard",
     "secretariat_dashboard",
     "admin_dashboard",
+    "assistant",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -181,6 +182,14 @@ RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 # Not wired into any view yet -- these are just read from the environment
 # so the project is ready to use them when needed.
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
+
+# ---- MSREC Assistant (site chatbot, see assistant/llm.py) ----
+# Keys come only from the environment -- never hard-code them here.
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.6-flash")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 SUPABASE_ANON_KEY = os.getenv("SUPABASE_ANON_KEY", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 SUPABASE_PUBLISHABLE_KEY = os.getenv("SUPABASE_PUBLISHABLE_KEY", "")
