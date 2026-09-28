@@ -210,7 +210,12 @@ _AVATAR_COLORS = ["#2a4747", "#7a4fb5", "#2f5fa8", "#1f7a5c", "#d97b29", "#c0392
 
 
 def board_committee(request):
-    members = list(GovernanceMember.objects.filter(is_active=True))
+    # Reviewers get their own public page (see reviewers() below) --
+    # excluded here so a Reviewer added from the same Add Member form
+    # doesn't also show up mixed into Board & Committee's "All" tab.
+    members = list(
+        GovernanceMember.objects.filter(is_active=True).exclude(group=GovernanceMember.Group.REVIEWER)
+    )
     for member in members:
         member.photo_url = storage.public_url(member.photo_path)
         member.avatar_color = _AVATAR_COLORS[member.pk % len(_AVATAR_COLORS)]
@@ -225,6 +230,70 @@ def board_committee(request):
     return render(request, "pages/board_committee.html", {
         "members": members,
         "counts": counts,
+    })
+
+
+def reviewers(request):
+    """Public directory of MSREC's reviewers -- pulled straight from the
+    real, currently-approved Reviewer accounts (accounts.models.User,
+    reviewer_status=APPROVED), the same live data every other part of
+    this app treats as the source of truth for "who is a reviewer" (e.g.
+    secretariat_dashboard's Reviewer Directory). A newly approved
+    reviewer appears here automatically, with no separate admin step --
+    unlike Board & Committee's hand-curated GovernanceMember rows, there
+    is deliberately no second copy of this list to keep in sync.
+
+    Every Committee member is also an approved Reviewer (see User.
+    approve_role), so this naturally includes them too. Any admin-curated
+    GovernanceMember rows with group=REVIEWER (e.g. a featured profile
+    with a fuller bio) are shown first, ahead of the auto-generated list,
+    for whoever the Secretariat chooses to highlight.
+    """
+    from accounts import storage as accounts_storage
+    from accounts.models import User
+
+    featured = list(
+        GovernanceMember.objects.filter(is_active=True, group=GovernanceMember.Group.REVIEWER)
+    )
+    featured_names = {m.full_name.strip().lower() for m in featured}
+    members = []
+    for member in featured:
+        members.append({
+            "display_name": member.display_name,
+            "role_title": member.role_title,
+            "tag": member.tag,
+            "photo_url": storage.public_url(member.photo_path),
+            "initials": member.initials,
+            "avatar_color": _AVATAR_COLORS[member.pk % len(_AVATAR_COLORS)],
+        })
+
+    reviewer_accounts = (
+        User.objects.filter(reviewer_status=User.RequestStatus.APPROVED, is_active=True)
+        .order_by("first_name", "last_name")
+    )
+    for user in reviewer_accounts:
+        if user.full_name.strip().lower() in featured_names:
+            continue  # already shown as a featured profile above
+        profile = user.reviewer_profile or {}
+        position = (profile.get("reviewerPosition") or "").strip()
+        institution = (profile.get("reviewerInstitution") or "").strip()
+        discipline = (profile.get("reviewerDiscipline") or "").strip()
+        role_title = ", ".join(part for part in (position, institution) if part) or "Ethics Reviewer"
+        members.append({
+            "display_name": user.full_name,
+            "role_title": role_title,
+            "tag": discipline,
+            "photo_url": accounts_storage.create_signed_url(user.profile_photo_path) if user.profile_photo_path else None,
+            "initials": user.initials,
+            "avatar_color": _AVATAR_COLORS[user.pk % len(_AVATAR_COLORS)],
+        })
+
+    disciplines = sorted({m["tag"] for m in members if m["tag"]})
+
+    return render(request, "pages/reviewers.html", {
+        "members": members,
+        "disciplines": disciplines,
+        "count": len(members),
     })
 
 

@@ -239,8 +239,9 @@ GOVERNANCE_TAG_CHOICES = [
 
 class GovernanceMember(models.Model):
     """One person shown on the public Board & Committee page
-    (templates/pages/board_committee.html) -- added, edited and removed
-    from admin_dashboard's Board & Committee page, photo included, so the
+    (templates/pages/board_committee.html) or the public Reviewers page
+    (templates/pages/reviewers.html) -- added, edited and removed from
+    admin_dashboard's Board & Committee page, photo included, so either
     public page always reflects who's actually currently serving without
     anyone touching a template.
     """
@@ -249,6 +250,7 @@ class GovernanceMember(models.Model):
         BOARD = "board", "Board"
         COMMITTEE = "committee", "Committee"
         SECRETARIAT = "secretariat", "Secretariat"
+        REVIEWER = "reviewer", "Reviewer"
 
     full_name = models.CharField(max_length=150)
     # Honorific shown before the name (e.g. "Prof.", "Dr.") -- kept

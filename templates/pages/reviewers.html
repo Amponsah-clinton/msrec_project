@@ -1,0 +1,247 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Reviewers | Metascholar Research Ethics Committee{% endblock %}
+{% block description %}Meet MSREC's panel of independent reviewers, what they assess in every application, the standards they work to, and how to join the panel.{% endblock %}
+{% block body_class %}bc-page{% endblock %}
+{% block fonts %}{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/board-committee.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <main class="main bc-main">
+
+    <div class="bc-wrap">
+
+      <!-- ============ HERO ============ -->
+      <section class="bc-hero">
+        <div class="bc-hero-copy">
+          <span class="section-label">Reviewers</span>
+          <h1>The independent experts who safeguard every study.</h1>
+          <p>Every application to MSREC is assessed by reviewers matched to its discipline &mdash; never by the Secretariat, and never by anyone with a conflict of interest in the study. Here's who reviews, what they check, the standards they work to, and how to join the panel.</p>
+
+          <dl class="bc-stats-row">
+            <div class="bc-stat"><dt>{{ count }}</dt><dd>Active reviewers</dd></div>
+            <div class="bc-stat"><dt>{{ disciplines|length }}</dt><dd>Disciplines represented</dd></div>
+            <div class="bc-stat"><dt>10</dt><dd>Ethical domains assessed</dd></div>
+            <div class="bc-stat"><dt>10 days</dt><dd>Typical turnaround</dd></div>
+          </dl>
+        </div>
+
+        <div class="bc-hero-visual" aria-hidden="true">
+          <div class="bc-hero-tier bc-hero-tier-board"><i class="bi bi-person-check"></i> Matched by Expertise</div>
+          <div class="bc-hero-connector"></div>
+          <div class="bc-hero-tier bc-hero-tier-committee"><i class="bi bi-clipboard-check"></i> Structured Assessment</div>
+          <div class="bc-hero-connector"></div>
+          <div class="bc-hero-tier bc-hero-tier-secretariat"><i class="bi bi-send-check"></i> Recommendation Issued</div>
+        </div>
+      </section>
+
+      <!-- ============ CATEGORY NAV ============ -->
+      <nav class="bc-toolbar" id="bcCatNav" aria-label="Reviewers page sections">
+        <a href="#rv-role" data-cat="rv-role"><i class="bi bi-diagram-3"></i> The Reviewer's Role</a>
+        <a href="#rv-assess" data-cat="rv-assess"><i class="bi bi-clipboard-check"></i> What's Assessed</a>
+        <a href="#bc-profiles" data-cat="bc-profiles"><i class="bi bi-person-badge"></i> Reviewer Profiles</a>
+        <a href="#rv-standards" data-cat="rv-standards"><i class="bi bi-shield-check"></i> Standards &amp; Independence</a>
+        <a href="#rv-join" data-cat="rv-join"><i class="bi bi-person-plus"></i> Join the Panel</a>
+      </nav>
+
+      <!-- ============ THE REVIEWER'S ROLE ============ -->
+      <section class="bc-section" id="rv-role">
+        <div class="bc-section-head">
+          <span class="bc-section-icon"><i class="bi bi-diagram-3"></i></span>
+          <div>
+            <h2>The Reviewer's Role</h2>
+            <p>Independent assessment, matched to the study &mdash; separate from the Secretariat's administrative screening and the Committee's governance.</p>
+          </div>
+        </div>
+
+        <div class="bc-structure-grid">
+          <div class="bc-structure-copy">
+            <p>Once the Secretariat confirms an application is complete, it's assigned to one or more reviewers whose declared expertise matches the study's discipline and review pathway. A reviewer works through a structured Ethical Review Assessment Form for every application, declares any conflict of interest before opening the file, and submits a recommendation &mdash; not a unilateral approval on their own authority alone for studies referred to full Committee review.</p>
+            <dl class="bc-fact-list">
+              <div><dt>Assignment</dt><dd>Matched by discipline and review pathway, never self-selected</dd></div>
+              <div><dt>Conflict of interest</dt><dd>Declared before the file opens; a conflicted reviewer is reassigned</dd></div>
+              <div><dt>Pathways</dt><dd>Expedited reviews decide directly; Full Committee reviews go to the Committee with the reviewer's recommendation</dd></div>
+              <div><dt>Confidentiality</dt><dd>Every reviewer signs a confidentiality undertaking for every assignment</dd></div>
+            </dl>
+          </div>
+
+          <div class="bc-flow" role="img" aria-label="An application is assigned to a matched reviewer, who completes a structured assessment, then issues a recommendation.">
+            <div class="bc-flow-step">
+              <span class="bc-flow-marker"><i class="bi bi-person-check"></i></span>
+              <div class="bc-flow-text"><strong>Matched</strong><span>By discipline &amp; pathway</span></div>
+            </div>
+            <div class="bc-flow-step">
+              <span class="bc-flow-marker"><i class="bi bi-clipboard-check"></i></span>
+              <div class="bc-flow-text"><strong>Assessed</strong><span>10-point ethical checklist</span></div>
+            </div>
+            <div class="bc-flow-step">
+              <span class="bc-flow-marker"><i class="bi bi-send-check"></i></span>
+              <div class="bc-flow-text"><strong>Recommended</strong><span>To applicant or Committee</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ WHAT'S ASSESSED ============ -->
+      <section class="bc-section" id="rv-assess">
+        <div class="bc-section-head">
+          <span class="bc-section-icon"><i class="bi bi-clipboard-check"></i></span>
+          <div>
+            <h2>What's Assessed</h2>
+            <p>The same ten-point ethical review checklist behind every reviewer's assessment, whatever the discipline.</p>
+          </div>
+        </div>
+
+        <div class="bc-resp-grid">
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-lightbulb"></i></span>
+            <h4>Scientific Rationale</h4>
+            <p>Whether the research question and design are sound enough to justify the study at all.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-shield-exclamation"></i></span>
+            <h4>Risks &amp; Benefits</h4>
+            <p>Whether risks to participants are minimized and justified by the study's potential benefit.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-people"></i></span>
+            <h4>Participant Selection</h4>
+            <p>Whether recruitment and selection are fair, with no group unduly burdened or excluded.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-pencil-square"></i></span>
+            <h4>Informed Consent</h4>
+            <p>Whether the consent process and materials genuinely inform, in language participants can follow.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-lock"></i></span>
+            <h4>Privacy &amp; Data Handling</h4>
+            <p>How data is collected, stored, accessed and eventually disposed of, and who can see it.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-heart"></i></span>
+            <h4>Vulnerable Participants</h4>
+            <p>Extra safeguards where participants have reduced capacity to protect their own interests.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ REVIEWER PROFILES ============ -->
+      <section class="bc-section" id="bc-profiles">
+        <div class="bc-section-head">
+          <span class="bc-section-icon"><i class="bi bi-person-badge"></i></span>
+          <div>
+            <h2>Reviewer Profiles</h2>
+            <p>Members of the panel who have consented to a public profile.</p>
+          </div>
+        </div>
+
+        {% if disciplines %}
+        <div class="bc-people-filter" id="bcPeopleFilter">
+          <button type="button" class="bc-filter-btn is-active" data-group="all">All <span>{{ count }}</span></button>
+          {% for discipline in disciplines %}
+          <button type="button" class="bc-filter-btn" data-group="{{ discipline }}">{{ discipline }}</button>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="bc-people-grid" id="bcPeopleGrid">
+          {% for member in members %}
+          <div class="bc-person" data-group="{{ member.tag }}">
+            {% if member.photo_url %}
+            <span class="bc-avatar bc-avatar-photo"><img src="{{ member.photo_url }}" alt="{{ member.display_name }}" loading="lazy"></span>
+            {% else %}
+            <span class="bc-avatar" style="--av-bg:{{ member.avatar_color }};">{{ member.initials }}</span>
+            {% endif %}
+            <h4>{{ member.display_name }}</h4>
+            <span class="bc-person-role">{{ member.role_title }}</span>
+            {% if member.tag %}<span class="bc-person-tag">{{ member.tag }}</span>{% endif %}
+          </div>
+          {% empty %}
+          <p class="bc-people-empty">Reviewer profiles will appear here once the Secretariat adds them.</p>
+          {% endfor %}
+        </div>
+      </section>
+
+      <!-- ============ STANDARDS & INDEPENDENCE ============ -->
+      <section class="bc-section" id="rv-standards">
+        <div class="bc-section-head">
+          <span class="bc-section-icon"><i class="bi bi-shield-check"></i></span>
+          <div>
+            <h2>Standards &amp; Independence</h2>
+            <p>What every reviewer commits to before they're assigned a single application.</p>
+          </div>
+        </div>
+
+        <div class="bc-fact-grid">
+          <div class="bc-fact-card">
+            <span class="bc-fact-num">100%</span>
+            <span class="bc-fact-label">Reviewers sign a confidentiality undertaking, every assignment</span>
+          </div>
+          <div class="bc-fact-card">
+            <span class="bc-fact-num">1st</span>
+            <span class="bc-fact-label">Conflict-of-interest declaration comes before the file is opened</span>
+          </div>
+          <div class="bc-fact-card">
+            <span class="bc-fact-num">10</span>
+            <span class="bc-fact-label">Ethical domains checked on every single assessment</span>
+          </div>
+          <div class="bc-fact-card">
+            <span class="bc-fact-num">0</span>
+            <span class="bc-fact-label">Reviewers permitted to assess a study they're conflicted on</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ JOIN THE PANEL ============ -->
+      <section class="bc-section" id="rv-join">
+        <div class="bc-section-head">
+          <span class="bc-section-icon"><i class="bi bi-person-plus"></i></span>
+          <div>
+            <h2>Join the Panel</h2>
+            <p>MSREC recruits reviewers across health, social science, engineering, AI/ICT and evidence-synthesis disciplines.</p>
+          </div>
+        </div>
+
+        <div class="bc-resp-grid">
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-mortarboard"></i></span>
+            <h4>Relevant Expertise</h4>
+            <p>Postgraduate qualification or equivalent professional standing in a discipline MSREC reviews.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-journal-check"></i></span>
+            <h4>Research Ethics Familiarity</h4>
+            <p>Working knowledge of human-participant research ethics, or willingness to complete MSREC's orientation.</p>
+          </div>
+          <div class="bc-resp-card">
+            <span class="bc-resp-icon"><i class="bi bi-clock-history"></i></span>
+            <h4>Time to Commit</h4>
+            <p>Capacity to turn around an assigned assessment within roughly 10 working days.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ CLOSING CTA ============ -->
+      <section class="bc-cta">
+        <div>
+          <h4>Interested in joining the panel?</h4>
+          <p>Sign up and select Reviewer &mdash; the Secretariat reviews every request before it's approved.</p>
+        </div>
+        <div class="bc-cta-actions">
+          <a href="{% url 'pages:signup' %}" class="bc-cta-btn bc-cta-btn-primary">Apply as a Reviewer <i class="bi bi-arrow-right"></i></a>
+          <a href="{% url 'pages:contact' %}" class="bc-cta-btn bc-cta-btn-ghost">Contact the Secretariat</a>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/board-committee.js' %}"></script>
+{% endblock %}

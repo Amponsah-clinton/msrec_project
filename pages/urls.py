@@ -20,6 +20,7 @@ urlpatterns = [
     path("resources/", views.resources, name="resources"),
     path("governance/", TemplateView.as_view(template_name="pages/governance.html"), name="governance"),
     path("board-committee/", views.board_committee, name="board_committee"),
+    path("reviewers/", views.reviewers, name="reviewers"),
     path("verify/", views.verify, name="verify"),
     path("verify/lookup/", views.verify_lookup, name="verify_lookup"),
     path("terms-of-use/", TemplateView.as_view(template_name="pages/terms_of_use.html"), name="terms"),

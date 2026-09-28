@@ -1285,7 +1285,7 @@ def help_support(request):
     return render(request, "dashboards/admin/help-support.html")
 
 
-BOARD_COMMITTEE_TABS = {"all", "board", "committee", "secretariat"}
+BOARD_COMMITTEE_TABS = {"all", "board", "committee", "secretariat", "reviewer"}
 
 
 @login_required
@@ -1325,6 +1325,7 @@ def board_committee(request):
         "board": sum(1 for m in members if m.group == GovernanceMember.Group.BOARD),
         "committee": sum(1 for m in members if m.group == GovernanceMember.Group.COMMITTEE),
         "secretariat": sum(1 for m in members if m.group == GovernanceMember.Group.SECRETARIAT),
+        "reviewer": sum(1 for m in members if m.group == GovernanceMember.Group.REVIEWER),
     }
 
     return render(request, "dashboards/admin/board-committee.html", {
