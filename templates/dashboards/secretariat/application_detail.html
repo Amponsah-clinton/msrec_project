@@ -459,6 +459,7 @@
               <div class="apply-file-item">
                 <i class="bi bi-file-earmark-text"></i>
                 <span>{{ doc.name }}</span>
+                {% if doc.is_new %}<span class="badge text-bg-success">New</span>{% endif %}
                 {% if doc.url %}<a href="{{ doc.url }}" target="_blank" rel="noopener" class="acct-cv-link sc-doc-link">View</a>{% endif %}
               </div>
               {% endfor %}

@@ -817,7 +817,14 @@ def application_detail(request, pk):
     application.fee_charged = fees.fee_for_application(application.review_type, application.applicant_category)
 
     documents = [
-        {**doc, "url": application_storage.public_url(doc.get("path"))}
+        {
+            **doc,
+            "url": application_storage.public_url(doc.get("path")),
+            "is_new": bool(
+                application.revision_requested_at and doc.get("uploaded_at")
+                and parse_datetime(doc["uploaded_at"]) and parse_datetime(doc["uploaded_at"]) > application.revision_requested_at
+            ),
+        }
         for doc in (application.documents or [])
     ]
 

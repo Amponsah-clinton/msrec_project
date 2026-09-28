@@ -83,9 +83,10 @@ def _collect_form_data(post):
 
 def _apply_posted_fields(application, request):
     """Common to every write path (autosave, manual "Save as Draft", and
-    final submit): copy the posted form over onto `application` and append
-    any newly-uploaded documents. Doesn't touch status/timestamps -- callers
-    decide those since draft-saves and submits treat them differently."""
+    final submit): copy the posted form over onto `application`, drop any
+    documents the applicant marked for removal, and append newly-uploaded
+    ones. Doesn't touch status/timestamps -- callers decide those since
+    draft-saves and submits treat them differently."""
     application.review_type = request.POST.get("requestedReview", "")
     application.applicant_category = request.POST.get("applicantCategory", "")
     application.form_data = _collect_form_data(request.POST)
@@ -96,6 +97,23 @@ def _apply_posted_fields(application, request):
     except (TypeError, ValueError):
         pass
 
+    documents = list(application.documents or [])
+
+    # A revision/draft edit can drop a superseded document (e.g. a fixed
+    # consent form) instead of only ever piling new files on top of the
+    # old one -- each existing document's "Remove" checkbox posts its
+    # storage path here. The object is actually deleted from Storage too,
+    # best-effort, so a removed file doesn't linger as an orphan (same
+    # fail-open contract as every other Storage call in this project).
+    remove_paths = set(request.POST.getlist("remove_document"))
+    if remove_paths:
+        kept, dropped = [], []
+        for doc in documents:
+            (dropped if doc.get("path") in remove_paths else kept).append(doc)
+        for doc in dropped:
+            storage.delete_object(doc.get("path"))
+        documents = kept
+
     uploaded_files = request.FILES.getlist("documents")
     if uploaded_files:
         # Documents -> Supabase Storage "application" bucket, grouped under
@@ -105,7 +123,6 @@ def _apply_posted_fields(application, request):
         # apply.js), so this only runs on the real Submit / Save-as-Draft
         # button, each of which is a normal multipart form submission.
         upload_folder = uuid.uuid4().hex
-        documents = list(application.documents or [])
         for uploaded in uploaded_files:
             object_path = storage.upload_application_file(uploaded, folder=upload_folder)
             if object_path:
@@ -114,7 +131,15 @@ def _apply_posted_fields(application, request):
                     "path": object_path,
                     "size": uploaded.size,
                     "content_type": getattr(uploaded, "content_type", "") or "",
+                    # Lets staff tell a document added during a revision
+                    # apart from the original submission's set (see
+                    # secretariat_dashboard/application_detail.html's "New"
+                    # badge) -- stored as an ISO string since this list
+                    # lives in a plain JSONField, not real DateTime rows.
+                    "uploaded_at": timezone.now().isoformat(),
                 })
+
+    if remove_paths or uploaded_files:
         application.documents = documents
 
 

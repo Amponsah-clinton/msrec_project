@@ -867,6 +867,31 @@
 }
 .apply-file-remove:hover { color: var(--red); }
 
+.apply-file-remove-existing {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-faint);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.apply-file-remove-existing:hover { color: var(--red); }
+.apply-file-remove-existing input { accent-color: var(--red); cursor: pointer; }
+/* Struck-through + tinted once its own checkbox is ticked, so marking a
+   document for removal reads as an obvious, reversible state change
+   rather than a silent checkbox somewhere in the row. */
+.apply-file-item:has(.apply-file-remove-existing input:checked) {
+  background: var(--red-light);
+  border-color: color-mix(in srgb, var(--red), transparent 60%);
+}
+.apply-file-item:has(.apply-file-remove-existing input:checked) > span:not(.apply-file-size) {
+  text-decoration: line-through;
+  color: var(--text-faint);
+}
+
 /* ---------------- Declaration ---------------- */
 .apply-declaration-quote {
   margin: 0 0 20px;

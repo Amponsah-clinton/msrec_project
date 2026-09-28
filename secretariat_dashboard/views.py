@@ -751,7 +751,19 @@ def application_detail(request, pk):
     application.tab = oversight.STATUS_TO_TAB.get(application.status, "all")
 
     documents = [
-        {**doc, "url": application_storage.public_url(doc.get("path"))}
+        {
+            **doc,
+            "url": application_storage.public_url(doc.get("path")),
+            # Flags a document added after the applicant's last revision
+            # request as "New", so staff re-reviewing a resubmission don't
+            # have to guess which files actually changed. Docs uploaded
+            # before this field existed have no "uploaded_at" and just
+            # never show the badge -- never a hard error.
+            "is_new": bool(
+                application.revision_requested_at and doc.get("uploaded_at")
+                and parse_datetime(doc["uploaded_at"]) and parse_datetime(doc["uploaded_at"]) > application.revision_requested_at
+            ),
+        }
         for doc in (application.documents or [])
     ]
 

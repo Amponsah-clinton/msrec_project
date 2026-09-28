@@ -832,13 +832,18 @@
               {% if draft_application.documents %}
               <div class="apply-file-list apply-file-list-existing">
                 {% for doc in draft_application.documents %}
-                <div class="apply-file-item">
+                <div class="apply-file-item" data-existing-doc>
                   <i class="bi bi-file-earmark-check"></i>
                   <span>{{ doc.name }}</span>
                   <span class="apply-file-size">already uploaded</span>
+                  <label class="apply-file-remove-existing">
+                    <input type="checkbox" name="remove_document" value="{{ doc.path }}">
+                    Remove
+                  </label>
                 </div>
                 {% endfor %}
               </div>
+              <p class="field-hint" style="margin:6px 0 0;">Uploading a revised version of a document? Tick &ldquo;Remove&rdquo; on the old one and add the new file below.</p>
               {% endif %}
               <label class="apply-file-drop" for="applyFileInput">
                 <span class="apply-file-drop-icon"><i class="bi bi-cloud-arrow-up"></i></span>
