@@ -49,14 +49,25 @@
             <i class="bi bi-file-earmark-text"></i>
             <span>Apply</span>
           </a>
-          <button type="button" id="siteSearchToggle" class="topbar-btn topbar-btn-ghost" aria-haspopup="dialog" aria-controls="siteSearchOverlay" aria-label="Search the site">
+          <button type="button" id="siteSearchToggle" class="topbar-btn topbar-btn-ghost site-search-trigger" aria-haspopup="dialog" aria-controls="siteSearchOverlay" aria-label="Search the site">
             <i class="bi bi-search"></i>
             <span>Search</span>
           </button>
+          {% if request.user.is_authenticated %}
+          <a href="{% url request.user.dashboard_url_name %}" class="topbar-btn topbar-btn-solid">
+            <i class="bi bi-speedometer2"></i>
+            <span>Dashboard</span>
+          </a>
+          <a href="{% url 'pages:logout' %}" class="topbar-btn topbar-btn-ghost">
+            <i class="bi bi-box-arrow-right"></i>
+            <span>Log Out</span>
+          </a>
+          {% else %}
           <a href="{% url 'pages:login' %}" class="topbar-btn topbar-btn-solid">
             <i class="bi bi-box-arrow-in-right"></i>
             <span>Sign In</span>
           </a>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -75,6 +86,16 @@
             <li><a href="{% url 'pages:resources' %}"{% if request.resolver_match.url_name == 'resources' %} class="active"{% endif %}>Resources</a></li>
             <li><a href="{% url 'pages:governance' %}"{% if request.resolver_match.url_name == 'governance' %} class="active"{% endif %}>Governance</a></li>
             <li><a href="{% url 'pages:board_committee' %}"{% if request.resolver_match.url_name == 'board_committee' %} class="active"{% endif %}>Board &amp; Committee</a></li>
+            <li class="navmenu-mobile-only navmenu-divider"><a href="{% url 'pages:verify' %}">Verify Approval</a></li>
+            <li class="navmenu-mobile-only"><a href="{% url 'pages:contact' %}">Contact</a></li>
+            <li class="navmenu-mobile-only"><a href="{% url 'pages:apply' %}">Apply</a></li>
+            <li class="navmenu-mobile-only"><a href="#" class="site-search-trigger">Search</a></li>
+            {% if request.user.is_authenticated %}
+            <li class="navmenu-mobile-only"><a href="{% url request.user.dashboard_url_name %}">Dashboard</a></li>
+            <li class="navmenu-mobile-only"><a href="{% url 'pages:logout' %}">Log Out</a></li>
+            {% else %}
+            <li class="navmenu-mobile-only"><a href="{% url 'pages:login' %}">Sign In</a></li>
+            {% endif %}
           </ul>
           <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
         </nav>

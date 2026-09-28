@@ -50,6 +50,6 @@
   .mid-card { flex-wrap: wrap; gap: 16px; padding: 18px; }
   .mid-emblem { width: 48px; height: 48px; }
   .mid-id { font-size: 24px; }
-  .mid-actions { flex-direction: row; width: 100%; }
-  .mid-btn { flex: 1; }
+  .mid-actions { flex-direction: row; flex-wrap: wrap; width: 100%; }
+  .mid-btn { flex: 1 1 auto; min-width: 140px; }
 }

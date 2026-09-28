@@ -34,4 +34,5 @@ urlpatterns = [
     path("reset-password/", account_views.reset_password, name="reset_password"),
     path("account-status/", account_views.role_status, name="role_status"),
     path("account/membership-certificate/", account_views.membership_certificate, name="membership_certificate"),
+    path("account/appointment-letter/", account_views.appointment_letter, name="appointment_letter"),
 ]

@@ -108,6 +108,7 @@ TEMPLATES = [
                 "secretariat_dashboard.context_processors.unread_messages",
                 "committee_dashboard.context_processors.reviewer_workload",
                 "reviewer_dashboard.context_processors.notif_bell",
+                "reviewer_dashboard.context_processors.qa_nav_badge",
             ],
         },
     },

@@ -15,7 +15,7 @@ from urllib.parse import urlencode
 from django.core.paginator import Paginator
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -122,11 +122,11 @@ def _categorize(user):
 def _send_role_approved_email(request, target, role):
     """The welcome email for a newly approved Reviewer or Committee member:
     their MSREC Ethics ID (issued by User.approve_role) shown prominently,
-    what they can do now, and their Membership Certificate attached as a
-    PDF. Same fail_silently contract as every other email here -- a mail
-    or PDF problem never blocks the approval itself. Returns True/False so
-    the caller's flash message doesn't claim an email went out when it
-    didn't."""
+    what they can do now, and their Membership Certificate and Appointment
+    Letter attached as PDFs. Same fail_silently contract as every other
+    email here -- a mail or PDF problem never blocks the approval itself.
+    Returns True/False so the caller's flash message doesn't claim an
+    email went out when it didn't."""
     from accounts import membership
 
     role_label = User.Role(role).label
@@ -151,8 +151,8 @@ def _send_role_approved_email(request, target, role):
             "disciplines and experience up to date under \"Profile & Expertise\"."
         )
     paragraphs.append(
-        "Your MSREC Membership Certificate is attached to this email. You can view or download it at any time "
-        "from your dashboard, where your Ethics ID is also displayed."
+        "Your MSREC Membership Certificate and Appointment Letter are attached to this email. You can view or "
+        "download them at any time from your dashboard, where your Ethics ID is also displayed."
     )
     certificate_line = len(paragraphs) - 1
     paragraphs.append(
@@ -162,15 +162,26 @@ def _send_role_approved_email(request, target, role):
     paragraphs.append("Thank you for supporting independent, rigorous and ethical research.")
 
     attachments = []
+    missing_docs = []
     try:
         attachments.append(
             (membership.certificate_filename(target), membership.render_certificate_pdf(target), "application/pdf")
         )
     except Exception:
         logger.exception("Couldn't render the membership certificate for user %s", target.pk)
+        missing_docs.append("Membership Certificate")
+    try:
+        attachments.append(
+            (membership.appointment_letter_filename(target), membership.render_appointment_letter_pdf(target),
+             "application/pdf")
+        )
+    except Exception:
+        logger.exception("Couldn't render the appointment letter for user %s", target.pk)
+        missing_docs.append("Appointment Letter")
+    if missing_docs:
         paragraphs[certificate_line] = (
-            "Your MSREC Membership Certificate is ready to view and download from your dashboard, "
-            "where your Ethics ID is also displayed."
+            f"Your {' and '.join(missing_docs)} {'is' if len(missing_docs) == 1 else 'are'} ready to view and "
+            f"download from your dashboard, where your Ethics ID is also displayed."
         )
 
     # A fresh password, printed in this email so it carries the member's
@@ -242,6 +253,61 @@ def _actor_is_admin(request):
     return request.user.is_superuser or request.user.role == User.Role.ADMIN
 
 
+def _send_suspension_email(target, *, suspended):
+    """Notifies an account the moment an admin/secretariat member suspends
+    or reactivates it (_handle_suspend below). Reviewer/Committee members
+    also get a formal Notice of Suspension PDF attached -- the disciplinary
+    counterpart to their Appointment Letter -- everyone else just gets the
+    plain notice, since only a member has standing to actually suspend.
+    Same fail_silently contract as every other email here: a mail or PDF
+    problem never blocks the suspend/reactivate action itself."""
+    from accounts import membership
+
+    login_url = django_settings.SITE_URL.rstrip("/") + reverse("pages:login")
+    if suspended:
+        paragraphs = [
+            f"Dear {target.first_name or target.full_name},",
+            "This is to inform you that your MSREC account has been suspended by the Secretariat/"
+            "Administration, effective immediately. You will not be able to log in, and any Reviewer or "
+            "Committee duties are paused, until the account is reactivated.",
+        ]
+        attachments = []
+        if membership.is_member(target):
+            try:
+                attachments.append((
+                    membership.suspension_notice_filename(target),
+                    membership.render_suspension_notice_pdf(target),
+                    "application/pdf",
+                ))
+                paragraphs.append("A formal Notice of Suspension is attached to this email.")
+            except Exception:
+                logger.exception("Couldn't render the suspension notice for user %s", target.pk)
+        paragraphs.append(
+            "If you believe this was done in error, or would like more information, please contact the "
+            "Secretariat."
+        )
+        return send_branded_email(
+            subject="MSREC — your account has been suspended",
+            to=target.email,
+            heading="Your MSREC account has been suspended",
+            paragraphs=paragraphs,
+            preheader="Your MSREC account has been suspended.",
+            attachments=attachments,
+        )
+    return send_branded_email(
+        subject="MSREC — your account has been reactivated",
+        to=target.email,
+        heading="Your MSREC account has been reactivated",
+        paragraphs=[
+            f"Dear {target.first_name or target.full_name},",
+            "Good news — your MSREC account has been reactivated. You can log in again right away.",
+        ],
+        cta_text="Log in to MSREC",
+        cta_url=login_url,
+        preheader="Your MSREC account has been reactivated.",
+    )
+
+
 def _handle_suspend(request, target, *, suspend):
     if target.pk == request.user.pk:
         messages.error(request, "You can't suspend your own account.")
@@ -254,7 +320,11 @@ def _handle_suspend(request, target, *, suspend):
         return
 
     target.is_active = not suspend
-    target.save(update_fields=["is_active"])
+    update_fields = ["is_active"]
+    if suspend:
+        target.suspended_at = timezone.now()
+        update_fields.append("suspended_at")
+    target.save(update_fields=update_fields)
     # Suspension must take effect immediately, not just block the next
     # login -- kill every session already open under this account.
     if suspend:
@@ -265,10 +335,14 @@ def _handle_suspend(request, target, *, suspend):
             ]
         ).delete()
         AuditLog.record(request.user, "user.suspended", target=target)
-        messages.success(request, f"{target.full_name}'s account has been suspended.")
+        emailed = _send_suspension_email(target, suspended=True)
+        suffix = "and notified by email." if emailed else "(the notification email couldn't be sent)."
+        messages.success(request, f"{target.full_name}'s account has been suspended {suffix}")
     else:
         AuditLog.record(request.user, "user.activated", target=target)
-        messages.success(request, f"{target.full_name}'s account has been reactivated.")
+        emailed = _send_suspension_email(target, suspended=False)
+        suffix = "and notified by email." if emailed else "(the notification email couldn't be sent)."
+        messages.success(request, f"{target.full_name}'s account has been reactivated {suffix}")
 
 
 def _cleanup_user_storage(target):
@@ -434,6 +508,23 @@ def accounts(request, template_name="dashboards/admin/accounts.html"):
         "active_tab": active_tab,
         "query": request.GET.get("q", ""),
     })
+
+
+@admin_or_secretariat_required
+def suspension_notice_download(request, pk):
+    """Lets staff re-download a member's Notice of Suspension at any time
+    from the Accounts page -- not just the moment they suspend the
+    account -- since is_active alone doesn't keep a record once someone
+    is reactivated. 404s for anyone who was never a Reviewer/Committee
+    member (nothing to suspend from) or has never been suspended."""
+    from accounts import membership
+
+    target = get_object_or_404(User, pk=pk)
+    if not membership.is_member(target) or not target.suspended_at:
+        raise Http404("No suspension notice has been issued for this account.")
+    response = HttpResponse(membership.render_suspension_notice_pdf(target), content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{membership.suspension_notice_filename(target)}"'
+    return response
 
 
 def _handle_inquiry_reply(request, inquiry):

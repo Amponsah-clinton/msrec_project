@@ -1,0 +1,80 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}QA Feedback | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">
+<link href="{% static 'dashboard/css/coi.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="qa_feedback" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="QA Feedback" subtitle="Every note the QA officer or Chair has left on your reviews, resolved or not" %}{% endblock %}
+
+{% block main_content %}
+
+      <section class="stats-grid compact" style="margin-bottom:22px;">
+        <div class="stat-card">
+          <div class="stat-icon orange">
+            <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+          </div>
+          <p class="stat-label">Still Open</p>
+          <p class="stat-value">{{ open_count }}</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green">
+            <svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          </div>
+          <p class="stat-label">Resolved</p>
+          <p class="stat-value">{{ resolved_count }}</p>
+        </div>
+      </section>
+
+      <section class="panel acct-panel">
+        <div class="panel-header">
+          <h2>Feedback history</h2>
+          <span style="font-size:12.5px;color:var(--text-sub);">Most recent first</span>
+        </div>
+
+        <div class="app-card-grid">
+          {% for note in notes %}
+          <div class="coi-card">
+            <div class="coi-card-top">
+              <div class="coi-card-who">
+                <span class="coi-card-avatar">{{ note.assignment.application.applicant.initials }}</span>
+                <div class="coi-card-heading">
+                  <h4>{{ note.assignment.application.title }}</h4>
+                  <p>{{ note.assignment.application.reference_no|default:"No reference yet" }} &middot; {{ note.created_at|date:"d M Y" }}{% if note.raised_by %} &middot; {{ note.raised_by.full_name }}{% endif %}</p>
+                </div>
+              </div>
+              {% if note.status == 'open' %}
+                <span class="badge text-bg-warning">{% if note.action_required %}Action Needed{% else %}Open{% endif %}</span>
+              {% else %}
+                <span class="badge text-bg-success">Resolved</span>
+              {% endif %}
+            </div>
+
+            <div class="coi-card-meta" style="flex-direction:column;align-items:flex-start;gap:4px;">
+              <strong style="font-size:12.5px;color:var(--text-sub);">{% if note.action_required %}Requested action{% else %}Feedback{% endif %}</strong>
+              <span>{{ note.message }}</span>
+            </div>
+
+            {% if note.status == 'resolved' %}
+            <div class="coi-card-meta" style="flex-direction:column;align-items:flex-start;gap:4px;">
+              <strong style="font-size:12.5px;color:var(--green);">Your response &middot; {{ note.resolved_at|date:"d M Y" }}</strong>
+              <span>{{ note.resolution_note }}</span>
+            </div>
+            {% endif %}
+          </div>
+          {% empty %}
+          <div class="empty-state">
+            <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>
+            <h3>No QA feedback yet</h3>
+            <p>Notes from the Secretariat or Chair on your reviews will appear here.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+{% endblock %}

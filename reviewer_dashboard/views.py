@@ -21,8 +21,8 @@ from notifications.services import notify
 from pages import documents_storage
 from pages.models import CommitteeMeeting, MeetingDocument, PolicyDocument
 
-from . import storage
-from .models import ReviewAssignment
+from . import qa, storage
+from .models import ReviewAssignment, ReviewQANote
 from .pdf import render_assessment_pdf
 
 TABS = {"all", "new", "accepted", "due_overdue", "completed"}
@@ -195,6 +195,79 @@ def coi_previous(request):
 
 @login_required
 @reviewer_required
+def qa_quality_check(request):
+    """Review Quality Check: every one of this reviewer's Completed
+    assessments, each flagged with any completeness/consistency issues
+    found by reviewer_dashboard.qa -- alongside the checklist answers
+    already on record, so an assessment reads as "confirmed clean" or
+    shows exactly what to double-check."""
+    report = qa.quality_check_report(request.user)
+    return render(request, "dashboards/reviewer/qa-quality-check.html", {
+        "report": report,
+        "clean_count": sum(1 for row in report if row["is_clean"]),
+        "flagged_count": sum(1 for row in report if not row["is_clean"]),
+    })
+
+
+@login_required
+@reviewer_required
+def qa_pending_actions(request):
+    """Pending QA Actions: open (action_required, unresolved) QA notes on
+    this reviewer's own work. POSTing resolves one -- the reviewer's
+    written response, plus optional revisions to their review's narrative
+    fields (see qa.resolve_qa_note's docstring for why the checklist/
+    recommendation choice itself isn't editable here)."""
+    if request.method == "POST":
+        note = get_object_or_404(
+            ReviewQANote, pk=request.POST.get("note_id"), assignment__reviewer=request.user,
+            action_required=True, status=ReviewQANote.Status.OPEN,
+        )
+        resolution_note = request.POST.get("resolution_note", "").strip()
+        if not resolution_note:
+            messages.error(request, "Describe how you addressed this before submitting.")
+        else:
+            qa.resolve_qa_note(
+                note, resolution_note=resolution_note,
+                review_notes=request.POST.get("review_notes"),
+                key_concerns=request.POST.get("key_concerns"),
+                recommendation_reason=request.POST.get("recommendation_reason"),
+            )
+            qa.notify_qa_note_resolved(note)
+            messages.success(request, "Your response has been submitted.")
+        return redirect("reviewer_dashboard:qa_pending_actions")
+
+    return render(request, "dashboards/reviewer/qa-pending-actions.html", {
+        "notes": list(qa.pending_qa_actions(request.user).order_by("-created_at")),
+    })
+
+
+@login_required
+@reviewer_required
+def qa_feedback(request):
+    """QA Feedback: the full history of every QA note ever raised on this
+    reviewer's work -- resolved or not (Pending QA Actions is just the
+    still-open subset of this same list)."""
+    notes = list(qa.qa_feedback_history(request.user).order_by("-created_at"))
+    return render(request, "dashboards/reviewer/qa-feedback.html", {
+        "notes": notes,
+        "open_count": sum(1 for n in notes if n.status == ReviewQANote.Status.OPEN),
+        "resolved_count": sum(1 for n in notes if n.status == ReviewQANote.Status.RESOLVED),
+    })
+
+
+@login_required
+@reviewer_required
+def qa_performance(request):
+    """My Review Performance: completed/active/overdue counts, average
+    turnaround, and how many assignments have ever needed a QA
+    correction -- see reviewer_dashboard.qa.performance_summary."""
+    return render(request, "dashboards/reviewer/qa-performance.html", {
+        "stats": qa.performance_summary(request.user),
+    })
+
+
+@login_required
+@reviewer_required
 def committee_meetings(request):
     """Every scheduled meeting that hasn't happened yet, soonest first --
     a straight, un-tabbed read of pages.models.CommitteeMeeting (managed
@@ -327,7 +400,23 @@ def respond_to_assignment(request):
         assignment.status = ReviewAssignment.Status.ACCEPTED
         assignment.accepted_at = timezone.now()
         assignment.save(update_fields=["status", "accepted_at"])
-        messages.success(request, f"You've accepted the review for {ref}. It's now in your Accepted tab.")
+        # Same "an explicit Notification, not left to be inferred" reasoning
+        # as the decline branch below -- the Secretariat (and, since
+        # notifications.services.AUDIENCE_SCOPE folds Secretariat into the
+        # Admin inbox too, Admin) should see an assignment move off New
+        # without having to keep checking the Reviewer Assignment page.
+        notify(
+            Notification.Audience.SECRETARIAT,
+            f"{request.user.full_name} accepted the review for {ref}.",
+            icon=Notification.Icon.SUCCESS,
+            link_url_name="secretariat_dashboard:application_detail",
+            link_kwargs={"pk": assignment.application_id},
+        )
+        messages.success(
+            request,
+            f"You've accepted the review for {ref}. It's now in your Accepted tab. "
+            "The Secretariat has been notified.",
+        )
     else:
         assignment.status = ReviewAssignment.Status.DECLINED
         assignment.declined_at = timezone.now()

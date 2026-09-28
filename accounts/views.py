@@ -486,3 +486,20 @@ def membership_certificate(request):
     context = membership.certificate_context(user)
     context["back_url"] = reverse(user.dashboard_url_name())
     return render(request, "certificates/award_certificate.html", context)
+
+
+@login_required
+def appointment_letter(request):
+    """PDF download of the signed-in Reviewer's / Committee member's own
+    Appointment Letter -- the same PDF that was attached to their welcome
+    email, in case that email couldn't be sent or was misplaced. Rendered
+    on demand like the certificate above, so it always reflects the
+    current Chair signature and Ethics ID."""
+    from . import membership
+
+    user = request.user
+    if not membership.is_member(user):
+        raise Http404("No appointment letter has been issued for this account yet.")
+    response = HttpResponse(membership.render_appointment_letter_pdf(user), content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{membership.appointment_letter_filename(user)}"'
+    return response

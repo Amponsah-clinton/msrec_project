@@ -67,6 +67,11 @@ _urlpatterns = [
         name="application_revisions",
     ),
     path(
+        "applications/<int:pk>/revision-comments/pdf/",
+        views.application_revision_pdf,
+        name="application_revision_pdf",
+    ),
+    path(
         "applications/approved/",
         views.application_approved,
         name="application_approved",

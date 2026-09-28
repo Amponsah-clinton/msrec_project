@@ -186,6 +186,13 @@ class User(AbstractBaseUser, PermissionsMixin):
     applicant_profile = models.JSONField(blank=True, default=dict)
 
     is_active = models.BooleanField(default=True)
+    # Set the moment an admin/secretariat suspends this account (see
+    # admin_dashboard.views._handle_suspend) and left untouched on
+    # reactivation, so the Suspension Notice attached to that email can
+    # still be regenerated on demand afterwards with the correct date --
+    # same "rendered on demand from a persisted timestamp" contract as
+    # membership_confirmed_at above.
+    suspended_at = models.DateTimeField(null=True, blank=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 

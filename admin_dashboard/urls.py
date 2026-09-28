@@ -10,6 +10,7 @@ app_name = "admin_dashboard"
 urlpatterns = [
     path("", views.home, name="home"),
     path("accounts/", views.accounts, name="accounts"),
+    path("accounts/<int:pk>/suspension-notice/", views.suspension_notice_download, name="suspension_notice_download"),
     path("inquiries/", views.inquiries, name="inquiries"),
     path("applications/", views.applications, name="applications"),
     path("applications/counts/", views.applications_counts, name="applications_counts"),

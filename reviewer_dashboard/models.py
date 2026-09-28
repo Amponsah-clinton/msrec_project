@@ -150,3 +150,53 @@ class ReviewAssignment(models.Model):
                 return "due_overdue"
             return "accepted"
         return "new"
+
+
+class ReviewQANote(models.Model):
+    """A Quality Assurance note on one reviewer's completed
+    ReviewAssignment, raised by QA staff -- the Secretariat, the Chair, or
+    an Admin (see reviewer_dashboard.qa.is_qa_staff; there's no dedicated
+    "QA officer" role in this project, so those three cover it).
+
+    Two things at once, distinguished by `action_required`:
+      * True  -- a "please fix this" request. Shows up in the Reviewer/
+        Committee dashboard's Pending QA Actions until the reviewer
+        resolves it (see reviewer_dashboard.qa.resolve_qa_note).
+      * False -- pure feedback with nothing to act on (e.g. praise, or an
+        observation for next time). Never appears in Pending QA Actions.
+
+    Both kinds share one history -- QA Feedback shows every note ever
+    raised, resolved or not -- so a reviewer sees the whole record of what
+    QA staff have said about their work, not just what's still open.
+
+    Every Committee member is also an approved Reviewer (see User.
+    approve_role), so this is read the same way from both the Reviewer and
+    the Committee dashboard -- one QA system, not two."""
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        RESOLVED = "resolved", "Resolved"
+
+    assignment = models.ForeignKey(
+        ReviewAssignment, on_delete=models.CASCADE, related_name="qa_notes"
+    )
+    raised_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    action_required = models.BooleanField(default=True)
+    message = models.TextField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    # Filled in by resolve_qa_note() once the reviewer has responded --
+    # their own account of what they clarified, corrected or justified.
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolution_note = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "review_qa_notes"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        kind = "action" if self.action_required else "feedback"
+        return f"QA {kind} on assignment {self.assignment_id} ({self.status})"

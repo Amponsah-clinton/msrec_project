@@ -171,6 +171,9 @@
               {% if not u.reviewer_status == 'pending' and not u.committee_status == 'pending' %}
                 {% if u.reviewer_cv_url %}<a href="{{ u.reviewer_cv_url }}" target="_blank" rel="noopener" class="acct-cv-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> CV</a>{% endif %}
                 {% if u.committee_cv_url %}<a href="{{ u.committee_cv_url }}" target="_blank" rel="noopener" class="acct-cv-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> CV</a>{% endif %}
+                {% if u.membership_ethics_id and u.suspended_at %}
+                  <a href="{% url 'admin_dashboard:suspension_notice_download' pk=u.pk %}" class="acct-cv-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> Suspension Notice</a>
+                {% endif %}
                 {% if u.is_active %}
                 <span class="acct-status-ok">
                   <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>

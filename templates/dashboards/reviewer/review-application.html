@@ -13,6 +13,33 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="{% static 'dashboard/css/reviewer-identity.css' %}">
+<style>
+  /* Draws the eye to the PDF download without being permanently
+     distracting -- a few pulses on load/highlight, then it settles. */
+  @keyframes rvPdfPulse {
+    0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--teal), transparent 45%); }
+    50% { box-shadow: 0 0 0 7px color-mix(in srgb, var(--teal), transparent 100%); }
+  }
+  .rv-pdf-btn.rv-pdf-pulse { animation: rvPdfPulse 1.4s ease-in-out 3; }
+  .rv-pdf-hint-overlay {
+    position: fixed; inset: 0; background: rgba(15, 23, 32, .55); z-index: 2000;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .rv-pdf-hint-overlay[hidden] { display: none; }
+  .rv-pdf-hint-card {
+    background: var(--white); border-radius: 14px; max-width: 380px; width: 100%;
+    padding: 22px 24px 20px; box-shadow: 0 24px 60px rgba(0,0,0,.28); text-align: center;
+  }
+  .rv-pdf-hint-icon {
+    width: 46px; height: 46px; border-radius: 50%; margin: 0 auto 12px;
+    background: var(--teal-light); color: var(--teal);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rv-pdf-hint-icon svg { width: 24px; height: 24px; }
+  .rv-pdf-hint-card h3 { margin: 0 0 6px; font-size: 16px; }
+  .rv-pdf-hint-card p { margin: 0 0 18px; font-size: 13.5px; color: var(--text-sub); line-height: 1.55; }
+  .rv-pdf-hint-actions { display: flex; flex-direction: column; gap: 8px; }
+</style>
 {% endblock %}
 
 {% block nav_content %}
@@ -60,6 +87,29 @@
 {% block main_content %}
 <div class="rv-scope">
 
+      <div class="rv-pdf-hint-overlay" id="pdfHintOverlay" hidden>
+        <div class="rv-pdf-hint-card" role="alertdialog" aria-modal="true" aria-labelledby="pdfHintTitle">
+          <div class="rv-pdf-hint-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg>
+          </div>
+          <h3 id="pdfHintTitle">Don't miss the applicant's documents</h3>
+          <p>
+            {% if documents %}
+              This application has {{ documents|length }} attached document{{ documents|length|pluralize }}. Download the full Application PDF for the complete record before you begin &mdash; every document is also viewable individually further down the page.
+            {% else %}
+              Download the full Application PDF for the complete, formatted record of everything {{ application.applicant.full_name }} submitted before you begin your review.
+            {% endif %}
+          </p>
+          <div class="rv-pdf-hint-actions">
+            <a href="{% url 'reviewer_dashboard:review_application_info_pdf' assignment.pk %}" class="btn-primary" id="pdfHintDownload">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg>
+              Download Application PDF
+            </a>
+            <button type="button" class="acct-btn acct-btn-cancel" id="pdfHintDismiss">Got it, I'll find it myself</button>
+          </div>
+        </div>
+      </div>
+
       <a href="{% url 'reviewer_dashboard:my_reviews' %}" class="panel-link" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:16px;">
         <svg viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="m15 18-6-6 6-6"/></svg>
         Back to My Reviews
@@ -86,7 +136,7 @@
               Review due {{ assignment.due_date|date:"d M Y" }}
             </span>
             {% endif %}
-            <a href="{% url 'reviewer_dashboard:review_application_info_pdf' assignment.pk %}" class="acct-btn acct-btn-edit">
+            <a href="{% url 'reviewer_dashboard:review_application_info_pdf' assignment.pk %}" class="acct-btn acct-btn-approve rv-pdf-btn" id="downloadAppPdfBtn">
               <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg> Download Application PDF
             </a>
           </div>
@@ -351,4 +401,44 @@
 
 {% block extra_js %}
 <script src="{% static 'dashboard/js/reviewer-assessment.js' %}"></script>
+<script>
+(function () {
+  // One nudge per assignment, not every visit -- a reviewer who's already
+  // seen this for assignment {{ assignment.pk }} shouldn't get nagged again
+  // every time they come back to keep working on it.
+  var storageKey = "msrec_pdf_hint_seen_{{ assignment.pk }}";
+  var overlay = document.getElementById("pdfHintOverlay");
+  var pdfBtn = document.getElementById("downloadAppPdfBtn");
+  if (!overlay || !pdfBtn) return;
+
+  var seen = false;
+  try { seen = !!localStorage.getItem(storageKey); } catch (err) { seen = false; }
+
+  function dismiss() {
+    overlay.hidden = true;
+    try { localStorage.setItem(storageKey, "1"); } catch (err) {}
+    pdfBtn.classList.add("rv-pdf-pulse");
+    pdfBtn.addEventListener("animationend", function () {
+      pdfBtn.classList.remove("rv-pdf-pulse");
+    }, { once: true });
+  }
+
+  if (!seen) {
+    overlay.hidden = false;
+    var dismissBtn = document.getElementById("pdfHintDismiss");
+    var downloadLink = document.getElementById("pdfHintDownload");
+    if (dismissBtn) dismissBtn.addEventListener("click", dismiss);
+    if (downloadLink) downloadLink.addEventListener("click", dismiss);
+    overlay.addEventListener("click", function (event) {
+      if (event.target === overlay) dismiss();
+    });
+    document.addEventListener("keydown", function onKey(event) {
+      if (event.key === "Escape" && !overlay.hidden) {
+        dismiss();
+        document.removeEventListener("keydown", onKey);
+      }
+    });
+  }
+})();
+</script>
 {% endblock %}

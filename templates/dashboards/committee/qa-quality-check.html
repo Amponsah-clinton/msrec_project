@@ -1,0 +1,108 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Review Quality Check | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">
+<link href="{% static 'dashboard/css/coi.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="qa_quality_check" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Review Quality Check" subtitle="Checklist confirmation, incomplete-review alerts and consistency checks for your completed assessments" %}{% endblock %}
+
+{% block main_content %}
+
+      <div class="coi-intro">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div>
+          <strong>How this works</strong>
+          <p>Every assessment you've completed as a reviewer is checked automatically: whether the ethical review checklist was fully answered, whether comments/recommendation/scores are missing, and whether your recommendation is consistent with the concerns and checklist you recorded. Nothing here changes your submitted assessment &mdash; it's a read-only self-check.</p>
+        </div>
+      </div>
+
+      <section class="stats-grid compact" style="margin-bottom:22px;">
+        <div class="stat-card">
+          <div class="stat-icon green">
+            <svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+          </div>
+          <p class="stat-label">Clean Assessments</p>
+          <p class="stat-value">{{ clean_count }}</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">
+            <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+          </div>
+          <p class="stat-label">Flagged for Review</p>
+          <p class="stat-value">{{ flagged_count }}</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon teal">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+          </div>
+          <p class="stat-label">Total Completed</p>
+          <p class="stat-value">{{ report|length }}</p>
+        </div>
+      </section>
+
+      <section class="panel acct-panel">
+        <div class="panel-header">
+          <h2>Your completed assessments</h2>
+          <span style="font-size:12.5px;color:var(--text-sub);">Most recently completed first</span>
+        </div>
+
+        <div class="app-card-grid">
+          {% for row in report %}
+          <div class="coi-card">
+            <div class="coi-card-top">
+              <div class="coi-card-who">
+                <span class="coi-card-avatar">{{ row.assignment.application.applicant.initials }}</span>
+                <div class="coi-card-heading">
+                  <h4>{{ row.assignment.application.title }}</h4>
+                  <p>{{ row.assignment.application.reference_no|default:"No reference yet" }} &middot; Completed {{ row.assignment.completed_at|date:"d M Y" }}</p>
+                </div>
+              </div>
+              {% if row.is_clean %}
+                <span class="badge text-bg-success">Clean</span>
+              {% else %}
+                <span class="badge text-bg-warning">{{ row.issue_count }} flag{{ row.issue_count|pluralize }}</span>
+              {% endif %}
+            </div>
+            <div class="coi-card-meta">
+              <span><svg viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2Z"/></svg>{{ row.assignment.get_recommendation_display|default:"No recommendation recorded" }}</span>
+            </div>
+            {% if row.completeness_issues %}
+            <div class="coi-card-meta" style="flex-direction:column;align-items:flex-start;gap:4px;">
+              <strong style="font-size:12.5px;color:var(--orange);">Incomplete Review Alerts</strong>
+              {% for issue in row.completeness_issues %}<span>&bull; {{ issue }}</span>{% endfor %}
+            </div>
+            {% endif %}
+            {% if row.consistency_issues %}
+            <div class="coi-card-meta" style="flex-direction:column;align-items:flex-start;gap:4px;">
+              <strong style="font-size:12.5px;color:var(--red);">Review Consistency Check</strong>
+              {% for issue in row.consistency_issues %}<span>&bull; {{ issue }}</span>{% endfor %}
+            </div>
+            {% endif %}
+            <div class="coi-card-meta" style="flex-wrap:wrap;gap:6px;">
+              {% for item in row.assignment.checklist_rows %}
+              <span class="badge text-bg-{% if item.badge == 'green' %}success{% elif item.badge == 'orange' %}warning{% else %}secondary{% endif %}" title="{{ item.label }}">{{ item.value_label }}</span>
+              {% endfor %}
+            </div>
+            <div class="coi-card-foot">
+              <a href="{% url 'reviewer_dashboard:review_application' row.assignment.pk %}" class="app-card-view">
+                View Assessment <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+              </a>
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty-state">
+            <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span>
+            <h3>No completed assessments yet</h3>
+            <p>Once you complete a review, its quality check appears here.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+{% endblock %}

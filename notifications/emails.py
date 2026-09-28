@@ -18,62 +18,18 @@ from django.utils.html import escape
 
 logger = logging.getLogger(__name__)
 
-# The logo travels INSIDE each email as an inline (CID) image rather than
-# as a link to the website: a link only works if the site is publicly
-# reachable (never true from a dev machine) and if the mail client chooses
-# to load remote images, which many don't by default. Embedded, it shows
-# in Gmail, Outlook and Apple Mail with no "load images" prompt.
-LOGO_FILE = settings.BASE_DIR / "static" / "assets" / "img" / "MSREC_LOGO.png"
-LOGO_CID = "msrec-logo"
+# Hosted on Cloudinary rather than embedded as a CID attachment -- a
+# stable public URL, so every mail client can just fetch it like any
+# other remote image.
+LOGO_URL = "https://res.cloudinary.com/dmqizfpyz/image/upload/v1789467077/logo1_oozjis.png"
 LOGO_DISPLAY_WIDTH = 40
-_logo_cache = {}
-
-
-def _logo_png():
-    """(png_bytes, display_height) -- the logo downscaled once per process
-    (the source file is ~470 KB, far more than a 40px header needs).
-    None if the file can't be read, in which case emails just omit it."""
-    if "png" not in _logo_cache:
-        try:
-            from io import BytesIO
-
-            from PIL import Image
-
-            with Image.open(LOGO_FILE) as im:
-                im = im.convert("RGBA")
-                im.thumbnail((LOGO_DISPLAY_WIDTH * 3, LOGO_DISPLAY_WIDTH * 3), Image.LANCZOS)
-                buf = BytesIO()
-                im.save(buf, format="PNG", optimize=True)
-                height = round(LOGO_DISPLAY_WIDTH * im.height / im.width)
-            _logo_cache["png"] = (buf.getvalue(), height)
-        except Exception:
-            logger.exception("Couldn't prepare the email logo")
-            _logo_cache["png"] = None
-    return _logo_cache["png"]
 
 
 def _logo_img_html():
-    logo = _logo_png()
-    if not logo:
-        return ""
     return (
-        f'<img src="cid:{LOGO_CID}" width="{LOGO_DISPLAY_WIDTH}" height="{logo[1]}" alt="MSREC" '
+        f'<img src="{LOGO_URL}" width="{LOGO_DISPLAY_WIDTH}" alt="MSREC" '
         f'style="display:block;border:0;outline:none;">'
     )
-
-
-def _attach_logo(message):
-    """Embeds the logo referenced by cid:msrec-logo in the HTML part."""
-    logo = _logo_png()
-    if not logo:
-        return
-    from email.mime.image import MIMEImage
-
-    image = MIMEImage(logo[0], "png")
-    image.add_header("Content-ID", f"<{LOGO_CID}>")
-    image.add_header("Content-Disposition", "inline", filename="msrec-logo.png")
-    message.mixed_subtype = "related"
-    message.attach(image)
 
 
 # Same palette as the dashboard (static/dashboard/css/style.css :root) --
@@ -387,7 +343,6 @@ def send_branded_email(*, subject, to, heading, paragraphs, cta_text=None,
         )
         message = EmailMultiAlternatives(subject=subject, body=text_body, to=recipients)
         message.attach_alternative(html_body, "text/html")
-        _attach_logo(message)
         for filename, content, mimetype in (attachments or []):
             message.attach(filename, content, mimetype)
         try:

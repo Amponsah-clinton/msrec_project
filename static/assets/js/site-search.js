@@ -9,14 +9,14 @@
 (function () {
   "use strict";
 
-  var toggle = document.getElementById("siteSearchToggle");
+  var toggles = document.querySelectorAll(".site-search-trigger");
   var overlay = document.getElementById("siteSearchOverlay");
   var input = document.getElementById("siteSearchInput");
   var resultsEl = document.getElementById("siteSearchResults");
   var closeBtn = document.getElementById("siteSearchClose");
   var cancelBtn = document.getElementById("siteSearchCancel");
   var indexEl = document.getElementById("siteSearchIndex");
-  if (!toggle || !overlay || !input || !resultsEl || !indexEl) return;
+  if (!toggles.length || !overlay || !input || !resultsEl || !indexEl) return;
 
   var INDEX = [];
   try {
@@ -115,7 +115,12 @@
     document.body.classList.remove("site-search-open");
   }
 
-  toggle.addEventListener("click", open);
+  toggles.forEach(function (el) {
+    el.addEventListener("click", function (event) {
+      event.preventDefault();
+      open();
+    });
+  });
   closeBtn.addEventListener("click", close);
   cancelBtn.addEventListener("click", close);
 

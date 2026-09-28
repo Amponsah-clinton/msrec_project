@@ -341,6 +341,13 @@ h6 {
   .header .topbar-actions { gap: 6px; }
 }
 
+/* Below the desktop nav breakpoint the topbar's row of action buttons
+   no longer fits without wrapping, so it moves into the hamburger
+   menu (see .navmenu-mobile-only) instead of squeezing into the bar. */
+@media (max-width: 1199px) {
+  .header .topbar { display: none !important; }
+}
+
 .header .branding {
   min-height: 60px;
   padding: 10px 0;
@@ -494,6 +501,12 @@ h6 {
 
   .navmenu .dropdown ul li {
     min-width: 200px;
+  }
+
+  /* Topbar links (Verify Approval, Contact, Apply, Search, Sign In) live
+     in the hamburger menu below 1200px instead -- see .navmenu-mobile-only. */
+  .navmenu-mobile-only {
+    display: none;
   }
 
   .navmenu .dropdown ul a {
@@ -656,6 +669,12 @@ h6 {
 
   .mobile-nav-active .navmenu>ul {
     display: block;
+  }
+
+  .navmenu-divider {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid color-mix(in srgb, var(--default-color), transparent 85%);
   }
 }
 

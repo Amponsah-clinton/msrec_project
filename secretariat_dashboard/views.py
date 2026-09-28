@@ -47,11 +47,17 @@ from pages.models import (
     Inquiry,
     TrainingRecord,
 )
-from reviewer_dashboard.models import ReviewAssignment
+from reviewer_dashboard import qa as reviewer_qa_lib
+from reviewer_dashboard.models import ReviewAssignment, ReviewQANote
 
 from . import reports as reports_data
 
 staff_required = user_passes_test(is_staff_side, login_url="pages:login")
+# Wider than staff_required (Admin/Secretariat): the brief for Quality
+# Assurance names the Chair too ("QA officer or committee chair"), and
+# there's no dedicated QA role to check instead -- see reviewer_dashboard.
+# qa.is_qa_staff's own docstring for why these three specifically.
+qa_staff_required = user_passes_test(reviewer_qa_lib.is_qa_staff, login_url="pages:login")
 
 
 def parse_datetime_local(value):
@@ -944,6 +950,67 @@ def reviewer_assignment_history(request):
     )
     return render(request, "dashboards/secretariat/reviewer-assignment-history.html", {
         "logs": logs,
+    })
+
+
+@login_required
+@qa_staff_required
+def reviewer_qa(request):
+    """Quality Assurance over reviewers' completed assessments -- the
+    staff-side counterpart to the Reviewer/Committee dashboards' own
+    Quality Assurance section (reviewer_dashboard.qa). Raising a note here
+    is what populates that section's Pending QA Actions / QA Feedback for
+    the reviewer it's raised against."""
+    if request.method == "POST":
+        assignment = get_object_or_404(
+            ReviewAssignment, pk=request.POST.get("assignment_id"), status=ReviewAssignment.Status.COMPLETED,
+        )
+        message = request.POST.get("message", "").strip()
+        if not message:
+            messages.error(request, "Write a message before raising a QA note.")
+        else:
+            note = ReviewQANote.objects.create(
+                assignment=assignment,
+                raised_by=request.user,
+                action_required=bool(request.POST.get("action_required")),
+                message=message,
+            )
+            emailed = reviewer_qa_lib.notify_qa_note_raised(note)
+            suffix = "and the reviewer has been notified by email." if emailed else "(the notification email couldn't be sent)."
+            messages.success(request, f"QA note raised on {assignment.reviewer.full_name}'s review {suffix}")
+        return redirect(f"{request.path}?tab={request.GET.get('tab', 'all')}")
+
+    assignments = list(
+        ReviewAssignment.objects.filter(status=ReviewAssignment.Status.COMPLETED)
+        .select_related("application", "reviewer")
+        .prefetch_related("qa_notes")
+        .order_by("-completed_at")
+    )
+    for assignment in assignments:
+        notes = list(assignment.qa_notes.all())
+        assignment.open_note_count = sum(
+            1 for n in notes if n.action_required and n.status == ReviewQANote.Status.OPEN
+        )
+        assignment.total_note_count = len(notes)
+
+    counts = {
+        "all": len(assignments),
+        "flagged": sum(1 for a in assignments if a.open_note_count),
+        "clean": sum(1 for a in assignments if not a.open_note_count),
+    }
+
+    active_tab = request.GET.get("tab", "all")
+    if active_tab not in counts:
+        active_tab = "all"
+    if active_tab == "flagged":
+        assignments = [a for a in assignments if a.open_note_count]
+    elif active_tab == "clean":
+        assignments = [a for a in assignments if not a.open_note_count]
+
+    return render(request, "dashboards/secretariat/reviewer-qa.html", {
+        "assignments": assignments,
+        "active_tab": active_tab,
+        "counts": counts,
     })
 
 

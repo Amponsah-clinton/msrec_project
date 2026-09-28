@@ -3,6 +3,7 @@ from django.urls import path
 from . import document_views as dv
 from . import minutes_views as mv
 from . import protocol_views as pv
+from . import qa_views as qv
 from . import views
 
 app_name = "committee_dashboard"
@@ -32,6 +33,12 @@ urlpatterns = [
     path("deliberations/<int:pk>/", pv.deliberation_thread, name="deliberation_thread"),
     path("deliberations/<int:pk>/post/", pv.deliberation_post, name="deliberation_post"),
     path("deliberations/posts/<int:post_id>/delete/", pv.deliberation_delete, name="deliberation_delete"),
+
+    # Quality Assurance -- qa_views.py (thin wrappers around reviewer_dashboard.qa)
+    path("qa/quality-check/", qv.qa_quality_check, name="qa_quality_check"),
+    path("qa/pending-actions/", qv.qa_pending_actions, name="qa_pending_actions"),
+    path("qa/feedback/", qv.qa_feedback, name="qa_feedback"),
+    path("qa/performance/", qv.qa_performance, name="qa_performance"),
 
     # Governance Documents -- document_views.py (reads the admin-managed policy library)
     path("documents/charter/", dv.documents, {"page": "charter"}, name="doc_charter"),

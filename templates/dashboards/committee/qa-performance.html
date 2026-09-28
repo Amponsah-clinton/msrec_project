@@ -1,0 +1,76 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}My Review Performance | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">
+<link href="{% static 'dashboard/css/coi.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="qa_performance" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="My Review Performance" subtitle="A simple summary of your review activity and turnaround" %}{% endblock %}
+
+{% block main_content %}
+
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon green">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+          </div>
+          <p class="stat-label">Completed Reviews</p>
+          <p class="stat-value">{{ stats.completed_count }}</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon teal">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          </div>
+          <p class="stat-label">Active Assignments</p>
+          <p class="stat-value">{{ stats.active_count }}</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon red">
+            <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          </div>
+          <p class="stat-label">Overdue</p>
+          <p class="stat-value">{{ stats.overdue_count }}</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
+          </div>
+          <p class="stat-label">Avg. Turnaround</p>
+          <p class="stat-value">{% if stats.avg_turnaround_days is not None %}{{ stats.avg_turnaround_days }}d{% else %}&mdash;{% endif %}</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon orange">
+            <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+          </div>
+          <p class="stat-label">Reviews Requiring Correction</p>
+          <p class="stat-value">{{ stats.correction_count }}</p>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon purple">
+            <svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          </div>
+          <p class="stat-label">Pending QA Actions</p>
+          <p class="stat-value">{{ stats.pending_qa_count }}</p>
+        </div>
+      </section>
+
+      <section class="panel acct-panel" style="margin-top:22px;">
+        <div class="panel-header">
+          <h2>What these numbers mean</h2>
+        </div>
+        <div class="coi-intro" style="margin:0;">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+          <div>
+            <p style="margin:0 0 8px;"><strong>Completed / Active / Overdue</strong> come straight from your assignment statuses and due dates.</p>
+            <p style="margin:0 0 8px;"><strong>Average turnaround</strong> is the time between being assigned and completing a review, averaged across your completed assessments.</p>
+            <p style="margin:0;"><strong>Reviews Requiring Correction</strong> counts how many of your completed assessments have ever had a Pending QA Action raised against them &mdash; see QA Feedback for the full history.</p>
+          </div>
+        </div>
+      </section>
+
+{% endblock %}

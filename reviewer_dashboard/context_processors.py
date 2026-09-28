@@ -27,3 +27,18 @@ def notif_bell(request):
         "notifications": notification_services.for_user(user, Notification.Audience.REVIEWER, limit=6),
         "unread_count": notification_services.unread_count(user, Notification.Audience.REVIEWER),
     }
+
+
+def qa_nav_badge(request):
+    """Feeds the "Pending QA Actions" sidebar badge on every Reviewer AND
+    Committee page (registered globally, same pattern as notif_bell above
+    and committee_dashboard.context_processors.reviewer_workload) -- a
+    Committee member is always also an approved Reviewer, so one context
+    processor covers both dashboards' Quality Assurance nav group."""
+    user = getattr(request, "user", None)
+    if not user or not is_reviewer(user):
+        return {}
+
+    from . import qa
+
+    return {"pending_qa_count": qa.pending_qa_count(user)}

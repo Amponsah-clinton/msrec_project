@@ -1,0 +1,89 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Pending QA Actions | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/member-meetings.css' %}">
+<link href="{% static 'dashboard/css/coi.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active="qa_pending_actions" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="Pending QA Actions" subtitle="Reviews returned to you for clarification, correction, or additional justification" %}{% endblock %}
+
+{% block main_content %}
+
+      <div class="coi-intro">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg>
+        <div>
+          <strong>How this works</strong>
+          <p>The Secretariat or Chair can return a completed assessment here if it needs clarification, correction, or more justification. Respond below &mdash; you can also revise your comments, key concerns, or reason for recommendation while you're at it.</p>
+        </div>
+      </div>
+
+      <section class="panel acct-panel">
+        <div class="panel-header">
+          <h2>Awaiting your response</h2>
+          <span style="font-size:12.5px;color:var(--text-sub);">{{ notes|length }} open</span>
+        </div>
+
+        <div class="app-card-grid">
+          {% for note in notes %}
+          <div class="coi-card">
+            <div class="coi-card-top">
+              <div class="coi-card-who">
+                <span class="coi-card-avatar">{{ note.assignment.application.applicant.initials }}</span>
+                <div class="coi-card-heading">
+                  <h4>{{ note.assignment.application.title }}</h4>
+                  <p>{{ note.assignment.application.reference_no|default:"No reference yet" }} &middot; Raised {{ note.created_at|date:"d M Y" }}{% if note.raised_by %} by {{ note.raised_by.full_name }}{% endif %}</p>
+                </div>
+              </div>
+              <span class="badge text-bg-warning">Action Needed</span>
+            </div>
+
+            <div class="coi-card-meta" style="flex-direction:column;align-items:flex-start;gap:4px;">
+              <strong style="font-size:12.5px;color:var(--text-sub);">Their note</strong>
+              <span>{{ note.message }}</span>
+            </div>
+
+            <form method="post" class="field-grid" style="margin-top:10px;">
+              {% csrf_token %}
+              <input type="hidden" name="note_id" value="{{ note.pk }}">
+
+              <div class="field field-wide">
+                <label for="reviewNotes{{ note.pk }}">Additional comments / recommendations</label>
+                <textarea id="reviewNotes{{ note.pk }}" name="review_notes" rows="2">{{ note.assignment.review_notes }}</textarea>
+              </div>
+              <div class="field field-wide">
+                <label for="keyConcerns{{ note.pk }}">Key ethical concerns or required revisions</label>
+                <textarea id="keyConcerns{{ note.pk }}" name="key_concerns" rows="2">{{ note.assignment.key_concerns }}</textarea>
+              </div>
+              <div class="field field-wide">
+                <label for="recReason{{ note.pk }}">Reason for recommendation</label>
+                <textarea id="recReason{{ note.pk }}" name="recommendation_reason" rows="2">{{ note.assignment.recommendation_reason }}</textarea>
+              </div>
+              <div class="field field-wide">
+                <label for="resolutionNote{{ note.pk }}">Your response to the Secretariat/Chair <span class="req">*</span></label>
+                <textarea id="resolutionNote{{ note.pk }}" name="resolution_note" rows="3" placeholder="Explain what you clarified, corrected, or justified..." required></textarea>
+              </div>
+
+              <div class="assess-submit-bar" style="grid-column:1/-1;">
+                <button type="submit" class="btn-primary">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 13 4 4L19 7"/></svg>
+                  Submit Response
+                </button>
+              </div>
+            </form>
+          </div>
+          {% empty %}
+          <div class="empty-state">
+            <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></span>
+            <h3>Nothing pending</h3>
+            <p>No reviews have been returned to you for correction right now.</p>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+{% endblock %}

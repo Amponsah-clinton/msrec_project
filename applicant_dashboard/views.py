@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.conf import settings
 from django.db.models import Q, Sum
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -189,6 +189,39 @@ def _send_submission_confirmation_email(application, request, *, is_resubmission
     )
 
 
+def _alert_secretariat_of_new_submission(application, *, is_resubmission, notify_message):
+    """Emails every active Secretariat account so a new submission doesn't
+    sit unseen until someone happens to open the dashboard -- the in-app
+    notify() above only reaches people who are already logged in. Same
+    pattern as _alert_admins_of_postapproval below."""
+    secretariat_emails = list(
+        User.objects.filter(is_active=True, role=User.Role.SECRETARIAT)
+        # @example.com is the seed/demo account (secretariat.demo@example.com) --
+        # Resend rejects the entire message outright if any recipient is on
+        # that reserved test domain, which would silently take the real
+        # Secretariat address down with it.
+        .exclude(email="").exclude(email__iendswith="@example.com")
+        .values_list("email", flat=True).distinct()
+    )
+    if not secretariat_emails:
+        return
+    detail_url = f"{settings.SITE_URL.rstrip('/')}{reverse('secretariat_dashboard:application_detail', kwargs={'pk': application.pk})}"
+    send_branded_email(
+        subject=f"MSREC — {'resubmission' if is_resubmission else 'new submission'} needs review ({application.reference_no})",
+        to=secretariat_emails,
+        heading="Resubmission needs review" if is_resubmission else "New application needs review",
+        paragraphs=[
+            notify_message,
+            f"Title: {application.title}",
+            f"Applicant: {application.applicant.full_name} ({application.applicant.email})",
+            "Please screen it and assign a reviewer from the Secretariat dashboard.",
+        ],
+        cta_text="View Application",
+        cta_url=detail_url,
+        preheader=f"{application.reference_no} needs Secretariat screening.",
+    )
+
+
 def finalize_submission(application, request):
     """The one place an application actually becomes SUBMITTED -- called
     either directly (fee-exempt review types, or a resubmission that was
@@ -230,6 +263,9 @@ def finalize_submission(application, request):
         icon=Notification.Icon.INFO,
         link_url_name="secretariat_dashboard:application_detail",
         link_kwargs={"pk": application.pk},
+    )
+    _alert_secretariat_of_new_submission(
+        application, is_resubmission=is_resubmission, notify_message=notify_message,
     )
     _send_submission_confirmation_email(application, request, is_resubmission=is_resubmission)
     messages.success(request, f"Application {application.reference_no} submitted successfully.")
@@ -881,9 +917,32 @@ def application_under_review(request):
 
 
 def application_revisions(request):
+    applications = list(_my_applications(request, status=Application.Status.REVISIONS_REQUIRED))
+    from .revision_pdf import revision_comment_parts
+
+    for application in applications:
+        application.revision_note, application.revision_items = revision_comment_parts(application)
     return render(request, "dashboards/applicant/application-revisions.html", {
-        "applications": _my_applications(request, status=Application.Status.REVISIONS_REQUIRED),
+        "applications": applications,
     })
+
+
+def application_revision_pdf(request, pk):
+    """The applicant's own downloadable copy of the reviewer comments
+    behind a revision request -- same ownership scoping as
+    application_document_pdf, but not limited to REVISIONS_REQUIRED
+    itself: once resubmitted the application moves to Under Review, and
+    the applicant should still be able to pull up what was asked of them
+    on the last round."""
+    from .revision_pdf import render_revision_comments_pdf, revision_comments_filename
+
+    application = get_object_or_404(
+        Application, pk=pk, applicant=request.user, revision_requested_at__isnull=False,
+    )
+    response = HttpResponse(render_revision_comments_pdf(application), content_type="application/pdf")
+    disposition = "attachment" if request.GET.get("download") else "inline"
+    response["Content-Disposition"] = f'{disposition}; filename="{revision_comments_filename(application)}"'
+    return response
 
 
 def application_approved(request):
