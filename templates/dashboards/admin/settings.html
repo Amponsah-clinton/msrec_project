@@ -33,7 +33,7 @@
           <button type="button" class="settings-tab" data-target="applicant-faqs" role="tab" aria-selected="false">Applicant FAQs</button>
           {% if request.user.is_superuser or request.user.role == 'admin' %}<button type="button" class="settings-tab" data-target="certificates" role="tab" aria-selected="false">Certificates</button>{% endif %}
           {% if request.user.is_superuser or request.user.role == 'admin' %}<button type="button" class="settings-tab" data-target="approval-docs" role="tab" aria-selected="false">Approval Documents</button>{% endif %}
-          {% if request.user.is_superuser or request.user.role == 'admin' %}<button type="button" class="settings-tab" data-target="suspension-letter" role="tab" aria-selected="false">Suspension Letter</button>{% endif %}
+          {% if request.user.is_superuser or request.user.role == 'admin' %}{% for L in member_letters %}<button type="button" class="settings-tab" data-target="{{ L.tab }}" role="tab" aria-selected="false">{{ L.title }}</button>{% endfor %}{% endif %}
           {% if request.user.is_superuser or request.user.role == 'admin' %}<button type="button" class="settings-tab" data-target="maintenance" role="tab" aria-selected="false">Maintenance</button>{% endif %}
         </div>
 
@@ -781,161 +781,10 @@
         {% endif %}
 
         {% if request.user.is_superuser or request.user.role == 'admin' %}
-        <!-- Suspension Letter -->
-        <section class="settings-panel-section" id="suspension-letter">
-          <div class="panel settings-panel">
-            <div class="form-section">
-              <div class="apd-head">
-                <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><circle cx="12" cy="15" r="3.2"/><path d="m9.8 17.2 4.4-4.4"/></svg> Suspension Letter</h3>
-              </div>
-              <p class="section-note">The A4 letter attached to the email sent when an account is suspended or banned from Accounts. Whoever suspends the account types the reason; it goes where <code>{reason}</code> is. If the reason would push the letter onto a second page, the type is reduced slightly so it stays on one sheet.</p>
-
-              <div class="apd-chips" aria-label="Placeholders">
-                <span class="apd-chips-label">Insert:</span>
-                {% for key, description in suspension_placeholders %}
-                <button type="button" class="apd-chip" data-apd-insert="{{ '{' }}{{ key }}{{ '}' }}" title="{{ description }}">{{ '{' }}{{ key }}{{ '}' }}</button>
-                {% endfor %}
-              </div>
-
-              {% with t=suspension_template %}
-
-              <!-- Wording -->
-              <form method="post" class="apd-card" data-apd-card="suspension" id="slForm">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="update_suspension_template">
-                <input type="hidden" name="tab" value="suspension-letter">
-                <div class="apd-card-head">
-                  <div><h4>Letter wording</h4><p>A blank line starts a new paragraph. Put <code>{reason}</code> on a line of its own to print the reason in its own box.</p></div>
-                </div>
-                <div class="apd-grid">
-                  <div class="field"><label for="slSalutation">Salutation</label>
-                    <input type="text" id="slSalutation" name="salutation" maxlength="200" value="{{ t.salutation }}"></div>
-                  <div class="field"><label for="slSignOff">Sign-off</label>
-                    <input type="text" id="slSignOff" name="sign_off" maxlength="120" value="{{ t.sign_off }}"></div>
-                </div>
-
-                <h5 class="sl-subhead">Suspension (temporary)</h5>
-                <div class="field"><label for="slSuspendSubject">Subject line <span class="apd-req">*</span></label>
-                  <input type="text" id="slSuspendSubject" name="suspend_subject" maxlength="300" value="{{ t.suspend_subject }}" required></div>
-                <div class="field"><label for="slSuspendBody">Letter body <span class="apd-req">*</span></label>
-                  <textarea id="slSuspendBody" name="suspend_body" rows="9" required>{{ t.suspend_body }}</textarea></div>
-
-                <h5 class="sl-subhead">Ban (permanent)</h5>
-                <div class="field"><label for="slBanSubject">Subject line <span class="apd-req">*</span></label>
-                  <input type="text" id="slBanSubject" name="ban_subject" maxlength="300" value="{{ t.ban_subject }}" required></div>
-                <div class="field"><label for="slBanBody">Letter body <span class="apd-req">*</span></label>
-                  <textarea id="slBanBody" name="ban_body" rows="9" required>{{ t.ban_body }}</textarea></div>
-
-                <div class="field"><label for="slClosing">Closing paragraph (both letters)</label>
-                  <textarea id="slClosing" name="closing" rows="3">{{ t.closing }}</textarea></div>
-
-                <div class="apd-actions">
-                  <button type="submit" class="apd-link-danger" form="slReset">Restore defaults</button>
-                  <div class="apd-actions-right">
-                    <button type="submit" class="btn-secondary" formaction="{% url 'admin_dashboard:suspension_template_preview' 'suspend' %}" formtarget="_blank" formnovalidate>Preview suspension</button>
-                    <button type="submit" class="btn-secondary" formaction="{% url 'admin_dashboard:suspension_template_preview' 'ban' %}" formtarget="_blank" formnovalidate>Preview ban</button>
-                    <button type="submit" class="btn-primary">Save letter</button>
-                  </div>
-                </div>
-              </form>
-
-              <!-- Letterhead -->
-              <section class="apd-card">
-                <div class="apd-card-head">
-                  <div><h4>Letterhead</h4><p>Header across the top of page 1, footer along the bottom, edge to edge on A4. Without an upload here the approval letter's letterhead is used, or the built-in one.</p></div>
-                </div>
-                <div class="apd-lh">
-                  <div class="apd-a4-wrap">
-                    <div class="apd-a4" aria-label="A4 preview">
-                      <div class="apd-a4-header{% if t.header_url %} has-img{% endif %}" id="slA4Header">
-                        <img id="slA4HeaderImg" alt="" {% if t.header_url %}src="{{ t.header_url }}"{% else %}hidden{% endif %}>
-                        <span class="apd-a4-builtin">Approval letter / built-in</span>
-                      </div>
-                      <div class="apd-a4-body">
-                        <i style="width:38%"></i><i style="width:74%"></i><i style="width:88%"></i><i class="gap"></i>
-                        <i style="width:92%"></i><i style="width:86%"></i><i style="width:90%"></i><i style="width:52%"></i><i class="gap"></i><i style="width:30%"></i>
-                      </div>
-                      <div class="apd-a4-footer{% if t.footer_url %} has-img{% endif %}" id="slA4Footer">
-                        <img id="slA4FooterImg" alt="" {% if t.footer_url %}src="{{ t.footer_url }}"{% else %}hidden{% endif %}>
-                        <span class="apd-a4-builtin">Approval letter / built-in</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div class="apd-lh-forms">
-                    {% for kind, label, url, tip in suspension_image_slots %}
-                    <form method="post" enctype="multipart/form-data" class="apd-lh-form">
-                      {% csrf_token %}
-                      <input type="hidden" name="action" value="update_suspension_image">
-                      <input type="hidden" name="kind" value="{{ kind }}">
-                      <input type="hidden" name="tab" value="suspension-letter">
-                      <div class="apd-lh-title"><strong>{{ label }}</strong>{% if url %}<span class="apd-tag">Uploaded</span>{% else %}<span class="apd-tag muted">Not set</span>{% endif %}</div>
-                      <label class="apd-file">
-                        <input type="file" name="image" accept="image/png,image/jpeg,image/webp" required data-apd-preview="{% if kind == 'header' %}slA4HeaderImg{% else %}slA4FooterImg{% endif %}" data-apd-preview-box="{% if kind == 'header' %}slA4Header{% else %}slA4Footer{% endif %}">
-                        <span class="apd-file-btn"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg> Choose image</span>
-                        <span class="apd-file-name">PNG, JPG or WEBP</span>
-                      </label>
-                      <p class="apd-lh-tip">{{ tip }}</p>
-                      <div class="apd-lh-buttons">
-                        <button type="submit" class="btn-primary">Upload {{ kind }}</button>
-                        {% if url %}<button type="submit" name="remove" value="1" class="apd-link-danger" formnovalidate data-apd-confirm="Remove the {{ kind }} image from the suspension letter?">Remove</button>{% endif %}
-                      </div>
-                    </form>
-                    {% endfor %}
-                  </div>
-                </div>
-              </section>
-
-              <!-- Signatory -->
-              <section class="apd-card">
-                <div class="apd-card-head">
-                  <div><h4>Signature, name and position</h4><p>{% if t.sign_name %}Signed by <strong>{{ t.sign_name }}</strong>.{% else %}Signed by the Chair unless you add someone here.{% endif %} Printed at the bottom of the letter.</p></div>
-                </div>
-                <div class="apd-sign">
-                  <div class="cs-preview apd-sign-preview">
-                    <span class="cs-preview-tag">On the letter</span>
-                    <div class="cs-sheet apd-sign-sheet">
-                      <div class="apd-sign-hello">{{ t.sign_off }}</div>
-                      <div class="cs-sig-box apd-sign-box">
-                        <img id="slSignImg" alt="" {% if t.sign_url %}src="{{ t.sign_url }}"{% else %}hidden{% endif %}>
-                        <span class="cs-sig-empty" id="slSignEmpty" {% if t.sign_url %}hidden{% endif %}>Signature appears here</span>
-                      </div>
-                      <div class="cs-name apd-sign-name" id="slSignName">{{ t.sign_name|default:"Signatory's name" }}</div>
-                      <div class="cs-title apd-sign-title" id="slSignTitle">{{ t.sign_title }}</div>
-                    </div>
-                  </div>
-
-                  <form method="post" enctype="multipart/form-data" class="apd-sign-form">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="update_suspension_signatory">
-                    <input type="hidden" name="tab" value="suspension-letter">
-                    <div class="apd-grid">
-                      <div class="field"><label for="slSignNameInput">Name <span class="apd-req">*</span></label>
-                        <input type="text" id="slSignNameInput" name="sign_name" maxlength="150" value="{{ t.sign_name }}" placeholder="e.g. Mrs. Abena Osei" required data-apd-sign-out="slSignName"></div>
-                      <div class="field"><label for="slSignTitleInput">Position</label>
-                        <input type="text" id="slSignTitleInput" name="sign_title" maxlength="150" value="{{ t.sign_title }}" placeholder="e.g. Secretary to the Committee" data-apd-sign-out="slSignTitle"></div>
-                    </div>
-                    <label class="apd-file">
-                      <input type="file" name="signature_file" accept="image/png,image/jpeg,image/webp" data-apd-sign-preview="slSignImg" data-apd-sign-empty="slSignEmpty">
-                      <span class="apd-file-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> {% if t.sign_url %}Replace signature{% else %}Upload signature{% endif %}</span>
-                      <span class="apd-file-name">PNG or JPG &mdash; a photo of a signature on paper works; the paper is removed</span>
-                    </label>
-                    {% if t.sign_url %}<label class="apd-toggle apd-toggle-inline"><input type="checkbox" name="remove_signature" value="1"><span>Remove the saved signature</span></label>{% endif %}
-                    <div class="apd-actions">
-                      {% if t.sign_name %}<button type="submit" name="use_chair" value="1" class="apd-link-danger" formnovalidate data-apd-confirm="Sign the suspension letter with the Chair again? The custom signatory and its signature will be removed.">Use the Chair instead</button>{% else %}<span></span>{% endif %}
-                      <div class="apd-actions-right"><button type="submit" class="btn-primary">Save signatory</button></div>
-                    </div>
-                  </form>
-                </div>
-              </section>
-
-              <form method="post" id="slReset" data-confirm="Restore the suspension letter to the default wording? Your edits will be replaced." data-confirm-label="Restore" hidden>
-                {% csrf_token %}<input type="hidden" name="action" value="reset_suspension_template"><input type="hidden" name="tab" value="suspension-letter">
-              </form>
-              {% endwith %}
-            </div>
-          </div>
-        </section>
+        <!-- Appointment Letter / Suspension Letter -->
+        {% for L in member_letters %}
+        {% include "dashboards/admin/_member_letter_settings.html" %}
+        {% endfor %}
         {% endif %}
 
         {% if request.user.is_superuser or request.user.role == 'admin' %}

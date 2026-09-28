@@ -2,9 +2,9 @@ from django.core import mail
 from django.test import TestCase
 from django.urls import reverse
 
-from accounts import suspension
+from accounts import appointment, letters, suspension
 from accounts.models import AuditLog, User
-from pages.models import SuspensionLetterTemplate
+from pages.models import AppointmentLetterTemplate, SuspensionLetterTemplate
 
 
 class SuspensionLetterTests(TestCase):
@@ -97,7 +97,7 @@ class SuspensionLetterTests(TestCase):
 
         reason = "\n".join(f"- Finding {i}: protocol documents were shared outside the Committee." for i in range(19))
         content = suspension.letter_content(self.target, kind="suspend", reason=reason)
-        _pdf, full_size_pages = suspension._build(self.target, content, None, None, SiteSettings.get_solo(), 1.0)
+        _pdf, full_size_pages = letters.build(self.target, content, None, None, SiteSettings.get_solo(), 1.0)
         self.assertGreater(full_size_pages, 1)  # precondition: too long at full size
         _pdf, pages, scale = suspension.render_letter(self.target, kind="suspend", reason=reason)
         self.assertEqual(pages, 1)
@@ -105,8 +105,8 @@ class SuspensionLetterTests(TestCase):
 
     def test_reason_placed_where_template_says(self):
         content = suspension.letter_content(self.target, kind="suspend", reason="Line one\nLine two\n\nPara two")
-        boxes = [item for kind, item in content["body"] if kind == "reason"]
-        self.assertEqual(boxes, [[["Line one", "Line two"], ["Para two"]]])
+        boxes = [item for kind, item in content["body"] if kind == "box"]
+        self.assertEqual(boxes, [("Reason", [["Line one", "Line two"], ["Para two"]])])
 
     def test_reason_appended_when_template_omits_placeholder(self):
         template = SuspensionLetterTemplate.get_solo()
@@ -114,7 +114,7 @@ class SuspensionLetterTests(TestCase):
         template.save()
         content = suspension.letter_content(self.target, kind="suspend", reason="Because.")
         self.assertEqual(content["body"][0], ("text", "Your account (kofi@example.com) is suspended."))
-        self.assertEqual(content["body"][-1], ("reason", [["Because."]]))
+        self.assertEqual(content["body"][-1], ("box", ("Reason", [["Because."]])))
 
 
 class SuspensionLetterSettingsTests(TestCase):
@@ -130,10 +130,11 @@ class SuspensionLetterSettingsTests(TestCase):
 
     def test_save_wording_and_signatory(self):
         self.client.force_login(self.admin)
-        data = {"action": "update_suspension_template", "tab": "suspension-letter", **SuspensionLetterTemplate.DEFAULTS}
+        data = {"action": "update_member_letter", "letter": "suspension", **SuspensionLetterTemplate.DEFAULTS}
         data["suspend_subject"] = "RE: ACCOUNT SUSPENSION"
         self.client.post(self.url, data)
-        self.client.post(self.url, {"action": "update_suspension_signatory", "sign_name": "Mrs. Abena Osei",
+        self.client.post(self.url, {"action": "update_member_letter_signatory", "letter": "suspension",
+                                    "sign_name": "Mrs. Abena Osei",
                                     "sign_title": "Secretary to the Committee"})
         template = SuspensionLetterTemplate.get_solo()
         self.assertEqual(template.suspend_subject, "RE: ACCOUNT SUSPENSION")
@@ -145,6 +146,82 @@ class SuspensionLetterSettingsTests(TestCase):
     def test_template_preview(self):
         self.client.force_login(self.admin)
         for kind in ("suspend", "ban"):
-            response = self.client.get(reverse("admin_dashboard:suspension_template_preview", args=[kind]))
+            response = self.client.get(reverse("admin_dashboard:member_letter_preview", args=["suspension", kind]))
             self.assertEqual(response.status_code, 200)
             self.assertTrue(response.content.startswith(b"%PDF"))
+
+
+class AppointmentLetterTests(TestCase):
+    """The Appointment Letter sent on approval uses the wording, letterhead
+    and signatory saved in Site Settings > Appointment Letter."""
+
+    def setUp(self):
+        self.admin = User.objects.create_user("admin@example.com", "pw-Admin#123", role=User.Role.ADMIN)
+        self.member = User.objects.create_user(
+            "ama@example.com", "pw-Ama#123", first_name="Ama", last_name="Owusu", institution="KNUST",
+            wants_reviewer=True, reviewer_status=User.RequestStatus.PENDING,
+        )
+        self.settings_url = reverse("admin_dashboard:settings")
+
+    def test_approval_email_attaches_appointment_letter(self):
+        self.client.force_login(self.admin)
+        self.client.post(reverse("admin_dashboard:accounts"),
+                         {"action": "approve", "user_id": self.member.pk, "role": "reviewer"})
+        self.member.refresh_from_db()
+        self.assertEqual(self.member.reviewer_status, User.RequestStatus.APPROVED)
+        names = [name for name, _content, _type in mail.outbox[-1].attachments]
+        self.assertIn(appointment.letter_filename(self.member), names)
+
+    def test_saved_wording_and_signatory_are_used(self):
+        self.client.force_login(self.admin)
+        data = {"action": "update_member_letter", "letter": "appointment", **AppointmentLetterTemplate.DEFAULTS}
+        data["reviewer_body"] = "Welcome aboard as {a_role}, {first_name}. Your Ethics ID is {ethics_id}."
+        self.client.post(self.settings_url, data)
+        self.client.post(self.settings_url, {"action": "update_member_letter_signatory", "letter": "appointment",
+                                             "sign_name": "Dr. Yaw Darko", "sign_title": "Committee Secretary"})
+        self.member.approve_role(User.Role.REVIEWER)
+        content = appointment.letter_content(self.member)
+        self.assertEqual(content["body"], [("text", f"Welcome aboard as an Ethics Reviewer, Ama. "
+                                                    f"Your Ethics ID is {self.member.membership_ethics_id}.")])
+        self.assertEqual((content["signatory"]["name"], content["signatory"]["title"]),
+                         ("Dr. Yaw Darko", "Committee Secretary"))
+        self.assertIn("ETHICS REVIEWER", content["subject"])
+        _pdf, pages, _scale = appointment.render_letter(self.member)
+        self.assertEqual(pages, 1)
+
+    def test_committee_version_and_previews(self):
+        self.client.force_login(self.admin)
+        sample = appointment.sample_user("committee")
+        content = appointment.letter_content(sample, kind="committee")
+        self.assertIn("Committee meetings", " ".join(text for _k, text in content["body"]))
+        for kind in ("reviewer", "committee"):
+            response = self.client.get(reverse("admin_dashboard:member_letter_preview", args=["appointment", kind]))
+            self.assertEqual(response.status_code, 200)
+            self.assertTrue(response.content.startswith(b"%PDF"))
+        self.assertEqual(
+            self.client.get(reverse("admin_dashboard:member_letter_preview", args=["appointment", "ban"])).status_code,
+            404,
+        )
+
+    def test_settings_page_has_both_letter_tabs(self):
+        self.client.force_login(self.admin)
+        response = self.client.get(self.settings_url)
+        self.assertContains(response, 'id="appointment-letter"')
+        self.assertContains(response, 'id="suspension-letter"')
+        self.assertContains(response, "{a_role}")
+
+    def test_reset_restores_default_wording(self):
+        template = AppointmentLetterTemplate.get_solo()
+        template.reviewer_body = "Custom."
+        template.save()
+        self.client.force_login(self.admin)
+        self.client.post(self.settings_url, {"action": "reset_member_letter", "letter": "appointment"})
+        template.refresh_from_db()
+        self.assertEqual(template.reviewer_body, AppointmentLetterTemplate.DEFAULTS["reviewer_body"])
+
+    def test_member_downloads_letter_from_dashboard(self):
+        self.member.approve_role(User.Role.REVIEWER)
+        self.client.force_login(self.member)
+        response = self.client.get(reverse("pages:appointment_letter"))
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.content.startswith(b"%PDF"))

@@ -1,0 +1,156 @@
+{# One Site Settings tab for a letter sent to an account holder -- the Appointment Letter or the Suspension Letter. #}
+{# `L` comes from admin_dashboard.views._member_letters_for_settings(); forms post `letter={{ L.key }}`. #}
+        <section class="settings-panel-section member-letter" id="{{ L.tab }}">
+          <div class="panel settings-panel">
+            <div class="form-section">
+              <div class="apd-head">
+                <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg> {{ L.title }}</h3>
+              </div>
+              <p class="section-note">{{ L.note }}</p>
+
+              <div class="apd-chips" aria-label="Placeholders">
+                <span class="apd-chips-label">Insert:</span>
+                {% for key, description in L.placeholders %}
+                <button type="button" class="apd-chip" data-apd-insert="{{ '{' }}{{ key }}{{ '}' }}" title="{{ description }}">{{ '{' }}{{ key }}{{ '}' }}</button>
+                {% endfor %}
+              </div>
+
+              {% with t=L.t p=L.key %}
+
+              <!-- Wording -->
+              <form method="post" class="apd-card" data-apd-card="{{ p }}" id="{{ p }}LetterForm">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_member_letter">
+                <input type="hidden" name="letter" value="{{ p }}">
+                <input type="hidden" name="tab" value="{{ L.tab }}">
+                <div class="apd-card-head">
+                  <div><h4>Letter wording</h4><p>{{ L.hint }}</p></div>
+                </div>
+                <div class="apd-grid">
+                  <div class="field"><label for="{{ p }}Salutation">Salutation</label>
+                    <input type="text" id="{{ p }}Salutation" name="salutation" maxlength="200" value="{{ t.salutation }}"></div>
+                  <div class="field"><label for="{{ p }}SignOff">Sign-off</label>
+                    <input type="text" id="{{ p }}SignOff" name="sign_off" maxlength="120" value="{{ t.sign_off }}"></div>
+                </div>
+
+                {% for s in L.sections %}
+                <h5 class="sl-subhead">{{ s.label }}</h5>
+                <div class="field"><label for="{{ p }}-{{ s.subject_field }}">Subject line <span class="apd-req">*</span></label>
+                  <input type="text" id="{{ p }}-{{ s.subject_field }}" name="{{ s.subject_field }}" maxlength="300" value="{{ s.subject }}" required></div>
+                <div class="field"><label for="{{ p }}-{{ s.body_field }}">Letter body <span class="apd-req">*</span></label>
+                  <textarea id="{{ p }}-{{ s.body_field }}" name="{{ s.body_field }}" rows="9" required>{{ s.body }}</textarea></div>
+                {% endfor %}
+
+                <div class="field"><label for="{{ p }}Closing">Closing paragraph (every version)</label>
+                  <textarea id="{{ p }}Closing" name="closing" rows="3">{{ t.closing }}</textarea></div>
+
+                <div class="apd-actions">
+                  <button type="submit" class="apd-link-danger" form="{{ p }}LetterReset">Restore defaults</button>
+                  <div class="apd-actions-right">
+                    {% for s in L.sections %}
+                    <button type="submit" class="btn-secondary" formaction="{% url 'admin_dashboard:member_letter_preview' p s.kind %}" formtarget="_blank" formnovalidate>Preview: {{ s.label }}</button>
+                    {% endfor %}
+                    <button type="submit" class="btn-primary">Save letter</button>
+                  </div>
+                </div>
+              </form>
+
+              <!-- Letterhead -->
+              <section class="apd-card">
+                <div class="apd-card-head">
+                  <div><h4>Letterhead</h4><p>Header across the top of page 1, footer along the bottom, edge to edge on A4. Without an upload here the approval letter's letterhead is used, or the built-in one.</p></div>
+                </div>
+                <div class="apd-lh">
+                  <div class="apd-a4-wrap">
+                    <div class="apd-a4" aria-label="A4 preview">
+                      <div class="apd-a4-header{% if L.header_url %} has-img{% endif %}" id="{{ p }}A4Header">
+                        <img id="{{ p }}A4HeaderImg" alt="" {% if L.header_url %}src="{{ L.header_url }}"{% else %}hidden{% endif %}>
+                        <span class="apd-a4-builtin">Approval letter / built-in</span>
+                      </div>
+                      <div class="apd-a4-body">
+                        <i style="width:38%"></i><i style="width:74%"></i><i style="width:88%"></i><i class="gap"></i>
+                        <i style="width:92%"></i><i style="width:86%"></i><i style="width:90%"></i><i style="width:52%"></i><i class="gap"></i><i style="width:30%"></i>
+                      </div>
+                      <div class="apd-a4-footer{% if L.footer_url %} has-img{% endif %}" id="{{ p }}A4Footer">
+                        <img id="{{ p }}A4FooterImg" alt="" {% if L.footer_url %}src="{{ L.footer_url }}"{% else %}hidden{% endif %}>
+                        <span class="apd-a4-builtin">Approval letter / built-in</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="apd-lh-forms">
+                    {% for kind, label, url, tip in L.image_slots %}
+                    <form method="post" enctype="multipart/form-data" class="apd-lh-form">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="update_member_letter_image">
+                      <input type="hidden" name="letter" value="{{ p }}">
+                      <input type="hidden" name="kind" value="{{ kind }}">
+                      <input type="hidden" name="tab" value="{{ L.tab }}">
+                      <div class="apd-lh-title"><strong>{{ label }}</strong>{% if url %}<span class="apd-tag">Uploaded</span>{% else %}<span class="apd-tag muted">Not set</span>{% endif %}</div>
+                      <label class="apd-file">
+                        <input type="file" name="image" accept="image/png,image/jpeg,image/webp" required data-apd-preview="{{ p }}A4{% if kind == 'header' %}Header{% else %}Footer{% endif %}Img" data-apd-preview-box="{{ p }}A4{% if kind == 'header' %}Header{% else %}Footer{% endif %}">
+                        <span class="apd-file-btn"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/></svg> Choose image</span>
+                        <span class="apd-file-name">PNG, JPG or WEBP</span>
+                      </label>
+                      <p class="apd-lh-tip">{{ tip }}</p>
+                      <div class="apd-lh-buttons">
+                        <button type="submit" class="btn-primary">Upload {{ kind }}</button>
+                        {% if url %}<button type="submit" name="remove" value="1" class="apd-link-danger" formnovalidate data-apd-confirm="Remove the {{ kind }} image from the {{ L.label|lower }}?">Remove</button>{% endif %}
+                      </div>
+                    </form>
+                    {% endfor %}
+                  </div>
+                </div>
+              </section>
+
+              <!-- Signatory -->
+              <section class="apd-card">
+                <div class="apd-card-head">
+                  <div><h4>Signature, name and position</h4><p>{% if t.sign_name %}Signed by <strong>{{ t.sign_name }}</strong>.{% else %}Signed by the Chair unless you add someone here.{% endif %} Printed at the bottom of the letter.</p></div>
+                </div>
+                <div class="apd-sign">
+                  <div class="cs-preview apd-sign-preview">
+                    <span class="cs-preview-tag">On the letter</span>
+                    <div class="cs-sheet apd-sign-sheet">
+                      <div class="apd-sign-hello">{{ t.sign_off }}</div>
+                      <div class="cs-sig-box apd-sign-box">
+                        <img id="{{ p }}SignImg" alt="" {% if L.sign_url %}src="{{ L.sign_url }}"{% else %}hidden{% endif %}>
+                        <span class="cs-sig-empty" id="{{ p }}SignEmpty" {% if L.sign_url %}hidden{% endif %}>Signature appears here</span>
+                      </div>
+                      <div class="cs-name apd-sign-name" id="{{ p }}SignName">{{ t.sign_name|default:"Signatory's name" }}</div>
+                      <div class="cs-title apd-sign-title" id="{{ p }}SignTitle">{{ t.sign_title }}</div>
+                    </div>
+                  </div>
+
+                  <form method="post" enctype="multipart/form-data" class="apd-sign-form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="update_member_letter_signatory">
+                    <input type="hidden" name="letter" value="{{ p }}">
+                    <input type="hidden" name="tab" value="{{ L.tab }}">
+                    <div class="apd-grid">
+                      <div class="field"><label for="{{ p }}SignNameInput">Name <span class="apd-req">*</span></label>
+                        <input type="text" id="{{ p }}SignNameInput" name="sign_name" maxlength="150" value="{{ t.sign_name }}" placeholder="e.g. Mrs. Abena Osei" required data-apd-sign-out="{{ p }}SignName"></div>
+                      <div class="field"><label for="{{ p }}SignTitleInput">Position</label>
+                        <input type="text" id="{{ p }}SignTitleInput" name="sign_title" maxlength="150" value="{{ t.sign_title }}" placeholder="e.g. Secretary to the Committee" data-apd-sign-out="{{ p }}SignTitle"></div>
+                    </div>
+                    <label class="apd-file">
+                      <input type="file" name="signature_file" accept="image/png,image/jpeg,image/webp" data-apd-sign-preview="{{ p }}SignImg" data-apd-sign-empty="{{ p }}SignEmpty">
+                      <span class="apd-file-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> {% if L.sign_url %}Replace signature{% else %}Upload signature{% endif %}</span>
+                      <span class="apd-file-name">PNG or JPG &mdash; a photo of a signature on paper works; the paper is removed</span>
+                    </label>
+                    {% if L.sign_url %}<label class="apd-toggle apd-toggle-inline"><input type="checkbox" name="remove_signature" value="1"><span>Remove the saved signature</span></label>{% endif %}
+                    <div class="apd-actions">
+                      {% if t.sign_name %}<button type="submit" name="use_chair" value="1" class="apd-link-danger" formnovalidate data-apd-confirm="Sign the {{ L.label|lower }} with the Chair again? The custom signatory and its signature will be removed.">Use the Chair instead</button>{% else %}<span></span>{% endif %}
+                      <div class="apd-actions-right"><button type="submit" class="btn-primary">Save signatory</button></div>
+                    </div>
+                  </form>
+                </div>
+              </section>
+
+              <form method="post" id="{{ p }}LetterReset" data-confirm="Restore the {{ L.label|lower }} to the default wording? Your edits will be replaced." data-confirm-label="Restore" hidden>
+                {% csrf_token %}<input type="hidden" name="action" value="reset_member_letter"><input type="hidden" name="letter" value="{{ p }}"><input type="hidden" name="tab" value="{{ L.tab }}">
+              </form>
+              {% endwith %}
+            </div>
+          </div>
+        </section>

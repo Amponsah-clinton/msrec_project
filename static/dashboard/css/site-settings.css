@@ -473,12 +473,12 @@
 .mt-actions { justify-content: flex-end; gap: 8px; }
 @media (max-width: 600px) { .mt-when { grid-template-columns: 1fr; } .mt-status { flex-wrap: wrap; } }
 
-/* Site Settings > Suspension Letter: the suspension / ban halves of the
+/* Site Settings > Appointment / Suspension Letter: the per-kind halves of the
    wording form, and a gap between its stacked cards (Approval Documents
    shows one card at a time, so it never needed one). */
-#suspension-letter .apd-card + .apd-card { margin-top: 16px; }
-#suspension-letter .section-note code,
-#suspension-letter .apd-card-head code { font-size: 12px; background: var(--hover-bg); padding: 1px 5px; border-radius: 4px; }
+.member-letter .apd-card + .apd-card { margin-top: 16px; }
+.member-letter .section-note code,
+.member-letter .apd-card-head code { font-size: 12px; background: var(--hover-bg); padding: 1px 5px; border-radius: 4px; }
 .sl-subhead {
   margin: 18px 0 8px;
   padding-top: 14px;

@@ -47,7 +47,7 @@ urlpatterns = [
     path("settings/", views.site_settings, name="settings"),
     path("settings/certificate-preview/", views.certificate_preview, name="certificate_preview"),
     path("settings/approval-preview/<str:kind>/", views.approval_template_preview, name="approval_template_preview"),
-    path("settings/suspension-preview/<str:kind>/", views.suspension_template_preview, name="suspension_template_preview"),
+    path("settings/letter-preview/<str:letter>/<str:kind>/", views.member_letter_preview, name="member_letter_preview"),
     path("settings/maintenance-preview/", views.maintenance_preview, name="maintenance_preview"),
     # Same underlying AuditLog table and categorization secretariat_dashboard's
     # own Audit Logs page already uses (see that module's audit_logs()) --

@@ -1,9 +1,8 @@
-/* Site Settings > Approval Documents and Suspension Letter: switch between the email / letter /
+/* Site Settings > Approval Documents and the member letters (Appointment / Suspension): switch between the email / letter /
    certificate forms, insert {placeholders} where the cursor is, and keep
    the little certificate sketch in step with the title fields. */
-["approval-docs", "suspension-letter"].forEach(function (rootId) {
-  var root = document.getElementById(rootId);
-  if (!root) return;
+document.querySelectorAll("#approval-docs, .member-letter").forEach(function (root) {
+  var rootId = root.id;
 
   var cards = root.querySelectorAll("[data-apd-card]");
   var buttons = root.querySelectorAll("[data-apd-show]");
@@ -76,9 +75,7 @@
 /* Letterhead uploads: show the chosen artwork in the miniature A4 right away
    (client-side only -- the real processing happens when it's uploaded), and
    confirm before removing. */
-["approval-docs", "suspension-letter"].forEach(function (rootId) {
-  var root = document.getElementById(rootId);
-  if (!root) return;
+document.querySelectorAll("#approval-docs, .member-letter").forEach(function (root) {
 
   root.querySelectorAll("[data-apd-preview]").forEach(function (input) {
     input.addEventListener("change", function () {

@@ -2757,140 +2757,217 @@ def _handle_settings_letter_signatory(request, site):
 
 
 # ---------------------------------------------------------------------
-# Site Settings > Suspension Letter (see accounts/suspension.py)
+# Site Settings > Appointment Letter / Suspension Letter
+# (accounts/appointment.py, accounts/suspension.py, accounts/letters.py)
 # ---------------------------------------------------------------------
 
-SUSPENSION_TEXT_FIELDS = ["suspend_subject", "suspend_body", "ban_subject", "ban_body",
-                          "salutation", "closing", "sign_off"]
-SUSPENSION_REQUIRED = {"suspend_subject", "suspend_body", "ban_subject", "ban_body"}
+MEMBER_LETTER_COMMON_FIELDS = ["salutation", "closing", "sign_off"]
 
 
-def _apply_suspension_fields(template, post):
+def _suspension_reason_check(request, template):
+    from accounts.suspension import REASON_TOKEN
+
+    missing = [label for field, label in (("suspend_body", "suspension"), ("ban_body", "ban"))
+               if REASON_TOKEN not in getattr(template, field)]
+    if missing:
+        messages.warning(
+            request,
+            f"The {' and '.join(missing)} letter doesn't include {REASON_TOKEN} -- the typed reason will be "
+            f"added after the body instead.",
+        )
+
+
+def _member_letters():
+    """Every letter an account holder receives that's edited in Site
+    Settings, keyed by the `letter` value its forms post. Each has
+    kind-specific wording sections (subject + body per kind) and the
+    shared salutation / closing / sign-off, letterhead and signatory."""
+    from accounts import appointment, suspension
+    from pages.models import AppointmentLetterTemplate, SuspensionLetterTemplate
+
+    return {
+        "appointment": {
+            "model": AppointmentLetterTemplate,
+            "tab": "appointment-letter",
+            "title": "Appointment Letter",
+            "label": "Appointment letter",
+            "note": ("The A4 letter attached, with the Membership Certificate, to the email a Reviewer or "
+                     "Committee member receives when their request is approved. Members can also download it "
+                     "from their dashboard, so changes here apply to every later download too."),
+            "hint": "A blank line starts a new paragraph.",
+            "sections": [("reviewer", "Ethics Reviewer"), ("committee", "Committee member")],
+            "placeholders": appointment.PLACEHOLDERS,
+            "unknown": appointment.unknown_placeholders,
+            "preview": lambda t, kind: appointment.render_letter_pdf(appointment.sample_user(kind), t, kind=kind),
+            "saved": "it's used on the next approval and every download from now on",
+            "after_save": None,
+        },
+        "suspension": {
+            "model": SuspensionLetterTemplate,
+            "tab": "suspension-letter",
+            "title": "Suspension Letter",
+            "label": "Suspension letter",
+            "note": ("The A4 letter attached to the email sent when an account is suspended or banned from "
+                     "Accounts. Whoever suspends the account types the reason; it goes where {reason} is. If "
+                     "the reason would push the letter onto a second page, the type is reduced slightly so it "
+                     "stays on one sheet."),
+            "hint": ("A blank line starts a new paragraph. Put {reason} on a line of its own to print the reason "
+                     "in its own box."),
+            "sections": [("suspend", "Suspension (temporary)"), ("ban", "Ban (permanent)")],
+            "placeholders": suspension.PLACEHOLDERS,
+            "unknown": suspension.unknown_placeholders,
+            "preview": lambda t, kind: suspension.render_letter_pdf(
+                suspension.sample_user(), t, kind=kind, reason=suspension.SAMPLE_REASON),
+            "saved": "it's used from the next suspension onwards",
+            "after_save": _suspension_reason_check,
+        },
+    }
+
+
+def _member_letter_fields(config):
+    """(all text fields, required fields) for one letter."""
+    kind_fields = [f"{kind}_{part}" for kind, _label in config["sections"] for part in ("subject", "body")]
+    return kind_fields + MEMBER_LETTER_COMMON_FIELDS, set(kind_fields)
+
+
+def _apply_member_letter_fields(config, template, post):
     """Copies the posted wording onto `template` (unsaved). Returns the
     required fields left blank."""
-    from pages.models import SuspensionLetterTemplate
-
+    fields, required = _member_letter_fields(config)
     missing = []
-    for field in SUSPENSION_TEXT_FIELDS:
+    for field in fields:
         value = post.get(field, "").replace("\r\n", "\n").strip()
-        limit = SuspensionLetterTemplate._meta.get_field(field).max_length
+        limit = config["model"]._meta.get_field(field).max_length
         if limit:
             value = " ".join(value.split())[:limit]
-        if not value and field in SUSPENSION_REQUIRED:
+        if not value and field in required:
             missing.append(field)
             continue
         setattr(template, field, value)
     return missing
 
 
-def _handle_settings_suspension_template(request, site):
-    from accounts.suspension import REASON_TOKEN, unknown_placeholders
-    from pages.models import SuspensionLetterTemplate
-
+def _member_letter_for_post(request, message):
+    """(config, template) for the letter a settings form posted, or
+    (None, None) after flashing why not."""
     if not is_admin(request.user):
-        messages.error(request, "Only an administrator can change the suspension letter.")
+        messages.error(request, message)
+        return None, None
+    config = _member_letters().get(request.POST.get("letter"))
+    if config is None:
+        messages.error(request, "That request could not be processed.")
+        return None, None
+    return config, config["model"].get_solo()
+
+
+def _handle_settings_member_letter(request, site):
+    config, template = _member_letter_for_post(request, "Only an administrator can change the letters.")
+    if config is None:
         return
-    template = SuspensionLetterTemplate.get_solo()
-    if _apply_suspension_fields(template, request.POST):
+    if _apply_member_letter_fields(config, template, request.POST):
         messages.error(request, "Please fill in every required field before saving.")
         return
     template.updated_by = request.user
     template.save()
-    messages.success(request, "Suspension letter saved -- it's used from the next suspension onwards.")
-    unknown = unknown_placeholders(*(getattr(template, f) for f in SUSPENSION_TEXT_FIELDS))
+    messages.success(request, f"{config['label']} saved -- {config['saved']}.")
+    fields, _required = _member_letter_fields(config)
+    unknown = config["unknown"](*(getattr(template, f) for f in fields))
     if unknown:
         messages.warning(
             request,
             "These placeholders aren't recognised and will print exactly as typed: "
             + ", ".join("{" + key + "}" for key in unknown),
         )
-    missing_reason = [label for field, label in (("suspend_body", "suspension"), ("ban_body", "ban"))
-                      if REASON_TOKEN not in getattr(template, field)]
-    if missing_reason:
-        messages.warning(
-            request,
-            f"The {' and '.join(missing_reason)} letter doesn't include {REASON_TOKEN} -- the typed reason "
-            f"will be added after the body instead.",
-        )
+    if config["after_save"]:
+        config["after_save"](request, template)
 
 
-def _handle_settings_suspension_template_reset(request, site):
-    from pages.models import SuspensionLetterTemplate
-
-    if not is_admin(request.user):
-        messages.error(request, "Only an administrator can change the suspension letter.")
+def _handle_settings_member_letter_reset(request, site):
+    config, template = _member_letter_for_post(request, "Only an administrator can change the letters.")
+    if config is None:
         return
-    template = SuspensionLetterTemplate.get_solo()
     template.restore_defaults()
     template.updated_by = request.user
     template.save()
-    messages.success(request, "Suspension letter restored to the default wording.")
+    messages.success(request, f"{config['label']} restored to the default wording.")
 
 
-def _handle_settings_suspension_image(request, site):
-    from pages.models import SuspensionLetterTemplate
-
-    if not is_admin(request.user):
-        messages.error(request, "Only an administrator can change the letterhead.")
+def _handle_settings_member_letter_image(request, site):
+    config, template = _member_letter_for_post(request, "Only an administrator can change the letterhead.")
+    if config is None:
         return
     kind = request.POST.get("kind")
     if kind not in ("header", "footer"):
         messages.error(request, "That request could not be processed.")
         return
     _save_letter_image(
-        request, SuspensionLetterTemplate.get_solo(), f"{kind}_path", kind,
-        storage_kind=f"suspension-{kind}", used_on="suspension letter",
+        request, template, f"{kind}_path", kind,
+        storage_kind=f"{request.POST['letter']}-{kind}", used_on=config["label"].lower(),
         fallback=f"the approval letter's {kind} (or the built-in one)",
     )
 
 
-def _handle_settings_suspension_signatory(request, site):
-    from pages.models import SuspensionLetterTemplate
-
-    if not is_admin(request.user):
-        messages.error(request, "Only an administrator can change the letter signatory.")
+def _handle_settings_member_letter_signatory(request, site):
+    config, template = _member_letter_for_post(request, "Only an administrator can change the letter signatory.")
+    if config is None:
         return
     _save_letter_signatory(
-        request, SuspensionLetterTemplate.get_solo(), fields=("sign_name", "sign_title", "sign_path"),
-        storage_kind="suspension-signature", used_on="suspension letter",
+        request, template, fields=("sign_name", "sign_title", "sign_path"),
+        storage_kind=f"{request.POST['letter']}-signature", used_on=config["label"].lower(),
     )
 
 
 @login_required
 @admin_required
-def suspension_template_preview(request, kind):
-    """Preview of the suspension (kind="suspend") or ban letter. A POST from
-    the settings form previews the unsaved wording; a GET shows what's
-    saved. Uses a sample account and a sample reason."""
-    from accounts import suspension
-    from pages.models import SuspensionLetterTemplate
-
-    if kind not in User.SuspensionKind.values:
+def member_letter_preview(request, letter, kind):
+    """Preview of one version of a letter (e.g. the Committee member's
+    appointment letter, or the ban letter) with a sample member. A POST
+    from the settings form previews the unsaved wording; a GET shows what's
+    saved."""
+    config = _member_letters().get(letter)
+    if config is None or kind not in dict(config["sections"]):
         return HttpResponse(status=404)
-    template = SuspensionLetterTemplate.get_solo()
+    template = config["model"].get_solo()
     if request.method == "POST":
-        _apply_suspension_fields(template, request.POST)  # never saved
-    sample = suspension.sample_user()
-    pdf = suspension.render_letter_pdf(sample, template, kind=kind, reason=suspension.SAMPLE_REASON)
-    response = HttpResponse(pdf, content_type="application/pdf")
-    response["Content-Disposition"] = f'inline; filename="preview-{kind}-letter.pdf"'
+        _apply_member_letter_fields(config, template, request.POST)  # never saved
+    response = HttpResponse(config["preview"](template, kind), content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="preview-{letter}-{kind}.pdf"'
     return response
 
 
-def _suspension_template_for_settings():
-    from pages.models import SuspensionLetterTemplate
-
-    template = SuspensionLetterTemplate.get_solo()
-    template.header_url = template.image_url("header")
-    template.footer_url = template.image_url("footer")
-    template.sign_url = template.image_url("signature") if template.sign_name else None
-    return template
-
-
-def _suspension_placeholders():
-    from accounts.suspension import PLACEHOLDERS
-
-    return PLACEHOLDERS
+def _member_letters_for_settings():
+    """What the settings page's letter tabs render (see
+    templates/dashboards/admin/_member_letter_settings.html)."""
+    tabs = []
+    for key, config in _member_letters().items():
+        t = config["model"].get_solo()
+        header_url, footer_url = t.image_url("header"), t.image_url("footer")
+        tabs.append({
+            "key": key,
+            "tab": config["tab"],
+            "title": config["title"],
+            "label": config["label"],
+            "note": config["note"],
+            "hint": config["hint"],
+            "t": t,
+            "placeholders": config["placeholders"],
+            "sections": [
+                {"kind": kind, "label": label,
+                 "subject_field": f"{kind}_subject", "subject": getattr(t, f"{kind}_subject"),
+                 "body_field": f"{kind}_body", "body": getattr(t, f"{kind}_body")}
+                for kind, label in config["sections"]
+            ],
+            "header_url": header_url,
+            "footer_url": footer_url,
+            "sign_url": t.image_url("signature") if t.sign_name else None,
+            "image_slots": [
+                ("header", "Header image", header_url,
+                 "Full A4 width: about 2480 px wide at 300 dpi. Printed up to 55 mm tall; taller artwork is "
+                 "scaled down."),
+                ("footer", "Footer image", footer_url, "Full A4 width: about 2480 px wide. Printed up to 38 mm tall."),
+            ],
+        })
+    return tabs
 
 
 def _handle_settings_approval_template_reset(request, site):
@@ -2974,10 +3051,10 @@ def site_settings(request):
             "update_letter_image": _handle_settings_letter_image,
             "update_letter_signatory": _handle_settings_letter_signatory,
             "reset_approval_template": _handle_settings_approval_template_reset,
-            "update_suspension_template": _handle_settings_suspension_template,
-            "reset_suspension_template": _handle_settings_suspension_template_reset,
-            "update_suspension_image": _handle_settings_suspension_image,
-            "update_suspension_signatory": _handle_settings_suspension_signatory,
+            "update_member_letter": _handle_settings_member_letter,
+            "reset_member_letter": _handle_settings_member_letter_reset,
+            "update_member_letter_image": _handle_settings_member_letter_image,
+            "update_member_letter_signatory": _handle_settings_member_letter_signatory,
             "update_footer": _handle_settings_footer,
             "update_contact": _handle_settings_contact,
             "update_paystack": _handle_settings_paystack,
@@ -3045,7 +3122,6 @@ def site_settings(request):
     if edit_faq_id:
         editing_faq = get_object_or_404(ApplicantFAQ, pk=edit_faq_id)
 
-    suspension_template = _suspension_template_for_settings()
     return render(request, "dashboards/admin/settings.html", {
         "site": site,
         "faqs": faqs,
@@ -3059,14 +3135,7 @@ def site_settings(request):
         "letter_image_slots": _letter_image_slots(_approval_template_or_none()),
         "chair_name_for_letter": _chair_name_for_letter(),
         "approval_placeholders": _approval_placeholders(),
-        "suspension_template": suspension_template,
-        "suspension_image_slots": [
-            ("header", "Header image", suspension_template.header_url,
-             "Full A4 width: about 2480 px wide at 300 dpi. Printed up to 55 mm tall; taller artwork is scaled down."),
-            ("footer", "Footer image", suspension_template.footer_url,
-             "Full A4 width: about 2480 px wide. Printed up to 38 mm tall."),
-        ],
-        "suspension_placeholders": _suspension_placeholders(),
+        "member_letters": _member_letters_for_settings(),
         "paystack_secret_key_masked": _mask_secret(site.paystack_secret_key),
         "using_env_public_key": not site.paystack_public_key,
         "using_env_secret_key": not site.paystack_secret_key,

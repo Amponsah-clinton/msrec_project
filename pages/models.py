@@ -907,13 +907,120 @@ class ApprovalDocumentTemplate(models.Model):
 
 
 # ---------------------------------------------------------------------------
-# Suspension letter (Site Settings > Suspension Letter)
+# Letters to account holders (Site Settings > Appointment Letter /
+# Suspension Letter)
 # ---------------------------------------------------------------------------
-# The letter attached to the email an account receives when an admin or the
-# Secretariat suspends or bans it (see accounts/suspension.py). Admin-editable
-# wording with {placeholders}; {reason} is whatever was typed in the Suspend
-# dialog on the Accounts page. These defaults are what "Restore defaults"
-# puts back.
+# Both share the A4 layout in accounts/letters.py, which reads the
+# letterhead and signatory columns below; each subclass adds its own
+# admin-editable wording with {placeholders}. DEFAULTS is what "Restore
+# defaults" puts back.
+
+
+class MemberLetterTemplate(models.Model):
+    """Singleton base (always pk=1, via get_solo): letterhead artwork and
+    who signs. Wording fields live on each subclass."""
+
+    # Letterhead artwork (see pages/letter_images.py), same "profile" bucket
+    # as the approval letter's. Blank = the approval letter's artwork if it
+    # has any, otherwise the built-in text letterhead / footer.
+    header_path = models.CharField(max_length=255, blank=True)
+    footer_path = models.CharField(max_length=255, blank=True)
+    # Who signs. Blank name = the Chair (Site Settings > Certificates).
+    sign_name = models.CharField(max_length=150, blank=True)
+    sign_title = models.CharField(max_length=150, blank=True)
+    sign_path = models.CharField(max_length=255, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    DEFAULTS = {}
+
+    class Meta:
+        abstract = True
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def restore_defaults(self):
+        # Wording only -- letterhead and signatory are removed explicitly.
+        for field, value in self.DEFAULTS.items():
+            setattr(self, field, value)
+
+    def image_url(self, kind):
+        from . import storage
+
+        path = {"header": self.header_path, "footer": self.footer_path, "signature": self.sign_path}[kind]
+        return storage.public_url(path) if path else None
+
+
+# Appointment letter: attached (with the Membership Certificate) to the
+# email a Reviewer / Committee member receives when their request is
+# approved, and downloadable from their dashboard (see accounts/appointment.py).
+
+APPOINT_REVIEWER_SUBJECT = "RE: APPOINTMENT AS {role_caps}, METASCHOLAR RESEARCH ETHICS COMMITTEE"
+APPOINT_REVIEWER_BODY = (
+    "We are pleased to confirm that, following review and approval, you have been appointed as {a_role} "
+    "of the {committee_name} (MSREC), effective {effective_date}.\n\n"
+    "Your MSREC Ethics ID is {ethics_id}. Please quote this reference in all correspondence with the "
+    "Committee.\n\n"
+    "In this capacity you are entrusted with the independent, impartial and confidential ethical review of "
+    "research protocols assigned to you, in accordance with MSREC's governing Charter and Standard Operating "
+    "Procedures."
+)
+APPOINT_COMMITTEE_SUBJECT = APPOINT_REVIEWER_SUBJECT
+APPOINT_COMMITTEE_BODY = (
+    "We are pleased to confirm that, following review and approval, you have been appointed as {a_role} "
+    "of the {committee_name} (MSREC), effective {effective_date}.\n\n"
+    "Your MSREC Ethics ID is {ethics_id}. Please quote this reference in all correspondence with the "
+    "Committee.\n\n"
+    "In this capacity you are entrusted with the independent, impartial and confidential ethical review of "
+    "research protocols referred to the Committee, and with taking part in Committee meetings, deliberations "
+    "and decisions, in accordance with MSREC's governing Charter and Standard Operating Procedures."
+)
+APPOINT_SALUTATION = "Dear {first_name},"
+APPOINT_CLOSING = (
+    "A Membership Certificate confirming this appointment is enclosed. We look forward to your valued "
+    "contribution to the Committee's work in support of independent, rigorous and ethical research."
+)
+APPOINT_SIGN_OFF = "Yours sincerely,"
+
+
+class AppointmentLetterTemplate(MemberLetterTemplate):
+    """Appointment letter wording (one version for Reviewers, one for
+    Committee members), plus the shared letterhead / signatory."""
+
+    reviewer_subject = models.CharField(max_length=300, default=APPOINT_REVIEWER_SUBJECT)
+    reviewer_body = models.TextField(default=APPOINT_REVIEWER_BODY)
+    committee_subject = models.CharField(max_length=300, default=APPOINT_COMMITTEE_SUBJECT)
+    committee_body = models.TextField(default=APPOINT_COMMITTEE_BODY)
+    salutation = models.CharField(max_length=200, default=APPOINT_SALUTATION)
+    closing = models.TextField(blank=True, default=APPOINT_CLOSING)
+    sign_off = models.CharField(max_length=120, default=APPOINT_SIGN_OFF)
+
+    DEFAULTS = {
+        "reviewer_subject": APPOINT_REVIEWER_SUBJECT,
+        "reviewer_body": APPOINT_REVIEWER_BODY,
+        "committee_subject": APPOINT_COMMITTEE_SUBJECT,
+        "committee_body": APPOINT_COMMITTEE_BODY,
+        "salutation": APPOINT_SALUTATION,
+        "closing": APPOINT_CLOSING,
+        "sign_off": APPOINT_SIGN_OFF,
+    }
+
+    class Meta:
+        db_table = "appointment_letter_templates"
+
+    def __str__(self):
+        return "Appointment letter template"
+
+
+# Suspension letter: attached to the email an account receives when an admin
+# or the Secretariat suspends or bans it (see accounts/suspension.py);
+# {reason} is whatever was typed in the Suspend dialog on the Accounts page.
 
 SUSPEND_LETTER_SUBJECT = "RE: SUSPENSION OF YOUR MSREC ACCOUNT"
 SUSPEND_LETTER_BODY = (
@@ -943,9 +1050,9 @@ SUSPENSION_LETTER_CLOSING = (
 SUSPENSION_LETTER_SIGN_OFF = "Yours sincerely,"
 
 
-class SuspensionLetterTemplate(models.Model):
-    """Singleton (always pk=1, via get_solo) holding the suspension / ban
-    letter wording, its letterhead artwork and who signs it."""
+class SuspensionLetterTemplate(MemberLetterTemplate):
+    """Suspension / ban letter wording, plus the shared letterhead /
+    signatory."""
 
     suspend_subject = models.CharField(max_length=300, default=SUSPEND_LETTER_SUBJECT)
     suspend_body = models.TextField(default=SUSPEND_LETTER_BODY)
@@ -954,20 +1061,6 @@ class SuspensionLetterTemplate(models.Model):
     salutation = models.CharField(max_length=200, default=SUSPENSION_LETTER_SALUTATION)
     closing = models.TextField(blank=True, default=SUSPENSION_LETTER_CLOSING)
     sign_off = models.CharField(max_length=120, default=SUSPENSION_LETTER_SIGN_OFF)
-    # Letterhead artwork (see pages/letter_images.py), same "profile" bucket
-    # as the approval letter's. Blank = the approval letter's artwork if it
-    # has any, otherwise the built-in text letterhead / footer.
-    header_path = models.CharField(max_length=255, blank=True)
-    footer_path = models.CharField(max_length=255, blank=True)
-    # Who signs. Blank name = the Chair (Site Settings > Certificates).
-    sign_name = models.CharField(max_length=150, blank=True)
-    sign_title = models.CharField(max_length=150, blank=True)
-    sign_path = models.CharField(max_length=255, blank=True)
-
-    updated_at = models.DateTimeField(auto_now=True)
-    updated_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
-    )
 
     DEFAULTS = {
         "suspend_subject": SUSPEND_LETTER_SUBJECT,
@@ -984,19 +1077,3 @@ class SuspensionLetterTemplate(models.Model):
 
     def __str__(self):
         return "Suspension letter template"
-
-    @classmethod
-    def get_solo(cls):
-        obj, _ = cls.objects.get_or_create(pk=1)
-        return obj
-
-    def restore_defaults(self):
-        # Wording only -- letterhead and signatory are removed explicitly.
-        for field, value in self.DEFAULTS.items():
-            setattr(self, field, value)
-
-    def image_url(self, kind):
-        from . import storage
-
-        path = {"header": self.header_path, "footer": self.footer_path, "signature": self.sign_path}[kind]
-        return storage.public_url(path) if path else None
