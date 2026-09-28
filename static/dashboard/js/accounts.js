@@ -59,6 +59,105 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Suspend / ban dialog (templates/dashboards/_suspend_modal.html). While
+  // the reason is typed, the server lays out the real letter and reports
+  // whether it still fits on one A4 page (admin_dashboard.views.
+  // suspension_letter_fit), so the reason can be trimmed before sending.
+  const suspendOverlay = document.getElementById("acctSuspendOverlay");
+  const suspendForm = document.getElementById("acctSuspendForm");
+  if (suspendOverlay && suspendForm) {
+    const reason = document.getElementById("suspendReason");
+    const count = document.getElementById("suspendCount");
+    const fit = document.getElementById("suspendFit");
+    const title = document.getElementById("acctSuspendTitle");
+    const submit = document.getElementById("suspendSubmit");
+    const max = parseInt(reason.getAttribute("maxlength"), 10) || 1500;
+    let timer = null;
+    let request = 0;
+
+    const setFit = (state, text) => { fit.dataset.state = state; fit.textContent = text; };
+    const kind = () => (suspendForm.querySelector('input[name="suspension_kind"]:checked') || {}).value || "suspend";
+
+    function syncKind() {
+      const ban = kind() === "ban";
+      title.textContent = ban ? "Ban account" : "Suspend account";
+      submit.textContent = ban ? "Ban & send letter" : "Suspend & send letter";
+      suspendForm.querySelectorAll(".acct-kind-opt").forEach((opt) => {
+        opt.classList.toggle("is-checked", opt.querySelector("input").checked);
+      });
+    }
+
+    function checkFit() {
+      clearTimeout(timer);
+      const length = reason.value.length;
+      count.textContent = `${length} / ${max}`;
+      count.classList.toggle("is-near", length > max * 0.9);
+      if (!reason.value.trim()) {
+        setFit("idle", "Type the reason to check how it fits on the letter.");
+        return;
+      }
+      setFit("busy", "Checking the fit on A4…");
+      timer = setTimeout(async () => {
+        const mine = ++request;
+        try {
+          const response = await fetch(suspendForm.dataset.fitUrl, {
+            method: "POST", body: new FormData(suspendForm), credentials: "same-origin",
+          });
+          if (!response.ok) throw new Error(response.status);
+          const data = await response.json();
+          if (mine !== request) return;
+          if (data.pages > 1) {
+            setFit("over", `Too long for one page — the letter will run onto page ${data.pages}. Shorten the reason to keep it on one A4 sheet.`);
+          } else if (data.scale < 1) {
+            setFit("tight", "Fits on one A4 page (the text is set slightly smaller to fit).");
+          } else {
+            setFit("ok", "Fits on one A4 page.");
+          }
+        } catch (err) {
+          if (mine === request) setFit("idle", "Couldn't check the fit right now — use Preview letter.");
+        }
+      }, 650);
+    }
+
+    const closeSuspend = () => { suspendOverlay.hidden = true; clearTimeout(timer); request++; };
+
+    document.querySelectorAll("[data-acct-suspend]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const row = btn.closest(".acct-row");
+        if (!row) return;
+        suspendForm.reset();
+        document.getElementById("suspendUserId").value = row.dataset.userId;
+        document.getElementById("suspendWho").textContent = row.dataset.fullName;
+        document.getElementById("suspendEmail").textContent = row.dataset.email;
+        syncKind();
+        checkFit();
+        suspendOverlay.hidden = false;
+        reason.focus();
+      });
+    });
+
+    suspendForm.querySelectorAll('input[name="suspension_kind"]').forEach((radio) => {
+      radio.addEventListener("change", () => { syncKind(); checkFit(); });
+    });
+    reason.addEventListener("input", checkFit);
+    suspendForm.addEventListener("submit", (event) => {
+      // Preview (formtarget=_blank) doesn't need a reason; the real submit does.
+      if (event.submitter === submit && !reason.value.trim()) {
+        event.preventDefault();
+        reason.focus();
+        setFit("over", "A reason is required — it's printed on the letter.");
+      }
+    });
+    document.getElementById("acctSuspendClose").addEventListener("click", closeSuspend);
+    document.getElementById("acctSuspendCancel").addEventListener("click", closeSuspend);
+    suspendOverlay.addEventListener("click", (event) => {
+      if (event.target === suspendOverlay) closeSuspend();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !suspendOverlay.hidden) closeSuspend();
+    });
+  }
+
   if (!searchInput || !list || !tabs) return;
 
   const rows = Array.from(list.querySelectorAll(".acct-row"));

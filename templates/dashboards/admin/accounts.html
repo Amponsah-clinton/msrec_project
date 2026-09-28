@@ -81,6 +81,7 @@
               {% for u in page %}
               <tr class="acct-row{% if not u.is_active %} acct-row-suspended{% endif %}"
                   data-user-id="{{ u.pk }}"
+                  data-full-name="{{ u.full_name }}"
                   data-first-name="{{ u.first_name }}"
                   data-middle-name="{{ u.middle_name }}"
                   data-last-name="{{ u.last_name }}"
@@ -130,7 +131,7 @@
                 <td data-label="Status">
                   <div class="acct-cell">
                     {% if not u.is_active %}
-                      <span class="badge acct-state text-bg-danger">Suspended</span>
+                      <span class="badge acct-state text-bg-danger">{% if u.suspension_kind == 'ban' %}Banned{% else %}Suspended{% endif %}</span>
                     {% elif u.reviewer_status == 'pending' or u.committee_status == 'pending' %}
                       <span class="badge acct-state text-bg-warning">Pending approval</span>
                     {% else %}
@@ -181,8 +182,8 @@
                       {% if u.reviewer_cv_url %}<a href="{{ u.reviewer_cv_url }}" target="_blank" rel="noopener" class="acct-cv-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> Reviewer CV</a>{% endif %}
                       {% if u.committee_cv_url %}<a href="{{ u.committee_cv_url }}" target="_blank" rel="noopener" class="acct-cv-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> Committee CV</a>{% endif %}
                     {% endif %}
-                    {% if u.membership_ethics_id and u.suspended_at %}
-                      <a href="{% url 'admin_dashboard:suspension_notice_download' pk=u.pk %}" class="acct-cv-link"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> Suspension Notice</a>
+                    {% if u.suspended_at %}
+                      <a href="{% url 'admin_dashboard:suspension_notice_download' pk=u.pk %}" class="acct-cv-link" title="Download the letter sent when this account was {{ u.get_suspension_kind_display|lower|default:'suspended' }}"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> {% if u.suspension_kind == 'ban' %}Ban Letter{% else %}Suspension Letter{% endif %}</a>
                     {% endif %}
 
                     {% if u.pk != request.user.pk %}
@@ -191,20 +192,20 @@
                         <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
                       </button>
                       {% if not u.is_superuser %}
-                      <form method="post" class="acct-inline-form" data-confirm="{% if u.is_active %}Suspend {{ u.full_name }}? They won't be able to sign in until reactivated.{% else %}Reactivate {{ u.full_name }}'s account?{% endif %}" data-confirm-label="{% if u.is_active %}Suspend{% else %}Reactivate{% endif %}">
+                      {% if u.is_active %}
+                      <button type="button" class="acct-icon is-warn" data-acct-suspend title="Suspend or ban account" aria-label="Suspend or ban {{ u.full_name }}">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6 18.4 18.4"/></svg>
+                      </button>
+                      {% else %}
+                      <form method="post" class="acct-inline-form" data-confirm="Reactivate {{ u.full_name }}'s account?{% if u.suspension_kind == 'ban' %} This account was banned.{% endif %}" data-confirm-label="Reactivate">
                         {% csrf_token %}
                         <input type="hidden" name="user_id" value="{{ u.pk }}">
                         <input type="hidden" name="tab" value="{{ active_tab }}">
-                        {% if u.is_active %}
-                        <button type="submit" name="action" value="suspend" class="acct-icon is-warn" title="Suspend account" aria-label="Suspend {{ u.full_name }}">
-                          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6 18.4 18.4"/></svg>
-                        </button>
-                        {% else %}
                         <button type="submit" name="action" value="activate" class="acct-icon is-ok" title="Reactivate account" aria-label="Reactivate {{ u.full_name }}">
                           <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
                         </button>
-                        {% endif %}
                       </form>
+                      {% endif %}
                       <form method="post" class="acct-inline-form" data-confirm="Permanently delete {{ u.full_name }}'s account? This cannot be undone." data-confirm-variant="danger" data-confirm-label="Delete">
                         {% csrf_token %}
                         <input type="hidden" name="user_id" value="{{ u.pk }}">
@@ -331,6 +332,8 @@
           </form>
         </div>
       </div>
+
+      {% include "dashboards/_suspend_modal.html" %}
 
 {% endblock %}
 

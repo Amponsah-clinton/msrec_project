@@ -239,10 +239,9 @@ GOVERNANCE_TAG_CHOICES = [
 
 class GovernanceMember(models.Model):
     """One person shown on the public Board & Committee page
-    (templates/pages/board_committee.html) or the public Reviewers page
-    (templates/pages/reviewers.html) -- added, edited and removed from
-    admin_dashboard's Board & Committee page, photo included, so either
-    public page always reflects who's actually currently serving without
+    (templates/pages/board_committee.html), including its Reviewers tab
+    -- added, edited and removed from admin_dashboard's Board & Committee
+    page, photo included, so the public page always reflects who's actually currently serving without
     anyone touching a template.
     """
 
@@ -904,4 +903,100 @@ class ApprovalDocumentTemplate(models.Model):
 
         path = {"header": self.letter_header_path, "footer": self.letter_footer_path,
                 "signature": self.letter_sign_path}[kind]
+        return storage.public_url(path) if path else None
+
+
+# ---------------------------------------------------------------------------
+# Suspension letter (Site Settings > Suspension Letter)
+# ---------------------------------------------------------------------------
+# The letter attached to the email an account receives when an admin or the
+# Secretariat suspends or bans it (see accounts/suspension.py). Admin-editable
+# wording with {placeholders}; {reason} is whatever was typed in the Suspend
+# dialog on the Accounts page. These defaults are what "Restore defaults"
+# puts back.
+
+SUSPEND_LETTER_SUBJECT = "RE: SUSPENSION OF YOUR MSREC ACCOUNT"
+SUSPEND_LETTER_BODY = (
+    "We write to inform you that {account} has been suspended by the MSREC Secretariat/Administration "
+    "with effect from {effective_date}.\n\n"
+    "This decision was taken for the following reason:\n\n"
+    "{reason}\n\n"
+    "For the duration of this suspension you will not be able to sign in to MSREC, and you may not "
+    "undertake any review, Committee or other activity on behalf of the {committee_name}. Your account "
+    "and its records are retained, and access may be restored once the matter has been resolved."
+)
+BAN_LETTER_SUBJECT = "RE: PERMANENT WITHDRAWAL OF YOUR MSREC ACCOUNT"
+BAN_LETTER_BODY = (
+    "We write to inform you that {account} has been permanently withdrawn by the MSREC "
+    "Secretariat/Administration with effect from {effective_date}.\n\n"
+    "This decision was taken for the following reason:\n\n"
+    "{reason}\n\n"
+    "You will no longer be able to sign in to MSREC, and you may not act, or present yourself, as a "
+    "member or representative of the {committee_name}. Any outstanding review or Committee "
+    "responsibilities assigned to you have been withdrawn."
+)
+SUSPENSION_LETTER_SALUTATION = "Dear {recipient_name},"
+SUSPENSION_LETTER_CLOSING = (
+    "If you have any questions about this decision, or believe it was made in error, please contact the "
+    "Secretariat, quoting this letter."
+)
+SUSPENSION_LETTER_SIGN_OFF = "Yours sincerely,"
+
+
+class SuspensionLetterTemplate(models.Model):
+    """Singleton (always pk=1, via get_solo) holding the suspension / ban
+    letter wording, its letterhead artwork and who signs it."""
+
+    suspend_subject = models.CharField(max_length=300, default=SUSPEND_LETTER_SUBJECT)
+    suspend_body = models.TextField(default=SUSPEND_LETTER_BODY)
+    ban_subject = models.CharField(max_length=300, default=BAN_LETTER_SUBJECT)
+    ban_body = models.TextField(default=BAN_LETTER_BODY)
+    salutation = models.CharField(max_length=200, default=SUSPENSION_LETTER_SALUTATION)
+    closing = models.TextField(blank=True, default=SUSPENSION_LETTER_CLOSING)
+    sign_off = models.CharField(max_length=120, default=SUSPENSION_LETTER_SIGN_OFF)
+    # Letterhead artwork (see pages/letter_images.py), same "profile" bucket
+    # as the approval letter's. Blank = the approval letter's artwork if it
+    # has any, otherwise the built-in text letterhead / footer.
+    header_path = models.CharField(max_length=255, blank=True)
+    footer_path = models.CharField(max_length=255, blank=True)
+    # Who signs. Blank name = the Chair (Site Settings > Certificates).
+    sign_name = models.CharField(max_length=150, blank=True)
+    sign_title = models.CharField(max_length=150, blank=True)
+    sign_path = models.CharField(max_length=255, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    DEFAULTS = {
+        "suspend_subject": SUSPEND_LETTER_SUBJECT,
+        "suspend_body": SUSPEND_LETTER_BODY,
+        "ban_subject": BAN_LETTER_SUBJECT,
+        "ban_body": BAN_LETTER_BODY,
+        "salutation": SUSPENSION_LETTER_SALUTATION,
+        "closing": SUSPENSION_LETTER_CLOSING,
+        "sign_off": SUSPENSION_LETTER_SIGN_OFF,
+    }
+
+    class Meta:
+        db_table = "suspension_letter_templates"
+
+    def __str__(self):
+        return "Suspension letter template"
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def restore_defaults(self):
+        # Wording only -- letterhead and signatory are removed explicitly.
+        for field, value in self.DEFAULTS.items():
+            setattr(self, field, value)
+
+    def image_url(self, kind):
+        from . import storage
+
+        path = {"header": self.header_path, "footer": self.footer_path, "signature": self.sign_path}[kind]
         return storage.public_url(path) if path else None

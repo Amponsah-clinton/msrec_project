@@ -111,26 +111,29 @@ def _send_role_pending_email(user):
     if user.wants_applicant:
         access_note = (
             "You already have full Applicant access, so you can start (or continue) an application "
-            f"right away. We'll email you as soon as your {roles_text} request has been decided."
+            f"right away while your {roles_text} request is being reviewed."
         )
     else:
         # Didn't tick Applicant -- don't claim access they never asked
         # for. See accounts.models.User.awaiting_role_only.
         access_note = (
             f"You don't have applicant access, since you didn't request it — this account exists "
-            f"solely for your {roles_text} request. We'll email you as soon as it's been decided."
+            f"solely for your {roles_text} request."
         )
     return send_branded_email(
-        subject=f"MSREC — your {roles_text} request has been received",
+        subject=f"MSREC — your {roles_text} request is under review",
         to=user.email,
-        heading="We've received your request",
+        heading="Your request is under review",
         paragraphs=[
             f"Hi {user.full_name},",
-            f"Thanks for signing up to MSREC. Your request to join as "
-            f"{roles_text} has been received — it's now awaiting review by an MSREC admin.",
+            f"Thank you for signing up to MSREC. Your request to join as {roles_text} has been "
+            f"received and is now going through review.",
+            "The MSREC Secretariat will look into your details and get back to you. As soon as your "
+            "request is approved, we'll send you another email with your MSREC Ethics ID, "
+            "Membership Certificate and login details.",
             access_note,
         ],
-        preheader=f"Your {roles_text} request is pending admin review.",
+        preheader=f"Your {roles_text} request is going through review by the MSREC Secretariat.",
     )
 
 
@@ -380,13 +383,13 @@ def signup(request):
                     messages.success(
                         request,
                         f"Welcome to MSREC! Your account is ready. Your {roles_text} request is "
-                        f"pending admin approval — {confirmation_note}",
+                        f"under review by the Secretariat — {confirmation_note}",
                     )
                 else:
                     messages.success(
                         request,
-                        f"Welcome to MSREC! Your {roles_text} request has been submitted and is pending "
-                        f"admin approval — {confirmation_note}",
+                        f"Welcome to MSREC! Your {roles_text} request has been submitted and is under "
+                        f"review by the Secretariat — {confirmation_note}",
                     )
             else:
                 messages.success(request, "Welcome to MSREC! Your account has been created.")

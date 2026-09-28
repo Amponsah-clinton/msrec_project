@@ -86,7 +86,6 @@
             <li><a href="{% url 'pages:resources' %}"{% if request.resolver_match.url_name == 'resources' %} class="active"{% endif %}>Resources</a></li>
             <li><a href="{% url 'pages:governance' %}"{% if request.resolver_match.url_name == 'governance' %} class="active"{% endif %}>Governance</a></li>
             <li><a href="{% url 'pages:board_committee' %}"{% if request.resolver_match.url_name == 'board_committee' %} class="active"{% endif %}>Board &amp; Committee</a></li>
-            <li><a href="{% url 'pages:reviewers' %}"{% if request.resolver_match.url_name == 'reviewers' %} class="active"{% endif %}>Reviewers</a></li>
             <li class="navmenu-mobile-only navmenu-divider"><a href="{% url 'pages:verify' %}">Verify Approval</a></li>
             <li class="navmenu-mobile-only"><a href="{% url 'pages:contact' %}">Contact</a></li>
             <li class="navmenu-mobile-only"><a href="{% url 'pages:apply' %}">Apply</a></li>
@@ -181,13 +180,8 @@
       {"title": "Secretariat", "url": "{% url 'pages:board_committee' %}#bc-secretariat", "breadcrumb": "Board & Committee → Secretariat", "icon": "bi-person-badge", "keywords": "secretariat staff day to day operations"},
       {"title": "Meeting Schedule & Quorum", "url": "{% url 'pages:board_committee' %}#bc-meetings", "breadcrumb": "Board & Committee → Meetings", "icon": "bi-calendar-week", "keywords": "meeting schedule quorum format calendar"},
       {"title": "Member Profiles", "url": "{% url 'pages:board_committee' %}#bc-profiles", "breadcrumb": "Board & Committee → Profiles", "icon": "bi-person-lines-fill", "keywords": "member profiles board committee secretariat people"},
+      {"title": "Reviewers", "url": "{% url 'pages:board_committee' %}#bc-profiles", "breadcrumb": "Board & Committee → Profiles → Reviewers", "icon": "bi-person-badge", "keywords": "reviewers panel independent experts disciplines reviewer profiles"},
 
-      {"title": "Reviewers", "url": "{% url 'pages:reviewers' %}", "breadcrumb": "Reviewers", "icon": "bi-person-badge", "keywords": "reviewers panel independent experts disciplines"},
-      {"title": "The Reviewer's Role", "url": "{% url 'pages:reviewers' %}#rv-role", "breadcrumb": "Reviewers → Role", "icon": "bi-diagram-3", "keywords": "reviewer role assignment conflict of interest pathway"},
-      {"title": "What's Assessed", "url": "{% url 'pages:reviewers' %}#rv-assess", "breadcrumb": "Reviewers → What's Assessed", "icon": "bi-clipboard-check", "keywords": "ethical checklist rationale risks benefits consent privacy vulnerable"},
-      {"title": "Reviewer Profiles", "url": "{% url 'pages:reviewers' %}#bc-profiles", "breadcrumb": "Reviewers → Profiles", "icon": "bi-person-lines-fill", "keywords": "reviewer profiles panel experts disciplines"},
-      {"title": "Standards & Independence", "url": "{% url 'pages:reviewers' %}#rv-standards", "breadcrumb": "Reviewers → Standards", "icon": "bi-shield-check", "keywords": "confidentiality conflict of interest independence standards"},
-      {"title": "Join the Panel", "url": "{% url 'pages:reviewers' %}#rv-join", "breadcrumb": "Reviewers → Join", "icon": "bi-person-plus", "keywords": "become a reviewer apply join panel recruit"},
 
       {"title": "Verify Approval", "url": "{% url 'pages:verify' %}", "breadcrumb": "Verify Approval", "icon": "bi-patch-check", "keywords": "verify approval number verification code qr scan certificate authenticity"},
       {"title": "Fee Schedule", "url": "{% url 'pages:fees' %}", "breadcrumb": "Fees", "icon": "bi-cash-coin", "keywords": "fees pricing cost schedule student ghanaian international clinical exemption"},
@@ -226,7 +220,6 @@
             <li><a href="{% url 'pages:about' %}">About us</a></li>
             <li><a href="{% url 'pages:governance' %}">Governance</a></li>
             <li><a href="{% url 'pages:board_committee' %}">Board &amp; Committee</a></li>
-            <li><a href="{% url 'pages:reviewers' %}">Reviewers</a></li>
             <li><a href="{% url 'pages:fees' %}">Fees</a></li>
             <li><a href="{% url 'pages:contact' %}">Contact</a></li>
           </ul>

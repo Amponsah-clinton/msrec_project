@@ -1,8 +1,8 @@
-/* Site Settings > Approval Documents: switch between the email / letter /
+/* Site Settings > Approval Documents and Suspension Letter: switch between the email / letter /
    certificate forms, insert {placeholders} where the cursor is, and keep
    the little certificate sketch in step with the title fields. */
-(function () {
-  var root = document.getElementById("approval-docs");
+["approval-docs", "suspension-letter"].forEach(function (rootId) {
+  var root = document.getElementById(rootId);
   if (!root) return;
 
   var cards = root.querySelectorAll("[data-apd-card]");
@@ -17,13 +17,13 @@
       btn.setAttribute("aria-pressed", on ? "true" : "false");
     });
     lastField = null;
-    try { sessionStorage.setItem("apd:card", name); } catch (e) {}
+    try { sessionStorage.setItem("apd:card:" + rootId, name); } catch (e) {}
   }
   buttons.forEach(function (btn) {
     btn.addEventListener("click", function () { show(btn.getAttribute("data-apd-show")); });
   });
   try {
-    var remembered = sessionStorage.getItem("apd:card");
+    var remembered = sessionStorage.getItem("apd:card:" + rootId);
     if (remembered && root.querySelector('[data-apd-card="' + remembered + '"]')) show(remembered);
   } catch (e) {}
 
@@ -71,13 +71,13 @@
       if (tab) { evt.preventDefault(); tab.click(); window.scrollTo({ top: 0, behavior: "smooth" }); }
     });
   });
-})();
+});
 
 /* Letterhead uploads: show the chosen artwork in the miniature A4 right away
    (client-side only -- the real processing happens when it's uploaded), and
    confirm before removing. */
-(function () {
-  var root = document.getElementById("approval-docs");
+["approval-docs", "suspension-letter"].forEach(function (rootId) {
+  var root = document.getElementById(rootId);
   if (!root) return;
 
   root.querySelectorAll("[data-apd-preview]").forEach(function (input) {
@@ -108,12 +108,20 @@
     });
   });
 
-  var nameInput = document.getElementById("apdSignNameInput");
-  var titleInput = document.getElementById("apdSignTitleInput");
-  var nameOut = document.getElementById("apdSignName");
-  var titleOut = document.getElementById("apdSignTitle");
+  var nameInput = root.querySelector("#apdSignNameInput");
+  var titleInput = root.querySelector("#apdSignTitleInput");
+  var nameOut = root.querySelector("#apdSignName");
+  var titleOut = root.querySelector("#apdSignTitle");
   if (nameInput && nameOut) nameInput.addEventListener("input", function () { nameOut.textContent = nameInput.value.trim() || "Signatory's name"; });
   if (titleInput && titleOut) titleInput.addEventListener("input", function () { titleOut.textContent = titleInput.value.trim(); });
+
+  // Any other name/position field mirrors into the on-letter preview it names.
+  root.querySelectorAll("[data-apd-sign-out]").forEach(function (input) {
+    var out = document.getElementById(input.getAttribute("data-apd-sign-out"));
+    if (!out) return;
+    var fallback = input.name === "sign_name" ? "Signatory's name" : "";
+    input.addEventListener("input", function () { out.textContent = input.value.trim() || fallback; });
+  });
 
   // Buttons that remove something ask first (submit is cancelled on "no").
   root.querySelectorAll("[data-apd-confirm]").forEach(function (btn) {
@@ -121,4 +129,4 @@
       if (!window.confirm(btn.getAttribute("data-apd-confirm"))) evt.preventDefault();
     });
   });
-})();
+});

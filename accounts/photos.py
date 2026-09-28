@@ -23,3 +23,21 @@ def delete_profile_photo(object_path):
     if object_path.startswith("avatars/"):
         return application_storage.delete_object(object_path)
     return signup_storage.delete_object(object_path)
+
+
+def profile_photo_url(object_path):
+    """A browser-usable link to a profile photo, resolved against
+    whichever of the three buckets above it lives in. None if blank or
+    Storage is unconfigured."""
+    if not object_path:
+        return None
+    from applicant_dashboard import storage as application_storage
+    from reviewer_dashboard import storage as reviewer_storage
+
+    from . import storage as signup_storage
+
+    if object_path.startswith("reviewers/"):
+        return reviewer_storage.public_url(object_path)
+    if object_path.startswith("avatars/"):
+        return application_storage.public_url(object_path)
+    return signup_storage.create_signed_url(object_path)

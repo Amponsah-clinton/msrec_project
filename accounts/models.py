@@ -79,6 +79,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         LIMITED = "limited", "Limited Availability"
         UNAVAILABLE = "unavailable", "Unavailable"
 
+    class SuspensionKind(models.TextChoices):
+        SUSPEND = "suspend", "Suspended"
+        BAN = "ban", "Banned"
+
     email = models.EmailField(unique=True)
 
     first_name = models.CharField(max_length=150)
@@ -193,6 +197,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     # same "rendered on demand from a persisted timestamp" contract as
     # membership_confirmed_at above.
     suspended_at = models.DateTimeField(null=True, blank=True)
+    # What the last suspension was (a temporary suspension or a permanent
+    # ban) and the reason typed by whoever did it -- both printed on the
+    # Suspension Letter (accounts/suspension.py), and kept on reactivation
+    # for the same reason as suspended_at.
+    suspension_kind = models.CharField(max_length=10, choices=SuspensionKind.choices, blank=True)
+    suspension_reason = models.TextField(blank=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 

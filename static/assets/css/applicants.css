@@ -555,6 +555,8 @@ body.applicants-page {
   padding: 30px 24px;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  /* Lets .ap-fee-amount size itself off the card's own width (cqi). */
+  container-type: inline-size;
 }
 
 .ap-fee-card-featured {
@@ -579,12 +581,15 @@ body.applicants-page {
 
 .ap-fee-card-featured h3 { color: var(--heading-color); }
 
+/* Always one line -- the price shrinks with its card instead of
+   wrapping a range like "GHS 1,500 to 3,000" onto a second line. */
 .ap-fee-amount {
   font-family: var(--heading-font);
-  font-size: 28px;
+  font-size: clamp(13px, 8.5cqi, 28px);
   font-weight: 800;
   color: #ffffff;
   margin: 0 0 8px;
+  white-space: nowrap;
 }
 
 .ap-fee-card-featured .ap-fee-amount { color: var(--heading-color); }

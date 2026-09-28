@@ -34,19 +34,28 @@ document.addEventListener("DOMContentLoaded", () => {
   refreshActiveCat();
 
   /* ============================================================
-     Member profiles — filter by group (All / Board / Committee / Secretariat)
+     Member profiles — filter by group (All / Board / Committee / Secretariat / Reviewers)
   ============================================================ */
   const filterBtns = Array.from(document.querySelectorAll(".bc-filter-btn"));
   const people = Array.from(document.querySelectorAll(".bc-person"));
+
+  // Reviewers who already have a Board/Committee/Secretariat card only
+  // show under the Reviewers tab, so "All" doesn't list anyone twice.
+  function applyFilter(group) {
+    people.forEach((p) => {
+      const hidden = group === "all"
+        ? p.hasAttribute("data-also-member")
+        : p.dataset.group !== group;
+      p.classList.toggle("is-hidden", hidden);
+    });
+  }
+  applyFilter("all");
 
   filterBtns.forEach((btn) => {
     btn.addEventListener("click", () => {
       filterBtns.forEach((b) => b.classList.remove("is-active"));
       btn.classList.add("is-active");
-      const group = btn.dataset.group;
-      people.forEach((p) => {
-        p.classList.toggle("is-hidden", group !== "all" && p.dataset.group !== group);
-      });
+      applyFilter(btn.dataset.group);
     });
   });
 });

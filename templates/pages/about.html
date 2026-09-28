@@ -162,35 +162,70 @@
         <div class="ab-org">
           <span class="section-label ab-org-label">Organizational Structure</span>
 
-          <div class="ab-org-tree">
+          <div class="ab-org-tree" role="img" aria-label="MSREC oversees three bodies: the Board, the Committee and the Secretariat. The Committee assigns applications to independent Reviewers.">
             <div class="ab-org-top">
-              <span class="ab-org-avatar ab-org-avatar-logo"><img src="{% static 'assets/img/logo1.png' %}" alt="MSREC"></span>
-              <span class="ab-org-name ab-org-name-top">MSREC</span>
-              <span class="ab-org-role">Research Ethics Committee</span>
+              <div class="ab-org-root">
+                <span class="ab-org-root-logo"><img src="{% static 'assets/img/logo1.png' %}" alt=""></span>
+                <span class="ab-org-text">
+                  <span class="ab-org-root-name">MSREC</span>
+                  <span class="ab-org-root-role">Research Ethics Committee</span>
+                </span>
+              </div>
             </div>
 
-            <div class="ab-org-branch" aria-hidden="true"></div>
+            <div class="ab-org-stem" aria-hidden="true"></div>
+            <div class="ab-org-rail" aria-hidden="true"></div>
 
-            <div class="ab-org-children">
-              <div class="ab-org-child">
-                <span class="ab-org-avatar"><i class="bi bi-bank2"></i></span>
-                <span class="ab-org-name">Board</span>
-                <span class="ab-org-role">Governing Body</span>
+            <div class="ab-org-level">
+              <div class="ab-org-col">
+                <a class="ab-org-node" href="{% url 'pages:board_committee' %}#bc-structure">
+                  <span class="ab-org-icon"><i class="bi bi-bank2"></i></span>
+                  <span class="ab-org-text">
+                    <span class="ab-org-eyebrow">Governs</span>
+                    <span class="ab-org-name">Board</span>
+                    <span class="ab-org-role">Governing body</span>
+                  </span>
+                </a>
               </div>
-              <div class="ab-org-child">
-                <span class="ab-org-avatar"><i class="bi bi-people"></i></span>
-                <span class="ab-org-name">Committee</span>
-                <span class="ab-org-role">Review Body</span>
+
+              <div class="ab-org-col">
+                <a class="ab-org-node ab-org-node-key" href="{% url 'pages:board_committee' %}#bc-composition">
+                  <span class="ab-org-icon"><i class="bi bi-people-fill"></i></span>
+                  <span class="ab-org-text">
+                    <span class="ab-org-eyebrow">Decides</span>
+                    <span class="ab-org-name">Committee</span>
+                    <span class="ab-org-role">Review body</span>
+                  </span>
+                </a>
+
+                <div class="ab-org-down" aria-hidden="true">
+                  <span class="ab-org-down-pill">Assigns</span>
+                </div>
+
+                <a class="ab-org-node ab-org-node-sub" href="{% url 'pages:board_committee' %}#bc-profiles">
+                  <span class="ab-org-icon"><i class="bi bi-person-check"></i></span>
+                  <span class="ab-org-text">
+                    <span class="ab-org-eyebrow">Assesses</span>
+                    <span class="ab-org-name">Reviewers</span>
+                    <span class="ab-org-role">Independent assessors</span>
+                  </span>
+                </a>
               </div>
-              <div class="ab-org-child">
-                <span class="ab-org-avatar"><i class="bi bi-briefcase"></i></span>
-                <span class="ab-org-name">Secretariat</span>
-                <span class="ab-org-role">Administrative Body</span>
+
+              <div class="ab-org-col">
+                <a class="ab-org-node" href="{% url 'pages:board_committee' %}#bc-secretariat">
+                  <span class="ab-org-icon"><i class="bi bi-briefcase"></i></span>
+                  <span class="ab-org-text">
+                    <span class="ab-org-eyebrow">Administers</span>
+                    <span class="ab-org-name">Secretariat</span>
+                    <span class="ab-org-role">Administrative body</span>
+                  </span>
+                </a>
               </div>
             </div>
           </div>
 
-          <p class="ab-org-note">The Board, Committee and Secretariat operate as distinct but coordinated bodies, each with defined responsibilities, to preserve checks and balances throughout the review process.</p>
+          <p class="ab-org-note">The Board, Committee and Secretariat operate as distinct but coordinated bodies, each with defined responsibilities, to preserve checks and balances throughout the review process. The Committee assigns each application to independent Reviewers matched to its discipline.</p>
         </div>
       </section>
 

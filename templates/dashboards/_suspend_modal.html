@@ -1,0 +1,59 @@
+{# Suspend / ban dialog shared by the Admin and Secretariat Accounts pages (see static/dashboard/js/accounts.js). #}
+      <div class="acct-modal-overlay" id="acctSuspendOverlay" hidden>
+        <div class="acct-modal acct-suspend-modal" role="dialog" aria-modal="true" aria-labelledby="acctSuspendTitle">
+          <form method="post" id="acctSuspendForm" data-fit-url="{% url 'admin_dashboard:suspension_letter_fit' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="suspend">
+            <input type="hidden" name="tab" value="{{ active_tab }}">
+            <input type="hidden" name="user_id" id="suspendUserId">
+
+            <div class="acct-modal-head">
+              <div>
+                <h3 id="acctSuspendTitle">Suspend account</h3>
+                <p class="acct-suspend-who" id="suspendWho"></p>
+              </div>
+              <button type="button" class="icon-btn" id="acctSuspendClose" aria-label="Close">
+                <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+
+            <div class="acct-modal-body">
+              <fieldset class="acct-kind">
+                <legend>Action</legend>
+                <label class="acct-kind-opt">
+                  <input type="radio" name="suspension_kind" value="suspend" checked>
+                  <span><strong>Suspend</strong><small>Temporary &mdash; the account can be reactivated later.</small></span>
+                </label>
+                <label class="acct-kind-opt is-ban">
+                  <input type="radio" name="suspension_kind" value="ban">
+                  <span><strong>Ban</strong><small>Permanent &mdash; access is withdrawn for good.</small></span>
+                </label>
+              </fieldset>
+
+              <div class="acct-reason">
+                <label for="suspendReason">Reason <span class="acct-req">*</span></label>
+                <textarea name="reason" id="suspendReason" rows="7" maxlength="1500" required
+                          placeholder="e.g. Following a complaint received on 3 September 2026, the Secretariat found that confidential protocol documents assigned to you were shared outside the Committee, in breach of the MSREC Confidentiality Agreement."></textarea>
+                <div class="acct-reason-meta">
+                  <span class="acct-fit" id="suspendFit" data-state="idle">Type the reason to check how it fits on the letter.</span>
+                  <span class="acct-count" id="suspendCount">0 / 1500</span>
+                </div>
+                <p class="acct-reason-hint">Printed on the A4 letter in its own box and quoted in the email. A blank line starts a new paragraph; one item per line keeps a list.</p>
+              </div>
+
+              <p class="acct-suspend-note">
+                <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+                <span>They're signed out immediately, and an email with the letter (PDF) attached is sent to <strong id="suspendEmail"></strong>.</span>
+              </p>
+            </div>
+
+            <div class="acct-modal-actions">
+              <button type="button" class="acct-btn acct-btn-cancel" id="acctSuspendCancel">Cancel</button>
+              <button type="submit" class="acct-btn acct-btn-edit" formaction="{% url 'admin_dashboard:suspension_letter_preview' %}" formtarget="_blank" formnovalidate>
+                <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg> Preview letter
+              </button>
+              <button type="submit" class="acct-btn acct-btn-delete" id="suspendSubmit">Suspend &amp; send letter</button>
+            </div>
+          </form>
+        </div>
+      </div>

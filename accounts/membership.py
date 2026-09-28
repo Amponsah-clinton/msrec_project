@@ -122,46 +122,13 @@ def render_appointment_letter_pdf(user):
     )
 
 
-def suspension_notice_filename(user):
-    return f"MSREC-Notice-of-Suspension-{user.membership_ethics_id.replace('/', '-')}.pdf"
-
-
-def _suspension_notice_body(user):
-    kind, label = membership_role(user)
-    effective = user.suspended_at.strftime("%d %B %Y").lstrip("0") if user.suspended_at else ""
-    return [
-        f"Dear {user.first_name or user.full_name},",
-        "RE: SUSPENSION OF MSREC MEMBERSHIP",
-        f"We are writing to inform you that your appointment as {label} of the Metascholar Research Ethics "
-        f"Committee (MSREC), Ethics ID {user.membership_ethics_id}, has been suspended by the Secretariat/"
-        f"Administration with effect from {effective}.",
-        "For the duration of this suspension you do not have access to your MSREC dashboard, and you may not "
-        "undertake any review or Committee activity on behalf of MSREC.",
-        "If you have any questions regarding this decision, or believe it was made in error, please contact "
-        "the Secretariat.",
-    ]
-
-
-def render_suspension_notice_pdf(user):
-    """One-page notice of suspension, the disciplinary counterpart to the
-    Appointment Letter above -- issued when an admin/secretariat member
-    suspends a Reviewer/Committee member's account (see
-    admin_dashboard.views._handle_suspend). Rendered on demand from
-    User.suspended_at, so it stays regenerable with the correct date even
-    after the account is later reactivated."""
-    return _render_committee_letter_pdf(
-        user, doc_date=user.suspended_at, body_lines=_suspension_notice_body(user),
-        doc_label="Notice of Suspension",
-    )
-
-
 def _render_committee_letter_pdf(user, *, doc_date, body_lines, doc_label):
-    """Shared one-page letterhead renderer behind every formal letter this
-    module issues to a Reviewer/Committee member (Appointment Letter,
-    Notice of Suspension, ...): MSREC letterhead, a right-aligned date,
-    the member's own name/institution as addressee, `body_lines` (a
-    [salutation, subject, *paragraphs] list, see _appointment_letter_body/
-    _suspension_notice_body above) and the Chair's signature block.
+    """Shared one-page letterhead renderer behind the formal letters this
+    module issues to a Reviewer/Committee member (the Appointment Letter;
+    the Suspension Letter lives in accounts/suspension.py): MSREC
+    letterhead, a right-aligned date, the member's own name/institution as
+    addressee, `body_lines` (a [salutation, subject, *paragraphs] list, see
+    _appointment_letter_body above) and the Chair's signature block.
     `doc_date` prints as the letter's date and falls back to now() if
     unset (e.g. previewing before the underlying timestamp is recorded)."""
     from io import BytesIO

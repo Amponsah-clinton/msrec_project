@@ -785,3 +785,58 @@ a.acct-page-nav:hover, a.acct-page-num:hover { background: var(--white); color: 
 }
 
 .fee-schedule-badge { flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.03em; }
+
+/* ---------------- Suspend / ban dialog ---------------- */
+.acct-suspend-modal { max-width: 600px; }
+.acct-suspend-modal .acct-modal-head { align-items: flex-start; }
+.acct-suspend-who { margin: 3px 0 0; font-size: 12.5px; color: var(--text-sub); }
+
+.acct-kind { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; padding: 0; border: 0; }
+.acct-kind legend { grid-column: 1 / -1; padding: 0; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: var(--text-sub); }
+.acct-kind-opt {
+  display: flex; gap: 10px; align-items: flex-start; cursor: pointer;
+  padding: 11px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  transition: border-color .15s, background .15s;
+}
+.acct-kind-opt input { margin-top: 3px; accent-color: var(--orange); }
+.acct-kind-opt span { display: flex; flex-direction: column; gap: 2px; }
+.acct-kind-opt strong { font-size: 13px; color: var(--text-main); }
+.acct-kind-opt small { font-size: 11.5px; line-height: 1.4; color: var(--text-sub); }
+.acct-kind-opt.is-checked { border-color: var(--orange); background: var(--orange-light); }
+.acct-kind-opt.is-ban input { accent-color: var(--red); }
+.acct-kind-opt.is-ban.is-checked { border-color: var(--red); background: var(--red-light); }
+@media (max-width: 560px) { .acct-kind { grid-template-columns: 1fr; } }
+
+.acct-reason label { display: block; margin-bottom: 5px; font-size: 12px; font-weight: 600; color: var(--text-sub); }
+.acct-req { color: var(--red); }
+.acct-reason textarea {
+  width: 100%; resize: vertical; min-height: 130px;
+  padding: 10px 11px; border: 1px solid var(--border); border-radius: var(--radius-sm);
+  font: inherit; font-size: 13.5px; line-height: 1.55; color: var(--text-main); background: var(--white);
+}
+.acct-reason textarea:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+.acct-reason-meta { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-top: 7px; }
+.acct-reason-hint { margin: 6px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--text-faint); }
+.acct-count { flex: none; font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--text-faint); }
+.acct-count.is-near { color: var(--orange); font-weight: 600; }
+
+.acct-fit { display: inline-flex; align-items: flex-start; gap: 6px; font-size: 12px; line-height: 1.4; color: var(--text-sub); }
+.acct-fit::before {
+  content: ""; flex: none; width: 8px; height: 8px; margin-top: 4px; border-radius: 50%; background: var(--text-faint);
+}
+.acct-fit[data-state="busy"]::before { animation: acct-fit-pulse 1s ease-in-out infinite; }
+.acct-fit[data-state="ok"] { color: var(--green); }
+.acct-fit[data-state="ok"]::before { background: var(--green); }
+.acct-fit[data-state="tight"] { color: var(--teal); }
+.acct-fit[data-state="tight"]::before { background: var(--teal); }
+.acct-fit[data-state="over"] { color: var(--red); font-weight: 600; }
+.acct-fit[data-state="over"]::before { background: var(--red); }
+@keyframes acct-fit-pulse { 50% { opacity: .25; } }
+
+.acct-suspend-note {
+  display: flex; gap: 9px; align-items: flex-start; margin: 0;
+  padding: 10px 12px; border-radius: var(--radius-sm); background: var(--hover-bg);
+  font-size: 12px; line-height: 1.5; color: var(--text-sub);
+}
+.acct-suspend-note svg { flex: none; width: 15px; height: 15px; margin-top: 1px; fill: none; stroke: currentColor; stroke-width: 2; }
+.acct-suspend-modal .acct-modal-actions .acct-btn svg { width: 14px; height: 14px; }

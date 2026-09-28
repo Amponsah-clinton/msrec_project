@@ -20,6 +20,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
+from django.views.decorators.http import require_POST
 
 from accounts import storage
 from accounts.models import AuditLog, RoleApprovalLog, User
@@ -254,46 +255,16 @@ def _actor_is_admin(request):
 
 
 def _send_suspension_email(target, *, suspended):
-    """Notifies an account the moment an admin/secretariat member suspends
-    or reactivates it (_handle_suspend below). Reviewer/Committee members
-    also get a formal Notice of Suspension PDF attached -- the disciplinary
-    counterpart to their Appointment Letter -- everyone else just gets the
-    plain notice, since only a member has standing to actually suspend.
-    Same fail_silently contract as every other email here: a mail or PDF
-    problem never blocks the suspend/reactivate action itself."""
-    from accounts import membership
+    """Notifies an account the moment an admin/secretariat member suspends,
+    bans or reactivates it (_handle_suspend below). A suspension or ban
+    carries the Suspension Letter PDF with the typed reason (see
+    accounts/suspension.py). Same fail_silently contract as every other
+    email here: a mail or PDF problem never blocks the action itself."""
+    from accounts import suspension
 
     login_url = django_settings.SITE_URL.rstrip("/") + reverse("pages:login")
     if suspended:
-        paragraphs = [
-            f"Dear {target.first_name or target.full_name},",
-            "This is to inform you that your MSREC account has been suspended by the Secretariat/"
-            "Administration, effective immediately. You will not be able to log in, and any Reviewer or "
-            "Committee duties are paused, until the account is reactivated.",
-        ]
-        attachments = []
-        if membership.is_member(target):
-            try:
-                attachments.append((
-                    membership.suspension_notice_filename(target),
-                    membership.render_suspension_notice_pdf(target),
-                    "application/pdf",
-                ))
-                paragraphs.append("A formal Notice of Suspension is attached to this email.")
-            except Exception:
-                logger.exception("Couldn't render the suspension notice for user %s", target.pk)
-        paragraphs.append(
-            "If you believe this was done in error, or would like more information, please contact the "
-            "Secretariat."
-        )
-        return send_branded_email(
-            subject="MSREC — your account has been suspended",
-            to=target.email,
-            heading="Your MSREC account has been suspended",
-            paragraphs=paragraphs,
-            preheader="Your MSREC account has been suspended.",
-            attachments=attachments,
-        )
+        return suspension.send_suspension_email(target)
     return send_branded_email(
         subject="MSREC — your account has been reactivated",
         to=target.email,
@@ -319,11 +290,29 @@ def _handle_suspend(request, target, *, suspend):
         messages.error(request, "Only an administrator can suspend an Administrator account.")
         return
 
+    if suspend:
+        from accounts import suspension
+
+        kind = request.POST.get("suspension_kind") or User.SuspensionKind.SUSPEND
+        if kind not in User.SuspensionKind.values:
+            messages.error(request, "That request could not be processed.")
+            return
+        raw_reason = request.POST.get("reason", "")
+        reason = suspension.clean_reason(raw_reason)
+        if not reason:
+            messages.error(request, "Type the reason for the suspension -- it's printed on the letter.")
+            return
+        if len(raw_reason.strip()) > suspension.REASON_MAX + 200:
+            messages.error(request, f"Keep the reason under {suspension.REASON_MAX} characters.")
+            return
+
     target.is_active = not suspend
     update_fields = ["is_active"]
     if suspend:
         target.suspended_at = timezone.now()
-        update_fields.append("suspended_at")
+        target.suspension_kind = kind
+        target.suspension_reason = reason
+        update_fields += ["suspended_at", "suspension_kind", "suspension_reason"]
     target.save(update_fields=update_fields)
     # Suspension must take effect immediately, not just block the next
     # login -- kill every session already open under this account.
@@ -334,10 +323,13 @@ def _handle_suspend(request, target, *, suspend):
                 if s.get_decoded().get("_auth_user_id") == str(target.pk)
             ]
         ).delete()
-        AuditLog.record(request.user, "user.suspended", target=target)
+        banned = kind == User.SuspensionKind.BAN
+        AuditLog.record(request.user, "user.banned" if banned else "user.suspended", target=target,
+                        description=reason[:500])
         emailed = _send_suspension_email(target, suspended=True)
-        suffix = "and notified by email." if emailed else "(the notification email couldn't be sent)."
-        messages.success(request, f"{target.full_name}'s account has been suspended {suffix}")
+        suffix = ("and the letter has been emailed to them." if emailed
+                  else "(the email with the letter couldn't be sent -- download the letter from their row).")
+        messages.success(request, f"{target.full_name}'s account has been {'banned' if banned else 'suspended'} {suffix}")
     else:
         AuditLog.record(request.user, "user.activated", target=target)
         emailed = _send_suspension_email(target, suspended=False)
@@ -512,19 +504,56 @@ def accounts(request, template_name="dashboards/admin/accounts.html"):
 
 @admin_or_secretariat_required
 def suspension_notice_download(request, pk):
-    """Lets staff re-download a member's Notice of Suspension at any time
-    from the Accounts page -- not just the moment they suspend the
-    account -- since is_active alone doesn't keep a record once someone
-    is reactivated. 404s for anyone who was never a Reviewer/Committee
-    member (nothing to suspend from) or has never been suspended."""
-    from accounts import membership
+    """Lets staff re-download an account's Suspension Letter at any time
+    from the Accounts page -- not just the moment they suspend it -- since
+    is_active alone doesn't keep a record once someone is reactivated.
+    404s for an account that has never been suspended."""
+    from accounts import suspension
 
     target = get_object_or_404(User, pk=pk)
-    if not membership.is_member(target) or not target.suspended_at:
-        raise Http404("No suspension notice has been issued for this account.")
-    response = HttpResponse(membership.render_suspension_notice_pdf(target), content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="{membership.suspension_notice_filename(target)}"'
+    if not target.suspended_at:
+        raise Http404("No suspension letter has been issued for this account.")
+    response = HttpResponse(suspension.render_letter_pdf(target), content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{suspension.letter_filename(target)}"'
     return response
+
+
+def _suspension_dialog_args(request):
+    """(target, kind, reason) from the Suspend dialog's POST -- what the
+    preview and the live fit check render, before anything is saved."""
+    from accounts import suspension
+
+    target = get_object_or_404(User, pk=request.POST.get("user_id"))
+    kind = request.POST.get("suspension_kind")
+    if kind not in User.SuspensionKind.values:
+        kind = User.SuspensionKind.SUSPEND
+    return target, kind, suspension.clean_reason(request.POST.get("reason", ""))
+
+
+@require_POST
+@admin_or_secretariat_required
+def suspension_letter_preview(request):
+    """The Suspend dialog's "Preview letter": the letter exactly as it would
+    be sent, with the reason as typed so far. Nothing is saved."""
+    from accounts import suspension
+
+    target, kind, reason = _suspension_dialog_args(request)
+    pdf = suspension.render_letter_pdf(target, kind=kind, reason=reason, effective_at=timezone.now())
+    response = HttpResponse(pdf, content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="preview-{suspension.letter_filename(target, kind)}"'
+    return response
+
+
+@require_POST
+@admin_or_secretariat_required
+def suspension_letter_fit(request):
+    """Live check behind the Suspend dialog: does the letter, with the reason
+    typed so far, fit on one A4 page -- and at what size?"""
+    from accounts import suspension
+
+    target, kind, reason = _suspension_dialog_args(request)
+    _pdf, pages, scale = suspension.render_letter(target, kind=kind, reason=reason, effective_at=timezone.now())
+    return JsonResponse({"pages": pages, "scale": scale, "max": suspension.REASON_MAX})
 
 
 def _handle_inquiry_reply(request, inquiry):
@@ -2589,22 +2618,13 @@ def _handle_settings_maintenance(request, site):
 MAX_LETTER_IMAGE_UPLOAD = 12 * 1024 * 1024
 
 
-def _handle_settings_letter_image(request, site):
-    """Upload / replace / remove the approval letter's header or footer
-    image. Admin only. The processed image goes to Supabase Storage (the
-    same bucket as the Client Logos) and the previous one is deleted."""
+def _save_letter_image(request, template, field, kind, *, storage_kind, used_on, fallback):
+    """Upload / replace / remove one letterhead header or footer image on
+    `template` (field = the *_path column). The processed image goes to
+    Supabase Storage (the same bucket as the Client Logos) and the
+    previous one is deleted. `fallback` says what prints without it."""
     from pages import letter_images
-    from pages.models import ApprovalDocumentTemplate
 
-    if not is_admin(request.user):
-        messages.error(request, "Only an administrator can change the letterhead.")
-        return
-    kind = request.POST.get("kind")
-    if kind not in ("header", "footer"):
-        messages.error(request, "That request could not be processed.")
-        return
-    field = f"letter_{kind}_path"
-    template = ApprovalDocumentTemplate.get_solo()
     old_path = getattr(template, field)
 
     if request.POST.get("remove"):
@@ -2613,7 +2633,7 @@ def _handle_settings_letter_image(request, site):
             setattr(template, field, "")
             template.updated_by = request.user
             template.save()
-        messages.success(request, f"Letter {kind} image removed -- the built-in {kind} is used again.")
+        messages.success(request, f"Letter {kind} image removed -- {fallback} is used again.")
         return
 
     upload = request.FILES.get("image")
@@ -2631,7 +2651,7 @@ def _handle_settings_letter_image(request, site):
     except ValueError as exc:
         messages.error(request, str(exc))
         return
-    object_path = pages_storage.upload_letter_image(data, ext, kind)
+    object_path = pages_storage.upload_letter_image(data, ext, storage_kind)
     if not object_path:
         messages.error(request, f"The {kind} image couldn't be uploaded right now -- please try again.")
         return
@@ -2640,32 +2660,28 @@ def _handle_settings_letter_image(request, site):
     template.save()
     if old_path and old_path != object_path:
         pages_storage.delete_object(old_path)
-    messages.success(request, f"Letter {kind} image saved ({width} \u00d7 {height} px) -- it's used on the next letter.")
+    messages.success(request, f"Letter {kind} image saved ({width} × {height} px) -- it's used on the next {used_on}.")
 
 
-def _handle_settings_letter_signatory(request, site):
-    """The approval letter's own signatory (name, title, signature image).
-    Leave the name blank to use the Chair instead. Admin only. The
-    signature goes through the same paper-removal / crop pipeline as the
-    Chair's and is stored in the "profile" bucket."""
+def _save_letter_signatory(request, template, *, fields, storage_kind, used_on):
+    """A letter's own signatory (name, position, signature image); `fields`
+    = the template's (name, title, signature path) columns. Leave the name
+    blank ("Use the Chair") to sign as the Chair. The signature goes
+    through the same paper-removal / crop pipeline as the Chair's and is
+    stored in the "profile" bucket."""
     from pages import signature as signature_tools
-    from pages.models import ApprovalDocumentTemplate
 
-    if not is_admin(request.user):
-        messages.error(request, "Only an administrator can change the letter signatory.")
-        return
-    template = ApprovalDocumentTemplate.get_solo()
-    old_path = template.letter_sign_path
+    name_field, title_field, path_field = fields
+    old_path = getattr(template, path_field)
 
     if request.POST.get("use_chair"):
-        template.letter_sign_name = ""
-        template.letter_sign_title = ""
-        template.letter_sign_path = ""
+        for field in fields:
+            setattr(template, field, "")
         template.updated_by = request.user
         template.save()
         if old_path:
             pages_storage.delete_object(old_path)
-        messages.success(request, "The approval letter is now signed by the Chair.")
+        messages.success(request, f"The {used_on} is now signed by the Chair.")
         return
 
     name = request.POST.get("sign_name", "").strip()
@@ -2691,22 +2707,190 @@ def _handle_settings_letter_signatory(request, site):
         except ValueError as exc:
             messages.error(request, str(exc))
             return
-        new_path = pages_storage.upload_letter_image(png, "png", "signature")
+        new_path = pages_storage.upload_letter_image(png, "png", storage_kind)
         if not new_path:
             messages.error(request, "The signature couldn't be uploaded right now -- please try again.")
             return
 
-    template.letter_sign_name = name
-    template.letter_sign_title = title
+    setattr(template, name_field, name)
+    setattr(template, title_field, title)
     if new_path:
-        template.letter_sign_path = new_path
+        setattr(template, path_field, new_path)
     elif request.POST.get("remove_signature"):
-        template.letter_sign_path = ""
+        setattr(template, path_field, "")
     template.updated_by = request.user
     template.save()
-    if old_path and old_path != template.letter_sign_path:
+    if old_path and old_path != getattr(template, path_field):
         pages_storage.delete_object(old_path)
-    messages.success(request, "Letter signatory saved -- it's used on the next approval letter.")
+    messages.success(request, f"Letter signatory saved -- it's used on the next {used_on}.")
+
+
+def _handle_settings_letter_image(request, site):
+    """The approval letter's header or footer image. Admin only."""
+    from pages.models import ApprovalDocumentTemplate
+
+    if not is_admin(request.user):
+        messages.error(request, "Only an administrator can change the letterhead.")
+        return
+    kind = request.POST.get("kind")
+    if kind not in ("header", "footer"):
+        messages.error(request, "That request could not be processed.")
+        return
+    _save_letter_image(
+        request, ApprovalDocumentTemplate.get_solo(), f"letter_{kind}_path", kind,
+        storage_kind=kind, used_on="letter", fallback=f"the built-in {kind}",
+    )
+
+
+def _handle_settings_letter_signatory(request, site):
+    """The approval letter's own signatory. Admin only."""
+    from pages.models import ApprovalDocumentTemplate
+
+    if not is_admin(request.user):
+        messages.error(request, "Only an administrator can change the letter signatory.")
+        return
+    _save_letter_signatory(
+        request, ApprovalDocumentTemplate.get_solo(),
+        fields=("letter_sign_name", "letter_sign_title", "letter_sign_path"),
+        storage_kind="signature", used_on="approval letter",
+    )
+
+
+# ---------------------------------------------------------------------
+# Site Settings > Suspension Letter (see accounts/suspension.py)
+# ---------------------------------------------------------------------
+
+SUSPENSION_TEXT_FIELDS = ["suspend_subject", "suspend_body", "ban_subject", "ban_body",
+                          "salutation", "closing", "sign_off"]
+SUSPENSION_REQUIRED = {"suspend_subject", "suspend_body", "ban_subject", "ban_body"}
+
+
+def _apply_suspension_fields(template, post):
+    """Copies the posted wording onto `template` (unsaved). Returns the
+    required fields left blank."""
+    from pages.models import SuspensionLetterTemplate
+
+    missing = []
+    for field in SUSPENSION_TEXT_FIELDS:
+        value = post.get(field, "").replace("\r\n", "\n").strip()
+        limit = SuspensionLetterTemplate._meta.get_field(field).max_length
+        if limit:
+            value = " ".join(value.split())[:limit]
+        if not value and field in SUSPENSION_REQUIRED:
+            missing.append(field)
+            continue
+        setattr(template, field, value)
+    return missing
+
+
+def _handle_settings_suspension_template(request, site):
+    from accounts.suspension import REASON_TOKEN, unknown_placeholders
+    from pages.models import SuspensionLetterTemplate
+
+    if not is_admin(request.user):
+        messages.error(request, "Only an administrator can change the suspension letter.")
+        return
+    template = SuspensionLetterTemplate.get_solo()
+    if _apply_suspension_fields(template, request.POST):
+        messages.error(request, "Please fill in every required field before saving.")
+        return
+    template.updated_by = request.user
+    template.save()
+    messages.success(request, "Suspension letter saved -- it's used from the next suspension onwards.")
+    unknown = unknown_placeholders(*(getattr(template, f) for f in SUSPENSION_TEXT_FIELDS))
+    if unknown:
+        messages.warning(
+            request,
+            "These placeholders aren't recognised and will print exactly as typed: "
+            + ", ".join("{" + key + "}" for key in unknown),
+        )
+    missing_reason = [label for field, label in (("suspend_body", "suspension"), ("ban_body", "ban"))
+                      if REASON_TOKEN not in getattr(template, field)]
+    if missing_reason:
+        messages.warning(
+            request,
+            f"The {' and '.join(missing_reason)} letter doesn't include {REASON_TOKEN} -- the typed reason "
+            f"will be added after the body instead.",
+        )
+
+
+def _handle_settings_suspension_template_reset(request, site):
+    from pages.models import SuspensionLetterTemplate
+
+    if not is_admin(request.user):
+        messages.error(request, "Only an administrator can change the suspension letter.")
+        return
+    template = SuspensionLetterTemplate.get_solo()
+    template.restore_defaults()
+    template.updated_by = request.user
+    template.save()
+    messages.success(request, "Suspension letter restored to the default wording.")
+
+
+def _handle_settings_suspension_image(request, site):
+    from pages.models import SuspensionLetterTemplate
+
+    if not is_admin(request.user):
+        messages.error(request, "Only an administrator can change the letterhead.")
+        return
+    kind = request.POST.get("kind")
+    if kind not in ("header", "footer"):
+        messages.error(request, "That request could not be processed.")
+        return
+    _save_letter_image(
+        request, SuspensionLetterTemplate.get_solo(), f"{kind}_path", kind,
+        storage_kind=f"suspension-{kind}", used_on="suspension letter",
+        fallback=f"the approval letter's {kind} (or the built-in one)",
+    )
+
+
+def _handle_settings_suspension_signatory(request, site):
+    from pages.models import SuspensionLetterTemplate
+
+    if not is_admin(request.user):
+        messages.error(request, "Only an administrator can change the letter signatory.")
+        return
+    _save_letter_signatory(
+        request, SuspensionLetterTemplate.get_solo(), fields=("sign_name", "sign_title", "sign_path"),
+        storage_kind="suspension-signature", used_on="suspension letter",
+    )
+
+
+@login_required
+@admin_required
+def suspension_template_preview(request, kind):
+    """Preview of the suspension (kind="suspend") or ban letter. A POST from
+    the settings form previews the unsaved wording; a GET shows what's
+    saved. Uses a sample account and a sample reason."""
+    from accounts import suspension
+    from pages.models import SuspensionLetterTemplate
+
+    if kind not in User.SuspensionKind.values:
+        return HttpResponse(status=404)
+    template = SuspensionLetterTemplate.get_solo()
+    if request.method == "POST":
+        _apply_suspension_fields(template, request.POST)  # never saved
+    sample = suspension.sample_user()
+    pdf = suspension.render_letter_pdf(sample, template, kind=kind, reason=suspension.SAMPLE_REASON)
+    response = HttpResponse(pdf, content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="preview-{kind}-letter.pdf"'
+    return response
+
+
+def _suspension_template_for_settings():
+    from pages.models import SuspensionLetterTemplate
+
+    template = SuspensionLetterTemplate.get_solo()
+    template.header_url = template.image_url("header")
+    template.footer_url = template.image_url("footer")
+    template.sign_url = template.image_url("signature") if template.sign_name else None
+    return template
+
+
+def _suspension_placeholders():
+    from accounts.suspension import PLACEHOLDERS
+
+    return PLACEHOLDERS
 
 
 def _handle_settings_approval_template_reset(request, site):
@@ -2790,6 +2974,10 @@ def site_settings(request):
             "update_letter_image": _handle_settings_letter_image,
             "update_letter_signatory": _handle_settings_letter_signatory,
             "reset_approval_template": _handle_settings_approval_template_reset,
+            "update_suspension_template": _handle_settings_suspension_template,
+            "reset_suspension_template": _handle_settings_suspension_template_reset,
+            "update_suspension_image": _handle_settings_suspension_image,
+            "update_suspension_signatory": _handle_settings_suspension_signatory,
             "update_footer": _handle_settings_footer,
             "update_contact": _handle_settings_contact,
             "update_paystack": _handle_settings_paystack,
@@ -2857,6 +3045,7 @@ def site_settings(request):
     if edit_faq_id:
         editing_faq = get_object_or_404(ApplicantFAQ, pk=edit_faq_id)
 
+    suspension_template = _suspension_template_for_settings()
     return render(request, "dashboards/admin/settings.html", {
         "site": site,
         "faqs": faqs,
@@ -2870,6 +3059,14 @@ def site_settings(request):
         "letter_image_slots": _letter_image_slots(_approval_template_or_none()),
         "chair_name_for_letter": _chair_name_for_letter(),
         "approval_placeholders": _approval_placeholders(),
+        "suspension_template": suspension_template,
+        "suspension_image_slots": [
+            ("header", "Header image", suspension_template.header_url,
+             "Full A4 width: about 2480 px wide at 300 dpi. Printed up to 55 mm tall; taller artwork is scaled down."),
+            ("footer", "Footer image", suspension_template.footer_url,
+             "Full A4 width: about 2480 px wide. Printed up to 38 mm tall."),
+        ],
+        "suspension_placeholders": _suspension_placeholders(),
         "paystack_secret_key_masked": _mask_secret(site.paystack_secret_key),
         "using_env_public_key": not site.paystack_public_key,
         "using_env_secret_key": not site.paystack_secret_key,
