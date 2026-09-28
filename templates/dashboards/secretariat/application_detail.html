@@ -76,9 +76,10 @@
               {{ application.get_status_display }}
             </span>
             {% if application.resubmitted_at %}
-            <span class="badge text-bg-primary" title="Resubmitted {{ application.resubmitted_at|date:'j M Y, g:i A' }}">
-              <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
-              Revised &middot; {{ application.revision_count }} round{{ application.revision_count|pluralize }}
+            <span class="sc-revised-chip" title="Last resubmitted {{ application.resubmitted_at|date:'j M Y, g:i A' }}">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+              <span class="sc-revised-label">Revised</span>
+              <span class="sc-revised-count">{{ application.revision_count }} round{{ application.revision_count|pluralize }}</span>
             </span>
             {% endif %}
           </div>
