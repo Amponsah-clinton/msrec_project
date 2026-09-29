@@ -68,7 +68,7 @@
                   {{ payment.purpose|default:"MSREC Review Fee" }}
                   {% if payment.application %}<span class="letter-table-sub">{{ payment.application.title }}</span>{% endif %}
                 </td>
-                <td class="mono">{{ payment.application.reference_no|default:"&mdash;" }}</td>
+                <td class="mono">{{ payment.application.reference_no|default:"" }}</td>
                 <td class="amount-col mono">{{ payment.currency }} {{ payment.amount|floatformat:"2g" }}</td>
               </tr>
             </tbody>

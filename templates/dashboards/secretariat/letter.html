@@ -89,7 +89,7 @@
             {% elif doc_type == 'continuing_review' %}Outcome of Continuing Review
             {% elif doc_type == 'closure' %}Study Closure
             {% else %}Outcome of Ethics Review{% endif %}
-            &mdash; {{ application.title }}
+            : {{ application.title }}
           </p>
 
           <p>Dear {{ application.applicant.full_name }},</p>
@@ -221,7 +221,7 @@
           <p>
             This document was generated from the {{ site_settings.site_name|default:"MSREC" }} portal on
             {% now "d F Y" %} and reflects the current recorded status of reference
-            {{ application.reference_no|default:"&mdash;" }}. Its authenticity can be confirmed with the
+            {{ application.reference_no|default:"" }}. Its authenticity can be confirmed with the
             Secretariat{% if site_settings.contact_secretariat_email %} at {{ site_settings.contact_secretariat_email }}{% endif %}.
           </p>
         </footer>

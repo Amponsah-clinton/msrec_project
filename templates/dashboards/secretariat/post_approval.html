@@ -117,7 +117,7 @@
       <div class="acct-modal-overlay" id="pa-{{ submission.pk }}" hidden data-modal-overlay>
         <div class="acct-modal">
           <div class="acct-modal-head">
-            <h3>{{ type_title }} &mdash; {{ submission.application.reference_no|default:submission.application.title }}</h3>
+            <h3>{{ type_title }}: {{ submission.application.reference_no|default:submission.application.title }}</h3>
             <button type="button" class="icon-btn" data-modal-close aria-label="Close">
               <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>

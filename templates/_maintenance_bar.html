@@ -5,7 +5,7 @@ Fed by pages.context_processors.maintenance.
 {% endcomment %}{% if maintenance_admin_bar %}
 <a class="mt-bar" href="{% url 'admin_dashboard:settings' %}#maintenance" title="Open maintenance settings">
   <span class="mt-bar-dot"></span>
-  <span><b>Maintenance mode is on</b> &mdash; visitors can't use the site.{% if maintenance_end %} Reopens automatically {{ maintenance_end|date:"j M, H:i" }}.{% endif %}</span>
+  <span><b>Maintenance mode is on.</b> Visitors can't use the site.{% if maintenance_end %} Reopens automatically {{ maintenance_end|date:"j M, H:i" }}.{% endif %}</span>
   <span class="mt-bar-go">Manage &rarr;</span>
 </a>
 <style>

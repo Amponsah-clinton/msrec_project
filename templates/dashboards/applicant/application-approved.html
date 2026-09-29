@@ -49,7 +49,7 @@
             <tbody>
               {% for application in applications %}
               <tr>
-                <td data-label="Ref No." class="ref-cell">{{ application.reference_no|default:"&mdash;" }}</td>
+                <td data-label="Ref No." class="ref-cell">{{ application.reference_no|default:"" }}</td>
                 <td data-label="Study Title">{{ application.title }}{% if application.resubmitted_at %} <span class="badge text-bg-primary" title="Resubmitted {{ application.resubmitted_at|date:'j M Y' }}" style="font-size:10.5px; padding:2px 7px;">Revised</span>{% endif %}</td>
                 <td data-label="Approved"><span class="due-main">{{ application.decided_at|date:"d M Y" }}</span></td>
                 <td data-label="Status"><span class="badge text-bg-success">Approved</span></td>

@@ -33,7 +33,7 @@
 
       <div class="info-card">
         <svg viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11Z"/></svg>
-        <p>Review fees fund the independent administrative cost of ethics review &mdash; they are never a condition of approval. {% if fee_exemption and fee_exemption.requires_payment %}Fees are invoiced once a study is confirmed for a review pathway &mdash; <strong>Ethics Determination / Exemption</strong>, <strong>Expedited</strong> and <strong>Full Committee Review</strong> each carry their own fee below.{% else %}Fees are invoiced once a study is confirmed for <strong>Expedited</strong> or <strong>Full Committee Review</strong>; Ethics Determination and Exemption requests are fee&#8209;exempt.{% endif %}</p>
+        <p>Review fees fund the independent administrative cost of ethics review. They are never a condition of approval. {% if fee_exemption and fee_exemption.requires_payment %}Fees are invoiced once a study is confirmed for a review pathway: <strong>Ethics Determination / Exemption</strong>, <strong>Expedited</strong> and <strong>Full Committee Review</strong> each carry their own fee below.{% else %}Fees are invoiced once a study is confirmed for <strong>Expedited</strong> or <strong>Full Committee Review</strong>; Ethics Determination and Exemption requests are fee&#8209;exempt.{% endif %}</p>
       </div>
 
       <section class="fee-stats-grid">
@@ -70,17 +70,17 @@
         <div class="review-type-grid">
           <div class="review-type-card">
             <div class="review-type-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg></div>
-            <h4>Ethics Determination / Exemption{% if fee_exemption and fee_exemption.requires_payment %} &mdash; GHS {{ fee_exemption.amount }}{% endif %}</h4>
+            <h4>Ethics Determination / Exemption{% if fee_exemption and fee_exemption.requires_payment %}: GHS {{ fee_exemption.amount }}{% endif %}</h4>
             <p>{% if fee_exemption and fee_exemption.requires_payment %}Administrative fee applies to minimal-risk determination or exemption requests.{% else %}No administrative fee for minimal-risk determination or exemption requests.{% endif %}</p>
           </div>
           <div class="review-type-card">
             <div class="review-type-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></div>
-            <h4>Expedited Review{% if fee_expedited %} &mdash; {% if fee_expedited.requires_payment %}GHS {{ fee_expedited.amount }}{% else %}Free{% endif %}{% endif %}</h4>
+            <h4>Expedited Review{% if fee_expedited %}: {% if fee_expedited.requires_payment %}GHS {{ fee_expedited.amount }}{% else %}Free{% endif %}{% endif %}</h4>
             <p>Minimal-risk studies reviewed by the Chair and designated reviewers.</p>
           </div>
           <div class="review-type-card">
             <div class="review-type-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></div>
-            <h4>Full Committee Review{% if fee_full %} &mdash; {% if fee_full.requires_payment %}GHS {{ fee_full.amount }}{% else %}Free{% endif %}{% endif %}</h4>
+            <h4>Full Committee Review{% if fee_full %}: {% if fee_full.requires_payment %}GHS {{ fee_full.amount }}{% else %}Free{% endif %}{% endif %}</h4>
             <p>Studies reviewed at the next scheduled Committee meeting.</p>
           </div>
         </div>
@@ -104,7 +104,7 @@
             <tbody>
               {% for item in outstanding %}
               <tr>
-                <td data-label="Reference" class="ref-cell">&mdash;</td>
+                <td data-label="Reference" class="ref-cell"></td>
                 <td data-label="Study / Ref No.">{{ item.application.title }}<br><span style="color:var(--text-faint);font-size:11.5px;">Not yet submitted</span></td>
                 <td data-label="Amount" class="ref-cell">GHS {{ item.amount|floatformat:"2g" }}</td>
                 <td data-label="Status"><span class="badge text-bg-warning">Awaiting payment</span></td>
@@ -114,23 +114,23 @@
               {% for payment in payments %}
               <tr>
                 <td data-label="Reference" class="ref-cell">{{ payment.reference }}</td>
-                <td data-label="Study / Ref No.">{{ payment.application.title|default:payment.purpose }}<br><span style="color:var(--text-faint);font-size:11.5px;">{{ payment.application.reference_no|default:"&mdash;" }}</span></td>
+                <td data-label="Study / Ref No.">{{ payment.application.title|default:payment.purpose }}<br><span style="color:var(--text-faint);font-size:11.5px;">{{ payment.application.reference_no|default:"" }}</span></td>
                 <td data-label="Amount" class="ref-cell">{{ payment.currency }} {{ payment.amount|floatformat:"2g" }}</td>
                 <td data-label="Status">
-                  {% if payment.status == 'success' %}<span class="badge text-bg-success">Paid &mdash; {{ payment.paid_at|date:"d M Y" }}</span>
+                  {% if payment.status == 'success' %}<span class="badge text-bg-success">Paid: {{ payment.paid_at|date:"d M Y" }}</span>
                   {% elif payment.status == 'pending' %}<span class="badge text-bg-warning">Pending</span>
                   {% else %}<span class="badge text-bg-danger">Failed</span>{% endif %}
                 </td>
                 <td data-label="Action">
                   {% if payment.status == 'success' %}
                   <a href="{% url 'applicant_dashboard:payment_receipt' payment.pk %}" class="action-btn" aria-label="View receipt"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></a>
-                  {% else %}<span style="color:var(--text-faint);font-size:12px;">&mdash;</span>{% endif %}
+                  {% else %}<span style="color:var(--text-faint);font-size:12px;"></span>{% endif %}
                 </td>
               </tr>
               {% endfor %}
               {% if not outstanding and not payments %}
               <tr>
-                <td colspan="5" style="text-align:center; color:var(--text-faint); padding:24px 0;">No invoices yet &mdash; one is raised when you submit a fee-bearing application.</td>
+                <td colspan="5" style="text-align:center; color:var(--text-faint); padding:24px 0;">No invoices yet. One is raised when you submit a fee-bearing application.</td>
               </tr>
               {% endif %}
             </tbody>

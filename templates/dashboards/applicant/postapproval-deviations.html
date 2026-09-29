@@ -58,10 +58,10 @@
             <tbody>
               {% for submission in submissions %}
               <tr>
-                <td data-label="Ref No." class="ref-cell">{{ submission.application.reference_no|default:"&mdash;" }}</td>
+                <td data-label="Ref No." class="ref-cell">{{ submission.application.reference_no|default:"" }}</td>
                 <td data-label="Study Title">{{ submission.application.title }}</td>
                 <td data-label="Deviation Type">{% if submission.form_data.deviation_type %}<span class="badge text-bg-purple">{{ submission.form_data.deviation_type }}</span>{% else %}<span class="badge text-bg-secondary">Unspecified</span>{% endif %}</td>
-                <td data-label="Date Occurred"><span class="due-main">{% if submission.form_data.date_occurred %}{{ submission.form_data.date_occurred|as_date|date:"d M Y" }}{% else %}&mdash;{% endif %}</span></td>
+                <td data-label="Date Occurred"><span class="due-main">{% if submission.form_data.date_occurred %}{{ submission.form_data.date_occurred|as_date|date:"d M Y" }}{% else %}{% endif %}</span></td>
                 <td data-label="Status">{% include "dashboards/applicant/_pa_status.html" with status=submission.status %}</td>
                 <td data-label="Action">
                   <a class="action-btn" aria-label="View deviation" href="{% url 'applicant_dashboard:application_detail' submission.application.pk %}">
@@ -71,7 +71,7 @@
               </tr>
               {% empty %}
               <tr>
-                <td colspan="6" style="text-align:center; color:var(--text-faint); padding:24px 0;">No deviations logged &mdash; report one as soon as a study departs from its approved protocol.</td>
+                <td colspan="6" style="text-align:center; color:var(--text-faint); padding:24px 0;">No deviations logged. Report one as soon as a study departs from its approved protocol.</td>
               </tr>
               {% endfor %}
             </tbody>

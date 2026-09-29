@@ -33,7 +33,7 @@
       <div class="page-head">
         <div class="page-head-text">
           <h2>Continuing Review Cycles</h2>
-          <p>An approved study never expires quietly &mdash; each cycle confirms its ethical acceptability continues before the current approval period runs out.</p>
+          <p>An approved study never expires quietly. Each cycle confirms its ethical acceptability continues before the current approval period runs out.</p>
         </div>
       </div>
 
@@ -42,11 +42,11 @@
         <div class="revision-top">
           <div class="revision-title">
             <h3>{{ card.application.title }}</h3>
-            <span>{{ card.application.reference_no|default:"&mdash;" }} &nbsp;&bull;&nbsp; <span class="badge {% if card.stage == 2 %}text-bg-warning{% else %}text-bg-primary{% endif %}">Annual Review</span></span>
+            <span>{{ card.application.reference_no|default:"" }} &nbsp;&bull;&nbsp; <span class="badge {% if card.stage == 2 %}text-bg-warning{% else %}text-bg-primary{% endif %}">Annual Review</span></span>
           </div>
           <div class="revision-due">
             <span class="due-label">Approval Expires</span>
-            <span class="due-date">{{ card.expires_at|date:"d M Y"|default:"&mdash;" }}</span>
+            <span class="due-date">{{ card.expires_at|date:"d M Y"|default:"" }}</span>
             {% if card.days_remaining is not None %}<span class="due-days"{% if card.stage != 2 %} style="color:var(--text-faint);"{% endif %}>{{ card.days_remaining }} days remaining</span>{% endif %}
           </div>
         </div>

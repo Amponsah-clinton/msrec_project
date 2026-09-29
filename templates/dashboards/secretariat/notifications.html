@@ -98,7 +98,7 @@
         <div class="side-col">
           <section class="panel">
             <h2>Send a Notification</h2>
-            <p style="font-size:12px;color:var(--text-sub);margin:0 0 14px;">Reaches everyone currently in that role &mdash; not a fixed list of people.</p>
+            <p style="font-size:12px;color:var(--text-sub);margin:0 0 14px;">Reaches everyone currently in that role, not a fixed list of people.</p>
             <form method="post" action="{% url 'secretariat_dashboard:notification_send' %}">
               {% csrf_token %}
               <div class="field-group">

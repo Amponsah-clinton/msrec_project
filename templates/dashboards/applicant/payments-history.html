@@ -54,8 +54,8 @@
               {% for payment in payments %}
               <tr>
                 <td data-label="Date" class="ref-cell">{{ payment.paid_at|default:payment.created_at|date:"d M Y" }}</td>
-                <td data-label="Reference / Study">{{ payment.reference }}<br><span style="color:var(--text-faint);font-size:11.5px;">{{ payment.application.title|default:"&mdash;" }}</span></td>
-                <td data-label="Method">{% if payment.paystack_response.channel %}<span class="badge text-bg-info">{{ payment.paystack_response.channel|title }}</span>{% else %}<span class="badge text-bg-secondary">&mdash;</span>{% endif %}</td>
+                <td data-label="Reference / Study">{{ payment.reference }}<br><span style="color:var(--text-faint);font-size:11.5px;">{{ payment.application.title|default:"" }}</span></td>
+                <td data-label="Method">{% if payment.paystack_response.channel %}<span class="badge text-bg-info">{{ payment.paystack_response.channel|title }}</span>{% else %}<span class="badge text-bg-secondary"></span>{% endif %}</td>
                 <td data-label="Amount" class="ref-cell">{{ payment.currency }} {{ payment.amount|floatformat:"2g" }}</td>
                 <td data-label="Status">
                   {% if payment.status == 'success' %}<span class="badge text-bg-success">Successful</span>
@@ -65,7 +65,7 @@
                 <td data-label="Receipt">
                   {% if payment.status == 'success' %}
                   <a href="{% url 'applicant_dashboard:payment_receipt' payment.pk %}" class="action-btn" aria-label="View receipt"><svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg></a>
-                  {% else %}<span style="color:var(--text-faint);font-size:12px;">&mdash;</span>{% endif %}
+                  {% else %}<span style="color:var(--text-faint);font-size:12px;"></span>{% endif %}
                 </td>
               </tr>
               {% empty %}

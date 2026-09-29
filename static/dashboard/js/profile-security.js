@@ -18,37 +18,42 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Confirm before a password change is silently discarded by mismatched
-  // fields -- client-side check only; the server re-validates regardless.
-  const settingsForm = document.getElementById("profileSettingsForm");
-  if (settingsForm) {
-    const email = settingsForm.querySelector("#pfEmail");
-    const confirmEmail = settingsForm.querySelector("#pfConfirmEmail");
+  // Confirm before a mismatched email is silently rejected by the server --
+  // client-side check only; the server re-validates regardless.
+  const personalInfoForm = document.getElementById("personalInfoForm");
+  if (personalInfoForm) {
+    const email = personalInfoForm.querySelector("#pfEmail");
+    const confirmEmail = personalInfoForm.querySelector("#pfConfirmEmail");
     const emailMatchError = document.getElementById("pfEmailMatchError");
     [email, confirmEmail].forEach((f) => {
       if (f && emailMatchError) f.addEventListener("input", () => { emailMatchError.hidden = true; });
     });
 
-    settingsForm.addEventListener("submit", (event) => {
+    personalInfoForm.addEventListener("submit", (event) => {
       if (email && confirmEmail && email.value.trim().toLowerCase() !== confirmEmail.value.trim().toLowerCase()) {
         event.preventDefault();
         if (emailMatchError) emailMatchError.hidden = false;
         confirmEmail.focus();
-        return;
       }
+    });
+  }
 
-      const current = settingsForm.querySelector("#pfCurrentPassword");
-      const next = settingsForm.querySelector("#pfNewPassword");
-      const confirm = settingsForm.querySelector("#pfConfirmPassword");
-      const anyPasswordField = [current, next, confirm].some((f) => f && f.value.trim());
-      if (anyPasswordField && next.value !== confirm.value) {
+  // Same idea for the password form: catch a mismatched confirmation
+  // before it round-trips to the server.
+  const passwordForm = document.getElementById("passwordForm");
+  if (passwordForm) {
+    const next = passwordForm.querySelector("#pfNewPassword");
+    const confirm = passwordForm.querySelector("#pfConfirmPassword");
+    passwordForm.addEventListener("submit", (event) => {
+      if (next.value !== confirm.value) {
         event.preventDefault();
         confirm.setCustomValidity("New password and confirmation don't match.");
         confirm.reportValidity();
         return;
       }
-      if (confirm) confirm.setCustomValidity("");
+      confirm.setCustomValidity("");
     });
+    [next, confirm].forEach((f) => f.addEventListener("input", () => confirm.setCustomValidity("")));
   }
 
   // Show/hide toggle on every password field (fa-eye <-> fa-eye-slash).

@@ -47,7 +47,7 @@
           {% else %}
           <p class="urgent-note">MSREC has requested changes to this application. Message the Secretariat for details on what's needed.</p>
           {% endif %}
-          <p class="urgent-note" style="margin-top:4px;">Fix and resubmit any time &mdash; no review fee is charged again.</p>
+          <p class="urgent-note" style="margin-top:4px;">Fix and resubmit any time. No review fee is charged again.</p>
         </div>
         <a href="{% url 'applicant_dashboard:application_form' %}?draft={{ application.pk }}" class="btn btn-danger">Fix &amp; Resubmit</a>
       </section>
@@ -81,7 +81,7 @@
         <div class="apply-meta-row" style="margin-bottom:0;">
           <div class="apply-meta-item">
             <span>Reference No.</span>
-            <strong>{{ application.reference_no|default:"&mdash;" }}</strong>
+            <strong>{{ application.reference_no|default:"" }}</strong>
           </div>
           <div class="apply-meta-item">
             <span>Status</span>

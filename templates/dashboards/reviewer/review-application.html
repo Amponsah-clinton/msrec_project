@@ -95,7 +95,7 @@
           <h3 id="pdfHintTitle">Don't miss the applicant's documents</h3>
           <p>
             {% if documents %}
-              This application has {{ documents|length }} attached document{{ documents|length|pluralize }}. Download the full Application PDF for the complete record before you begin &mdash; every document is also viewable individually further down the page.
+              This application has {{ documents|length }} attached document{{ documents|length|pluralize }}. Download the full Application PDF for the complete record before you begin. Every document is also viewable individually further down the page.
             {% else %}
               Download the full Application PDF for the complete, formatted record of everything {{ application.applicant.full_name }} submitted before you begin your review.
             {% endif %}
@@ -214,7 +214,7 @@
             <span class="rv-pane-header-icon teal"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m8.5 12.5 2.5 2.5 5-5"/></svg></span>
             <div>
               <h2>Your Assessment</h2>
-              <p>Submitted and recorded &mdash; read only</p>
+              <p>Submitted and recorded (read only)</p>
             </div>
           </div>
 
@@ -311,8 +311,8 @@
 
               <label style="display:block; font-weight:600; color:var(--text-main); font-size:12.5px; margin-bottom:8px;">Conflict of interest <span class="req">*</span></label>
               <div class="assess-coi-options">
-                <label class="chip-checkbox"><input type="radio" name="coi_choice" value="none" {% if posted.coi_choice == "none" %}checked{% endif %} required><span>None &mdash; I have no conflict of interest with this application or its investigators.</span></label>
-                <label class="chip-checkbox"><input type="radio" name="coi_choice" value="conflict" {% if posted.coi_choice == "conflict" %}checked{% endif %}><span>Potential conflict identified &mdash; details below.</span></label>
+                <label class="chip-checkbox"><input type="radio" name="coi_choice" value="none" {% if posted.coi_choice == "none" %}checked{% endif %} required><span>None: I have no conflict of interest with this application or its investigators.</span></label>
+                <label class="chip-checkbox"><input type="radio" name="coi_choice" value="conflict" {% if posted.coi_choice == "conflict" %}checked{% endif %}><span>Potential conflict identified: details below.</span></label>
               </div>
               <div class="field assess-coi-details" id="coiDetailsWrap" hidden>
                 <label for="coiDetails">Describe the conflict</label>
@@ -363,7 +363,7 @@
                 </div>
                 <div class="field field-wide">
                   <label for="documentsComment">Comments on additional documents, if any</label>
-                  <textarea id="documentsComment" name="documents_comment" rows="2" placeholder="Optional &mdash; note anything about the {{ documents|length }} document(s) attached above">{{ posted.documents_comment|default:"" }}</textarea>
+                  <textarea id="documentsComment" name="documents_comment" rows="2" placeholder="Optional: note anything about the {{ documents|length }} document(s) attached above">{{ posted.documents_comment|default:"" }}</textarea>
                 </div>
               </div>
             </div>
@@ -383,7 +383,7 @@
             </div>
 
             <div class="assess-submit-bar">
-              <p class="assess-submit-note">Submitting is final &mdash; this assessment can't be edited afterwards, and it moves this review to your Completed tab.</p>
+              <p class="assess-submit-note">Submitting is final. This assessment can't be edited afterwards, and it moves this review to your Completed tab.</p>
               <button type="submit" class="btn-primary">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 13 4 4L19 7"/></svg>
                 Submit Assessment

@@ -79,7 +79,7 @@
         <div class="urgent-body">
           <h3>Revisions Required &ndash; Action Needed</h3>
           <p>
-            <span class="ref-no">Ref No.: {{ needs_revision.reference_no|default:"&mdash;" }}</span>
+            <span class="ref-no">Ref No.: {{ needs_revision.reference_no|default:"" }}</span>
             <span class="sep">|</span>
             Study Title: {{ needs_revision.title }}
           </p>
@@ -130,7 +130,7 @@
               <tbody>
                 {% for application in my_applications %}
                 <tr>
-                  <td data-label="Ref No." class="ref-cell">{{ application.reference_no|default:"&mdash;" }}</td>
+                  <td data-label="Ref No." class="ref-cell">{{ application.reference_no|default:"" }}</td>
                   <td data-label="Study Title">{{ application.title }}</td>
                   <td data-label="Status">
                     {% if application.status == 'submitted' %}<span class="badge text-bg-warning">Submitted</span>
@@ -196,7 +196,7 @@
                 {% endif %}
                 <div class="notice-body">
                   {% if item.status == 'draft' %}
-                  <p><a href="{% url 'applicant_dashboard:application_form' %}?draft={{ item.pk }}">{{ item.title }}</a> is still a draft &mdash; not yet submitted.</p>
+                  <p><a href="{% url 'applicant_dashboard:application_form' %}?draft={{ item.pk }}">{{ item.title }}</a> is still a draft, not yet submitted.</p>
                   {% elif item.status == 'submitted' %}
                   <p><a href="{% url 'applicant_dashboard:application_detail' item.pk %}">{{ item.title }}</a> was submitted and is awaiting screening.</p>
                   {% elif item.status == 'under_review' %}
@@ -214,7 +214,7 @@
               {% empty %}
               <li>
                 <div class="notice-body">
-                  <p>Nothing to show yet &mdash; start an application and updates will appear here.</p>
+                  <p>Nothing to show yet. Start an application and updates will appear here.</p>
                 </div>
               </li>
               {% endfor %}

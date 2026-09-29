@@ -11,7 +11,7 @@
 {% block topbar %}
       <div class="topbar-title">
         <h1>{{ title }}</h1>
-        <p>Filed against one of your studies &mdash; the Secretariat is notified on submission</p>
+        <p>Filed against one of your studies. The Secretariat is notified on submission</p>
       </div>
       <div class="topbar-actions">
         <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false">
@@ -45,7 +45,7 @@
               <select id="pa-application" name="application" class="field-input field-select" required>
                 <option value="" disabled selected>Select one of your studies</option>
                 {% for application in applications %}
-                <option value="{{ application.pk }}">{{ application.reference_no|default:"Unreferenced" }} &mdash; {{ application.title }}</option>
+                <option value="{{ application.pk }}">{{ application.reference_no|default:"Unreferenced" }}: {{ application.title }}</option>
                 {% endfor %}
               </select>
               <svg class="field-select-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>

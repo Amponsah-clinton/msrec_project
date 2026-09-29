@@ -33,7 +33,7 @@
       <div class="page-head">
         <div class="page-head-text">
           <h2>MSREC Decision Letters</h2>
-          <p>The formal outcome letter issued after each review &mdash; screening, expedited or full committee.</p>
+          <p>The formal outcome letter issued after each review: screening, expedited or full committee.</p>
         </div>
       </div>
 
@@ -43,7 +43,7 @@
           <div class="doc-row">
             <div class="doc-icon letter"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></div>
             <div class="doc-info">
-              <h4 class="doc-name">{{ application.reference_no|default:"Reference pending" }} &mdash; {{ application.title }}</h4>
+              <h4 class="doc-name">{{ application.reference_no|default:"Reference pending" }}: {{ application.title }}</h4>
               <span class="doc-meta">Decision Letter &nbsp;&bull;&nbsp; Issued {{ application.decided_at|default:application.revision_requested_at|date:"d M Y" }}</span>
             </div>
             <div class="doc-trailing">

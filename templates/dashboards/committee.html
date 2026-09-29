@@ -100,7 +100,7 @@
     <li>
       <div class="mm-datebox sm">
         {% if a.due_date %}<span class="mon">{{ a.due_date|date:"M" }}</span><span class="day">{{ a.due_date|date:"d" }}</span>
-        {% else %}<span class="day">&mdash;</span>{% endif %}
+        {% else %}<span class="day"></span>{% endif %}
       </div>
       <div class="body">
         <a href="{% url 'reviewer_dashboard:review_application' a.pk %}">{{ a.application.title }}</a>
@@ -126,7 +126,7 @@
 
   <section class="panel">
     <div class="panel-header">
-      <h2>{% if next_meeting %}Agenda &mdash; {{ next_meeting.title }}{% else %}Meeting Agenda{% endif %}</h2>
+      <h2>{% if next_meeting %}Agenda: {{ next_meeting.title }}{% else %}Meeting Agenda{% endif %}</h2>
       <a href="{% url 'committee_dashboard:agenda' %}" class="panel-link">Full agenda</a>
     </div>
     {% if next_items %}

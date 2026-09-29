@@ -64,12 +64,12 @@
         <div class="meeting-picker-select-wrap">
           <select id="meetingSelect" class="field-input" aria-label="Choose a meeting" onchange="if(this.value){window.location='{% url 'secretariat_dashboard:meetings_decisions' %}?meeting='+this.value}">
             {% for m in meetings %}
-            <option value="{{ m.pk }}" {% if meeting and meeting.pk == m.pk %}selected{% endif %}>{{ m.title }} &mdash; {{ m.scheduled_at|date:"d M Y, g:i A" }}</option>
+            <option value="{{ m.pk }}" {% if meeting and meeting.pk == m.pk %}selected{% endif %}>{{ m.title }} &nbsp;&bull;&nbsp; {{ m.scheduled_at|date:"d M Y, g:i A" }}</option>
             {% endfor %}
           </select>
           <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
         </div>
-        {% if meetings %}<span class="meeting-picker-count">{{ meetings|length }} meeting{{ meetings|length|pluralize }} on file</span>{% else %}<span class="meeting-picker-meta">No meetings yet &mdash; <a href="{% url 'secretariat_dashboard:meetings_schedule' %}">schedule one</a>.</span>{% endif %}
+        {% if meetings %}<span class="meeting-picker-count">{{ meetings|length }} meeting{{ meetings|length|pluralize }} on file</span>{% else %}<span class="meeting-picker-meta">No meetings yet. <a href="{% url 'secretariat_dashboard:meetings_schedule' %}">Schedule one</a>.</span>{% endif %}
       </div>
       <p class="meeting-picker-clear"><a href="{% url 'secretariat_dashboard:meetings_decisions' %}">View decisions across all meetings</a></p>
 
@@ -122,14 +122,14 @@
               <div class="field-group">
                 <label>Linked Application (optional)</label>
                 <select class="field-input" name="application_id">
-                  <option value="">&mdash; None &mdash;</option>
-                  {% for a in recent_applications %}<option value="{{ a.pk }}">{{ a.reference_no }} &mdash; {{ a.title|truncatechars:30 }}</option>{% endfor %}
+                  <option value="">None</option>
+                  {% for a in recent_applications %}<option value="{{ a.pk }}">{{ a.reference_no }} &nbsp;&bull;&nbsp; {{ a.title|truncatechars:30 }}</option>{% endfor %}
                 </select>
               </div>
               <div class="field-group">
                 <label>Linked Agenda Item (optional)</label>
                 <select class="field-input" name="agenda_item_id">
-                  <option value="">&mdash; None &mdash;</option>
+                  <option value="">None</option>
                   {% for item in meeting.agenda_items.all %}<option value="{{ item.pk }}">{{ item.title }}</option>{% endfor %}
                 </select>
               </div>

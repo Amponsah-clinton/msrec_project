@@ -33,7 +33,7 @@
       <div class="page-head">
         <div class="page-head-text">
           <h2>Protocol Amendments</h2>
-          <p>Review before implementing any material change to an approved study &mdash; safety actions may proceed first, but still require a follow-up amendment.</p>
+          <p>Review before implementing any material change to an approved study. Safety actions may proceed first, but still require a follow-up amendment.</p>
         </div>
         <a href="{% url 'applicant_dashboard:postapproval_new' 'amendment' %}" class="btn-primary">
           <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
@@ -57,7 +57,7 @@
             <tbody>
               {% for submission in submissions %}
               <tr>
-                <td data-label="Ref No." class="ref-cell">{{ submission.application.reference_no|default:"&mdash;" }}</td>
+                <td data-label="Ref No." class="ref-cell">{{ submission.application.reference_no|default:"" }}</td>
                 <td data-label="Study Title">{{ submission.application.title }}</td>
                 <td data-label="Amendment Type">{% if submission.form_data.amendment_type %}<span class="badge text-bg-info">{{ submission.form_data.amendment_type }}</span>{% else %}<span class="badge text-bg-secondary">Unspecified</span>{% endif %}</td>
                 <td data-label="Submitted"><span class="due-main">{{ submission.submitted_at|date:"d M Y" }}</span></td>
@@ -70,7 +70,7 @@
               </tr>
               {% empty %}
               <tr>
-                <td colspan="6" style="text-align:center; color:var(--text-faint); padding:24px 0;">No amendments filed yet &mdash; request one when an approved protocol needs to change.</td>
+                <td colspan="6" style="text-align:center; color:var(--text-faint); padding:24px 0;">No amendments filed yet. Request one when an approved protocol needs to change.</td>
               </tr>
               {% endfor %}
             </tbody>

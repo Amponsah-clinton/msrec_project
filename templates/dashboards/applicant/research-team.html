@@ -100,7 +100,7 @@
               <p>{{ row.application.reference_no|default:"Reference pending" }} &middot; {{ row.application.title }}</p>
             </div>
             <div class="team-contact">
-              <span>{{ row.institution|default:"&mdash;" }}</span>
+              <span>{{ row.institution|default:"" }}</span>
             </div>
             <div class="team-actions">
               <a class="action-btn" aria-label="View study" href="{% url 'applicant_dashboard:application_detail' row.application.pk %}">

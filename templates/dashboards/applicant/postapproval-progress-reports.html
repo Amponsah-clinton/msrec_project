@@ -10,7 +10,7 @@
 
       <div class="topbar-title">
         <h1>Annual / Progress Reports</h1>
-        <p>Short annual reports &mdash; mostly pre-populated &mdash; covering status, recruitment and any changes</p>
+        <p>Short annual reports (mostly pre-populated) covering status, recruitment and any changes</p>
       </div>
       <div class="topbar-actions">
         <div class="search-box">
@@ -57,9 +57,9 @@
             <tbody>
               {% for submission in submissions %}
               <tr>
-                <td data-label="Ref No." class="ref-cell">{{ submission.application.reference_no|default:"&mdash;" }}</td>
+                <td data-label="Ref No." class="ref-cell">{{ submission.application.reference_no|default:"" }}</td>
                 <td data-label="Study Title">{{ submission.application.title }}</td>
-                <td data-label="Reporting Period">{{ submission.form_data.period|default:"&mdash;" }}</td>
+                <td data-label="Reporting Period">{{ submission.form_data.period|default:"" }}</td>
                 <td data-label="Submitted"><span class="due-main">{{ submission.submitted_at|date:"d M Y" }}</span></td>
                 <td data-label="Status">{% include "dashboards/applicant/_pa_status.html" with status=submission.status %}</td>
                 <td data-label="Action">

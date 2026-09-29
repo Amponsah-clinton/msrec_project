@@ -79,7 +79,7 @@
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
           </div>
           <p class="stat-label">Avg. Turnaround</p>
-          <p class="stat-value">{% if stats.avg_turnaround_days is not None %}{{ stats.avg_turnaround_days }}d{% else %}&mdash;{% endif %}</p>
+          <p class="stat-value">{% if stats.avg_turnaround_days is not None %}{{ stats.avg_turnaround_days }}d{% else %}{% endif %}</p>
         </div>
         <div class="stat-card">
           <div class="stat-icon orange">
@@ -106,7 +106,7 @@
           <div>
             <p style="margin:0 0 8px;"><strong>Completed / Active / Overdue</strong> come straight from your assignment statuses and due dates.</p>
             <p style="margin:0 0 8px;"><strong>Average turnaround</strong> is the time between being assigned and completing a review, averaged across your completed assessments.</p>
-            <p style="margin:0;"><strong>Reviews Requiring Correction</strong> counts how many of your completed assessments have ever had a Pending QA Action raised against them &mdash; see QA Feedback for the full history.</p>
+            <p style="margin:0;"><strong>Reviews Requiring Correction</strong> counts how many of your completed assessments have ever had a Pending QA Action raised against them. See QA Feedback for the full history.</p>
           </div>
         </div>
       </section>

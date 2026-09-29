@@ -100,10 +100,10 @@
               <span class="sus-modal-when-time">at {{ suspended_modal.until|time:"g:i A" }}</span>
             </div>
             <div class="sus-modal-countdown" data-sus-until="{{ suspended_modal.until|date:'c' }}">
-              <span class="sus-modal-countdown-cell"><strong id="susDays">&mdash;</strong><span>days</span></span>
-              <span class="sus-modal-countdown-cell"><strong id="susHours">&mdash;</strong><span>hrs</span></span>
-              <span class="sus-modal-countdown-cell"><strong id="susMinutes">&mdash;</strong><span>min</span></span>
-              <span class="sus-modal-countdown-cell"><strong id="susSeconds">&mdash;</strong><span>sec</span></span>
+              <span class="sus-modal-countdown-cell"><strong id="susDays"></strong><span>days</span></span>
+              <span class="sus-modal-countdown-cell"><strong id="susHours"></strong><span>hrs</span></span>
+              <span class="sus-modal-countdown-cell"><strong id="susMinutes"></strong><span>min</span></span>
+              <span class="sus-modal-countdown-cell"><strong id="susSeconds"></strong><span>sec</span></span>
             </div>
           </div>
           {% if suspended_modal.reason %}

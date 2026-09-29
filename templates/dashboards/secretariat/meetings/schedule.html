@@ -16,7 +16,7 @@
 
       <div class="topbar-title">
         <h1>Schedule Meeting</h1>
-        <p>Invite committee members and staff, build the agenda, set quorum &mdash; invitations email out the moment you save</p>
+        <p>Invite committee members and staff, build the agenda, set quorum: invitations email out the moment you save</p>
       </div>
       <div class="topbar-actions">
         <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false">
@@ -134,7 +134,7 @@
               <div class="field-group">
                 <label>Chair (optional)</label>
                 <select class="field-input" name="chair_id">
-                  <option value="">&mdash; No chair set yet &mdash;</option>
+                  <option value="">No chair set yet</option>
                   {% for user in eligible_participants %}{% if user.role == "chair" %}<option value="{{ user.pk }}">{{ user.full_name }}</option>{% endif %}{% endfor %}
                 </select>
               </div>

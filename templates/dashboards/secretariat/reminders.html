@@ -15,7 +15,7 @@
 
       <div class="topbar-title">
         <h1>Reminders</h1>
-        <p>Schedule a nudge for now or later &mdash; a bell notification, plus email if you want it, sent automatically when it's due</p>
+        <p>Schedule a nudge for now or later: a bell notification, plus email if you want it, sent automatically when it's due</p>
       </div>
       <div class="topbar-actions">
         <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle dark mode" aria-pressed="false">
@@ -133,7 +133,7 @@
               <div class="field-group">
                 <label>Related Application (optional)</label>
                 <select class="field-input" name="application_id">
-                  <option value="">&mdash; Not tied to one application &mdash;</option>
+                  <option value="">Not tied to one application</option>
                   {% for application in recent_applications %}
                   <option value="{{ application.pk }}">{{ application.reference_no }} &middot; {{ application.title|truncatechars:30 }}</option>
                   {% endfor %}

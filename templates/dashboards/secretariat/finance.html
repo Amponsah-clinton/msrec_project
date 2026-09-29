@@ -174,7 +174,7 @@
                 <td data-label="Date"><span class="due-main">{{ payment.created_at|date:"d M Y, g:i A" }}</span></td>
               </tr>
               {% empty %}
-              <tr><td colspan="6" class="sc-table-empty">No payments recorded yet &mdash; they'll appear here the moment an applicant pays a review fee.</td></tr>
+              <tr><td colspan="6" class="sc-table-empty">No payments recorded yet. They'll appear here the moment an applicant pays a review fee.</td></tr>
               {% endfor %}
             </tbody>
           </table>

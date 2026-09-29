@@ -34,7 +34,7 @@
       <div class="page-head">
         <div class="page-head-text">
           <h2>Adverse Event Reports</h2>
-          <p>Report any participant safety issue as soon as it arises &mdash; the Secretariat is notified immediately for serious or unexpected events.</p>
+          <p>Report any participant safety issue as soon as it arises. The Secretariat is notified immediately for serious or unexpected events.</p>
         </div>
         <a href="{% url 'applicant_dashboard:postapproval_new' 'adverse_event' %}" class="btn btn-danger">
           <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
@@ -47,7 +47,7 @@
         <div class="revision-top">
           <div class="revision-title">
             <h3>{{ submission.application.title }}</h3>
-            <span>{{ submission.application.reference_no|default:"&mdash;" }}{% if submission.form_data.severity %} &nbsp;&bull;&nbsp; <span class="badge {% if submission.is_serious %}text-bg-danger{% else %}text-bg-secondary{% endif %}">{{ submission.form_data.severity }}</span>{% endif %}</span>
+            <span>{{ submission.application.reference_no|default:"" }}{% if submission.form_data.severity %} &nbsp;&bull;&nbsp; <span class="badge {% if submission.is_serious %}text-bg-danger{% else %}text-bg-secondary{% endif %}">{{ submission.form_data.severity }}</span>{% endif %}</span>
           </div>
           <div class="revision-due">
             <span class="due-label">Reported</span>
@@ -56,10 +56,10 @@
           </div>
         </div>
         <dl class="fact-grid">
-          <div><dt>Event Type</dt><dd>{{ submission.form_data.event_type|default:"&mdash;" }}</dd></div>
-          <div><dt>Date of Onset</dt><dd>{% if submission.form_data.date_onset %}{{ submission.form_data.date_onset|as_date|date:"d M Y" }}{% else %}&mdash;{% endif %}</dd></div>
-          <div><dt>Relatedness</dt><dd>{{ submission.form_data.relatedness|default:"&mdash;" }}</dd></div>
-          <div><dt>Outcome</dt><dd>{{ submission.form_data.outcome|default:"&mdash;" }}</dd></div>
+          <div><dt>Event Type</dt><dd>{{ submission.form_data.event_type|default:"" }}</dd></div>
+          <div><dt>Date of Onset</dt><dd>{% if submission.form_data.date_onset %}{{ submission.form_data.date_onset|as_date|date:"d M Y" }}{% else %}{% endif %}</dd></div>
+          <div><dt>Relatedness</dt><dd>{{ submission.form_data.relatedness|default:"" }}</dd></div>
+          <div><dt>Outcome</dt><dd>{{ submission.form_data.outcome|default:"" }}</dd></div>
         </dl>
         {% if submission.form_data.description %}
         <div class="comment-list">

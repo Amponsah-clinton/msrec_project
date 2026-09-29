@@ -136,7 +136,7 @@
                     <label class="apd-file">
                       <input type="file" name="signature_file" accept="image/png,image/jpeg,image/webp" data-apd-sign-preview="{{ p }}SignImg" data-apd-sign-empty="{{ p }}SignEmpty">
                       <span class="apd-file-btn"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> {% if L.sign_url %}Replace signature{% else %}Upload signature{% endif %}</span>
-                      <span class="apd-file-name">PNG or JPG &mdash; a photo of a signature on paper works; the paper is removed</span>
+                      <span class="apd-file-name">PNG or JPG: a photo of a signature on paper works; the paper is removed</span>
                     </label>
                     {% if L.sign_url %}<label class="apd-toggle apd-toggle-inline"><input type="checkbox" name="remove_signature" value="1"><span>Remove the saved signature</span></label>{% endif %}
                     <div class="apd-actions">

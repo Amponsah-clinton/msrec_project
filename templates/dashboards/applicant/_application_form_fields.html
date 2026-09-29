@@ -18,9 +18,9 @@
         <div class="reuse-hint" style="background:var(--red-light, #fdeceb); border-color:var(--red-border, #f7d6d3);">
           <i class="bi bi-pencil-square"></i>
           <span>
-            <strong>Fixing {{ draft_application.reference_no }}</strong> &mdash; MSREC requested changes on
+            <strong>Fixing {{ draft_application.reference_no }}</strong>: MSREC requested changes on
             {{ draft_application.revision_requested_at|date:"j M Y" }}. Your previous answers are restored below;
-            update whatever's needed and resubmit &mdash; no review fee is charged again.
+            update whatever's needed and resubmit. No review fee is charged again.
             {% if draft_application.revision_comment %}
             <br><strong>What to fix:</strong> {{ draft_application.revision_comment|linebreaksbr }}
             {% endif %}
@@ -56,7 +56,7 @@
             <span class="apply-category-trigger-icon"><i class="bi bi-tags"></i></span>
             <span class="apply-category-trigger-text">
               <strong id="applyCategorySelectedLabel">Select your Application Category</strong>
-              <span id="applyCategorySelectedFee">Required &mdash; choose the option that best describes this study/applicant</span>
+              <span id="applyCategorySelectedFee">Required (choose the option that best describes this study/applicant)</span>
             </span>
             <span class="apply-category-trigger-action" id="applyCategoryTriggerAction">Choose <i class="bi bi-chevron-right"></i></span>
           </button>
@@ -76,7 +76,7 @@
           <div class="apply-category-modal-head">
             <div>
               <h3 id="applyCategoryModalTitle">Select Your Application Category</h3>
-              <p>Choose the option that best describes this study/applicant &mdash; this decides your review fee.</p>
+              <p>Choose the option that best describes this study/applicant. This decides your review fee.</p>
             </div>
             <button type="button" class="apply-category-modal-close" id="applyCategoryModalClose" aria-label="Close">
               <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -88,7 +88,7 @@
               <label class="apply-category-option">
                 <input type="radio" name="applicantCategory" value="{{ cat.key }}" required>
                 <span class="apply-category-option-label">{{ cat.label }}</span>
-                <span class="apply-category-option-fee">{% if cat.fee %}{% if cat.fee.requires_payment %}GHS {{ cat.fee.amount }}{% else %}Free{% endif %}{% else %}&mdash;{% endif %}</span>
+                <span class="apply-category-option-fee">{% if cat.fee %}{% if cat.fee.requires_payment %}GHS {{ cat.fee.amount }}{% else %}Free{% endif %}{% else %}{% endif %}</span>
               </label>
               {% endfor %}
             </div>
@@ -196,7 +196,7 @@
                 <div><h2>Type &amp; Field of Research</h2></div>
               </div>
 
-              <h3 class="signup-subsection-title">2.1 Main Research Area <span class="field-hint" style="margin:0;">&mdash; select all that apply</span></h3>
+              <h3 class="signup-subsection-title">2.1 Main Research Area <span class="field-hint" style="margin:0;">(select all that apply)</span></h3>
               <div class="chip-checkbox-grid">
                 <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="health-biomedical"><span>Health / Biomedical Sciences</span></label>
                 <label class="chip-checkbox"><input type="checkbox" name="researchArea" value="nursing-allied"><span>Nursing / Allied Health</span></label>
@@ -224,7 +224,7 @@
                 <input type="text" placeholder="Please specify" name="researchAreaOther">
               </div>
 
-              <h3 class="signup-subsection-title" style="margin-top:22px;">2.2 Type of Study <span class="field-hint" style="margin:0;">&mdash; select all that apply</span></h3>
+              <h3 class="signup-subsection-title" style="margin-top:22px;">2.2 Type of Study <span class="field-hint" style="margin:0;">(select all that apply)</span></h3>
               <div class="chip-checkbox-grid">
                 <label class="chip-checkbox"><input type="checkbox" name="studyType" value="quantitative"><span>Quantitative Study</span></label>
                 <label class="chip-checkbox"><input type="checkbox" name="studyType" value="qualitative"><span>Qualitative Study</span></label>
@@ -364,7 +364,7 @@
               </div>
 
               <div class="field field-wide" style="margin-top:6px;">
-                <label>Data Collection Methods <span class="field-hint" style="margin:0;">&mdash; select all that apply</span></label>
+                <label>Data Collection Methods <span class="field-hint" style="margin:0;">(select all that apply)</span></label>
                 <div class="chip-checkbox-grid">
                   <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="questionnaire"><span>Questionnaire</span></label>
                   <label class="chip-checkbox"><input type="checkbox" name="dataCollection" value="online-survey"><span>Online Survey</span></label>
@@ -410,12 +410,12 @@
                   <label class="chip-checkbox"><input type="radio" name="riskLevel" value="none"><span>No Foreseeable Risk</span></label>
                   <label class="chip-checkbox"><input type="radio" name="riskLevel" value="minimal"><span>Minimal Risk</span></label>
                   <label class="chip-checkbox"><input type="radio" name="riskLevel" value="more-than-minimal"><span>More than Minimal Risk</span></label>
-                  <label class="chip-checkbox"><input type="radio" name="riskLevel" value="uncertain"><span>Uncertain &mdash; MSREC Assessment Requested</span></label>
+                  <label class="chip-checkbox"><input type="radio" name="riskLevel" value="uncertain"><span>Uncertain: MSREC Assessment Requested</span></label>
                 </div>
               </div>
 
               <div class="field field-wide" style="margin-top:16px;">
-                <label>Possible Risks <span class="field-hint" style="margin:0;">&mdash; select all that apply</span></label>
+                <label>Possible Risks <span class="field-hint" style="margin:0;">(select all that apply)</span></label>
                 <div class="chip-checkbox-grid">
                   <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="physical"><span>Physical</span></label>
                   <label class="chip-checkbox"><input type="checkbox" name="possibleRisks" value="psychological"><span>Psychological / Emotional</span></label>
@@ -460,7 +460,7 @@
               </div>
 
               <div class="field field-wide" style="margin-top:16px;">
-                <label>Consent Method <span class="field-hint" style="margin:0;">&mdash; select all that apply</span></label>
+                <label>Consent Method <span class="field-hint" style="margin:0;">(select all that apply)</span></label>
                 <div class="chip-checkbox-grid">
                   <label class="chip-checkbox"><input type="checkbox" name="consentMethod" value="written"><span>Written</span></label>
                   <label class="chip-checkbox"><input type="checkbox" name="consentMethod" value="verbal"><span>Verbal</span></label>
@@ -828,7 +828,7 @@
                 <input type="text" placeholder="Please specify" name="documentsAttachedOther">
               </div>
 
-              <h3 class="signup-subsection-title" style="margin-top:22px;">Document Uploads <span class="field-hint" style="margin:0;">&mdash; more than one document can be uploaded</span></h3>
+              <h3 class="signup-subsection-title" style="margin-top:22px;">Document Uploads <span class="field-hint" style="margin:0;">(more than one document can be uploaded)</span></h3>
               {% if draft_application.documents %}
               <div class="apply-file-list apply-file-list-existing">
                 {% for doc in draft_application.documents %}
@@ -848,7 +848,7 @@
               <label class="apply-file-drop" for="applyFileInput">
                 <span class="apply-file-drop-icon"><i class="bi bi-cloud-arrow-up"></i></span>
                 <strong>Click to upload</strong>
-                <span>or drag &amp; drop files &mdash; PDF, DOC, DOCX, JPG, PNG</span>
+                <span>or drag &amp; drop files: PDF, DOC, DOCX, JPG, PNG</span>
                 <input type="file" id="applyFileInput" name="documents" multiple hidden accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
               </label>
               <div class="apply-file-list" id="applyFileList"></div>
@@ -889,7 +889,7 @@
                 <span class="badge apply-official-badge text-bg-secondary"><i class="bi bi-lock-fill"></i> Reserved</span>
                 <div>
                   <h2>For MSREC Official Use Only</h2>
-                  <p class="section-note">Completed by the Secretariat and Committee during screening and review &mdash; nothing below is something you fill in.</p>
+                  <p class="section-note">Completed by the Secretariat and Committee during screening and review. Nothing below is something you fill in.</p>
                 </div>
               </div>
 
@@ -900,11 +900,11 @@
                 <div class="apply-official-row"><dt>Review Pathway Assigned</dt><dd>Pending</dd></div>
                 <div class="apply-official-row"><dt>Reviewer(s)</dt><dd>Not yet assigned</dd></div>
                 <div class="apply-official-row"><dt>Final Decision</dt><dd>Pending</dd></div>
-                <div class="apply-official-row"><dt>Decision Date</dt><dd>&mdash;</dd></div>
-                <div class="apply-official-row"><dt>Approval Valid Until</dt><dd>&mdash;</dd></div>
-                <div class="apply-official-row"><dt>MSREC Chairperson / Authorized Officer</dt><dd>&mdash;</dd></div>
-                <div class="apply-official-row"><dt>Signature</dt><dd>&mdash;</dd></div>
-                <div class="apply-official-row"><dt>Date</dt><dd>&mdash;</dd></div>
+                <div class="apply-official-row"><dt>Decision Date</dt><dd></dd></div>
+                <div class="apply-official-row"><dt>Approval Valid Until</dt><dd></dd></div>
+                <div class="apply-official-row"><dt>MSREC Chairperson / Authorized Officer</dt><dd></dd></div>
+                <div class="apply-official-row"><dt>Signature</dt><dd></dd></div>
+                <div class="apply-official-row"><dt>Date</dt><dd></dd></div>
               </dl>
             </section>
 

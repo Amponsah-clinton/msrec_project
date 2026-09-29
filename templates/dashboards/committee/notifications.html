@@ -21,7 +21,7 @@
   <div class="page-head">
     <div class="page-head-text">
       <h2>Notifications</h2>
-      <p>Everything addressed to the Committee, in one place &mdash; and how you would like to hear about it.</p>
+      <p>Everything addressed to the Committee, in one place, and how you would like to hear about it.</p>
     </div>
     <form method="post" action="{% url 'notifications:mark_all_read' 'committee' %}">
       {% csrf_token %}

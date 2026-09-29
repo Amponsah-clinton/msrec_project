@@ -64,12 +64,12 @@
         <div class="meeting-picker-select-wrap">
           <select id="meetingSelect" class="field-input" aria-label="Choose a meeting" onchange="if(this.value){window.location='{% url 'secretariat_dashboard:meetings_minutes' %}?meeting='+this.value}">
             {% for m in meetings %}
-            <option value="{{ m.pk }}" {% if meeting and meeting.pk == m.pk %}selected{% endif %}>{{ m.title }} &mdash; {{ m.scheduled_at|date:"d M Y, g:i A" }}</option>
+            <option value="{{ m.pk }}" {% if meeting and meeting.pk == m.pk %}selected{% endif %}>{{ m.title }} &nbsp;&bull;&nbsp; {{ m.scheduled_at|date:"d M Y, g:i A" }}</option>
             {% endfor %}
           </select>
           <svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>
         </div>
-        {% if meetings %}<span class="meeting-picker-count">{{ meetings|length }} meeting{{ meetings|length|pluralize }} on file</span>{% else %}<span class="meeting-picker-meta">No meetings yet &mdash; <a href="{% url 'secretariat_dashboard:meetings_schedule' %}">schedule one</a>.</span>{% endif %}
+        {% if meetings %}<span class="meeting-picker-count">{{ meetings|length }} meeting{{ meetings|length|pluralize }} on file</span>{% else %}<span class="meeting-picker-meta">No meetings yet. <a href="{% url 'secretariat_dashboard:meetings_schedule' %}">Schedule one</a>.</span>{% endif %}
       </div>
 
 {% if meeting %}
@@ -107,7 +107,7 @@
           </div>
           {% else %}
           <div class="minutes-status-banner draft">
-            <span>Draft &mdash; not yet finalized.</span>
+            <span>Draft: not yet finalized.</span>
           </div>
           {% endif %}
           <form method="post" action="{% url 'secretariat_dashboard:minutes_save' %}">

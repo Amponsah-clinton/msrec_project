@@ -10,7 +10,7 @@
 
       <div class="topbar-title">
         <h1>Revisions Required</h1>
-        <p>Action needed &mdash; a reviewer has requested changes</p>
+        <p>Action needed: a reviewer has requested changes</p>
       </div>
       <div class="topbar-actions">
         <div class="search-box">
@@ -36,7 +36,7 @@
         <div class="revision-top">
           <div class="revision-title">
             <h3>{{ application.title }}</h3>
-            <span>{{ application.reference_no|default:"&mdash;" }}{% if application.revision_requested_at %} &middot; Requested {{ application.revision_requested_at|date:"j M Y" }}{% endif %}</span>
+            <span>{{ application.reference_no|default:"" }}{% if application.revision_requested_at %} &middot; Requested {{ application.revision_requested_at|date:"j M Y" }}{% endif %}</span>
           </div>
         </div>
         {% if application.revision_comment %}
@@ -59,13 +59,13 @@
             {% for item in application.revision_items %}<li>{{ item }}</li>{% endfor %}
           </ol>
           {% endif %}
-          <p class="reviewer-comments-footnote">Fix what's noted above and resubmit &mdash; no review fee is charged again.</p>
+          <p class="reviewer-comments-footnote">Fix what's noted above and resubmit. No review fee is charged again.</p>
         </div>
         {% else %}
         <div class="comment-list">
           <div class="comment-item">
             <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
-            <p>MSREC has requested changes to this application.<span>Message the Secretariat to see the full feedback, then resubmit &mdash; no review fee is charged again.</span></p>
+            <p>MSREC has requested changes to this application.<span>Message the Secretariat to see the full feedback, then resubmit. No review fee is charged again.</span></p>
           </div>
         </div>
         {% endif %}

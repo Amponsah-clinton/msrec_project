@@ -33,7 +33,7 @@
       <div class="page-head">
         <div class="page-head-text">
           <h2>Formal Approval Letters</h2>
-          <p>Issued once a study clears review &mdash; keep these on file for funders, journals and institutional audits.</p>
+          <p>Issued once a study clears review. Keep these on file for funders, journals and institutional audits.</p>
         </div>
       </div>
 
@@ -43,7 +43,7 @@
           <div class="doc-row">
             <div class="doc-icon approval"><svg viewBox="0 0 24 24"><path d="M12 2 3 6v6c0 5 4 8.5 9 10 5-1.5 9-5 9-10V6l-9-4Z"/><path d="M9 12l2 2 4-4"/></svg></div>
             <div class="doc-info">
-              <h4 class="doc-name">{{ application.reference_no|default:"Reference pending" }} &mdash; {{ application.title }}</h4>
+              <h4 class="doc-name">{{ application.reference_no|default:"Reference pending" }}: {{ application.title }}</h4>
               <span class="doc-meta">Approved {{ application.decided_at|date:"d M Y" }} &nbsp;&bull;&nbsp; Valid until {{ application.approval_expires_at|date:"d M Y" }}</span>
             </div>
             <div class="doc-trailing">

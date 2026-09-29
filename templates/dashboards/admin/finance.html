@@ -144,7 +144,7 @@
                 <td data-label="Date"><span class="due-main">{{ payment.created_at|date:"d M Y, g:i A" }}</span></td>
               </tr>
               {% empty %}
-              <tr><td colspan="6" style="text-align:center; color:var(--text-faint); padding:32px 0;">{% if has_active_filters or active_tab != 'all' %}No payments match the current filters.{% else %}No payments recorded yet &mdash; they'll appear here the moment an applicant pays a review fee.{% endif %}</td></tr>
+              <tr><td colspan="6" style="text-align:center; color:var(--text-faint); padding:32px 0;">{% if has_active_filters or active_tab != 'all' %}No payments match the current filters.{% else %}No payments recorded yet. They'll appear here the moment an applicant pays a review fee.{% endif %}</td></tr>
               {% endfor %}
             </tbody>
           </table>

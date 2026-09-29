@@ -54,7 +54,7 @@
             <tbody>
               {% for application in applications %}
               <tr>
-                <td data-label="Ref No." class="ref-cell">{{ application.reference_no|default:"&mdash;" }}</td>
+                <td data-label="Ref No." class="ref-cell">{{ application.reference_no|default:"" }}</td>
                 <td data-label="Study Title">{{ application.title }}{% if application.resubmitted_at %} <span class="badge text-bg-primary" title="Resubmitted {{ application.resubmitted_at|date:'j M Y' }}" style="font-size:10.5px; padding:2px 7px;">Revised</span>{% endif %}</td>
                 <td data-label="Submitted"><span class="due-main">{{ application.submitted_at|date:"d M Y" }}</span></td>
                 <td data-label="Screening Status"><span class="badge text-bg-primary">Pending Screening</span></td>
@@ -73,7 +73,7 @@
               </tr>
               {% empty %}
               <tr>
-                <td colspan="5" style="text-align:center; color:var(--text-faint); padding:24px 0;">Nothing here yet &mdash; submitted applications await Secretariat screening.</td>
+                <td colspan="5" style="text-align:center; color:var(--text-faint); padding:24px 0;">Nothing here yet. Submitted applications await Secretariat screening.</td>
               </tr>
               {% endfor %}
             </tbody>

@@ -38,14 +38,14 @@
           <div class="ad-kpi-top">
             <span class="ad-ico green"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg></span>
           </div>
-          <p class="ad-kpi-value">{% if approval_rate is not None %}{{ approval_rate }}%{% else %}&mdash;{% endif %}</p>
+          <p class="ad-kpi-value">{% if approval_rate is not None %}{{ approval_rate }}%{% else %}{% endif %}</p>
           <p class="ad-kpi-label">Approval rate (of decided)</p>
         </div>
         <div class="ad-kpi">
           <div class="ad-kpi-top">
             <span class="ad-ico purple"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg></span>
           </div>
-          <p class="ad-kpi-value">{% if avg_turnaround is not None %}{{ avg_turnaround }}{% else %}&mdash;{% endif %}</p>
+          <p class="ad-kpi-value">{% if avg_turnaround is not None %}{{ avg_turnaround }}{% else %}{% endif %}</p>
           <p class="ad-kpi-label">Avg. decision turnaround (days)</p>
         </div>
         <div class="ad-kpi">

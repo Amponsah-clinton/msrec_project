@@ -15,7 +15,7 @@
 {% endblock %}
 
 {% block topbar %}
-      {% include "dashboards/admin/_topbar.html" with page_title="Site Settings" page_subtitle="Control what the public site and checkout actually show &mdash; changes apply immediately, no redeploy needed" %}
+      {% include "dashboards/admin/_topbar.html" with page_title="Site Settings" page_subtitle="Control what the public site and checkout actually show. Changes apply immediately, no redeploy needed" %}
 {% endblock %}
 
 {% block main_content %}
@@ -125,14 +125,14 @@
                       {% if using_env_public_key %}<span class="badge settings-badge text-bg-secondary">Using server default</span>{% endif %}
                     </label>
                     <input type="text" id="paystackPublicKey" name="paystack_public_key" value="{{ site.paystack_public_key }}" placeholder="{{ env_paystack_public_key }}" autocomplete="off">
-                    <p class="field-hint">Safe to show client-side &mdash; sent to the browser on the payment page.</p>
+                    <p class="field-hint">Safe to show client-side. Sent to the browser on the payment page.</p>
                   </div>
                   <div class="field field-wide">
                     <label for="paystackSecretKey">Secret Key
                       {% if using_env_secret_key %}<span class="badge settings-badge text-bg-secondary">Using server default</span>{% endif %}
                     </label>
                     <input type="password" id="paystackSecretKey" name="paystack_secret_key" placeholder="{% if paystack_secret_key_masked %}{{ paystack_secret_key_masked }}{% else %}Not set{% endif %}" autocomplete="off">
-                    <p class="field-hint">Never shown once saved. Leave blank to keep the current key &mdash; type a new one only to replace it.</p>
+                    <p class="field-hint">Never shown once saved. Leave blank to keep the current key. Type a new one only to replace it.</p>
                   </div>
                 </div>
 
@@ -394,7 +394,7 @@
               <div class="cs-head">
                 <div>
                   <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M12 15a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z"/><path d="m8.5 13.5-1.5 7.5 5-3 5 3-1.5-7.5"/></svg> Certificate Signatory</h3>
-                  <p class="section-note" style="margin-bottom:0;">The Chair is the only person named and signing on every awarded certificate &mdash; Peer Review and Membership, past and future. Changes apply everywhere as soon as you save.</p>
+                  <p class="section-note" style="margin-bottom:0;">The Chair is the only person named and signing on every awarded certificate: Peer Review and Membership, past and future. Changes apply everywhere as soon as you save.</p>
                 </div>
                 <div class="cs-head-actions">
                   <a href="{% url 'admin_dashboard:certificate_preview' %}" target="_blank" rel="noopener" class="cs-link-btn">
@@ -421,7 +421,7 @@
                   <div class="cs-title" id="csPrevTitle">{{ site.chair_title|default:"Chair of the Committee" }}</div>
                 </div>
                 <p class="cs-preview-status" id="csStatus" data-saved="{% if chair_signature_url %}saved{% else %}none{% endif %}">
-                  {% if chair_signature_url %}<i class="dot ok"></i> Saved signature in use{% else %}<i class="dot"></i> No signature saved &mdash; certificates show a blank line to sign by hand{% endif %}
+                  {% if chair_signature_url %}<i class="dot ok"></i> Saved signature in use{% else %}<i class="dot"></i> No signature saved. Certificates show a blank line to sign by hand{% endif %}
                 </p>
               </div>
 
@@ -460,7 +460,7 @@
                     <span class="cs-pad-x" aria-hidden="true">&times;</span>
                     <span class="cs-pad-hint" id="sigPadHint" aria-hidden="true">Sign here</span>
                   </div>
-                  <p class="cs-hint cs-pad-tip">Sign naturally with a mouse, finger or stylus &mdash; the line thickens when you slow down and thins when you move quickly, just like a pen. A stylus also responds to pressure.</p>
+                  <p class="cs-hint cs-pad-tip">Sign naturally with a mouse, finger or stylus: the line thickens when you slow down and thins when you move quickly, just like a pen. A stylus also responds to pressure.</p>
                   <div class="cs-pad-foot">
                     <div class="cs-inks" role="group" aria-label="Ink colour">
                       <button type="button" class="cs-ink active" data-ink="blue" aria-pressed="true" title="Blue ink"><i style="background:#1d3b8f"></i> Blue ink</button>
@@ -482,7 +482,7 @@
                     <input type="file" id="sigFile" name="signature_file" accept="image/png,image/jpeg,image/webp">
                     <span class="cs-drop-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>
                     <strong id="sigDropTitle">Drop a signature image here, or <u>browse</u></strong>
-                    <span class="cs-hint">PNG, JPG or WEBP up to 8&nbsp;MB. A photo or scan on plain paper works &mdash; the background is removed and the signature is cropped to fit.</span>
+                    <span class="cs-hint">PNG, JPG or WEBP up to 8&nbsp;MB. A photo or scan on plain paper works. The background is removed and the signature is cropped to fit.</span>
                   </label>
                 </div>
 

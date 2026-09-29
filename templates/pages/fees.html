@@ -16,7 +16,7 @@
     <section class="fees-hero section">
       <div class="container section-title" data-aos="fade-up">
         <h2>Fees</h2>
-        <p>Review fees fund the administrative cost of independent review &mdash; they are never a condition of approval. Every price below is live and admin-maintained, not fixed at launch.</p>
+        <p>Review fees fund the administrative cost of independent review. They are never a condition of approval. Every price below is live and admin-maintained, not fixed at launch.</p>
       </div>
     </section>
 
@@ -25,7 +25,7 @@
       <div class="container" data-aos="fade-up">
         <div class="fees-section-head">
           <h3>New Application Fees</h3>
-          <p>Priced by applicant / study category &mdash; not by review pathway. MSREC assigns your study to Determination/Exemption, Expedited or Full Committee review during screening; the category below is what decides what you pay.</p>
+          <p>Priced by applicant / study category, not by review pathway. MSREC assigns your study to Determination/Exemption, Expedited or Full Committee review during screening; the category below is what decides what you pay.</p>
         </div>
 
         <div class="row g-4">
@@ -60,7 +60,7 @@
             <p>For studies that may qualify for minimal-risk or exempt status. One flat fee, regardless of applicant category.</p>
           </div>
           <span class="fees-callout-amount">
-            {% if exemption_fee %}{{ exemption_fee.currency }} {{ exemption_fee.amount|floatformat:"0g" }}{% else %}&mdash;{% endif %}
+            {% if exemption_fee %}{{ exemption_fee.currency }} {{ exemption_fee.amount|floatformat:"0g" }}{% else %}{% endif %}
           </span>
         </div>
       </div>
