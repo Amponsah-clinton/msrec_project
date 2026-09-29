@@ -1,3 +1,4 @@
+import logging
 import uuid
 
 from django.contrib import messages
@@ -17,6 +18,8 @@ from notifications.services import notify
 from . import storage
 from .forms import LoginForm, SignupForm
 from .models import PasswordResetCode, User
+
+logger = logging.getLogger(__name__)
 
 # Session key holding the email address a Forgot Password flow is in
 # progress for -- set by forgot_password(), read (and cleared) by
@@ -99,7 +102,7 @@ def _notify_staff_of_role_request(user, roles_text):
             pass
 
 
-def _send_role_pending_email(user):
+def _send_role_pending_email(request, user):
     """Sent once, right at signup, to whoever ticked Reviewer and/or
     Committee Member -- so "nothing happened, I was just dropped on the
     Applicant dashboard" never reads as the system having lost their
@@ -114,27 +117,34 @@ def _send_role_pending_email(user):
             f"right away while your {roles_text} request is being reviewed."
         )
     else:
-        # Didn't tick Applicant -- don't claim access they never asked
-        # for. See accounts.models.User.awaiting_role_only.
         access_note = (
-            f"You don't have applicant access, since you didn't request it — this account exists "
+            f"You don't have applicant access, since you didn't request it -- this account exists "
             f"solely for your {roles_text} request."
         )
-    return send_branded_email(
-        subject=f"MSREC — your {roles_text} request is under review",
-        to=user.email,
-        heading="Your request is under review",
-        paragraphs=[
-            f"Hi {user.full_name},",
-            f"Thank you for signing up to MSREC. Your request to join as {roles_text} has been "
-            f"received and is now going through review.",
-            "The MSREC Secretariat will look into your details and get back to you. As soon as your "
-            "request is approved, we'll send you another email with your MSREC Ethics ID, "
-            "Membership Certificate and login details.",
-            access_note,
-        ],
-        preheader=f"Your {roles_text} request is going through review by the MSREC Secretariat.",
-    )
+    login_url = request.build_absolute_uri(reverse("pages:login"))
+    logger.info("Sending role-pending email to %s for %s", user.email, roles_text)
+    try:
+        sent = send_branded_email(
+            subject=f"MSREC -- your {roles_text} request is under review",
+            to=user.email,
+            heading="Your request is under review",
+            paragraphs=[
+                f"Hi {user.full_name},",
+                f"Thank you for signing up to MSREC. Your request to join as {roles_text} has been "
+                f"received and is now being vetted by the MSREC Secretariat.",
+                "Your application will be carefully reviewed. Once approved, we will send you another "
+                "email with your MSREC Ethics ID, Membership Certificate and login details.",
+                access_note,
+            ],
+            cta_text="Log in to MSREC",
+            cta_url=login_url,
+            preheader=f"Your {roles_text} request is being vetted by the MSREC Secretariat.",
+        )
+        logger.info("Role-pending email to %s: sent=%s", user.email, sent)
+        return sent
+    except Exception:
+        logger.exception("Failed to send role-pending email to %s", user.email)
+        return False
 
 
 def _send_reset_code(user):
@@ -361,7 +371,10 @@ def signup(request):
 
             user.set_password(cd["password"])
             user.save()
-            _send_welcome_email(request, user)
+            try:
+                _send_welcome_email(request, user)
+            except Exception:
+                logger.exception("Welcome email failed for %s", user.email)
 
             auth_login(request, user)
             request.session["ua"] = request.META.get("HTTP_USER_AGENT", "")[:300]
@@ -369,7 +382,7 @@ def signup(request):
             request.session["login_at"] = timezone.now().isoformat()
 
             if user.has_pending_requests:
-                emailed = _send_role_pending_email(user)
+                emailed = _send_role_pending_email(request, user)
                 role_labels = [User.Role(role).label for role in user.requested_roles]
                 roles_text = " and ".join(role_labels)
                 _notify_staff_of_role_request(user, roles_text)
