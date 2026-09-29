@@ -150,8 +150,18 @@ def _env_bool(name, default):
     return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
 
 
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
 _email_host = os.getenv("EMAIL_HOST", "").strip()
-if _email_host:
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+
+if RESEND_API_KEY:
+    # Preferred path: Resend's HTTPS API. Works on hosts that firewall
+    # outbound SMTP ports (25/465/587), which is what was silently swallowing
+    # every signup "pending approval" and admin approval email -- SMTP just
+    # timed out, fail_silently=True hid it, and the recipient never got
+    # anything. See notifications/resend_backend.py.
+    EMAIL_BACKEND = "notifications.resend_backend.ResendEmailBackend"
+elif _email_host:
     EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
     EMAIL_HOST = _email_host
     EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
@@ -173,15 +183,11 @@ if _email_host:
     # Django 500. Bounding it here means a bad SMTP connection fails fast
     # (notifications.emails.send_branded_email's fail_silently=True already
     # catches that and just logs it) instead of taking the request down.
-    EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "") or os.getenv(
     "DEFAULT_FROM_EMAIL", "MSREC Secretariat <no-reply@msrec.org>"
 )
-# Not wired into any view yet (EMAIL_HOST_PASSWORD above is what SMTP
-# actually uses) -- kept available for future direct use of Resend's API.
-RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 
 # ---- BMS / mNotify SMS (see notifications/sms.py) ----
 # The key belongs in .env, not here. Sender ID is capped at 11 chars by
