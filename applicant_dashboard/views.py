@@ -517,7 +517,7 @@ def institution(request):
     return render(request, "dashboards/applicant/institution-affiliation.html")
 
 
-def _handle_update_profile(request):
+def _handle_update_personal_info(request):
     user = request.user
     title = request.POST.get("title", "").strip()
     first_name = request.POST.get("first_name", "").strip()
@@ -546,48 +546,49 @@ def _handle_update_profile(request):
     user.phone = phone
     user.orcid = orcid
     user.email = email
-    user.two_factor_app = bool(request.POST.get("two_factor_app"))
-    user.two_factor_sms = bool(request.POST.get("two_factor_sms"))
-    user.notify_new_signin = bool(request.POST.get("notify_new_signin"))
+    user.save(update_fields=["title", "first_name", "last_name", "phone", "orcid", "email"])
+    messages.success(request, "Personal information updated.")
 
-    update_fields = [
-        "title", "first_name", "last_name", "phone", "orcid", "email",
-        "two_factor_app", "two_factor_sms", "notify_new_signin",
-    ]
 
-    # Password change is optional and bundled into the same "Save Changes"
-    # submit -- any of the three fields being filled in triggers full
-    # validation of all three, rather than silently ignoring a half-filled
-    # attempt.
+def _handle_update_password(request):
+    user = request.user
     current_password = request.POST.get("current_password", "")
     new_password = request.POST.get("new_password", "")
     confirm_password = request.POST.get("confirm_password", "")
-    if current_password or new_password or confirm_password:
-        if not current_password or not user.check_password(current_password):
-            messages.error(request, "Your current password is incorrect.")
-            return
-        if new_password != confirm_password:
-            messages.error(request, "New password and confirmation don't match.")
-            return
-        try:
-            validate_password(new_password, user=user)
-        except ValidationError as exc:
-            for msg in exc.messages:
-                messages.error(request, msg)
-            return
-        user.set_password(new_password)
-        update_fields.append("password")
 
-    user.save(update_fields=update_fields)
-    if "password" in update_fields:
-        # Changing the password rotates Django's session auth hash --
-        # without this the applicant would be logged out by their own
-        # password change on the very page they just used to make it.
-        update_session_auth_hash(request, user)
-        send_password_changed_email(user, request)
-        messages.success(request, "Profile updated and password changed.")
-    else:
-        messages.success(request, "Profile updated.")
+    if not current_password or not new_password or not confirm_password:
+        messages.error(request, "Fill in your current password and the new password twice.")
+        return
+    if not user.check_password(current_password):
+        messages.error(request, "Your current password is incorrect.")
+        return
+    if new_password != confirm_password:
+        messages.error(request, "New password and confirmation don't match.")
+        return
+    try:
+        validate_password(new_password, user=user)
+    except ValidationError as exc:
+        for msg in exc.messages:
+            messages.error(request, msg)
+        return
+
+    user.set_password(new_password)
+    user.save(update_fields=["password"])
+    # Changing the password rotates Django's session auth hash -- without
+    # this the applicant would be logged out by their own password change
+    # on the very page they just used to make it.
+    update_session_auth_hash(request, user)
+    send_password_changed_email(user, request)
+    messages.success(request, "Password changed.")
+
+
+def _handle_update_two_factor(request):
+    user = request.user
+    user.two_factor_app = bool(request.POST.get("two_factor_app"))
+    user.two_factor_sms = bool(request.POST.get("two_factor_sms"))
+    user.notify_new_signin = bool(request.POST.get("notify_new_signin"))
+    user.save(update_fields=["two_factor_app", "two_factor_sms", "notify_new_signin"])
+    messages.success(request, "Security preferences updated.")
 
 
 def _handle_update_avatar(request):
@@ -635,8 +636,12 @@ def _handle_revoke_session(request):
 def profile_security(request):
     if request.method == "POST":
         action = request.POST.get("action")
-        if action == "update_profile":
-            _handle_update_profile(request)
+        if action == "update_personal_info":
+            _handle_update_personal_info(request)
+        elif action == "update_password":
+            _handle_update_password(request)
+        elif action == "update_two_factor":
+            _handle_update_two_factor(request)
         elif action == "update_avatar":
             _handle_update_avatar(request)
         elif action == "remove_avatar":

@@ -22,37 +22,32 @@
                 <legend>Action</legend>
                 <label class="acct-kind-opt">
                   <input type="radio" name="suspension_kind" value="suspend" checked>
-                  <span><strong>Suspend</strong><small>Temporary &mdash; the account can be reactivated later.</small></span>
+                  <span><strong>Suspend</strong><small>Reactivate anytime</small></span>
                 </label>
                 <label class="acct-kind-opt is-ban">
                   <input type="radio" name="suspension_kind" value="ban">
-                  <span><strong>Ban</strong><small>Permanent &mdash; access is withdrawn for good.</small></span>
+                  <span><strong>Ban</strong><small>Permanent</small></span>
                 </label>
               </fieldset>
 
               <div class="acct-reason">
                 <label for="suspendReason">Reason <span class="acct-optional">optional</span></label>
-                <textarea name="reason" id="suspendReason" rows="7" maxlength="1500"
-                          placeholder="e.g. Following a complaint received on 3 September 2026, the Secretariat found that confidential protocol documents assigned to you were shared outside the Committee, in breach of the MSREC Confidentiality Agreement."></textarea>
+                <textarea name="reason" id="suspendReason" rows="4" maxlength="1500"
+                          placeholder="e.g. Repeated breach of the confidentiality agreement"></textarea>
                 <div class="acct-reason-meta">
-                  <span class="acct-fit" id="suspendFit" data-state="idle">Type the reason to check how it fits on the letter.</span>
+                  <span class="acct-fit" id="suspendFit" data-state="idle">Blank uses a default line on the letter.</span>
                   <span class="acct-count" id="suspendCount">0 / 1500</span>
                 </div>
-                <p class="acct-reason-hint">Printed on the A4 letter in its own box and quoted in the email. A blank line starts a new paragraph; one item per line keeps a list. Leave blank and the letter reads &ldquo;No specific reason was provided at the time of this action.&rdquo;</p>
               </div>
 
               <div class="acct-until" id="suspendUntilWrap">
                 <label for="suspendUntil">Access restored on <span class="acct-optional">optional</span></label>
                 <input type="datetime-local" name="suspended_until" id="suspendUntil">
-                <p class="acct-until-hint">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
-                  Set a date/time and the account signs itself back in automatically at that moment &mdash; no one has to remember to reactivate it. Included in the email and the letter. Leave blank for an indefinite suspension; bans have no restore date.
-                </p>
+                <p class="acct-until-hint">Blank means indefinite, until reactivated.</p>
               </div>
 
               <p class="acct-suspend-note">
-                <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
-                <span>They're signed out immediately, and an email with the letter (PDF) attached is sent to <strong id="suspendEmail"></strong>.</span>
+                <span>Signs them out now and emails the letter to <strong id="suspendEmail"></strong>.</span>
               </p>
             </div>
 

@@ -103,7 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
       count.textContent = `${length} / ${max}`;
       count.classList.toggle("is-near", length > max * 0.9);
       if (!reason.value.trim()) {
-        setFit("idle", "Optional — leave it blank and the letter uses a default line instead.");
+        setFit("idle", "Blank uses a default line on the letter.");
         return;
       }
       setFit("busy", "Checking the fit on A4…");

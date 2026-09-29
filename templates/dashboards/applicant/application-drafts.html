@@ -32,8 +32,8 @@
 {% block main_content %}
 
 
-      <div class="page-head" style="justify-content:flex-end;">
-        <a href="{% url 'applicant_dashboard:application_new' %}" class="btn-primary">
+      <div class="page-head">
+        <a href="{% url 'applicant_dashboard:application_new' %}" class="btn-primary" style="width:100%; justify-content:center; margin-left:0;">
           <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
           New Draft
         </a>
@@ -58,11 +58,17 @@
                 <td data-label="Completion">
                   <div class="completion-wrap"><div class="completion-track"><div class="completion-fill" style="width:{{ draft.completion_pct }}%;"></div></div><span class="completion-pct">{{ draft.completion_pct }}%</span></div>
                 </td>
-                <td data-label="Action" style="gap:6px; display:flex;">
-                  <a href="{% url 'applicant_dashboard:application_form' %}?draft={{ draft.pk }}" class="action-btn" aria-label="Continue editing"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg></a>
+                <td data-label="Action" class="drafts-actions">
+                  <a href="{% url 'applicant_dashboard:application_form' %}?draft={{ draft.pk }}" class="action-btn" aria-label="Continue editing">
+                    <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/></svg>
+                    <span class="action-btn-label">Edit</span>
+                  </a>
                   <form method="post" action="{% url 'applicant_dashboard:application_draft_delete' draft.pk %}" data-confirm="Delete the draft “{{ draft.title }}”? This cannot be undone." data-confirm-variant="danger" data-confirm-label="Delete" style="display:contents;">
                     {% csrf_token %}
-                    <button type="submit" class="action-btn" aria-label="Delete draft"><svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button>
+                    <button type="submit" class="action-btn danger" aria-label="Delete draft">
+                      <svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                      <span class="action-btn-label">Delete</span>
+                    </button>
                   </form>
                 </td>
               </tr>
