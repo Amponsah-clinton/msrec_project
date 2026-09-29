@@ -80,7 +80,282 @@
       </div>
     </div>
 
-  
+    {% if suspended_modal %}
+    <div class="sus-modal-overlay" id="susModalOverlay">
+      <div class="sus-modal" role="dialog" aria-modal="true" aria-labelledby="susModalTitle">
+        <div class="sus-modal-visual" aria-hidden="true">
+          <div class="sus-modal-ring"></div>
+          <div class="sus-modal-ring sus-modal-ring-2"></div>
+          <span class="sus-modal-icon">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </span>
+        </div>
+        <div class="sus-modal-body">
+          <span class="sus-modal-eyebrow">Account temporarily suspended</span>
+          <h2 id="susModalTitle">You'll be able to sign in on&hellip;</h2>
+          <div class="sus-modal-when">
+            <div class="sus-modal-when-date">
+              <span class="sus-modal-when-label">Access restored</span>
+              <strong>{{ suspended_modal.until|date:"l, j F Y" }}</strong>
+              <span class="sus-modal-when-time">at {{ suspended_modal.until|time:"g:i A" }}</span>
+            </div>
+            <div class="sus-modal-countdown" data-sus-until="{{ suspended_modal.until|date:'c' }}">
+              <span class="sus-modal-countdown-cell"><strong id="susDays">&mdash;</strong><span>days</span></span>
+              <span class="sus-modal-countdown-cell"><strong id="susHours">&mdash;</strong><span>hrs</span></span>
+              <span class="sus-modal-countdown-cell"><strong id="susMinutes">&mdash;</strong><span>min</span></span>
+              <span class="sus-modal-countdown-cell"><strong id="susSeconds">&mdash;</strong><span>sec</span></span>
+            </div>
+          </div>
+          {% if suspended_modal.reason %}
+          <details class="sus-modal-reason">
+            <summary>Why? &nbsp;<span>See the reason on record</span></summary>
+            <p>{{ suspended_modal.reason|linebreaksbr }}</p>
+          </details>
+          {% endif %}
+          <p class="sus-modal-note">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
+            The full notice was emailed to <strong>{{ suspended_modal.email }}</strong>, with the formal letter attached.
+          </p>
+          <div class="sus-modal-actions">
+            <button type="button" class="btn-secondary" id="susModalClose">Back to sign in</button>
+            <a href="{% url 'pages:contact' %}" class="btn-primary">Contact the Secretariat</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <style>
+      .sus-modal-overlay {
+        position: fixed; inset: 0;
+        background: rgba(10, 20, 24, 0.62);
+        backdrop-filter: blur(6px);
+        display: flex; align-items: center; justify-content: center;
+        padding: 24px;
+        z-index: 500;
+        animation: susFadeIn .25s ease;
+      }
+      @keyframes susFadeIn { from { opacity: 0; } to { opacity: 1; } }
+      .sus-modal {
+        width: 100%; max-width: 560px;
+        background: #ffffff;
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 30px 80px -20px rgba(9, 30, 40, 0.55);
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        animation: susPop .35s cubic-bezier(.34, 1.56, .64, 1);
+      }
+      @keyframes susPop { from { transform: translateY(14px) scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+      .sus-modal-visual {
+        position: relative;
+        background:
+          radial-gradient(120% 100% at 50% 0%, color-mix(in srgb, var(--accent-color, #0d9488), transparent 78%) 0%, transparent 60%),
+          linear-gradient(180deg, #0f2a36 0%, #12333f 100%);
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden;
+      }
+      .sus-modal-ring {
+        position: absolute; width: 200px; height: 200px;
+        border: 2px solid color-mix(in srgb, var(--accent-color, #0d9488), transparent 55%);
+        border-radius: 50%;
+        animation: susRing 3s ease-in-out infinite;
+      }
+      .sus-modal-ring-2 { width: 140px; height: 140px; animation-delay: 1s; }
+      @keyframes susRing {
+        0%   { transform: scale(.7); opacity: .85; }
+        70%  { transform: scale(1.35); opacity: 0; }
+        100% { transform: scale(1.35); opacity: 0; }
+      }
+      .sus-modal-icon {
+        position: relative;
+        width: 78px; height: 78px;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--accent-color, #0d9488), transparent 20%);
+        color: #ffffff;
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 12px 30px -10px color-mix(in srgb, var(--accent-color, #0d9488), transparent 40%);
+      }
+      .sus-modal-icon svg {
+        width: 40px; height: 40px;
+        fill: none; stroke: currentColor; stroke-width: 1.8;
+        stroke-linecap: round; stroke-linejoin: round;
+      }
+      .sus-modal-body { padding: 26px 26px 22px; }
+      .sus-modal-eyebrow {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 999px;
+        background: color-mix(in srgb, #b45309, transparent 88%);
+        color: #b45309;
+        font-size: 11px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .06em;
+      }
+      .sus-modal-body h2 {
+        margin: 10px 0 14px;
+        font-size: 20px; font-weight: 700;
+        color: var(--heading-color, #12333f);
+        line-height: 1.3;
+      }
+      .sus-modal-when {
+        padding: 14px;
+        border: 1px solid color-mix(in srgb, var(--default-color, #4a5b60), transparent 88%);
+        border-radius: 14px;
+        background: color-mix(in srgb, var(--accent-color, #0d9488), transparent 95%);
+        margin-bottom: 14px;
+      }
+      .sus-modal-when-date {
+        display: flex; flex-direction: column; gap: 2px;
+        padding-bottom: 12px;
+        border-bottom: 1px dashed color-mix(in srgb, var(--default-color, #4a5b60), transparent 82%);
+        margin-bottom: 12px;
+      }
+      .sus-modal-when-label {
+        font-size: 10.5px; font-weight: 700;
+        text-transform: uppercase; letter-spacing: .05em;
+        color: color-mix(in srgb, var(--default-color, #4a5b60), transparent 25%);
+      }
+      .sus-modal-when-date strong {
+        font-size: 15.5px; font-weight: 700;
+        color: var(--heading-color, #12333f);
+      }
+      .sus-modal-when-time {
+        font-size: 12.5px;
+        color: color-mix(in srgb, var(--default-color, #4a5b60), transparent 20%);
+      }
+      .sus-modal-countdown {
+        display: grid; grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+      }
+      .sus-modal-countdown-cell {
+        display: flex; flex-direction: column;
+        align-items: center;
+        padding: 8px 4px;
+        background: #ffffff;
+        border-radius: 10px;
+        border: 1px solid color-mix(in srgb, var(--default-color, #4a5b60), transparent 88%);
+      }
+      .sus-modal-countdown-cell strong {
+        font-size: 20px; font-weight: 700;
+        color: var(--accent-color, #0d9488);
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+      }
+      .sus-modal-countdown-cell span {
+        font-size: 10px; font-weight: 600;
+        text-transform: uppercase; letter-spacing: .06em;
+        color: color-mix(in srgb, var(--default-color, #4a5b60), transparent 30%);
+        margin-top: 4px;
+      }
+      .sus-modal-reason {
+        margin-bottom: 12px;
+        border: 1px solid color-mix(in srgb, var(--default-color, #4a5b60), transparent 88%);
+        border-radius: 10px;
+        padding: 10px 12px;
+        background: #fafbfb;
+      }
+      .sus-modal-reason summary {
+        cursor: pointer;
+        list-style: none;
+        font-size: 12.5px; font-weight: 700;
+        color: var(--heading-color, #12333f);
+      }
+      .sus-modal-reason summary::-webkit-details-marker { display: none; }
+      .sus-modal-reason summary span {
+        font-weight: 500;
+        color: color-mix(in srgb, var(--default-color, #4a5b60), transparent 20%);
+      }
+      .sus-modal-reason p {
+        margin: 10px 0 0;
+        font-size: 12.5px; line-height: 1.55;
+        color: color-mix(in srgb, var(--default-color, #4a5b60), transparent 15%);
+      }
+      .sus-modal-note {
+        display: flex; align-items: flex-start; gap: 8px;
+        margin: 0 0 18px;
+        font-size: 12px; line-height: 1.5;
+        color: color-mix(in srgb, var(--default-color, #4a5b60), transparent 25%);
+      }
+      .sus-modal-note svg {
+        flex-shrink: 0; width: 14px; height: 14px;
+        color: var(--accent-color, #0d9488);
+        fill: none; stroke: currentColor; stroke-width: 1.8;
+        margin-top: 2px;
+      }
+      .sus-modal-note strong { color: var(--heading-color, #12333f); font-weight: 600; }
+      .sus-modal-actions {
+        display: flex; gap: 10px; flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .sus-modal-actions .btn-primary,
+      .sus-modal-actions .btn-secondary {
+        padding: 9px 16px;
+        border-radius: 10px;
+        font-size: 13px; font-weight: 600;
+        text-decoration: none;
+        border: 1px solid transparent;
+        cursor: pointer;
+        transition: .15s;
+      }
+      .sus-modal-actions .btn-primary {
+        background: var(--accent-color, #0d9488);
+        color: #ffffff;
+      }
+      .sus-modal-actions .btn-primary:hover { filter: brightness(.95); }
+      .sus-modal-actions .btn-secondary {
+        background: #ffffff;
+        color: var(--heading-color, #12333f);
+        border-color: color-mix(in srgb, var(--default-color, #4a5b60), transparent 82%);
+      }
+      .sus-modal-actions .btn-secondary:hover {
+        border-color: var(--accent-color, #0d9488);
+        color: var(--accent-color, #0d9488);
+      }
+      @media (max-width: 600px) {
+        .sus-modal { grid-template-columns: 1fr; }
+        .sus-modal-visual { height: 130px; }
+      }
+    </style>
+    <script>
+      (function () {
+        var overlay = document.getElementById("susModalOverlay");
+        if (!overlay) return;
+        var closeBtn = document.getElementById("susModalClose");
+        function close() { overlay.remove(); }
+        closeBtn && closeBtn.addEventListener("click", close);
+        overlay.addEventListener("click", function (e) { if (e.target === overlay) close(); });
+        document.addEventListener("keydown", function (e) {
+          if (e.key === "Escape" && document.body.contains(overlay)) close();
+        });
+        var cd = overlay.querySelector(".sus-modal-countdown");
+        if (!cd) return;
+        var target = new Date(cd.dataset.susUntil).getTime();
+        var d = document.getElementById("susDays");
+        var h = document.getElementById("susHours");
+        var m = document.getElementById("susMinutes");
+        var s = document.getElementById("susSeconds");
+        function pad(n) { return n < 10 ? "0" + n : String(n); }
+        function tick() {
+          var diff = target - Date.now();
+          if (diff <= 0) {
+            d.textContent = h.textContent = m.textContent = s.textContent = "00";
+            cd.classList.add("is-done");
+            return;
+          }
+          var sec = Math.floor(diff / 1000);
+          var days = Math.floor(sec / 86400); sec -= days * 86400;
+          var hrs = Math.floor(sec / 3600); sec -= hrs * 3600;
+          var mins = Math.floor(sec / 60); sec -= mins * 60;
+          d.textContent = pad(days);
+          h.textContent = pad(hrs);
+          m.textContent = pad(mins);
+          s.textContent = pad(sec);
+        }
+        tick();
+        setInterval(tick, 1000);
+      })();
+    </script>
+    {% endif %}
+
+
   </main>
 {% endblock %}
 

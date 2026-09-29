@@ -444,9 +444,27 @@ def login_view(request):
             messages.success(request, f"Welcome back, {user.first_name}.")
             next_url = request.POST.get("next") or request.GET.get("next") or ""
             return redirect(_after_login(user, next_url))
+        # A time-boxed suspension raises a ValidationError with an
+        # internal sentinel so the view can render a nicer "you'll be
+        # able to sign in again on ..." modal instead of a flat flash.
+        suspended_modal = None
+        real_errors = []
         for error in form.non_field_errors():
+            if isinstance(error, str) and error.startswith("__SUSPENDED_UNTIL__"):
+                from django.utils.dateparse import parse_datetime
+                iso = error[len("__SUSPENDED_UNTIL__"):]
+                until = parse_datetime(iso)
+                suspended_modal = {
+                    "until": until,
+                    "reason": getattr(form, "suspended_reason", "") or "",
+                    "email": (request.POST.get("email") or "").strip().lower(),
+                }
+                continue
+            real_errors.append(error)
+        for error in real_errors:
             messages.error(request, error)
-        return render(request, "pages/login.html", {"form": form}, status=400)
+        return render(request, "pages/login.html",
+                      {"form": form, "suspended_modal": suspended_modal}, status=400)
 
     form = LoginForm(request=request)
     return render(request, "pages/login.html", {"form": form})

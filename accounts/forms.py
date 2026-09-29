@@ -103,22 +103,50 @@ class LoginForm(forms.Form):
         super().__init__(*args, **kwargs)
 
     def clean(self):
+        from django.utils import timezone
+
         cleaned = super().clean()
         email = cleaned.get("email")
         password = cleaned.get("password")
         if email and password:
             email = email.strip().lower()
 
-          
             try:
                 candidate = User.objects.get(email=email)
             except User.DoesNotExist:
                 candidate = None
 
             if candidate is not None and candidate.check_password(password) and not candidate.is_active:
-                raise forms.ValidationError(
-                    "This account has been suspended. Contact an administrator to have it reactivated."
-                )
+                # A time-boxed suspension: if the moment access is due back
+                # has already passed, auto-lift it and let the sign-in
+                # proceed rather than making the user (or an admin) do
+                # anything. If it's still in the future, stash the exact
+                # moment on the form so the view can render the "you'll be
+                # able to sign in again on ..." modal on templates/pages/
+                # login.html rather than a plain error string.
+                from .models import User as UserModel
+                until = candidate.suspended_until
+                is_ban = candidate.suspension_kind == UserModel.SuspensionKind.BAN
+                if not is_ban and until and until <= timezone.now():
+                    candidate.is_active = True
+                    candidate.suspended_until = None
+                    candidate.save(update_fields=["is_active", "suspended_until"])
+                    # Fall through to authenticate() below.
+                else:
+                    self.suspended_until = until if (not is_ban) else None
+                    self.suspended_banned = is_ban
+                    self.suspended_reason = candidate.suspension_reason or ""
+                    if is_ban:
+                        raise forms.ValidationError(
+                            "This account has been permanently withdrawn. Contact the Secretariat if you believe this is a mistake."
+                        )
+                    if until:
+                        raise forms.ValidationError(
+                            f"__SUSPENDED_UNTIL__{until.isoformat()}"
+                        )
+                    raise forms.ValidationError(
+                        "This account has been suspended. Contact an administrator to have it reactivated."
+                    )
 
             self.user_cache = authenticate(self.request, email=email, password=password)
             if self.user_cache is None:
@@ -127,3 +155,10 @@ class LoginForm(forms.Form):
 
     def get_user(self):
         return self.user_cache
+
+    # Filled during clean() when the sign-in is blocked by an active
+    # time-boxed suspension. The login view reads these to render the
+    # "you'll be able to sign in again on ..." modal.
+    suspended_until = None
+    suspended_banned = False
+    suspended_reason = ""

@@ -562,40 +562,280 @@ body.verify-page {
 .verify-qr-status.is-error { color: #c0392b; }
 .verify-qr-status.is-success { color: #1f7a5c; font-weight: 600; }
 
+/* ----- Upload photo dropzone ---------------------------------------
+   Two-state label: an inviting empty state (icon halo + format chips +
+   privacy line), and a preview state (photo thumb with scan animation +
+   filename/size + Change/Remove buttons). The label itself owns the
+   dashed frame and the hover/drag reactions; inner states swap via
+   [hidden]. Kept as a <label for="qrFileInput"> so it stays a native
+   click target with no JS required to open the picker. */
 .verify-qr-drop {
+  position: relative;
+  display: block;
+  flex: 1;
+  min-height: 210px;
+  padding: 22px 18px;
+  border: 1.5px dashed color-mix(in srgb, var(--accent-color), transparent 55%);
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent-color), transparent 94%) 0%, transparent 60%),
+    #ffffff;
+  color: color-mix(in srgb, var(--default-color), transparent 25%);
+  font-size: 12.5px;
+  line-height: 1.5;
+  cursor: pointer;
+  transition: border-color .2s, background-color .2s, transform .2s, box-shadow .2s;
+  overflow: hidden;
+}
+.verify-qr-drop::after {
+  content: "";
+  position: absolute; inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent-color), transparent 60%);
+  transition: box-shadow .3s;
+}
+.verify-qr-drop:hover {
+  border-color: var(--accent-color);
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent-color), transparent 88%) 0%, transparent 60%),
+    #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 32px -18px color-mix(in srgb, var(--accent-color), transparent 60%);
+}
+.verify-qr-drop.is-dragover {
+  border-color: var(--accent-color);
+  border-style: solid;
+  background: color-mix(in srgb, var(--accent-color), transparent 90%);
+  transform: scale(1.005);
+}
+.verify-qr-drop.is-dragover::after {
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-color), transparent 78%);
+}
+
+/* --- Empty state --------------------------------------------------- */
+.verify-qr-drop-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 12px;
   text-align: center;
-  flex: 1;
-  min-height: 150px;
-  border: 1.5px dashed color-mix(in srgb, var(--accent-color), transparent 62%);
-  border-radius: 14px;
-  background: #ffffff;
-  color: color-mix(in srgb, var(--default-color), transparent 30%);
-  font-size: 12.5px;
-  line-height: 1.5;
-  cursor: pointer;
-  transition: .2s;
-}
-.verify-qr-drop:hover, .verify-qr-drop.is-dragover {
-  background: color-mix(in srgb, var(--accent-color), transparent 94%);
-  border-color: var(--accent-color);
+  height: 100%;
+  min-height: 166px;
 }
 .verify-qr-drop-icon {
-  width: 46px; height: 46px;
+  position: relative;
+  width: 56px; height: 56px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--accent-color), transparent 88%);
+  background: linear-gradient(135deg,
+    color-mix(in srgb, var(--accent-color), transparent 82%) 0%,
+    color-mix(in srgb, var(--accent-color), transparent 92%) 100%);
   color: var(--accent-color);
   display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
-  margin-bottom: 4px;
-  transition: transform .2s;
+  font-size: 24px;
+  margin-bottom: 0;
+  transition: transform .25s cubic-bezier(.34,1.56,.64,1), box-shadow .25s;
+  box-shadow: 0 8px 20px -8px color-mix(in srgb, var(--accent-color), transparent 60%);
 }
-.verify-qr-drop:hover .verify-qr-drop-icon { transform: translateY(-3px); }
-.verify-qr-drop strong { color: var(--heading-color); font-size: 13.5px; }
+.verify-qr-drop-icon-ping {
+  position: absolute; inset: -6px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--accent-color), transparent 55%);
+  opacity: 0;
+  pointer-events: none;
+}
+.verify-qr-drop:hover .verify-qr-drop-icon,
+.verify-qr-drop.is-dragover .verify-qr-drop-icon {
+  transform: translateY(-4px) scale(1.03);
+}
+.verify-qr-drop.is-dragover .verify-qr-drop-icon-ping {
+  animation: verifyQrPing 1.1s ease-out infinite;
+}
+@keyframes verifyQrPing {
+  0%   { transform: scale(.8); opacity: .9; }
+  70%  { transform: scale(1.4); opacity: 0; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.verify-qr-drop-text {
+  display: flex; flex-direction: column; gap: 2px;
+}
+.verify-qr-drop-text strong {
+  display: block;
+  color: var(--heading-color);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+.verify-qr-drop-text span { font-size: 12.5px; }
+.verify-qr-drop-text em {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--accent-color);
+  border-bottom: 1px dashed color-mix(in srgb, var(--accent-color), transparent 55%);
+}
+
+.verify-qr-drop-chips {
+  display: flex; flex-wrap: wrap; justify-content: center;
+  gap: 5px;
+  margin-top: 2px;
+}
+.verify-qr-drop-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-color), transparent 90%);
+  color: var(--accent-color);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.verify-qr-drop-safe {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--heading-color), transparent 96%);
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 88%);
+  color: color-mix(in srgb, var(--default-color), transparent 25%);
+  font-size: 11px;
+  line-height: 1.35;
+  margin-top: 2px;
+}
+.verify-qr-drop-safe i { color: var(--accent-color); font-size: 11px; }
+
+/* --- Preview state ------------------------------------------------- */
+.verify-qr-drop-preview {
+  display: flex; flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  height: 100%;
+  min-height: 166px;
+}
+.verify-qr-drop-preview[hidden] { display: none; }
+.verify-qr-drop-preview-frame {
+  position: relative;
+  height: 140px;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0b1a1a;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--heading-color), transparent 80%);
+}
+.verify-qr-drop-preview-frame img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.verify-qr-drop-preview-scan {
+  position: absolute; left: 0; right: 0;
+  top: 0;
+  height: 2px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--accent-color), transparent 20%) 50%,
+    transparent 100%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent-color), transparent 40%);
+  animation: verifyQrScan 1.8s ease-in-out infinite;
+  pointer-events: none;
+}
+.verify-qr-drop-preview.is-done .verify-qr-drop-preview-scan { display: none; }
+@keyframes verifyQrScan {
+  0%   { top: 0%; opacity: .9; }
+  50%  { top: calc(100% - 2px); opacity: 1; }
+  100% { top: 0%; opacity: .9; }
+}
+
+.verify-qr-drop-preview-meta {
+  display: flex; flex-direction: column;
+  gap: 8px;
+  text-align: left;
+}
+.verify-qr-drop-preview-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-color), transparent 90%);
+  color: var(--accent-color);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.verify-qr-drop-preview-status i {
+  font-size: 11.5px;
+  animation: verifyQrSpin 1s linear infinite;
+}
+.verify-qr-drop-preview.is-done .verify-qr-drop-preview-status {
+  background: color-mix(in srgb, #1f7a5c, transparent 88%);
+  color: #1f7a5c;
+}
+.verify-qr-drop-preview.is-done .verify-qr-drop-preview-status i { animation: none; }
+.verify-qr-drop-preview.is-error .verify-qr-drop-preview-status {
+  background: color-mix(in srgb, #c0392b, transparent 88%);
+  color: #c0392b;
+}
+.verify-qr-drop-preview.is-error .verify-qr-drop-preview-status i { animation: none; }
+@keyframes verifyQrSpin { to { transform: rotate(360deg); } }
+
+.verify-qr-drop-preview-file {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f8fafa;
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 90%);
+  font-size: 12px;
+  color: color-mix(in srgb, var(--heading-color), transparent 20%);
+  min-width: 0;
+}
+.verify-qr-drop-preview-file i { flex-shrink: 0; color: var(--accent-color); }
+.verify-qr-drop-preview-name {
+  flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-weight: 600;
+}
+.verify-qr-drop-preview-size {
+  flex-shrink: 0;
+  color: color-mix(in srgb, var(--default-color), transparent 40%);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+}
+
+.verify-qr-drop-preview-actions {
+  display: flex; gap: 8px;
+  flex-wrap: wrap;
+}
+.verify-qr-drop-preview-btn {
+  appearance: none;
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--default-color), transparent 88%);
+  background: #ffffff;
+  color: color-mix(in srgb, var(--heading-color), transparent 15%);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: .15s;
+}
+.verify-qr-drop-preview-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  background: color-mix(in srgb, var(--accent-color), transparent 94%);
+}
+.verify-qr-drop-preview-btn-clear:hover {
+  border-color: #c0392b;
+  color: #c0392b;
+  background: color-mix(in srgb, #c0392b, transparent 94%);
+}
+.verify-qr-drop-preview-btn i { font-size: 12px; }
+
+/* Keep the label from opening the picker when the user clicks the
+   "Remove" or "Choose another" buttons -- they're stopPropagation'd
+   in JS too, but this stops any residual outline flash. */
+.verify-qr-drop-preview-btn:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
 
 .verify-qr-sample-card {
   appearance: none;

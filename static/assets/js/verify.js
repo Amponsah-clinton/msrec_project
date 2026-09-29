@@ -238,8 +238,65 @@
   var qrCanvas = document.getElementById("qrCanvas");
   var qrStatus = document.getElementById("qrStatus");
 
+  // Preview UI (empty <-> preview state inside the drop label)
+  var qrDropEmpty = document.getElementById("qrDropEmpty");
+  var qrDropPreview = document.getElementById("qrDropPreview");
+  var qrDropPreviewImg = document.getElementById("qrDropPreviewImg");
+  var qrDropPreviewName = document.getElementById("qrDropPreviewName");
+  var qrDropPreviewSize = document.getElementById("qrDropPreviewSize");
+  var qrDropPreviewStatus = document.getElementById("qrDropPreviewStatus");
+  var qrDropClearBtn = document.getElementById("qrDropClear");
+  var qrDropPickAnotherBtn = document.getElementById("qrDropPickAnother");
+  var qrDropPreviewObjectUrl = null;
+
+  function formatBytes(bytes) {
+    if (!bytes && bytes !== 0) return "";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  function setPreviewStatus(mode, label, iconClass) {
+    if (!qrDropPreview || !qrDropPreviewStatus) return;
+    qrDropPreview.classList.remove("is-done", "is-error");
+    if (mode === "done") qrDropPreview.classList.add("is-done");
+    if (mode === "error") qrDropPreview.classList.add("is-error");
+    qrDropPreviewStatus.innerHTML =
+      '<i class="bi ' + (iconClass || "bi-arrow-repeat") + '"></i> ' + label;
+  }
+
+  function showPreview(file) {
+    if (!qrDropEmpty || !qrDropPreview) return;
+    if (qrDropPreviewObjectUrl) {
+      URL.revokeObjectURL(qrDropPreviewObjectUrl);
+      qrDropPreviewObjectUrl = null;
+    }
+    qrDropPreviewObjectUrl = URL.createObjectURL(file);
+    if (qrDropPreviewImg) qrDropPreviewImg.src = qrDropPreviewObjectUrl;
+    if (qrDropPreviewName) qrDropPreviewName.textContent = file.name || "photo";
+    if (qrDropPreviewSize) qrDropPreviewSize.textContent = formatBytes(file.size);
+    setPreviewStatus("scanning", "Reading QR…", "bi-arrow-repeat");
+    qrDropEmpty.hidden = true;
+    qrDropPreview.hidden = false;
+  }
+
+  function clearPreview() {
+    if (qrDropPreviewObjectUrl) {
+      URL.revokeObjectURL(qrDropPreviewObjectUrl);
+      qrDropPreviewObjectUrl = null;
+    }
+    if (qrDropPreviewImg) qrDropPreviewImg.removeAttribute("src");
+    if (qrDropEmpty) qrDropEmpty.hidden = false;
+    if (qrDropPreview) {
+      qrDropPreview.hidden = true;
+      qrDropPreview.classList.remove("is-done", "is-error");
+    }
+    if (qrFileInput) qrFileInput.value = "";
+  }
+
   function decodeImageFile(file) {
     if (!file || !window.jsQR) return;
+    showPreview(file);
     var img = new Image();
     img.onload = function () {
       var ctx = qrCanvas.getContext("2d");
@@ -250,13 +307,18 @@
       var code = window.jsQR(imageData.data, imageData.width, imageData.height);
       if (code && code.data) {
         setQrStatus("QR code recognized. Checking the registry…", "success");
+        setPreviewStatus("done", "QR found — checking the registry…", "bi-check-circle-fill");
         runVerification(code.data);
       } else {
         setQrStatus("Could not read a QR code in that image. Try a clearer photo.", "error");
+        setPreviewStatus("error", "No QR found — try a clearer photo", "bi-exclamation-triangle-fill");
       }
       URL.revokeObjectURL(img.src);
     };
-    img.onerror = function () { setQrStatus("That file couldn’t be opened as an image.", "error"); };
+    img.onerror = function () {
+      setQrStatus("That file couldn’t be opened as an image.", "error");
+      setPreviewStatus("error", "Couldn’t open that file", "bi-exclamation-triangle-fill");
+    };
     img.src = URL.createObjectURL(file);
   }
 
@@ -284,6 +346,25 @@
     qrDrop.addEventListener("drop", function (e) {
       var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
       if (file) decodeImageFile(file);
+    });
+  }
+
+  // Remove: reset preview, clear the file input, don't reopen the picker.
+  if (qrDropClearBtn) {
+    qrDropClearBtn.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      clearPreview();
+      setQrStatus("Camera access is only used locally to read the QR code — nothing is uploaded.", "");
+    });
+  }
+  // Choose another: skip clearing so if the user cancels the picker,
+  // the current preview stays; the label wraps the input so a click
+  // here bubbles up and opens the picker naturally.
+  if (qrDropPickAnotherBtn) {
+    qrDropPickAnotherBtn.addEventListener("click", function (e) {
+      // Let the click bubble to the <label> which opens the file input.
+      // No stopPropagation.
     });
   }
 

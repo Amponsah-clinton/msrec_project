@@ -78,6 +78,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const setFit = (state, text) => { fit.dataset.state = state; fit.textContent = text; };
     const kind = () => (suspendForm.querySelector('input[name="suspension_kind"]:checked') || {}).value || "suspend";
 
+    const untilWrap = document.getElementById("suspendUntilWrap");
+    const untilInput = document.getElementById("suspendUntil");
+
     function syncKind() {
       const ban = kind() === "ban";
       title.textContent = ban ? "Ban account" : "Suspend account";
@@ -85,6 +88,13 @@ document.addEventListener("DOMContentLoaded", () => {
       suspendForm.querySelectorAll(".acct-kind-opt").forEach((opt) => {
         opt.classList.toggle("is-checked", opt.querySelector("input").checked);
       });
+      // Bans are permanent -- no "access restored on" moment. Hide the
+      // field entirely and clear the value so a stale one from a
+      // previous open doesn't get submitted.
+      if (untilWrap && untilInput) {
+        untilWrap.hidden = ban;
+        if (ban) untilInput.value = "";
+      }
     }
 
     function checkFit() {
@@ -129,6 +139,18 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("suspendUserId").value = row.dataset.userId;
         document.getElementById("suspendWho").textContent = row.dataset.fullName;
         document.getElementById("suspendEmail").textContent = row.dataset.email;
+        // Default to 24 hours from now so the field never comes up
+        // blank -- the admin can still push it further out. min="now"
+        // stops them from picking a past moment that would let the user
+        // straight back in.
+        if (untilInput) {
+          const now = new Date();
+          const soon = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+          const pad = (n) => String(n).padStart(2, "0");
+          const fmt = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          untilInput.min = fmt(now);
+          untilInput.value = fmt(soon);
+        }
         syncKind();
         checkFit();
         suspendOverlay.hidden = false;

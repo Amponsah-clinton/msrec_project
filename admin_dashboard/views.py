@@ -292,6 +292,7 @@ def _handle_suspend(request, target, *, suspend):
 
     if suspend:
         from accounts import suspension
+        from django.utils.dateparse import parse_datetime
 
         kind = request.POST.get("suspension_kind") or User.SuspensionKind.SUSPEND
         if kind not in User.SuspensionKind.values:
@@ -306,13 +307,41 @@ def _handle_suspend(request, target, *, suspend):
             messages.error(request, f"Keep the reason under {suspension.REASON_MAX} characters.")
             return
 
+        # "Access restored on <datetime>" -- only meaningful for a
+        # SUSPEND (a BAN is permanent). Optional: if left blank, the
+        # suspension is indefinite and only lifts when someone clicks
+        # Reactivate. The <input type="datetime-local"> gives us a wall-
+        # clock string with no timezone; interpret it in the server's
+        # current tz. Must be strictly in the future or the account
+        # would be able to sign in again immediately.
+        suspended_until_value = None
+        if kind == User.SuspensionKind.SUSPEND:
+            raw_until = (request.POST.get("suspended_until") or "").strip()
+            if raw_until:
+                parsed = parse_datetime(raw_until)
+                if parsed is None:
+                    messages.error(request, "That restore date/time couldn't be understood.")
+                    return
+                if timezone.is_naive(parsed):
+                    parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+                if parsed <= timezone.now():
+                    messages.error(request, "The restore date/time must be in the future.")
+                    return
+                suspended_until_value = parsed
+
     target.is_active = not suspend
     update_fields = ["is_active"]
     if suspend:
         target.suspended_at = timezone.now()
         target.suspension_kind = kind
         target.suspension_reason = reason
-        update_fields += ["suspended_at", "suspension_kind", "suspension_reason"]
+        target.suspended_until = suspended_until_value
+        update_fields += ["suspended_at", "suspension_kind", "suspension_reason", "suspended_until"]
+    else:
+        # Manual reactivation clears the scheduled auto-lift so the field
+        # doesn't linger as stale metadata on an already-reactivated account.
+        target.suspended_until = None
+        update_fields.append("suspended_until")
     target.save(update_fields=update_fields)
     # Suspension must take effect immediately, not just block the next
     # login -- kill every session already open under this account.
@@ -519,15 +548,26 @@ def suspension_notice_download(request, pk):
 
 
 def _suspension_dialog_args(request):
-    """(target, kind, reason) from the Suspend dialog's POST -- what the
-    preview and the live fit check render, before anything is saved."""
+    """(target, kind, reason, restored_at) from the Suspend dialog's POST
+    -- what the preview and the live fit check render, before anything
+    is saved. restored_at is None for a ban or an unset field."""
     from accounts import suspension
+    from django.utils.dateparse import parse_datetime
 
     target = get_object_or_404(User, pk=request.POST.get("user_id"))
     kind = request.POST.get("suspension_kind")
     if kind not in User.SuspensionKind.values:
         kind = User.SuspensionKind.SUSPEND
-    return target, kind, suspension.clean_reason(request.POST.get("reason", ""))
+    restored_at = None
+    if kind == User.SuspensionKind.SUSPEND:
+        raw_until = (request.POST.get("suspended_until") or "").strip()
+        if raw_until:
+            parsed = parse_datetime(raw_until)
+            if parsed is not None:
+                if timezone.is_naive(parsed):
+                    parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+                restored_at = parsed
+    return target, kind, suspension.clean_reason(request.POST.get("reason", "")), restored_at
 
 
 @require_POST
@@ -537,8 +577,9 @@ def suspension_letter_preview(request):
     be sent, with the reason as typed so far. Nothing is saved."""
     from accounts import suspension
 
-    target, kind, reason = _suspension_dialog_args(request)
-    pdf = suspension.render_letter_pdf(target, kind=kind, reason=reason, effective_at=timezone.now())
+    target, kind, reason, restored_at = _suspension_dialog_args(request)
+    pdf = suspension.render_letter_pdf(target, kind=kind, reason=reason,
+                                       effective_at=timezone.now(), restored_at=restored_at)
     response = HttpResponse(pdf, content_type="application/pdf")
     response["Content-Disposition"] = f'inline; filename="preview-{suspension.letter_filename(target, kind)}"'
     return response
@@ -551,8 +592,9 @@ def suspension_letter_fit(request):
     typed so far, fit on one A4 page -- and at what size?"""
     from accounts import suspension
 
-    target, kind, reason = _suspension_dialog_args(request)
-    _pdf, pages, scale = suspension.render_letter(target, kind=kind, reason=reason, effective_at=timezone.now())
+    target, kind, reason, restored_at = _suspension_dialog_args(request)
+    _pdf, pages, scale = suspension.render_letter(target, kind=kind, reason=reason,
+                                                  effective_at=timezone.now(), restored_at=restored_at)
     return JsonResponse({"pages": pages, "scale": scale, "max": suspension.REASON_MAX})
 
 

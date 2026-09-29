@@ -41,6 +41,15 @@
                 <p class="acct-reason-hint">Printed on the A4 letter in its own box and quoted in the email. A blank line starts a new paragraph; one item per line keeps a list.</p>
               </div>
 
+              <div class="acct-until" id="suspendUntilWrap">
+                <label for="suspendUntil">Access restored on <span class="acct-optional">optional</span></label>
+                <input type="datetime-local" name="suspended_until" id="suspendUntil">
+                <p class="acct-until-hint">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+                  Set a date/time and the account signs itself back in automatically at that moment &mdash; no one has to remember to reactivate it. Included in the email and the letter. Leave blank for an indefinite suspension; bans have no restore date.
+                </p>
+              </div>
+
               <p class="acct-suspend-note">
                 <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>
                 <span>They're signed out immediately, and an email with the letter (PDF) attached is sent to <strong id="suspendEmail"></strong>.</span>

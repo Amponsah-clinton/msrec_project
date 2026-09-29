@@ -36,6 +36,7 @@ PLACEHOLDERS = [
     ("account", "“your MSREC account (email)”, plus the appointment and Ethics ID for members"),
     ("reason", "The reason typed when suspending (on its own line it prints as a boxed paragraph)"),
     ("effective_date", "Date the suspension / ban took effect"),
+    ("restored_at", "When access is restored (date + time, for a temporary suspension; blank on a ban)"),
     ("role", "Ethics Reviewer, Committee Member, Applicant, ..."),
     ("ethics_id", "MSREC Ethics ID (members only, otherwise blank)"),
     ("email", "The account's email address"),
@@ -92,7 +93,19 @@ def signatory(template=None):
     return letters.signatory(_template(template))
 
 
-def values(user, *, reason, effective_at, sign):
+def _datetime_text(dt):
+    """Formats an aware datetime for the letter and email: e.g.
+    "5 October 2026 at 4:30 PM". Returns "" for None. Uses django's
+    date filter under the hood so it renders identically on Windows
+    (where strftime's %-d / %-I don't exist) and Linux."""
+    if not dt:
+        return ""
+    from django.utils.dateformat import format as django_format
+    local = timezone.localtime(dt)
+    return django_format(local, "j F Y \\a\\t g:i A")
+
+
+def values(user, *, reason, effective_at, sign, restored_at=None):
     """Every {placeholder} value for one account."""
     ethics_id = getattr(user, "membership_ethics_id", None) or ""
     role = _role_label(user)
@@ -107,6 +120,7 @@ def values(user, *, reason, effective_at, sign):
         "account": account,
         "reason": " ".join((reason or "").split()),
         "effective_date": _date(timezone.localtime(effective_at) if effective_at else None),
+        "restored_at": _datetime_text(restored_at) if restored_at else "",
         "role": role,
         "ethics_id": ethics_id,
         "email": user.email,
@@ -129,13 +143,15 @@ def clean_reason(text):
 reason_blocks = letters.text_blocks
 
 
-def letter_content(user, template=None, *, kind=None, reason=None, effective_at=None):
+def letter_content(user, template=None, *, kind=None, reason=None, effective_at=None, restored_at=None):
     t = _template(template)
     kind = kind or user.suspension_kind or "suspend"
     reason = clean_reason(user.suspension_reason if reason is None else reason)
     effective_at = effective_at or user.suspended_at or timezone.now()
+    if restored_at is None and not is_ban(kind):
+        restored_at = getattr(user, "suspended_until", None)
     sign = signatory(t)
-    v = values(user, reason=reason, effective_at=effective_at, sign=sign)
+    v = values(user, reason=reason, effective_at=effective_at, sign=sign, restored_at=restored_at)
 
     body_template = t.ban_body if is_ban(kind) else t.suspend_body
     # ("text", str) paragraphs, and at most one ("box", ...) reason panel --
@@ -154,6 +170,11 @@ def letter_content(user, template=None, *, kind=None, reason=None, effective_at=
         # The template doesn't mention {reason} at all -- the typed reason
         # must still reach the letter, so it goes after the body.
         body.append(("box", ("Reason", reason_blocks(reason))))
+    # Same safety net for the restored-on moment: if the letter template
+    # doesn't mention {restored_at}, tack it on so a suspended user always
+    # sees when they can sign back in.
+    if restored_at and not is_ban(kind) and "{restored_at}" not in (body_template or ""):
+        body.append(("box", ("Access restored on", [v["restored_at"]])))
 
     return {
         "values": v,
@@ -172,15 +193,15 @@ def letter_content(user, template=None, *, kind=None, reason=None, effective_at=
     }
 
 
-def render_letter(user, template=None, *, kind=None, reason=None, effective_at=None):
+def render_letter(user, template=None, *, kind=None, reason=None, effective_at=None, restored_at=None):
     """(pdf_bytes, page_count, scale) -- see letters.render."""
     t = _template(template)
-    content = letter_content(user, t, kind=kind, reason=reason, effective_at=effective_at)
+    content = letter_content(user, t, kind=kind, reason=reason, effective_at=effective_at, restored_at=restored_at)
     return letters.render(user, content, t)
 
 
-def render_letter_pdf(user, template=None, *, kind=None, reason=None, effective_at=None):
-    return render_letter(user, template, kind=kind, reason=reason, effective_at=effective_at)[0]
+def render_letter_pdf(user, template=None, *, kind=None, reason=None, effective_at=None, restored_at=None):
+    return render_letter(user, template, kind=kind, reason=reason, effective_at=effective_at, restored_at=restored_at)[0]
 
 
 def letter_filename(user, kind=None):
@@ -199,6 +220,8 @@ def send_suspension_email(user):
     banned = is_ban(user.suspension_kind)
     reason = clean_reason(user.suspension_reason)
     effective = _date(timezone.localtime(user.suspended_at)) if user.suspended_at else "today"
+    restored_at = getattr(user, "suspended_until", None)
+    restored_text = _datetime_text(restored_at) if restored_at else ""
     if banned:
         paragraphs_out = [
             f"Dear {user.first_name or user.full_name},",
@@ -207,11 +230,22 @@ def send_suspension_email(user):
             f"and any Reviewer or Committee responsibilities have been withdrawn.",
         ]
     else:
+        if restored_text:
+            second = (
+                f"This is to inform you that your MSREC account has been temporarily suspended by the "
+                f"Secretariat/Administration, with effect from {effective}. You will not be able to sign in, "
+                f"and any Reviewer or Committee duties are paused, until access is automatically restored on "
+                f"{restored_text}."
+            )
+        else:
+            second = (
+                f"This is to inform you that your MSREC account has been suspended by the Secretariat/"
+                f"Administration, with effect from {effective}. You will not be able to sign in, and any "
+                f"Reviewer or Committee duties are paused, until the account is reactivated."
+            )
         paragraphs_out = [
             f"Dear {user.first_name or user.full_name},",
-            f"This is to inform you that your MSREC account has been suspended by the Secretariat/"
-            f"Administration, with effect from {effective}. You will not be able to sign in, and any Reviewer "
-            f"or Committee duties are paused, until the account is reactivated.",
+            second,
         ]
 
     attachments = []

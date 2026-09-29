@@ -203,6 +203,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     # for the same reason as suspended_at.
     suspension_kind = models.CharField(max_length=10, choices=SuspensionKind.choices, blank=True)
     suspension_reason = models.TextField(blank=True)
+    # When a temporary suspension is scheduled to lift on its own, without
+    # anyone having to click Reactivate. Set from the Suspend dialog on the
+    # Accounts page (only for SUSPEND, never BAN). accounts.forms.LoginForm
+    # honours it: a sign-in after this moment auto-reactivates the account
+    # and lets the user through; a sign-in before shows a nice "you'll be
+    # able to sign in again on ..." modal on templates/pages/login.html.
+    # Included in the suspension email and printed on the Suspension Letter.
+    suspended_until = models.DateTimeField(null=True, blank=True)
     is_staff = models.BooleanField(default=False)
     date_joined = models.DateTimeField(default=timezone.now)
 

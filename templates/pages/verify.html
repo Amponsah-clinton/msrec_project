@@ -127,15 +127,55 @@
                 <div class="verify-qr-col-head">
                   <span class="verify-qr-col-icon"><i class="bi bi-cloud-arrow-up-fill"></i></span>
                   <div>
-                    <h5>Upload an image</h5>
-                    <p>Choose a photo, or drag &amp; drop it below.</p>
+                    <h5>Upload a photo</h5>
+                    <p>Drop or pick a photo of the certificate &mdash; the QR is decoded on your device.</p>
                   </div>
                 </div>
 
-                <label class="verify-qr-drop" for="qrFileInput">
-                  <span class="verify-qr-drop-icon"><i class="bi bi-cloud-arrow-up"></i></span>
-                  <strong>Click to upload</strong>
-                  <span>or drag &amp; drop a photo of the certificate</span>
+                <label class="verify-qr-drop" for="qrFileInput" id="qrDropLabel">
+                  <div class="verify-qr-drop-empty" id="qrDropEmpty">
+                    <span class="verify-qr-drop-icon" aria-hidden="true">
+                      <i class="bi bi-cloud-arrow-up"></i>
+                      <span class="verify-qr-drop-icon-ping"></span>
+                    </span>
+                    <div class="verify-qr-drop-text">
+                      <strong>Drop your photo here</strong>
+                      <span>or <em>click to browse</em> your files</span>
+                    </div>
+                    <div class="verify-qr-drop-chips" aria-hidden="true">
+                      <span class="verify-qr-drop-chip">JPG</span>
+                      <span class="verify-qr-drop-chip">PNG</span>
+                      <span class="verify-qr-drop-chip">HEIC</span>
+                      <span class="verify-qr-drop-chip">WEBP</span>
+                    </div>
+                    <span class="verify-qr-drop-safe">
+                      <i class="bi bi-shield-lock-fill"></i> Read locally &mdash; nothing leaves your device until we find a QR.
+                    </span>
+                  </div>
+                  <div class="verify-qr-drop-preview" id="qrDropPreview" hidden>
+                    <div class="verify-qr-drop-preview-frame">
+                      <img id="qrDropPreviewImg" alt="Selected certificate photo">
+                      <span class="verify-qr-drop-preview-scan"></span>
+                    </div>
+                    <div class="verify-qr-drop-preview-meta">
+                      <span class="verify-qr-drop-preview-status" id="qrDropPreviewStatus">
+                        <i class="bi bi-arrow-repeat"></i> Reading QR&hellip;
+                      </span>
+                      <div class="verify-qr-drop-preview-file">
+                        <i class="bi bi-file-earmark-image"></i>
+                        <span class="verify-qr-drop-preview-name" id="qrDropPreviewName">certificate.jpg</span>
+                        <span class="verify-qr-drop-preview-size" id="qrDropPreviewSize">&mdash;</span>
+                      </div>
+                      <div class="verify-qr-drop-preview-actions">
+                        <button type="button" class="verify-qr-drop-preview-btn" id="qrDropPickAnother">
+                          <i class="bi bi-arrow-repeat"></i> Choose another
+                        </button>
+                        <button type="button" class="verify-qr-drop-preview-btn verify-qr-drop-preview-btn-clear" id="qrDropClear">
+                          <i class="bi bi-x-lg"></i> Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                   <input type="file" id="qrFileInput" accept="image/*" hidden>
                 </label>
                 <canvas id="qrCanvas" hidden></canvas>

@@ -722,7 +722,13 @@ a.acct-page-nav:hover, a.acct-page-num:hover { background: var(--white); color: 
   .acct-table tr.acct-row { display: table-row; padding: 0; gap: 0; border-top: 0; }
 }
 .acct-table-wrap { margin: 4px -18px 0; }
-.acct-table { min-width: 1000px; }
+/* 5-column layout (Member / Role & Affiliation / Joined / Status / Actions)
+   -- was 7 with Institution and Ethics ID as their own columns, which for
+   most users just showed dashes. Institution now sits under the role
+   badge; ethics id (rare -- only committee members) sits under the joined
+   date; phone joined email in the Member cell so contact info is
+   together. Lower min-width because there's less to fit. */
+.acct-table { min-width: 820px; }
 .acct-table thead th { padding: 11px 14px; background: var(--bg); border-top: 1px solid var(--border); font-size: 11px; letter-spacing: .07em; }
 .acct-table thead th:first-child, .acct-table tbody td:first-child { padding-left: 18px; }
 .acct-table thead th:last-child, .acct-table tbody td:last-child { padding-right: 18px; }
@@ -732,16 +738,19 @@ a.acct-page-nav:hover, a.acct-page-num:hover { background: var(--white); color: 
 .acct-table .acct-row-suspended td { opacity: .62; }
 .acct-table .acct-row-suspended td.acct-td-actions { opacity: 1; }
 
-.acct-person { display: flex; align-items: center; gap: 11px; min-width: 190px; }
-.acct-person .acct-avatar { width: 36px; height: 36px; font-size: 12px; box-shadow: none; }
-.acct-person-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; }
-.acct-person-text strong { font-size: 13.5px; font-weight: 650; color: var(--text-main); white-space: nowrap; }
-.acct-person-text span { font-size: 12px; color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
+.acct-person { display: flex; align-items: center; gap: 11px; min-width: 220px; }
+.acct-person .acct-avatar { width: 38px; height: 38px; font-size: 12px; box-shadow: none; flex-shrink: 0; }
+.acct-person-text { display: flex; flex-direction: column; min-width: 0; line-height: 1.35; gap: 1px; }
+.acct-person-text strong { font-size: 13.5px; font-weight: 650; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.acct-person-text span { font-size: 12px; color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
+.acct-person-phone { font-size: 11.5px !important; color: var(--text-faint) !important; font-variant-numeric: tabular-nums; }
 
-.acct-cell { display: flex; flex-direction: column; gap: 2px; line-height: 1.35; min-width: 0; }
+.acct-cell { display: flex; flex-direction: column; gap: 3px; line-height: 1.35; min-width: 0; }
 .acct-main { font-size: 13px; color: var(--text-main); }
 .acct-table td[data-label="Joined"] .acct-main, .acct-table td[data-label="Joined"] .acct-sub, .acct-table td[data-label="Status"] .acct-sub { white-space: nowrap; }
 .acct-sub { font-size: 11.5px; color: var(--text-faint); }
+.acct-sub-alt { color: var(--teal, #0d9488); font-weight: 600; }
+.acct-table td[data-label="Role & Affiliation"] .acct-sub { white-space: normal; max-width: 260px; }
 .acct-empty { color: var(--text-faint); }
 .acct-mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace; font-size: 12px; letter-spacing: .02em; color: var(--text-main); white-space: nowrap; }
 
@@ -774,14 +783,98 @@ a.acct-page-nav:hover, a.acct-page-num:hover { background: var(--white); color: 
 .acct-table-foot strong { color: var(--text-sub); font-weight: 600; }
 
 @media (max-width: 760px) {
+  /* Purpose-built mobile card layout for the admin accounts table.
+     The generic .reviews-table cell-stack turns each <td> into a
+     "label · value" flex row -- fine for a table of dates and numbers,
+     but the Member cell (avatar + name + email), Status, and Actions
+     (approval form + icon row) have too much shape to read that way,
+     so a row rendered as a bulleted list of dashes with no visual
+     hierarchy: KB / name / email / role / -- / -- / date / phone /
+     status / request / CV / Approve / Decline stacked flat.
+     This lays each row out as a proper card: header on top (avatar +
+     name/email), a compact meta strip in the middle, and the action
+     zone at the bottom -- with empty "—" cells hidden entirely so the
+     visible fields carry meaning. */
+
   .acct-table-wrap { margin: 4px 0 0; }
+  .acct-table, .acct-table thead, .acct-table tbody,
+  .acct-table tr, .acct-table td { display: block; }
   .acct-table { min-width: 0; }
-  .acct-table tbody td:first-child, .acct-table tbody td:last-child { padding-left: 0; padding-right: 0; }
-  .acct-person { min-width: 0; }
-  .acct-person-text span { max-width: 190px; }
-  .acct-cell { align-items: flex-end; }
-  .acct-actions-cell { align-items: flex-end; width: 100%; }
-  .acct-request { width: 100%; }
+  .acct-table thead { display: none; }
+
+  .acct-table tbody tr.acct-row {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    margin-bottom: 12px;
+    padding: 14px;
+    background: var(--white);
+  }
+  .acct-table tbody tr.acct-row + tr.acct-row { margin-top: 0; }
+  .acct-table tbody tr.acct-row td {
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+  /* Kill the generic ::before "label · value" pseudo the reviews-table
+     stack adds -- we render labels ourselves where they belong. */
+  .acct-table tbody tr.acct-row td::before { content: none; display: none; }
+
+  /* --- Header: avatar + name + email full width, no label --- */
+  .acct-table td[data-label="Member"] {
+    padding-bottom: 12px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .acct-table td[data-label="Member"] .acct-person { align-items: center; min-width: 0; }
+  .acct-table td[data-label="Member"] .acct-person-text strong { white-space: normal; overflow: visible; }
+  .acct-table td[data-label="Member"] .acct-person-text span { max-width: none; overflow: visible; text-overflow: clip; word-break: break-word; }
+
+  /* --- Meta strip: LABEL on the left, value on the right --- */
+  .acct-table td[data-label="Role & Affiliation"],
+  .acct-table td[data-label="Joined"],
+  .acct-table td[data-label="Status"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+  }
+  .acct-table td[data-label="Role & Affiliation"]::before,
+  .acct-table td[data-label="Joined"]::before,
+  .acct-table td[data-label="Status"]::before {
+    content: attr(data-label);
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+  .acct-table tr.acct-row td[data-label="Role & Affiliation"] .acct-cell,
+  .acct-table tr.acct-row td[data-label="Joined"] .acct-cell,
+  .acct-table tr.acct-row td[data-label="Status"] .acct-cell {
+    align-items: flex-end;
+    text-align: right;
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* --- Actions: full-width action zone at the bottom --- */
+  .acct-table td[data-label="Actions"] {
+    padding-top: 12px;
+    margin-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .acct-table td[data-label="Actions"] .acct-actions-cell {
+    justify-content: flex-start;
+    align-items: stretch;
+    width: 100%;
+    gap: 10px;
+  }
+  .acct-table td[data-label="Actions"] .acct-request { width: 100%; align-items: stretch; }
+  .acct-table td[data-label="Actions"] .acct-icons { margin-left: auto; }
 }
 
 .fee-schedule-badge { flex-shrink: 0; text-transform: uppercase; letter-spacing: 0.03em; }
@@ -819,6 +912,39 @@ a.acct-page-nav:hover, a.acct-page-num:hover { background: var(--white); color: 
 .acct-reason-hint { margin: 6px 0 0; font-size: 11.5px; line-height: 1.45; color: var(--text-faint); }
 .acct-count { flex: none; font-size: 11.5px; font-variant-numeric: tabular-nums; color: var(--text-faint); }
 .acct-count.is-near { color: var(--orange); font-weight: 600; }
+
+/* Restore-on datetime picker in the Suspend dialog. Hidden entirely
+   when the admin flips the radio to Ban (see accounts.js syncKind). */
+.acct-until { display: flex; flex-direction: column; gap: 6px; }
+.acct-until[hidden] { display: none; }
+.acct-until label { font-size: 12px; font-weight: 600; color: var(--text-sub); display: flex; align-items: baseline; gap: 6px; }
+.acct-optional { font-size: 10.5px; font-weight: 500; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); }
+.acct-until input[type="datetime-local"] {
+  width: 100%;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font: inherit; font-size: 13.5px;
+  color: var(--text-main);
+  background: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+.acct-until input[type="datetime-local"]:focus {
+  outline: 2px solid var(--teal);
+  outline-offset: 1px;
+}
+.acct-until-hint {
+  display: flex; align-items: flex-start; gap: 6px;
+  margin: 0;
+  font-size: 11.5px; line-height: 1.45;
+  color: var(--text-faint);
+}
+.acct-until-hint svg {
+  flex: none; width: 13px; height: 13px;
+  margin-top: 2px;
+  fill: none; stroke: var(--teal);
+  stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round;
+}
 
 .acct-fit { display: inline-flex; align-items: flex-start; gap: 6px; font-size: 12px; line-height: 1.4; color: var(--text-sub); }
 .acct-fit::before {
