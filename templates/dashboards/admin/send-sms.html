@@ -1,0 +1,27 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Send SMS | MSREC Admin{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/admin-settings.css' %}">
+<link rel="stylesheet" href="{% static 'dashboard/css/send-sms.css' %}">
+{% endblock %}
+
+{% block nav_content %}
+      {% include "dashboards/admin/_nav.html" with active="send_sms" %}
+{% endblock %}
+
+{% block topbar %}
+      {% include "dashboards/admin/_topbar.html" with page_title="Send SMS" page_subtitle="One or many recipients &mdash; SMS goes out through BMS / mNotify." %}
+{% endblock %}
+
+{% block main_content %}
+<div class="ad-scope sms-scope">
+  {% include "dashboards/_send_sms_body.html" %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'dashboard/js/send-sms.js' %}"></script>
+{% endblock %}

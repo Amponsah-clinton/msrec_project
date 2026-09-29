@@ -32,6 +32,11 @@ urlpatterns = [
     path("messages/", messaging_views.staff_messages, name="messages"),
     path("messages/<int:conversation_id>/poll/", messaging_views.staff_messages_poll, name="messages_poll"),
     path("messages/<int:conversation_id>/send/", messaging_views.staff_messages_send, name="messages_send"),
+    # Send SMS: one recipient picker (groups by role, individual multi-select,
+    # or free-form pasted numbers) + one textarea + a live credit-cost preview.
+    # Shared with Secretariat via secretariat_dashboard/urls.py (template
+    # overridden there) -- one view, two branded dashboards.
+    path("send-sms/", views.send_sms_page, name="send_sms"),
     path("reports/", views.reports_analytics, name="reports_analytics"),
     path("reports/export/", views.reports_analytics_export, name="reports_analytics_export"),
     path("access-security/", views.access_security, name="access_security"),

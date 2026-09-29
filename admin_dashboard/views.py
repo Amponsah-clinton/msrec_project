@@ -239,6 +239,18 @@ def _handle_role_decision(request, target, role, action):
         )
         AuditLog.record(request.user, f"role.{role}.approved", target=target)
         emailed = _send_role_approved_email(request, target, role)
+        # SMS twin: the ethics ID + role headline in a single segment;
+        # the welcome email carries the certificate PDFs and the fuller
+        # onboarding notes.
+        from notifications import sms as sms_service
+        if sms_service.can_sms_user(target):
+            role_label = User.Role(role).label
+            ethics_id = getattr(target, "membership_ethics_id", "") or ""
+            id_line = f" Your Ethics ID is {ethics_id}." if ethics_id else ""
+            sms_service.send_user_sms(
+                target,
+                f"MSREC: your {role_label} role has been approved.{id_line} Welcome aboard -- sign in to see your new dashboard.",
+            )
         suffix = "and notified by email." if emailed else "(the approval email couldn't be sent -- check the email settings)."
         messages.success(request, f"{target.full_name} approved as {target.get_role_display()} {suffix}")
     else:
@@ -247,6 +259,12 @@ def _handle_role_decision(request, target, role, action):
             user=target, role=role, action=RoleApprovalLog.Action.REJECTED, acted_by=request.user,
         )
         AuditLog.record(request.user, f"role.{role}.rejected", target=target)
+        from notifications import sms as sms_service
+        if sms_service.can_sms_user(target):
+            sms_service.send_user_sms(
+                target,
+                f"MSREC: your {role.title()} role request was not approved this time. See your email for details.",
+            )
         messages.success(request, f"{role.title()} request for {target.full_name} was declined.")
 
 
@@ -299,10 +317,7 @@ def _handle_suspend(request, target, *, suspend):
             messages.error(request, "That request could not be processed.")
             return
         raw_reason = request.POST.get("reason", "")
-        reason = suspension.clean_reason(raw_reason)
-        if not reason:
-            messages.error(request, "Type the reason for the suspension -- it's printed on the letter.")
-            return
+        reason = suspension.clean_reason(raw_reason) or suspension.DEFAULT_REASON
         if len(raw_reason.strip()) > suspension.REASON_MAX + 200:
             messages.error(request, f"Keep the reason under {suspension.REASON_MAX} characters.")
             return
@@ -356,12 +371,31 @@ def _handle_suspend(request, target, *, suspend):
         AuditLog.record(request.user, "user.banned" if banned else "user.suspended", target=target,
                         description=reason[:500])
         emailed = _send_suspension_email(target, suspended=True)
+        # SMS twin of the suspension notice -- short enough to fit one
+        # segment; the operational detail (reason, letter PDF, restore
+        # date) is on the email. can_sms_user gates on phone + opt-in
+        # so this is a no-op for accounts we can't reach.
+        from notifications import sms as sms_service
+        if sms_service.can_sms_user(target):
+            if banned:
+                sms_text = f"MSREC: your account has been permanently withdrawn. Check your email for the formal notice."
+            elif target.suspended_until:
+                from django.utils.dateformat import format as _fmt
+                from django.utils import timezone as _tz
+                when = _fmt(_tz.localtime(target.suspended_until), "j M Y \\a\\t g:i A")
+                sms_text = f"MSREC: your account has been suspended. Access is restored on {when}. Notice sent to your email."
+            else:
+                sms_text = "MSREC: your account has been suspended. Please check your email for the formal notice."
+            sms_service.send_user_sms(target, sms_text)
         suffix = ("and the letter has been emailed to them." if emailed
                   else "(the email with the letter couldn't be sent -- download the letter from their row).")
         messages.success(request, f"{target.full_name}'s account has been {'banned' if banned else 'suspended'} {suffix}")
     else:
         AuditLog.record(request.user, "user.activated", target=target)
         emailed = _send_suspension_email(target, suspended=False)
+        from notifications import sms as sms_service
+        if sms_service.can_sms_user(target):
+            sms_service.send_user_sms(target, "MSREC: your account has been reactivated. You can now sign in again.")
         suffix = "and notified by email." if emailed else "(the notification email couldn't be sent)."
         messages.success(request, f"{target.full_name}'s account has been reactivated {suffix}")
 
@@ -567,7 +601,8 @@ def _suspension_dialog_args(request):
                 if timezone.is_naive(parsed):
                     parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
                 restored_at = parsed
-    return target, kind, suspension.clean_reason(request.POST.get("reason", "")), restored_at
+    reason = suspension.clean_reason(request.POST.get("reason", "")) or suspension.DEFAULT_REASON
+    return target, kind, reason, restored_at
 
 
 @require_POST
@@ -1344,6 +1379,95 @@ def profile_security(request, template_name="dashboards/admin/profile-security.h
 
     sessions = active_sessions_for(request.user, current_session_key=request.session.session_key)
     return render(request, template_name, {"sessions": sessions})
+
+
+# ---------------------------------------------------------------------
+# Send SMS (admin + secretariat)
+# ---------------------------------------------------------------------
+
+_SMS_GROUPS = [
+    ("applicants",  "Applicants",         User.Role.APPLICANT),
+    ("reviewers",   "Reviewers",          User.Role.REVIEWER),
+    ("committee",   "Committee Members",  User.Role.COMMITTEE),
+    ("secretariat", "Secretariat",        User.Role.SECRETARIAT),
+    ("admins",      "Administrators",     User.Role.ADMIN),
+]
+
+
+def _sms_group_qs(role):
+    from notifications import sms as sms_service
+    users = User.objects.filter(role=role, is_active=True, sms_notifications_enabled=True).exclude(phone="")
+    return [u for u in users if sms_service.clean_phone(u.phone)]
+
+
+@admin_or_secretariat_required
+def send_sms_page(request, template_name="dashboards/admin/send-sms.html"):
+    """The admin/secretariat Send-SMS page. GET renders the picker;
+    POST resolves the picked recipients, composes the message, and hands
+    it to notifications.sms.send_sms. Reachable at /admins/send-sms/ and
+    /dashboard/secretariat/send-sms/ (same view, two templates)."""
+    from notifications import sms as sms_service
+
+    if request.method == "POST":
+        message = (request.POST.get("message") or "").strip()
+        mode = request.POST.get("recipient_mode") or "individuals"
+        raw_numbers = []
+        picked_users = []
+        picked_group_label = None
+
+        if mode == "custom":
+            raw = (request.POST.get("custom_numbers") or "").strip()
+            # Split on newlines, commas, or spaces so a paste of any shape works.
+            import re as _re
+            raw_numbers = [n for n in _re.split(r"[\s,;]+", raw) if n]
+        elif mode == "groups":
+            picked_group_key = request.POST.get("group") or ""
+            group = next((g for g in _SMS_GROUPS if g[0] == picked_group_key), None)
+            if not group:
+                messages.error(request, "Pick a group to send to.")
+                return redirect(request.path)
+            picked_group_label = group[1]
+            picked_users = _sms_group_qs(group[2])
+            raw_numbers = [u.phone for u in picked_users]
+        else:  # individuals
+            picked_ids = request.POST.getlist("user_ids")
+            if picked_ids:
+                picked_users = list(User.objects.filter(pk__in=picked_ids, is_active=True))
+                raw_numbers = [u.phone for u in picked_users if u.phone]
+
+        result = sms_service.send_sms(raw_numbers, message)
+        if result.get("ok"):
+            audience = picked_group_label or (
+                f"{len(picked_users)} user(s)" if picked_users else f"{len(result['sent_to'])} number(s)"
+            )
+            credit_note = ""
+            if result.get("credit_used") is not None:
+                credit_note = f" ({result['credit_used']} credit(s) used, {result['credit_left']} left)"
+            AuditLog.record(request.user, "sms.sent", description=f"Sent to {audience}: {message[:200]}")
+            messages.success(request, f"SMS sent to {len(result['sent_to'])} number(s){credit_note}.")
+        else:
+            messages.error(request, result.get("error") or "SMS could not be sent.")
+        return redirect(request.path)
+
+    # GET: render the picker.
+    context = {
+        "configured": sms_service.is_configured(),
+        "sender_id": sms_service._sender_id(),
+        "balance": sms_service.sms_balance() if sms_service.is_configured() else None,
+        "groups": [
+            {"key": key, "label": label,
+             "count": User.objects.filter(role=role, is_active=True, sms_notifications_enabled=True)
+                                  .exclude(phone="").count()}
+            for key, label, role in _SMS_GROUPS
+        ],
+        # Only users with a phone number appear as individually pickable.
+        "pickable_users": list(
+            User.objects.filter(is_active=True, sms_notifications_enabled=True)
+                        .exclude(phone="")
+                        .order_by("first_name", "last_name")
+        ),
+    }
+    return render(request, template_name, context)
 
 
 # ---------------------------------------------------------------------

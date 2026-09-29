@@ -183,6 +183,12 @@ DEFAULT_FROM_EMAIL = os.getenv("RESEND_FROM_EMAIL", "") or os.getenv(
 # actually uses) -- kept available for future direct use of Resend's API.
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
 
+# ---- BMS / mNotify SMS (see notifications/sms.py) ----
+# The key belongs in .env, not here. Sender ID is capped at 11 chars by
+# BMS and appears as the sender on the recipient's phone.
+BMS_API_KEY = os.getenv("BMS_API_KEY", "")
+BMS_SENDER_ID = os.getenv("BMS_SENDER_ID", "MSREC")
+
 # ── Supabase (storage, etc.) ────────────────────────────────────────────
 # Not wired into any view yet -- these are just read from the environment
 # so the project is ready to use them when needed.

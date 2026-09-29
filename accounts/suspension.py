@@ -53,6 +53,14 @@ SAMPLE_REASON = (
     "Confidentiality Agreement and Section 4.2 of the Standard Operating Procedures."
 )
 
+# Typing a reason is optional (admin_dashboard.views._handle_suspend) --
+# whoever suspends/bans an account may not always want to put a reason in
+# writing yet, or the situation is still being investigated. Rather than
+# leave the letter's Reason box blank or omit it (which would read as an
+# accidental gap rather than a deliberate choice), a blank submission is
+# stored and printed as this instead.
+DEFAULT_REASON = "No specific reason was provided at the time of this action."
+
 
 def unknown_placeholders(*texts):
     return letters.unknown_placeholders(PLACEHOLDER_KEYS, *texts)

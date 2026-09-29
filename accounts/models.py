@@ -196,6 +196,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     # still be regenerated on demand afterwards with the correct date --
     # same "rendered on demand from a persisted timestamp" contract as
     # membership_confirmed_at above.
+    # Per-user opt-out for SMS notifications (notifications/sms.py). Default
+    # is on so a phone number already on file receives the SMS twin of
+    # every account-facing email; the user can turn it off from Profile &
+    # Security. SMS-sending code paths gate on sms.can_sms_user(user), so
+    # switching this to False silences SMS immediately without any other
+    # data change.
+    sms_notifications_enabled = models.BooleanField(default=True)
+
     suspended_at = models.DateTimeField(null=True, blank=True)
     # What the last suspension was (a temporary suspension or a permanent
     # ban) and the reason typed by whoever did it -- both printed on the

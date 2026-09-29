@@ -102,4 +102,8 @@ urlpatterns = [
         "profile-security/", admin_dashboard_views.profile_security,
         {"template_name": "dashboards/secretariat/profile-security.html"}, name="profile_security",
     ),
+    path(
+        "send-sms/", admin_dashboard_views.send_sms_page,
+        {"template_name": "dashboards/secretariat/send-sms.html"}, name="send_sms",
+    ),
 ]

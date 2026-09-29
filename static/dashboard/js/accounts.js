@@ -103,7 +103,7 @@ document.addEventListener("DOMContentLoaded", () => {
       count.textContent = `${length} / ${max}`;
       count.classList.toggle("is-near", length > max * 0.9);
       if (!reason.value.trim()) {
-        setFit("idle", "Type the reason to check how it fits on the letter.");
+        setFit("idle", "Optional — leave it blank and the letter uses a default line instead.");
         return;
       }
       setFit("busy", "Checking the fit on A4…");
@@ -162,14 +162,9 @@ document.addEventListener("DOMContentLoaded", () => {
       radio.addEventListener("change", () => { syncKind(); checkFit(); });
     });
     reason.addEventListener("input", checkFit);
-    suspendForm.addEventListener("submit", (event) => {
-      // Preview (formtarget=_blank) doesn't need a reason; the real submit does.
-      if (event.submitter === submit && !reason.value.trim()) {
-        event.preventDefault();
-        reason.focus();
-        setFit("over", "A reason is required — it's printed on the letter.");
-      }
-    });
+    // Reason is optional -- a blank submit is left to fall through to the
+    // server, which fills in accounts.suspension.DEFAULT_REASON. Nothing
+    // to intercept or block here anymore.
     document.getElementById("acctSuspendClose").addEventListener("click", closeSuspend);
     document.getElementById("acctSuspendCancel").addEventListener("click", closeSuspend);
     suspendOverlay.addEventListener("click", (event) => {

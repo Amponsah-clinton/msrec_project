@@ -1,0 +1,114 @@
+{# Shared body for the admin + secretariat Send SMS pages. Expects the
+   context that admin_dashboard.views.send_sms_page prepares:
+   configured, sender_id, balance, groups, pickable_users. #}
+  {% if not configured %}
+  <div class="sms-alert sms-alert-warn">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
+    <div>
+      <strong>SMS is not configured.</strong>
+      <span>Set <code>BMS_API_KEY</code> in the server's environment (.env) to enable sending.</span>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="sms-status-row">
+    <div class="sms-status-card">
+      <span class="sms-status-label">Sender ID</span>
+      <strong>{{ sender_id }}</strong>
+      <small>Shown to recipients as the sender name.</small>
+    </div>
+    <div class="sms-status-card">
+      <span class="sms-status-label">Credit balance</span>
+      <strong>{% if balance is not None %}{{ balance }}{% else %}&mdash;{% endif %}</strong>
+      <small>Remaining SMS credits on the BMS account.</small>
+    </div>
+    <div class="sms-status-card">
+      <span class="sms-status-label">Provider</span>
+      <strong>mNotify (BMS)</strong>
+      <small>developer.bms.africa</small>
+    </div>
+  </div>
+
+  <form method="post" class="sms-form" id="smsForm">
+    {% csrf_token %}
+
+    <div class="sms-card">
+      <h3 class="sms-card-title">1 &middot; Who is this going to?</h3>
+
+      <div class="sms-tabs" role="tablist">
+        <button type="button" class="sms-tab is-active" data-sms-tab="groups"><svg viewBox="0 0 24 24"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a5 5 0 0 1 5-5h2a5 5 0 0 1 5 5v2"/><path d="M16 3.5a4 4 0 0 1 0 7.6"/><path d="M20.5 21v-2a5 5 0 0 0-3.5-4.8"/></svg> Groups</button>
+        <button type="button" class="sms-tab" data-sms-tab="individuals"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg> Individuals</button>
+        <button type="button" class="sms-tab" data-sms-tab="custom"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h6M7 16h8"/></svg> Custom numbers</button>
+      </div>
+
+      <input type="hidden" name="recipient_mode" id="smsRecipientMode" value="groups">
+
+      <div class="sms-pane" data-sms-pane="groups">
+        <p class="sms-pane-hint">Send to everyone in a role who has a phone number on file and hasn't opted out of SMS.</p>
+        <div class="sms-groups">
+          {% for group in groups %}
+          <label class="sms-group">
+            <input type="radio" name="group" value="{{ group.key }}"{% if forloop.first %} checked{% endif %}>
+            <span class="sms-group-body">
+              <strong>{{ group.label }}</strong>
+              <small>{{ group.count }} reachable</small>
+            </span>
+            <span class="sms-group-tick" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="m5 13 4 4L19 7"/></svg></span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="sms-pane" data-sms-pane="individuals" hidden>
+        <div class="sms-pane-head">
+          <p class="sms-pane-hint">Tick each person to include. Search filters by name, email, role or phone.</p>
+          <input type="search" class="sms-search" id="smsUserSearch" placeholder="Search users&hellip;">
+        </div>
+        <div class="sms-users" id="smsUsers">
+          {% for u in pickable_users %}
+          <label class="sms-user"
+                 data-sms-search="{{ u.full_name|lower }} {{ u.email|lower }} {{ u.get_role_display|lower }} {{ u.phone|lower }}">
+            <input type="checkbox" name="user_ids" value="{{ u.pk }}">
+            <span class="sms-user-avatar">{{ u.initials }}</span>
+            <span class="sms-user-body">
+              <strong>{{ u.full_name }}</strong>
+              <small>{{ u.get_role_display }} &middot; {{ u.phone }}</small>
+            </span>
+          </label>
+          {% empty %}
+          <p class="sms-pane-hint">No users with a phone number on file yet.</p>
+          {% endfor %}
+        </div>
+        <div class="sms-pane-foot">
+          <button type="button" class="sms-linkbtn" id="smsSelectAll">Select all shown</button>
+          <button type="button" class="sms-linkbtn" id="smsClearAll">Clear</button>
+          <span class="sms-picked-count"><strong id="smsPickedCount">0</strong> picked</span>
+        </div>
+      </div>
+
+      <div class="sms-pane" data-sms-pane="custom" hidden>
+        <p class="sms-pane-hint">Paste Ghana mobile numbers &mdash; one per line, or separated by commas / spaces. Any of <code>0241234567</code>, <code>+233241234567</code>, or <code>233 24 123 4567</code> works.</p>
+        <textarea name="custom_numbers" id="smsCustomNumbers" rows="6" placeholder="0241234567&#10;+233201234567"></textarea>
+      </div>
+    </div>
+
+    <div class="sms-card">
+      <h3 class="sms-card-title">2 &middot; The message</h3>
+      <textarea name="message" id="smsMessage" rows="5" maxlength="480"
+                placeholder="Keep it short and specific &mdash; SMS is charged per 160-character segment (GSM-7)."></textarea>
+      <div class="sms-message-meta">
+        <span class="sms-meta-cell"><span class="sms-meta-label">Length</span><strong id="smsLen">0</strong> chars</span>
+        <span class="sms-meta-cell"><span class="sms-meta-label">Encoding</span><strong id="smsEnc">gsm-7</strong></span>
+        <span class="sms-meta-cell"><span class="sms-meta-label">Segments</span><strong id="smsSeg">0</strong></span>
+        <span class="sms-meta-cell"><span class="sms-meta-label">Est. credits</span><strong id="smsCost">0</strong></span>
+      </div>
+    </div>
+
+    <div class="sms-actions">
+      <p class="sms-actions-note">Sent as <strong>{{ sender_id }}</strong>. SMS goes out immediately &mdash; there's no draft or undo.</p>
+      <button type="submit" class="sms-send-btn" id="smsSendBtn">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 3 18 9-18 9v-7l14-2-14-2Z"/></svg>
+        Send SMS
+      </button>
+    </div>
+  </form>
