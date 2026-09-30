@@ -125,6 +125,9 @@ class ResendEmailBackend(BaseEmailBackend):
                 "Authorization": f"Bearer {self.api_key}",
                 "Content-Type": "application/json",
                 "Accept": "application/json",
+                # Resend's Cloudflare WAF blocks the default "Python-urllib/x.y"
+                # User-Agent as a bot signature (error 1010); send a normal one.
+                "User-Agent": "Mozilla/5.0 (compatible; MSREC-Django-Mailer/1.0)",
             },
         )
         ctx = ssl.create_default_context()
