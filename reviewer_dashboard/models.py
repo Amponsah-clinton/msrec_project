@@ -152,6 +152,33 @@ class ReviewAssignment(models.Model):
         return "new"
 
 
+class ReviewerPerformanceReport(models.Model):
+    """One row per generated Reviewer Activity and Performance Report.
+
+    Exists solely to assign a unique, auditable reference (MSREC/RR/YEAR/XXXX)
+    to each download. Report content is not stored — everything is recomputed
+    live from ReviewAssignment records at download time.
+    """
+    reviewer = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="performance_reports"
+    )
+    generated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="performance_reports_generated",
+    )
+    report_ref = models.CharField(max_length=60, unique=True)
+    period_start = models.DateField(null=True, blank=True)
+    period_end = models.DateField(null=True, blank=True)
+    generated_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "reviewer_performance_reports"
+        ordering = ["-generated_at"]
+
+    def __str__(self):
+        return f"{self.report_ref} — {self.reviewer.email}"
+
+
 class ReviewQANote(models.Model):
     """A Quality Assurance note on one reviewer's completed
     ReviewAssignment, raised by QA staff -- the Secretariat, the Chair, or

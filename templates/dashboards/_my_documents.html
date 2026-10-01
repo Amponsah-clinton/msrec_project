@@ -103,6 +103,27 @@ exact same thing. The host template supplies the base layout, nav and topbar.
       </div>
     </article>
     {% endif %}
+
+    {% if performance_report_url %}
+    <article class="mydocs-card mydocs-card-report">
+      <div class="mydocs-card-top">
+        <span class="mydocs-ficon">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+        </span>
+        <span class="mydocs-kind">Official Report · PDF</span>
+      </div>
+
+      <h3>Activity &amp; Performance Report</h3>
+      <p class="mydocs-desc">Structured tabular report with reviewer information, all performance metrics, a detailed review record, and a unique authenticated report reference (MSREC/RR/…).</p>
+
+      <div class="mydocs-actions">
+        <a class="mydocs-btn mydocs-btn-primary" href="{{ performance_report_url }}" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v13m0 0 4-4m-4 4-4-4"/><path d="M4 18v1a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1"/></svg>
+          Download report
+        </a>
+      </div>
+    </article>
+    {% endif %}
   </div>
 
   <p class="mydocs-note">

@@ -355,6 +355,7 @@ def documents(request):
 
     context = membership.personal_documents_context(request.user)
     context["activity_report_url"] = reverse("reviewer_dashboard:activity_report")
+    context["performance_report_url"] = reverse("reviewer_dashboard:performance_report")
     return render(request, "dashboards/reviewer/documents.html", context)
 
 
@@ -373,6 +374,44 @@ def activity_report(request):
         raise Http404("No activity report is available for this account yet.")
     response = HttpResponse(report.render_report_pdf(request.user), content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{report.report_filename(request.user)}"'
+    return response
+
+
+@login_required
+@reviewer_required
+def performance_report(request):
+    """PDF download of the structured Reviewer Activity and Performance Report.
+
+    Mints a unique MSREC/RR/YEAR/XXXX reference per download and stores it
+    in ReviewerPerformanceReport for audit purposes.
+    """
+    from accounts import membership
+    from . import performance_report as pr
+
+    if not membership.is_member(request.user):
+        raise Http404("No performance report is available for this account yet.")
+    pdf_bytes, record = pr.render_report_pdf(request.user, generated_by=request.user)
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{pr.report_filename(record)}"'
+    return response
+
+
+@login_required
+def performance_report_for_reviewer(request, user_pk):
+    """Admin/secretariat/chair download of any reviewer's performance report."""
+    if not (request.user.is_superuser or getattr(request.user, "role", None) in (
+        User.Role.ADMIN, User.Role.SECRETARIAT, User.Role.CHAIR
+    )):
+        raise Http404
+    from accounts import membership
+    from . import performance_report as pr
+
+    target = get_object_or_404(User, pk=user_pk)
+    if not membership.is_member(target):
+        raise Http404("No performance report is available for this reviewer yet.")
+    pdf_bytes, record = pr.render_report_pdf(target, generated_by=request.user)
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{pr.report_filename(record)}"'
     return response
 
 
