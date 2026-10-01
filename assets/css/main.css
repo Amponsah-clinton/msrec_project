@@ -1002,21 +1002,25 @@ section,
 }
 
 .hero > .container-fluid {
-  padding-left: calc(90px - var(--bs-gutter-x, 1.5rem) * 0.5);
-  padding-right: calc(90px - var(--bs-gutter-x, 1.5rem) * 0.5);
+  padding-left: 60px;
+  padding-right: 90px;
+}
+
+.hero > .container-fluid > .row {
+  --bs-gutter-x: 0;
 }
 
 @media (max-width: 991px) {
   .hero > .container-fluid {
-    padding-left: calc(40px - var(--bs-gutter-x, 1.5rem) * 0.5);
-    padding-right: calc(40px - var(--bs-gutter-x, 1.5rem) * 0.5);
+    padding-left: 40px;
+    padding-right: 40px;
   }
 }
 
 @media (max-width: 575px) {
   .hero > .container-fluid {
-    padding-left: calc(20px - var(--bs-gutter-x, 1.5rem) * 0.5);
-    padding-right: calc(20px - var(--bs-gutter-x, 1.5rem) * 0.5);
+    padding-left: 20px;
+    padding-right: 20px;
   }
 }
 

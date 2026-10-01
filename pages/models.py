@@ -411,6 +411,32 @@ class ApplicantFAQ(models.Model):
         return self.question
 
 
+class Institution(models.Model):
+    """One institution/organization offered in the Institution dropdown on
+    the public sign-up form (templates/pages/signup.html) -- across the
+    Applicant, Reviewer and Committee Member sections. The list is managed
+    by an administrator from admin_dashboard's Settings page (Institutions
+    tab). Only active rows are shown in the dropdown; sign-up always also
+    offers an "Other" option with a free-text box for anything not listed,
+    so an empty list never blocks registration.
+    """
+
+    name = models.CharField(max_length=200, unique=True)
+    # Lower sorts first; rows with the same order fall back to name.
+    display_order = models.PositiveSmallIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "institutions"
+        ordering = ["display_order", "name"]
+
+    def __str__(self):
+        return self.name
+
+
 class CommitteeMeeting(models.Model):
     """One scheduled Full Committee / REC meeting -- shown on the
     Reviewer dashboard's Upcoming Meetings page. Managed from Django

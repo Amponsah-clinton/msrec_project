@@ -192,6 +192,37 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ============================================================
+     Institution dropdowns — reveal the "Other" free-text box
+     (Applicant / Reviewer / Committee each have an admin-managed
+     Institution <select> plus a companion text input used only when
+     "Other (not listed)" is picked. Marked with data-institution-select
+     and data-other-input="<companion id>".)
+  ============================================================ */
+  const institutionSelects = Array.from(
+    document.querySelectorAll("[data-institution-select]")
+  );
+
+  function syncInstitutionOther(select) {
+    const other = document.getElementById(select.dataset.otherInput);
+    if (!other) return;
+    const isOther = select.value === "__other__";
+    // Never leave a hidden field required — browsers refuse to submit a
+    // form with a required control that can't be focused.
+    other.hidden = !isOther;
+    other.required = isOther && select.required;
+    if (!isOther) other.value = "";
+  }
+
+  function syncInstitutionOthers() {
+    institutionSelects.forEach(syncInstitutionOther);
+  }
+
+  institutionSelects.forEach((select) => {
+    select.addEventListener("change", () => syncInstitutionOther(select));
+    syncInstitutionOther(select);
+  });
+
+  /* ============================================================
      Personal / Institution section — required-field tags
   ============================================================ */
   [
@@ -225,6 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const independent = independentReviewer.checked;
     reviewerInstitution.required = isRoleChecked("reviewer") && !independent;
     reviewerInstitutionReqTag.hidden = independent;
+    syncInstitutionOthers();
   }
   independentReviewer.addEventListener("change", applyReviewerInstitutionRequirement);
 
@@ -249,6 +281,7 @@ document.addEventListener("DOMContentLoaded", () => {
     degreeLevel.required = isStudent;
     // Supervisor fields are intentionally left optional at signup — they can be
     // completed later during application submission.
+    syncInstitutionOthers();
   }
   applicantCategory.addEventListener("change", applyApplicantConditionalRequirements);
 
@@ -285,6 +318,7 @@ document.addEventListener("DOMContentLoaded", () => {
     committeeCv.required = active && !isLayCommunity;
     committeeInstitutionReqTag.hidden = isLayCommunity;
     committeeCvReqTag.hidden = isLayCommunity;
+    syncInstitutionOthers();
   }
 
   /* ============================================================

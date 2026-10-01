@@ -50,6 +50,7 @@ from pages.models import (
     ConflictDeclaration,
     GovernanceMember,
     Inquiry,
+    Institution,
     MeetingDocument,
     PolicyDocument,
     ResourceDocument,
@@ -2658,6 +2659,58 @@ def _handle_settings_delete_faq(request, site):
 
 
 # ---------------------------------------------------------------------
+# Site Settings > Institutions (the sign-up form's Institution dropdown)
+# ---------------------------------------------------------------------
+
+def _read_institution_form(request):
+    """Returns (name, display_order, is_active), or None after flashing an
+    error when the name is blank."""
+    name = request.POST.get("institution_name", "").strip()
+    if not name:
+        messages.error(request, "Give the institution a name.")
+        return None
+    try:
+        display_order = max(0, min(int(request.POST.get("institution_display_order") or 0), 32767))
+    except ValueError:
+        display_order = 0
+    return name[:200], display_order, request.POST.get("institution_is_active") == "on"
+
+
+def _handle_settings_add_institution(request, site):
+    data = _read_institution_form(request)
+    if not data:
+        return
+    name, display_order, is_active = data
+    if Institution.objects.filter(name__iexact=name).exists():
+        messages.error(request, f'"{name}" is already in the list.')
+        return
+    Institution.objects.create(name=name, display_order=display_order, is_active=is_active)
+    messages.success(request, f'"{name}" added to the sign-up Institution list.')
+
+
+def _handle_settings_edit_institution(request, site):
+    institution = get_object_or_404(Institution, pk=request.POST.get("institution_id"))
+    data = _read_institution_form(request)
+    if not data:
+        return
+    name, display_order, is_active = data
+    clash = Institution.objects.filter(name__iexact=name).exclude(pk=institution.pk).exists()
+    if clash:
+        messages.error(request, f'"{name}" is already in the list.')
+        return
+    institution.name, institution.display_order, institution.is_active = name, display_order, is_active
+    institution.save()
+    messages.success(request, "Institution updated.")
+
+
+def _handle_settings_delete_institution(request, site):
+    institution = get_object_or_404(Institution, pk=request.POST.get("institution_id"))
+    name = institution.name
+    institution.delete()
+    messages.success(request, f'"{name}" removed from the sign-up Institution list.')
+
+
+# ---------------------------------------------------------------------
 # Site Settings > Approval Documents (email, letter, certificate wording)
 # ---------------------------------------------------------------------
 
@@ -3273,6 +3326,9 @@ def site_settings(request):
             "add_faq": _handle_settings_add_faq,
             "edit_faq": _handle_settings_edit_faq,
             "delete_faq": _handle_settings_delete_faq,
+            "add_institution": _handle_settings_add_institution,
+            "edit_institution": _handle_settings_edit_institution,
+            "delete_institution": _handle_settings_delete_institution,
         }.get(request.POST.get("action"))
         if handler:
             handler(request, site)
@@ -3322,10 +3378,18 @@ def site_settings(request):
     if edit_faq_id:
         editing_faq = get_object_or_404(ApplicantFAQ, pk=edit_faq_id)
 
+    institutions = list(Institution.objects.all())
+    editing_institution = None
+    edit_institution_id = request.GET.get("edit_institution")
+    if edit_institution_id:
+        editing_institution = get_object_or_404(Institution, pk=edit_institution_id)
+
     return render(request, "dashboards/admin/settings.html", {
         "site": site,
         "faqs": faqs,
         "editing_faq": editing_faq,
+        "institutions": institutions,
+        "editing_institution": editing_institution,
         "logo_url": pages_storage.public_url(site.logo_path),
         "hero_image_url": hero_storage.public_url(site.hero_image_path),
         "auth_image_url": pages_storage.public_url(site.auth_image_path),

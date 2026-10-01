@@ -289,12 +289,67 @@ def reset_password(request):
     return render(request, "pages/reset-password.html", {"email": email})
 
 
+# The three Institution dropdowns on the sign-up form (Applicant, Reviewer,
+# Committee) each post a select value plus a companion free-text field used
+# only when "Other" is picked. _resolve_institution_choices folds each pair
+# into the single canonical field name the form/profile collection already
+# reads, so an institution not in the admin-managed list still comes through.
+INSTITUTION_OTHER_VALUE = "__other__"
+INSTITUTION_FIELD_PAIRS = [
+    ("institution", "institutionOther"),
+    ("reviewerInstitution", "reviewerInstitutionOther"),
+    ("committeeInstitution", "committeeInstitutionOther"),
+]
+
+
+def _resolve_institution_choices(post):
+    """Returns a mutable copy of `post` where any Institution dropdown set to
+    "Other" is replaced by the typed-in companion value."""
+    data = post.copy()
+    for select_name, other_name in INSTITUTION_FIELD_PAIRS:
+        if data.get(select_name, "").strip() == INSTITUTION_OTHER_VALUE:
+            data[select_name] = data.get(other_name, "").strip()
+    return data
+
+
+def _active_institutions():
+    from pages.models import Institution
+
+    return list(Institution.objects.filter(is_active=True))
+
+
+def _register_institutions(names):
+    """Any institution a new member typed into an "Other" box is added to the
+    admin-managed list here, so it's offered in the dropdown to the next
+    person signing up. Matching is case-insensitive, so a differently-cased
+    duplicate is never created, and an institution picked straight from the
+    existing list is simply left as-is. Each insert is isolated and best
+    effort -- it must never block (or roll back) account creation."""
+    from django.db import transaction
+
+    from pages.models import Institution
+
+    for raw in names:
+        name = (raw or "").strip()
+        if not name:
+            continue
+        try:
+            with transaction.atomic():
+                if not Institution.objects.filter(name__iexact=name).exists():
+                    Institution.objects.create(name=name[:200], is_active=True)
+        except Exception:
+            # A race on the unique name, or any storage hiccup -- the member's
+            # own record already holds the institution, so this is non-fatal.
+            logger.exception("Could not auto-add institution %r to the list", name)
+
+
 def signup(request):
     if request.user.is_authenticated:
         return redirect(request.user.dashboard_url_name())
 
     if request.method == "POST":
-        form = SignupForm(request.POST)
+        post = _resolve_institution_choices(request.POST)
+        form = SignupForm(post)
         if form.is_valid():
             cd = form.cleaned_data
             roles = cd["role"]
@@ -327,16 +382,16 @@ def signup(request):
             if "reviewer" in roles:
                 user.wants_reviewer = True
                 user.reviewer_status = User.RequestStatus.PENDING
-                user.reviewer_profile = _collect_profile(request.POST, REVIEWER_PROFILE_FIELDS)
+                user.reviewer_profile = _collect_profile(post, REVIEWER_PROFILE_FIELDS)
             if "committee" in roles:
                 user.wants_committee = True
                 user.committee_status = User.RequestStatus.PENDING
                 user.committee_profile = _collect_profile(
-                    request.POST, COMMITTEE_PROFILE_FIELDS,
+                    post, COMMITTEE_PROFILE_FIELDS,
                     multi_fields=("committeeExpertiseCategory",),
                 )
             if "applicant" in roles:
-                user.applicant_profile = _collect_profile(request.POST, APPLICANT_PROFILE_FIELDS)
+                user.applicant_profile = _collect_profile(post, APPLICANT_PROFILE_FIELDS)
 
             # Signup documents (profile photo + role CVs) -> Supabase Storage
             # "signup" bucket, grouped under one folder per submission. A
@@ -371,6 +426,20 @@ def signup(request):
 
             user.set_password(cd["password"])
             user.save()
+
+            # Fold any institution(s) typed into an "Other" box into the
+            # admin-managed list so the next applicant can pick them. Only
+            # the sections for the roles actually requested are considered;
+            # a value picked straight from the list is a no-op.
+            institution_names = []
+            if "applicant" in roles:
+                institution_names.append(cd.get("institution", ""))
+            if "reviewer" in roles:
+                institution_names.append(post.get("reviewerInstitution", ""))
+            if "committee" in roles:
+                institution_names.append(post.get("committeeInstitution", ""))
+            _register_institutions(institution_names)
+
             try:
                 _send_welcome_email(request, user)
             except Exception:
@@ -416,10 +485,10 @@ def signup(request):
             label = form.fields[field].label or field
             for error in errors:
                 messages.error(request, f"{label}: {error}")
-        return render(request, "pages/signup.html", {"form": form}, status=400)
+        return render(request, "pages/signup.html", {"form": form, "institutions": _active_institutions()}, status=400)
 
     form = SignupForm()
-    return render(request, "pages/signup.html", {"form": form})
+    return render(request, "pages/signup.html", {"form": form, "institutions": _active_institutions()})
 
 
 def _after_login(user, next_url=""):

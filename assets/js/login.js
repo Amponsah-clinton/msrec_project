@@ -28,6 +28,13 @@ document.addEventListener("DOMContentLoaded", () => {
       setTimeout(() => {
         btn.disabled = false;
         btn.textContent = original;
+
+        const emailField = document.getElementById("email");
+        const email = emailField ? emailField.value.trim() : "";
+        const alreadySaved = window.MSRECSaveDevice && window.MSRECSaveDevice.getSaved();
+        if (window.MSRECSaveDevice && email && !(alreadySaved && alreadySaved.email === email)) {
+          window.MSRECSaveDevice.prompt({ email });
+        }
       }, 900);
     });
   }

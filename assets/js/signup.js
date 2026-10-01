@@ -367,5 +367,17 @@ document.addEventListener("DOMContentLoaded", () => {
     formView.hidden = true;
     confirmView.hidden = false;
     confirmView.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    if (window.MSRECSaveDevice) {
+      const first = (document.getElementById("firstName") || {}).value || "";
+      const last = (document.getElementById("lastName") || {}).value || "";
+      const email = (document.getElementById("email") || {}).value || "";
+      const name = [first, last].map((s) => s.trim()).filter(Boolean).join(" ");
+      if (email.trim()) {
+        window.setTimeout(() => {
+          window.MSRECSaveDevice.prompt({ name: name, email: email.trim() });
+        }, 650);
+      }
+    }
   }
 });
