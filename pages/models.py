@@ -1103,3 +1103,51 @@ class SuspensionLetterTemplate(MemberLetterTemplate):
 
     def __str__(self):
         return "Suspension letter template"
+
+
+# Reviewer Activity Report: an on-demand A4 statement of a reviewer's
+# contribution (reviews completed, recommendations issued, turnaround),
+# downloadable from their dashboard. The wording around the figures, plus the
+# shared letterhead / signatory, is edited in Site Settings > Reviewer
+# Activity Report; the figures themselves are generated live from the
+# reviewer's assignments (see reviewer_dashboard/activity_report.py).
+
+ACTIVITY_REPORT_SUBJECT = "REVIEWER ACTIVITY REPORT — {committee_name}"
+ACTIVITY_REPORT_BODY = (
+    "This report summarises the ethics-review activity recorded for {recipient_name} "
+    "(MSREC Ethics ID {ethics_id}) as {a_role} of the {committee_name}, as at {today}.\n\n"
+    "The figures below are drawn directly from the Committee's records and reflect every review "
+    "assignment issued to this reviewer up to the date of this report."
+)
+ACTIVITY_REPORT_SALUTATION = "Dear {first_name},"
+ACTIVITY_REPORT_CLOSING = (
+    "This report is issued for the reviewer's own records and may be used as evidence of their "
+    "contribution to independent research ethics review. It carries no confidential protocol detail. "
+    "For verification, contact the MSREC Secretariat quoting the Ethics ID above."
+)
+ACTIVITY_REPORT_SIGN_OFF = "Yours sincerely,"
+
+
+class ReviewerActivityReportTemplate(MemberLetterTemplate):
+    """Reviewer Activity Report wording (the text wrapped around the
+    auto-generated figures), plus the shared letterhead / signatory."""
+
+    report_subject = models.CharField(max_length=300, default=ACTIVITY_REPORT_SUBJECT)
+    report_body = models.TextField(default=ACTIVITY_REPORT_BODY)
+    salutation = models.CharField(max_length=200, default=ACTIVITY_REPORT_SALUTATION)
+    closing = models.TextField(blank=True, default=ACTIVITY_REPORT_CLOSING)
+    sign_off = models.CharField(max_length=120, default=ACTIVITY_REPORT_SIGN_OFF)
+
+    DEFAULTS = {
+        "report_subject": ACTIVITY_REPORT_SUBJECT,
+        "report_body": ACTIVITY_REPORT_BODY,
+        "salutation": ACTIVITY_REPORT_SALUTATION,
+        "closing": ACTIVITY_REPORT_CLOSING,
+        "sign_off": ACTIVITY_REPORT_SIGN_OFF,
+    }
+
+    class Meta:
+        db_table = "reviewer_activity_report_templates"
+
+    def __str__(self):
+        return "Reviewer activity report template"

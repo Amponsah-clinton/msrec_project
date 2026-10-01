@@ -211,46 +211,79 @@ _AVATAR_COLORS = ["#2a4747", "#7a4fb5", "#2f5fa8", "#1f7a5c", "#d97b29", "#c0392
 
 
 def board_committee(request):
-    # GovernanceMember rows with group=REVIEWER are shown under the
-    # Reviewers tab (via _reviewer_profiles) rather than as plain members,
-    # so they're excluded here.
-    members = list(
-        GovernanceMember.objects.filter(is_active=True)
-        .exclude(group=GovernanceMember.Group.REVIEWER)
-        .select_related("user")
-    )
-    for member in members:
-        member.photo_url = _member_photo_url(member)
-        member.avatar_color = _AVATAR_COLORS[member.pk % len(_AVATAR_COLORS)]
+    """Public Board & Committee page -- every card from live Supabase data
+    (see build_governance_data). The admin management page at
+    admin_dashboard uses the exact same builder, so its tab counts tally
+    with this page to the number."""
+    data = build_governance_data()
+    return render(request, "pages/board_committee.html", {
+        "members": data["members"],
+        "reviewers": data["reviewers"],
+        "counts": data["counts"],
+    })
 
-    # Every Committee member is also an approved Reviewer, so anyone
-    # already shown as a Board/Committee/Secretariat card is flagged and
-    # hidden from the "All" tab -- they still appear under "Reviewers".
-    # Matched on the linked account where there is one, else on name; a
-    # matched pair also shares whichever photo either side has.
-    by_user = {m.user_id: m for m in members if m.user_id}
-    by_name = {m.full_name.strip().lower(): m for m in members}
+
+def build_governance_data():
+    """Single source of truth for the Board & Committee page, shared by the
+    public page and the admin management page so their counts always tally:
+
+    * Board      -- admin-curated GovernanceMember(group=BOARD) rows.
+    * Committee  -- every approved Committee account
+                    (User.committee_status=APPROVED), featured curated rows first.
+    * Secretariat-- every Secretariat account (User.role=secretariat),
+                    featured curated rows first.
+    * Reviewers  -- every approved Reviewer account, featured curated rows first.
+
+    Only active rows/accounts are included (what the public sees). Returns
+    {"members", "reviewers", "counts"}; each card is a dict (see _gov_card /
+    _user_card) carrying `editable`/`pk` so the admin page can offer edit and
+    delete on curated rows while showing live-account cards read-only.
+    """
+    from accounts.models import User
+
+    board = [
+        _gov_card(m) for m in GovernanceMember.objects.filter(
+            is_active=True, group=GovernanceMember.Group.BOARD
+        ).select_related("user")
+    ]
+    committee = _merge_featured_and_accounts(
+        GovernanceMember.Group.COMMITTEE,
+        User.objects.filter(committee_status=User.RequestStatus.APPROVED, is_active=True)
+        .order_by("first_name", "last_name"),
+        _committee_role_title,
+    )
+    secretariat = _merge_featured_and_accounts(
+        GovernanceMember.Group.SECRETARIAT,
+        User.objects.filter(role=User.Role.SECRETARIAT, is_active=True)
+        .order_by("first_name", "last_name"),
+        _secretariat_role_title,
+    )
+    members = board + committee + secretariat
+
     reviewers = _reviewer_profiles()
+
+    # Every Committee member is also an approved Reviewer, so anyone already
+    # shown as a Board/Committee/Secretariat card is flagged and hidden from
+    # the "All" tab -- they still appear under "Reviewers". Matched on the
+    # linked account where there is one, else on name; a matched pair also
+    # shares whichever photo either side has.
+    by_user = {m["user_id"]: m for m in members if m["user_id"]}
+    by_name = {m["full_name"].strip().lower(): m for m in members}
     for reviewer in reviewers:
         member = by_user.get(reviewer["user_id"]) or by_name.get(reviewer["full_name"].strip().lower())
         reviewer["also_member"] = member is not None
         if member is not None:
-            reviewer["photo_url"] = reviewer["photo_url"] or member.photo_url
-            member.photo_url = member.photo_url or reviewer["photo_url"]
+            reviewer["photo_url"] = reviewer["photo_url"] or member["photo_url"]
+            member["photo_url"] = member["photo_url"] or reviewer["photo_url"]
 
     counts = {
         "all": len(members) + sum(1 for r in reviewers if not r["also_member"]),
-        "board": sum(1 for m in members if m.group == GovernanceMember.Group.BOARD),
-        "committee": sum(1 for m in members if m.group == GovernanceMember.Group.COMMITTEE),
-        "secretariat": sum(1 for m in members if m.group == GovernanceMember.Group.SECRETARIAT),
+        "board": len(board),
+        "committee": len(committee),
+        "secretariat": len(secretariat),
         "reviewer": len(reviewers),
     }
-
-    return render(request, "pages/board_committee.html", {
-        "members": members,
-        "reviewers": reviewers,
-        "counts": counts,
-    })
+    return {"members": members, "reviewers": reviewers, "counts": counts}
 
 
 def reviewers(request):
@@ -272,63 +305,115 @@ def _member_photo_url(member):
     return None
 
 
-def _reviewer_profiles():
-    """MSREC's reviewers, as card dicts for the Board & Committee page's
-    Reviewers tab -- pulled straight from the real, currently-approved
-    Reviewer accounts (accounts.models.User, reviewer_status=APPROVED),
-    the same live data every other part of this app treats as the source
-    of truth for "who is a reviewer" (e.g. secretariat_dashboard's
-    Reviewer Directory). A newly approved reviewer appears automatically,
-    with no separate admin step.
+def _group_label(group):
+    try:
+        return GovernanceMember.Group(group).label
+    except ValueError:
+        return group.title()
 
-    Any admin-curated GovernanceMember rows with group=REVIEWER (e.g. a
-    featured profile with a fuller bio) are listed first, ahead of the
-    auto-generated list, for whoever the Secretariat chooses to highlight.
-    """
-    from accounts.models import User
+
+def _gov_card(member):
+    """A curated GovernanceMember row as a uniform card dict. `editable` so
+    the admin page can offer Edit/Delete on it."""
+    return {
+        "user_id": member.user_id,
+        "group": member.group,
+        "group_label": member.get_group_display(),
+        "full_name": member.full_name,
+        "display_name": member.display_name,
+        "role_title": member.role_title,
+        "tag": member.tag,
+        "photo_url": _member_photo_url(member),
+        "initials": member.initials,
+        "avatar_color": _AVATAR_COLORS[member.pk % len(_AVATAR_COLORS)],
+        # Admin management metadata (ignored by the public page).
+        "editable": True,
+        "pk": member.pk,
+        "title": member.title,
+        "display_order": member.display_order,
+        "is_active": member.is_active,
+        "created_at": member.created_at,
+    }
+
+
+def _user_card(user, group, role_title, tag=""):
+    """A live login account as a uniform card dict. Not editable here -- it's
+    managed through the account itself (approvals / role), not this page."""
     from accounts.photos import profile_photo_url
 
+    return {
+        "user_id": user.pk,
+        "group": group,
+        "group_label": _group_label(group),
+        "full_name": user.full_name,
+        "display_name": user.full_name,
+        "role_title": role_title,
+        "tag": tag,
+        "photo_url": profile_photo_url(user.profile_photo_path),
+        "initials": user.initials,
+        "avatar_color": _AVATAR_COLORS[user.pk % len(_AVATAR_COLORS)],
+        "editable": False,
+        "pk": None,
+        "title": "",
+        "display_order": 0,
+        "is_active": True,
+        "created_at": None,
+    }
+
+
+def _committee_role_title(user):
+    profile = user.committee_profile or {}
+    position = (profile.get("committeePosition") or "").strip()
+    institution = (profile.get("committeeInstitution") or "").strip()
+    return ", ".join(part for part in (position, institution) if part) or "Committee Member"
+
+
+def _secretariat_role_title(user):
+    return (user.position or "").strip() or "Secretariat"
+
+
+def _reviewer_role_title(user):
+    profile = user.reviewer_profile or {}
+    position = (profile.get("reviewerPosition") or "").strip()
+    institution = (profile.get("reviewerInstitution") or "").strip()
+    return ", ".join(part for part in (position, institution) if part) or "Ethics Reviewer"
+
+
+def _reviewer_tag(user):
+    return (user.reviewer_profile or {}).get("reviewerDiscipline", "").strip()
+
+
+def _merge_featured_and_accounts(group, accounts_qs, role_title_fn, tag_fn=None):
+    """Featured admin-curated GovernanceMember rows for `group` first, then
+    every live account in `accounts_qs` that isn't already one of them
+    (matched by name). Returns a list of uniform card dicts."""
     featured = list(
-        GovernanceMember.objects.filter(is_active=True, group=GovernanceMember.Group.REVIEWER)
-        .select_related("user")
+        GovernanceMember.objects.filter(is_active=True, group=group).select_related("user")
     )
     featured_names = {m.full_name.strip().lower() for m in featured}
-    members = []
-    for member in featured:
-        members.append({
-            "user_id": member.user_id,
-            "full_name": member.full_name,
-            "display_name": member.display_name,
-            "role_title": member.role_title,
-            "tag": member.tag,
-            "photo_url": _member_photo_url(member),
-            "initials": member.initials,
-            "avatar_color": _AVATAR_COLORS[member.pk % len(_AVATAR_COLORS)],
-        })
-
-    reviewer_accounts = (
-        User.objects.filter(reviewer_status=User.RequestStatus.APPROVED, is_active=True)
-        .order_by("first_name", "last_name")
-    )
-    for user in reviewer_accounts:
+    cards = [_gov_card(m) for m in featured]
+    for user in accounts_qs:
         if user.full_name.strip().lower() in featured_names:
-            continue  # already shown as a featured profile above
-        profile = user.reviewer_profile or {}
-        position = (profile.get("reviewerPosition") or "").strip()
-        institution = (profile.get("reviewerInstitution") or "").strip()
-        discipline = (profile.get("reviewerDiscipline") or "").strip()
-        role_title = ", ".join(part for part in (position, institution) if part) or "Ethics Reviewer"
-        members.append({
-            "user_id": user.pk,
-            "full_name": user.full_name,
-            "display_name": user.full_name,
-            "role_title": role_title,
-            "tag": discipline,
-            "photo_url": profile_photo_url(user.profile_photo_path),
-            "initials": user.initials,
-            "avatar_color": _AVATAR_COLORS[user.pk % len(_AVATAR_COLORS)],
-        })
-    return members
+            continue
+        tag = tag_fn(user) if tag_fn else ""
+        cards.append(_user_card(user, group, role_title_fn(user), tag=tag))
+    return cards
+
+
+def _reviewer_profiles():
+    """MSREC's reviewers as card dicts: featured curated GovernanceMember
+    rows first, then every currently-approved Reviewer account
+    (reviewer_status=APPROVED) -- the same live source of truth the rest of
+    the app uses. A newly approved reviewer appears automatically."""
+    from accounts.models import User
+
+    return _merge_featured_and_accounts(
+        GovernanceMember.Group.REVIEWER,
+        User.objects.filter(reviewer_status=User.RequestStatus.APPROVED, is_active=True)
+        .order_by("first_name", "last_name"),
+        _reviewer_role_title,
+        _reviewer_tag,
+    )
 
 
 def resources(request):

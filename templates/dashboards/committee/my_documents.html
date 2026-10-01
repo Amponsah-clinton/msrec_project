@@ -1,0 +1,17 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}My Documents | MSREC Committee{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/my-documents.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/committee/_nav.html" with active='my_documents' %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/committee/_topbar.html" with title="My Documents" subtitle="Your appointment letter, membership certificate and other issued documents" %}{% endblock %}
+
+{% block main_content %}
+      {% include "dashboards/_my_documents.html" %}
+{% endblock %}

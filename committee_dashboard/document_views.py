@@ -69,6 +69,24 @@ committee_required = user_passes_test(_is_committee, login_url="pages:login")
 
 @login_required
 @committee_required
+def my_documents(request):
+    """The committee member's own issued documents -- appointment letter and
+    membership certificate -- in one place. The files are rendered on demand
+    by accounts.views; this page just links to them.
+    """
+    from accounts import membership
+
+    audience = Notification.Audience.COMMITTEE
+    context = membership.personal_documents_context(request.user)
+    context.update({
+        "notifications": notification_services.for_user(request.user, audience, limit=6),
+        "unread_count": notification_services.unread_count(request.user, audience),
+    })
+    return render(request, "dashboards/committee/my_documents.html", context)
+
+
+@login_required
+@committee_required
 def documents(request, page):
     config = DOC_PAGES[page]
     now = timezone.now()

@@ -346,6 +346,38 @@ def policy_ethics(request):
 
 @login_required
 @reviewer_required
+def documents(request):
+    """The reviewer's own issued documents -- appointment letter and
+    membership certificate -- gathered in one place. The files themselves
+    are rendered on demand by accounts.views; this page just links to them.
+    """
+    from accounts import membership
+
+    context = membership.personal_documents_context(request.user)
+    context["activity_report_url"] = reverse("reviewer_dashboard:activity_report")
+    return render(request, "dashboards/reviewer/documents.html", context)
+
+
+@login_required
+@reviewer_required
+def activity_report(request):
+    """PDF download of the signed-in reviewer's Activity Report -- a live
+    statement of their reviews completed, recommendations issued and
+    turnaround. Wording, letterhead and signatory come from Site Settings >
+    Reviewer Activity Report; the figures are computed on the fly."""
+    from accounts import membership
+
+    from . import activity_report as report
+
+    if not membership.is_member(request.user):
+        raise Http404("No activity report is available for this account yet.")
+    response = HttpResponse(report.render_report_pdf(request.user), content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{report.report_filename(request.user)}"'
+    return response
+
+
+@login_required
+@reviewer_required
 def my_reviews_counts(request):
     """Polled by live-counts.js to keep the My Reviews tab badges current
     without a page reload -- e.g. the Secretariat assigns a new review

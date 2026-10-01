@@ -41,6 +41,7 @@ urlpatterns = [
     path("qa/performance/", qv.qa_performance, name="qa_performance"),
 
     # Governance Documents -- document_views.py (reads the admin-managed policy library)
+    path("my-documents/", dv.my_documents, name="my_documents"),
     path("documents/charter/", dv.documents, {"page": "charter"}, name="doc_charter"),
     path("documents/terms-of-reference/", dv.documents, {"page": "terms"}, name="doc_terms"),
     path("documents/sops/", dv.documents, {"page": "sops"}, name="doc_sops"),

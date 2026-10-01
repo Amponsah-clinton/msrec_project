@@ -3,7 +3,7 @@
 
 {% block title %}Institutional Secretary Dashboard | MSREC{% endblock %}
 
-{% block nav_content %}{% include "dashboards/institution/_nav.html" with active="dashboard" %}{% endblock %}
+{% block nav_content %}{% include secretary_nav|default:"dashboards/institution/_nav.html" with active="inst_home" %}{% endblock %}
 
 {% block topbar %}{% include "dashboards/institution/_topbar.html" with title="Institutional Secretary Dashboard" subtitle=institution %}{% endblock %}
 

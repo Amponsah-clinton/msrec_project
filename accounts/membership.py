@@ -90,3 +90,61 @@ def render_appointment_letter_pdf(user):
     from .appointment import render_letter_pdf
 
     return render_letter_pdf(user)
+
+
+def personal_documents_context(user):
+    """Everything the Reviewer/Committee "My Documents" page needs: the
+    member's identity header and the list of credential documents issued to
+    them (appointment letter + membership certificate), with URLs resolved.
+
+    Both the appointment letter and certificate are rendered on demand from
+    the member's record (see accounts.views.appointment_letter /
+    membership_certificate), so they always reflect the current signatory --
+    this page simply links to those existing downloads in one place.
+    """
+    from django.urls import reverse
+
+    member = is_member(user)
+    kind, role_label = membership_role(user)
+    documents = []
+    if member:
+        documents = [
+            {
+                "key": "appointment_letter",
+                "title": "Appointment Letter",
+                "description": (
+                    "Your official MSREC letter of appointment confirming your role, "
+                    "Ethics ID and effective date, signed by the Chair."
+                ),
+                "kind_label": "PDF",
+                "icon": "letter",
+                "accent": "navy",
+                "open_url": reverse("pages:appointment_letter"),
+                "download_url": reverse("pages:appointment_letter"),
+                "issued_on": getattr(user, "membership_confirmed_at", None),
+            },
+            {
+                "key": "membership_certificate",
+                "title": "Membership Certificate",
+                "description": (
+                    "Your certificate of membership of the Metascholar Research Ethics "
+                    "Committee, confirming you are in good standing under its Charter."
+                ),
+                "kind_label": "Certificate",
+                "icon": "certificate",
+                "accent": "teal",
+                "open_url": reverse("pages:membership_certificate"),
+                "download_url": reverse("pages:membership_certificate") + "?format=pdf",
+                "issued_on": getattr(user, "membership_confirmed_at", None),
+            },
+        ]
+
+    return {
+        "is_member": member,
+        "doc_role_kind": kind,
+        "doc_role_label": role_label,
+        "doc_ethics_id": getattr(user, "membership_ethics_id", None) or "",
+        "doc_issued_on": getattr(user, "membership_confirmed_at", None),
+        "doc_institution": getattr(user, "institution", "") or "",
+        "personal_documents": documents,
+    }

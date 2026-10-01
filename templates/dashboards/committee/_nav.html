@@ -76,6 +76,11 @@
         </div>
       </div>
 
+      <a href="{% url 'committee_dashboard:my_documents' %}" class="nav-item{% if active == 'my_documents' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></svg></span>
+        <span>My Documents</span>
+      </a>
+
       <div class="nav-group{% if active == 'charter_doc' or active == 'terms_doc' or active == 'sops_doc' or active == 'policies_doc' %} open{% endif %}">
         <button type="button" class="nav-group-toggle" aria-expanded="{% if active == 'charter_doc' or active == 'terms_doc' or active == 'sops_doc' or active == 'policies_doc' %}true{% else %}false{% endif %}">
           <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span>
@@ -89,6 +94,8 @@
           <a href="{% url 'committee_dashboard:doc_policies' %}" class="nav-sublink{% if active == 'policies_doc' %} active{% endif %}">Committee Policies</a>
         </div>
       </div>
+
+      {% include "dashboards/_secretary_nav_group.html" %}
 
       <a href="{% url 'committee_dashboard:notifications' %}" class="nav-item{% if active == 'notifications' %} active{% endif %}">
         <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg></span>

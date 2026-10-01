@@ -156,8 +156,9 @@ def build(user, content, header_image, footer_image, site, scale):
         if kind == "text":
             story.append(Paragraph(_esc(item), styles["body"]))
         else:
-            label, blocks = item
-            story += [_box(label, blocks, styles, frame_w, s), Spacer(1, s(3.5) * mm)]
+            label, blocks, *rest = item
+            opts = rest[0] if rest else {}
+            story += [_box(label, blocks, styles, frame_w, s, opts), Spacer(1, s(3.5) * mm)]
 
     closing = [Paragraph(_esc(p), styles["body"]) for p in content["closing"]]
     sign = content["signatory"]
@@ -199,17 +200,20 @@ def build(user, content, header_image, footer_image, site, scale):
     return buffer.getvalue(), doc.page
 
 
-def _box(label, blocks, styles, frame_w, s):
-    """A lightly tinted panel with a navy rule down its left edge -- one
-    table row per paragraph, so a long one can still break between
-    paragraphs rather than overflowing the page."""
+def _box(label, blocks, styles, frame_w, s, opts=None):
+    """A lightly tinted panel -- one table row per paragraph, so a long one
+    can still break between paragraphs rather than overflowing the page. By
+    default it carries a navy rule down its left edge; opts={"plain": True}
+    drops that coloured edge (and uses a hairline border instead) for panels
+    that shouldn't read as an alert."""
+    opts = opts or {}
+    plain = opts.get("plain")
     rows = [[Paragraph(_esc(label.upper()), styles["label"])]]
     for lines in blocks:
         rows.append([Paragraph("<br/>".join(_esc(line) for line in lines), styles["box"])])
     box = Table(rows, colWidths=[frame_w])
-    box.setStyle(TableStyle([
+    style = [
         ("BACKGROUND", (0, 0), (-1, -1), "#f4f6f9"),
-        ("LINEBEFORE", (0, 0), (0, -1), 2, INK),
         ("LINEBELOW", (0, -1), (-1, -1), 0.4, HAIR),
         ("LEFTPADDING", (0, 0), (-1, -1), s(4) * mm),
         ("RIGHTPADDING", (0, 0), (-1, -1), s(4) * mm),
@@ -217,5 +221,10 @@ def _box(label, blocks, styles, frame_w, s):
         ("BOTTOMPADDING", (0, 0), (-1, -1), s(1.2) * mm),
         ("TOPPADDING", (0, 0), (-1, 0), s(3) * mm),
         ("BOTTOMPADDING", (0, -1), (-1, -1), s(3.2) * mm),
-    ]))
+    ]
+    if plain:
+        style.append(("LINEBEFORE", (0, 0), (0, -1), 0.4, HAIR))
+    else:
+        style.append(("LINEBEFORE", (0, 0), (0, -1), 2, INK))
+    box.setStyle(TableStyle(style))
     return box

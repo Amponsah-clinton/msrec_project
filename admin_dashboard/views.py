@@ -547,6 +547,8 @@ def accounts(request, template_name="dashboards/admin/accounts.html"):
             _handle_delete(request, target)
         elif action == "edit":
             _handle_edit(request, target)
+        elif action == "appoint_secretary":
+            _handle_appoint_secretary(request, target)
         else:
             messages.error(request, "That request could not be processed.")
 
@@ -597,6 +599,7 @@ def accounts(request, template_name="dashboards/admin/accounts.html"):
         "counts": counts,
         "active_tab": active_tab,
         "query": request.GET.get("q", ""),
+        "institutions": list(Institution.objects.filter(is_active=True)),
     })
 
 
@@ -3036,9 +3039,27 @@ def _member_letters():
     kind-specific wording sections (subject + body per kind) and the
     shared salutation / closing / sign-off, letterhead and signatory."""
     from accounts import appointment, suspension
-    from pages.models import AppointmentLetterTemplate, SuspensionLetterTemplate
+    from pages.models import AppointmentLetterTemplate, SuspensionLetterTemplate, ReviewerActivityReportTemplate
+    from reviewer_dashboard import activity_report
 
     return {
+        "activity_report": {
+            "model": ReviewerActivityReportTemplate,
+            "tab": "activity-report",
+            "title": "Reviewer Activity Report",
+            "label": "Reviewer activity report",
+            "note": ("The A4 report a reviewer can download from their dashboard, summarising their reviews "
+                     "completed, recommendations issued and turnaround. You control the wording, letterhead and "
+                     "signatory here; the figures are generated live from each reviewer's own records."),
+            "hint": "A blank line starts a new paragraph. The statistics are inserted automatically after this text.",
+            "sections": [("report", "Reviewer")],
+            "placeholders": activity_report.PLACEHOLDERS,
+            "unknown": activity_report.unknown_placeholders,
+            "preview": lambda t, kind: activity_report.render_report_pdf(
+                activity_report.sample_user(), t, stats=activity_report.sample_stats()),
+            "saved": "it applies to every download from now on",
+            "after_save": None,
+        },
         "appointment": {
             "model": AppointmentLetterTemplate,
             "tab": "appointment-letter",
@@ -3589,6 +3610,104 @@ def maintenance_preview(request):
 # and email a personalized activation link that lets them set their own
 # password and reach their dashboard. See institution_dashboard.
 # =====================================================================
+
+def _send_secretary_appointment_email(request, target, *, activation_url=None):
+    """Tells an existing member they've been made their institution's
+    secretary. If their account still needs a password (e.g. it was created
+    without one), the email carries an activation link; otherwise it just
+    points them at the login. Same fail_silently contract as every other
+    send_branded_email caller here."""
+    login_url = request.build_absolute_uri(reverse("pages:login"))
+    paragraphs = [
+        f"Dear {target.full_name},",
+        f"You have been appointed as the Institutional Secretary for "
+        f"{target.institution or 'your institution'} on MSREC "
+        "(Metascholar Research Ethics Committee).",
+        "From your dashboard you can follow your institution's applications, reviewers "
+        "and committee members, and see wider activity across other institutions.",
+    ]
+    if activation_url:
+        paragraphs.append("Click below to set your password and open your dashboard.")
+        cta_text, cta_url = "Set your password", activation_url
+    else:
+        paragraphs.append("Sign in with your existing MSREC email and password to get started.")
+        cta_text, cta_url = "Go to my dashboard", login_url
+    return send_branded_email(
+        subject="You've been appointed an Institutional Secretary on MSREC",
+        to=target.email,
+        heading=f"Welcome, {target.first_name or target.full_name}",
+        paragraphs=paragraphs,
+        quote_label="Institution",
+        quote_text=target.institution or "MSREC",
+        cta_text=cta_text,
+        cta_url=cta_url,
+        preheader="You've been appointed an Institutional Secretary on MSREC.",
+    )
+
+
+def _handle_appoint_secretary(request, target):
+    """Promote an existing applicant/reviewer/committee account to be the
+    Institutional Secretary for an institution. Their reviewer/committee
+    approval statuses (and so their membership) are left untouched -- only
+    the primary `role` and `institution` change, which is what reroutes
+    them to the Institutional Secretary dashboard on their next login."""
+    from institution_dashboard.models import InstitutionSecretary
+
+    if target.is_superuser:
+        messages.error(request, "Superuser accounts can't be appointed here.")
+        return
+    if target.role == User.Role.ADMIN and not _actor_is_admin(request):
+        messages.error(request, "Only an administrator can change an Administrator account.")
+        return
+
+    institution = request.POST.get("institution", "").strip()
+    if not institution:
+        messages.error(request, "Choose an institution for the secretary.")
+        return
+
+    # Keep their existing primary role (Applicant / Reviewer / Committee) so
+    # they keep their own dashboard -- the Institutional Secretary section is
+    # merged into it via the InstitutionSecretary record below, rather than
+    # replacing their role. Only a from-scratch secretary (created on the
+    # Institutional Secretaries page) carries role = inst_secretary.
+    target.institution = institution
+
+    secretary, _created = InstitutionSecretary.objects.get_or_create(
+        user=target, defaults={"created_by": request.user},
+    )
+
+    # An existing member almost always already has a password -- no
+    # activation step needed, they just sign in. Only a passwordless account
+    # (rare here) gets an activation link to set one.
+    needs_activation = not target.has_usable_password()
+    activation_url = None
+    if needs_activation:
+        secretary.issue_invite_token()
+        activation_url = request.build_absolute_uri(
+            reverse("institution_dashboard:activate", kwargs={"token": secretary.invite_token})
+        )
+    elif not secretary.activated_at:
+        secretary.activated_at = timezone.now()
+        secretary.invite_token = None
+        secretary.save(update_fields=["activated_at", "invite_token", "updated_at"])
+
+    target.save(update_fields=["institution"])
+    AuditLog.record(request.user, "user.appointed_institution_secretary", target=target)
+
+    emailed = _send_secretary_appointment_email(request, target, activation_url=activation_url)
+    if emailed:
+        note = ("a set-up link was emailed to them."
+                if needs_activation else "they've been emailed about the appointment.")
+        messages.success(
+            request, f"{target.full_name} is now the Institutional Secretary for {institution} — {note}"
+        )
+    else:
+        messages.warning(
+            request,
+            f"{target.full_name} is now the Institutional Secretary for {institution}, "
+            "but the email couldn't be sent right now.",
+        )
+
 
 def _send_institution_secretary_invite(secretary, request):
     """Emails the activation link carrying the (freshly issued) token.

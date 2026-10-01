@@ -3,7 +3,7 @@
 
 {% block title %}Committee Members | MSREC{% endblock %}
 
-{% block nav_content %}{% include "dashboards/institution/_nav.html" with active="committee" %}{% endblock %}
+{% block nav_content %}{% include secretary_nav|default:"dashboards/institution/_nav.html" with active="inst_committee" %}{% endblock %}
 
 {% block topbar %}{% include "dashboards/institution/_topbar.html" with title="Committee Members" subtitle=institution %}{% endblock %}
 

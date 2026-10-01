@@ -59,6 +59,51 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Appoint Institutional Secretary dialog. Opens with the row's user id +
+  // name, and pre-selects the member's current institution (adding it as an
+  // option first if it isn't one of the admin-managed institutions yet).
+  const secretaryOverlay = document.getElementById("acctSecretaryOverlay");
+  const secretaryForm = document.getElementById("acctSecretaryForm");
+  if (secretaryOverlay && secretaryForm) {
+    const closeSecretary = () => { secretaryOverlay.hidden = true; };
+    const instSelect = document.getElementById("secretaryInstitution");
+
+    const preselectInstitution = (value) => {
+      const wanted = (value || "").trim();
+      if (!wanted) { instSelect.value = ""; return; }
+      const match = Array.prototype.find.call(
+        instSelect.options, (o) => o.value.toLowerCase() === wanted.toLowerCase()
+      );
+      if (match) { instSelect.value = match.value; return; }
+      // Not in the managed list yet -- offer the member's current value.
+      const opt = document.createElement("option");
+      opt.value = wanted;
+      opt.textContent = wanted + " (current)";
+      instSelect.insertBefore(opt, instSelect.options[1] || null);
+      instSelect.value = wanted;
+    };
+
+    document.querySelectorAll("[data-acct-secretary]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const row = btn.closest(".acct-row");
+        if (!row) return;
+        document.getElementById("secretaryUserId").value = row.dataset.userId;
+        document.getElementById("secretaryWho").textContent = row.dataset.fullName;
+        preselectInstitution(row.dataset.institution);
+        secretaryOverlay.hidden = false;
+      });
+    });
+
+    document.getElementById("acctSecretaryClose").addEventListener("click", closeSecretary);
+    document.getElementById("acctSecretaryCancel").addEventListener("click", closeSecretary);
+    secretaryOverlay.addEventListener("click", (event) => {
+      if (event.target === secretaryOverlay) closeSecretary();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !secretaryOverlay.hidden) closeSecretary();
+    });
+  }
+
   // Suspend / ban dialog (templates/dashboards/_suspend_modal.html). While
   // the reason is typed, the server lays out the real letter and reports
   // whether it still fits on one A4 page (admin_dashboard.views.

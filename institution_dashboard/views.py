@@ -21,16 +21,35 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------
 
 def is_institution_secretary(user):
-    # The `role` column is the permission here -- an Institutional Secretary
-    # account is only ever created with role=inst_secretary (see
-    # admin_dashboard.views._handle_create_institution_secretary), so there's
-    # no separate approval status to consult (unlike reviewer/committee).
-    return user.is_authenticated and user.role == User.Role.INSTITUTION_SECRETARY
+    # Someone is an Institutional Secretary either because their primary role
+    # is inst_secretary (a from-scratch secretary) OR because an existing
+    # member was appointed one, which keeps their original role but attaches
+    # an InstitutionSecretary record. Both reach this dashboard, which is how
+    # the secretary section lives alongside an appointee's own dashboard.
+    if not user.is_authenticated:
+        return False
+    if user.role == User.Role.INSTITUTION_SECRETARY:
+        return True
+    return InstitutionSecretary.objects.filter(user=user).exists()
 
 
 institution_secretary_required = user_passes_test(
     is_institution_secretary, login_url="pages:login"
 )
+
+
+def _secretary_nav(user):
+    """Which sidebar to render on the secretary pages: the viewer's own
+    dashboard nav (so an appointed Reviewer/Committee/Applicant sees one
+    merged sidebar everywhere), or the standalone secretary nav for a
+    from-scratch secretary who has no other dashboard."""
+    if user.committee_status == User.RequestStatus.APPROVED:
+        return "dashboards/committee/_nav.html"
+    if user.reviewer_status == User.RequestStatus.APPROVED:
+        return "dashboards/reviewer/_nav.html"
+    if user.role == User.Role.APPLICANT and user.wants_applicant:
+        return "dashboards/applicant/_nav.html"
+    return "dashboards/institution/_nav.html"
 
 
 # ---------------------------------------------------------------------
@@ -115,7 +134,10 @@ def activate(request, token):
         request.session["login_ip"] = request.META.get("REMOTE_ADDR", "")
         request.session["login_at"] = timezone.now().isoformat()
         messages.success(request, "Your password is set — welcome to MSREC.")
-        return redirect("institution_dashboard:home")
+        # Appointed members land on their own dashboard (the secretary section
+        # is merged into it); a from-scratch secretary lands on the secretary
+        # home. dashboard_url_name() resolves either.
+        return redirect(user.dashboard_url_name())
 
     # Already activated and the link somehow still points here: send them to login.
     if secretary.is_activated:
@@ -166,6 +188,7 @@ def home(request):
 
     return render(request, "dashboards/institution/home.html", {
         "institution": institution,
+        "secretary_nav": _secretary_nav(request.user),
         "application_count": len(apps),
         "approved_count": len(approved),
         "committee_count": len(committee),
@@ -181,6 +204,7 @@ def applications(request):
     apps = _school_applications(institution)
     return render(request, "dashboards/institution/applications.html", {
         "institution": institution,
+        "secretary_nav": _secretary_nav(request.user),
         "applications": apps,
         "total": len(apps),
     })
@@ -197,6 +221,7 @@ def committee_members(request):
     ]
     return render(request, "dashboards/institution/committee-members.html", {
         "institution": institution,
+        "secretary_nav": _secretary_nav(request.user),
         "members": members,
         "total": len(members),
     })
@@ -213,6 +238,7 @@ def reviewers(request):
     ]
     return render(request, "dashboards/institution/reviewers.html", {
         "institution": institution,
+        "secretary_nav": _secretary_nav(request.user),
         "reviewers": members,
         "total": len(members),
     })
@@ -244,6 +270,7 @@ def other_institutions(request):
     ]
     return render(request, "dashboards/institution/other-institutions.html", {
         "my_institution": _institution(request),
+        "secretary_nav": _secretary_nav(request.user),
         "groups": grouped,
         "institution_count": len(grouped),
         "application_count": sum(g["count"] for g in grouped),
