@@ -1,0 +1,153 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Nominate Myself | Hall of Fame | MSREC{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/application-form.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/site-settings.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}
+      {% include "dashboards/_hof_nav.html" with active="hof_nominate" %}
+{% endblock %}
+
+{% block topbar %}
+      {% include "dashboards/institution/_topbar.html" with title="Hall of Fame Nomination" subtitle="Submit your nomination for recognition" %}
+{% endblock %}
+
+{% block main_content %}
+<form method="post" enctype="multipart/form-data" id="hofForm">
+  {% csrf_token %}
+
+  <!-- Personal Information -->
+  <section class="panel" style="margin-bottom:20px;">
+    <div class="panel-header"><h2>Personal Information</h2></div>
+    <div style="padding:20px 24px;">
+      <div class="field-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <label class="settings-label">Full Name *
+          <input type="text" name="full_name" required value="{{ nomination.full_name|default:initial.full_name|default:'' }}" class="settings-input">
+        </label>
+        <label class="settings-label">Professional Title
+          <input type="text" name="professional_title" value="{{ nomination.professional_title|default:initial.professional_title|default:'' }}" class="settings-input" placeholder="e.g. Prof., Dr.">
+        </label>
+        <label class="settings-label">Email Address *
+          <input type="email" name="email" required value="{{ nomination.email|default:initial.email|default:'' }}" class="settings-input">
+        </label>
+        <label class="settings-label">Phone Number
+          <input type="text" name="phone" value="{{ nomination.phone|default:initial.phone|default:'' }}" class="settings-input">
+        </label>
+        <label class="settings-label">Nationality
+          <input type="text" name="nationality" value="{{ nomination.nationality|default:'' }}" class="settings-input">
+        </label>
+        <label class="settings-label">Current City / Country
+          <input type="text" name="current_location" value="{{ nomination.current_location|default:'' }}" class="settings-input">
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- Professional Information -->
+  <section class="panel" style="margin-bottom:20px;">
+    <div class="panel-header"><h2>Professional Information</h2></div>
+    <div style="padding:20px 24px;">
+      <div class="field-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <label class="settings-label">Institution / Organization
+          <input type="text" name="institution" value="{{ nomination.institution|default:initial.institution|default:'' }}" class="settings-input">
+        </label>
+        <label class="settings-label">Current Position
+          <input type="text" name="position" value="{{ nomination.position|default:initial.position|default:'' }}" class="settings-input">
+        </label>
+        <label class="settings-label">Department / Unit
+          <input type="text" name="department" value="{{ nomination.department|default:initial.department|default:'' }}" class="settings-input">
+        </label>
+        <label class="settings-label">Years of Experience
+          <input type="number" name="years_experience" min="0" value="{{ nomination.years_experience|default:'' }}" class="settings-input">
+        </label>
+        <label class="settings-label" style="grid-column:1/-1;">Areas of Expertise
+          <textarea name="areas_of_expertise" rows="3" class="settings-input" placeholder="e.g. Research Ethics, Bioethics, Clinical Trials...">{{ nomination.areas_of_expertise|default:'' }}</textarea>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- Recognition Profile -->
+  <section class="panel" style="margin-bottom:20px;">
+    <div class="panel-header"><h2>Recognition Profile</h2></div>
+    <div style="padding:20px 24px;">
+      <div style="display:grid;gap:14px;">
+        <label class="settings-label">Short Professional Biography *
+          <textarea name="biography" rows="5" required class="settings-input" placeholder="Write a professional biography that will be shown on your public profile if approved...">{{ nomination.biography|default:'' }}</textarea>
+        </label>
+        <label class="settings-label">Major Achievements *
+          <textarea name="achievements" rows="4" required class="settings-input" placeholder="Describe your major professional achievements...">{{ nomination.achievements|default:'' }}</textarea>
+        </label>
+        <label class="settings-label">Contribution to Research Ethics *
+          <textarea name="contribution" rows="4" required class="settings-input" placeholder="Describe your contribution to research ethics, scholarship, peer review, academia, public service, innovation, mentorship...">{{ nomination.contribution|default:'' }}</textarea>
+        </label>
+        <label class="settings-label">Reason for Nomination *
+          <textarea name="reason_for_nomination" rows="3" required class="settings-input" placeholder="Why do you believe you should be inducted into the MSREC Hall of Fame?">{{ nomination.reason_for_nomination|default:'' }}</textarea>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- Evidence Uploads -->
+  <section class="panel" style="margin-bottom:20px;">
+    <div class="panel-header"><h2>Evidence &amp; Uploads</h2></div>
+    <div style="padding:20px 24px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <label class="settings-label">CV (PDF) *
+          <input type="file" name="cv" accept=".pdf" class="settings-input"{% if not nomination or not nomination.cv_path %} required{% endif %}>
+          {% if nomination and nomination.cv_path %}<small style="color:#0f8a86;">CV already uploaded</small>{% endif %}
+        </label>
+        <label class="settings-label">MSREC Reviewer Activity Report
+          <input type="file" name="activity_report" accept=".pdf" class="settings-input">
+          {% if nomination and nomination.activity_report_path %}<small style="color:#0f8a86;">Report already uploaded</small>{% endif %}
+        </label>
+        <label class="settings-label">Supporting Evidence (Optional)
+          <input type="file" name="supporting_evidence" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="settings-input">
+          {% if nomination and nomination.supporting_evidence_path %}<small style="color:#0f8a86;">Evidence already uploaded</small>{% endif %}
+        </label>
+        <label class="settings-label">Professional Headshot *
+          <input type="file" name="photo" accept="image/*" class="settings-input"{% if not nomination or not nomination.photo_path %} required{% endif %}>
+          {% if nomination and nomination.photo_path %}<small style="color:#0f8a86;">Photo already uploaded</small>{% endif %}
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <!-- Consent & Declaration -->
+  <section class="panel" style="margin-bottom:20px;">
+    <div class="panel-header"><h2>Consent &amp; Declaration</h2></div>
+    <div style="padding:20px 24px;">
+      <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;cursor:pointer;">
+        <input type="checkbox" name="consent_accurate" id="consentAccurate" style="margin-top:3px;">
+        <span style="font-size:14px;">I confirm that the information submitted is accurate and complete to the best of my knowledge.</span>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;cursor:pointer;">
+        <input type="checkbox" name="consent_publish" id="consentPublish" style="margin-top:3px;">
+        <span style="font-size:14px;">I consent to the publication of my approved Hall of Fame profile on the MSREC platform.</span>
+      </label>
+      <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;">
+        <input type="checkbox" name="consent_verify" id="consentVerify" style="margin-top:3px;">
+        <span style="font-size:14px;">I agree that the Secretary may verify the information submitted before approval.</span>
+      </label>
+    </div>
+  </section>
+
+  <div style="display:flex;gap:12px;justify-content:flex-end;padding:0 0 30px;">
+    <button type="submit" name="action" value="save" class="acct-btn acct-btn-edit">Save Draft</button>
+    <button type="submit" name="action" value="submit" class="acct-btn acct-btn-approve" id="submitBtn">Preview &amp; Submit</button>
+  </div>
+</form>
+
+<script>
+document.getElementById('submitBtn').addEventListener('click', function(e) {
+  var checks = ['consentAccurate', 'consentPublish', 'consentVerify'];
+  var all = checks.every(function(id) { return document.getElementById(id).checked; });
+  if (!all) { e.preventDefault(); alert('Please accept all consent declarations before submitting.'); }
+});
+</script>
+{% endblock %}

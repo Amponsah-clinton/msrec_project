@@ -1,0 +1,107 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Resubmit Nomination | Hall of Fame | MSREC{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/application-form.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/site-settings.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}
+      {% include "dashboards/_hof_nav.html" with active="hof_home" %}
+{% endblock %}
+
+{% block topbar %}
+      {% include "dashboards/institution/_topbar.html" with title="Revise &amp; Resubmit" subtitle="Make the requested changes and resubmit your nomination" %}
+{% endblock %}
+
+{% block main_content %}
+
+{% if nomination.revision_message %}
+<section class="panel" style="margin-bottom:20px;border-left:4px solid #ffd666;padding:20px 24px;">
+  <h3 style="margin:0 0 8px;font-size:15px;color:#7a6600;">Reviewer's Message</h3>
+  <p style="margin:0;font-size:14px;color:#56607a;">{{ nomination.revision_message }}</p>
+</section>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+
+  <section class="panel" style="margin-bottom:20px;">
+    <div class="panel-header"><h2>Update Your Nomination</h2></div>
+    <div style="padding:20px 24px;">
+      <div class="field-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <label class="settings-label">Full Name
+          <input type="text" name="full_name" value="{{ nomination.full_name }}" class="settings-input">
+        </label>
+        <label class="settings-label">Professional Title
+          <input type="text" name="professional_title" value="{{ nomination.professional_title }}" class="settings-input">
+        </label>
+        <label class="settings-label">Institution
+          <input type="text" name="institution" value="{{ nomination.institution }}" class="settings-input">
+        </label>
+        <label class="settings-label">Position
+          <input type="text" name="position" value="{{ nomination.position }}" class="settings-input">
+        </label>
+        <label class="settings-label">Department
+          <input type="text" name="department" value="{{ nomination.department }}" class="settings-input">
+        </label>
+        <label class="settings-label">Years of Experience
+          <input type="number" name="years_experience" min="0" value="{{ nomination.years_experience|default:'' }}" class="settings-input">
+        </label>
+        <label class="settings-label" style="grid-column:1/-1;">Areas of Expertise
+          <textarea name="areas_of_expertise" rows="3" class="settings-input">{{ nomination.areas_of_expertise }}</textarea>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-bottom:20px;">
+    <div class="panel-header"><h2>Recognition Profile</h2></div>
+    <div style="padding:20px 24px;">
+      <div style="display:grid;gap:14px;">
+        <label class="settings-label">Biography
+          <textarea name="biography" rows="5" class="settings-input">{{ nomination.biography }}</textarea>
+        </label>
+        <label class="settings-label">Achievements
+          <textarea name="achievements" rows="4" class="settings-input">{{ nomination.achievements }}</textarea>
+        </label>
+        <label class="settings-label">Contribution
+          <textarea name="contribution" rows="4" class="settings-input">{{ nomination.contribution }}</textarea>
+        </label>
+        <label class="settings-label">Reason for Nomination
+          <textarea name="reason_for_nomination" rows="3" class="settings-input">{{ nomination.reason_for_nomination }}</textarea>
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" style="margin-bottom:20px;">
+    <div class="panel-header"><h2>Replace Uploads (Optional)</h2></div>
+    <div style="padding:20px 24px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <label class="settings-label">Replace CV (PDF)
+          <input type="file" name="cv" accept=".pdf" class="settings-input">
+          {% if nomination.cv_path %}<small style="color:#0f8a86;">Current CV on file</small>{% endif %}
+        </label>
+        <label class="settings-label">Replace Activity Report
+          <input type="file" name="activity_report" accept=".pdf" class="settings-input">
+        </label>
+        <label class="settings-label">Replace Supporting Evidence
+          <input type="file" name="supporting_evidence" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="settings-input">
+        </label>
+        <label class="settings-label">Replace Photo
+          <input type="file" name="photo" accept="image/*" class="settings-input">
+        </label>
+      </div>
+    </div>
+  </section>
+
+  <div style="display:flex;gap:12px;justify-content:flex-end;padding:0 0 30px;">
+    <a href="{% url 'hall_of_fame:dashboard' %}" class="acct-btn acct-btn-cancel" style="text-decoration:none;">Cancel</a>
+    <button type="submit" class="acct-btn acct-btn-approve">Resubmit Nomination</button>
+  </div>
+</form>
+{% endblock %}

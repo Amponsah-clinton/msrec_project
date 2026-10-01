@@ -38,6 +38,21 @@ def index(request):
     for testimonial in testimonials:
         testimonial.image_url = storage.public_url(testimonial.image_path)
 
+    from hall_of_fame.models import HallOfFameNomination
+    from hall_of_fame import storage as hof_storage
+    hof_featured = []
+    for nom in HallOfFameNomination.objects.filter(status="published").order_by("-recognition_year", "full_name")[:6]:
+        hof_featured.append({
+            "pk": nom.pk,
+            "full_name": nom.full_name,
+            "professional_title": nom.professional_title,
+            "institution": nom.institution,
+            "recognition_year": nom.recognition_year,
+            "photo_url": hof_storage.public_url(nom.photo_path) if nom.photo_path else None,
+            "initials": "".join(w[0] for w in nom.full_name.split()[:2]).upper() if nom.full_name else "?",
+            "avatar_color": _AVATAR_COLORS[nom.pk % len(_AVATAR_COLORS)],
+        })
+
     return render(request, "pages/index.html", {
         # Same "What review costs" cards as the /applicants/ page's Fees
         # band -- the homepage's Review Fees section now reuses that
@@ -49,6 +64,7 @@ def index(request):
         "client_logos": client_logos,
         "testimonials": testimonials,
         "hero_image_url": SiteSettings.get_solo().hero_image_url,
+        "hof_featured": hof_featured,
     })
 
 

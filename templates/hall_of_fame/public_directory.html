@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Hall of Fame | Metascholar Research Ethics Committee{% endblock %}
+{% block description %}Recognising distinguished contributions to research ethics, scholarship and professional service.{% endblock %}
+{% block body_class %}hof-page{% endblock %}
+{% block fonts %}{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/hall-of-fame.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<main class="main hof-main">
+  <div class="hof-wrap">
+
+    <!-- HERO -->
+    <section class="hof-hero">
+      <span class="section-label">Recognition</span>
+      <h1>MSREC Hall of Fame</h1>
+      <p>Honouring members who have made distinguished contributions to research ethics, scholarship, peer review, academic excellence, mentorship, and professional service.</p>
+      <div class="hof-hero-stats">
+        <div class="hof-stat"><span>{{ total }}</span><small>Inducted Members</small></div>
+        <div class="hof-stat"><span>{{ years|length }}</span><small>Recognition Years</small></div>
+      </div>
+    </section>
+
+    <!-- SEARCH & FILTER -->
+    <div class="hof-toolbar">
+      <input type="text" id="hofSearch" class="hof-search" placeholder="Search by name, institution, expertise...">
+      <div class="hof-filters">
+        <button type="button" class="hof-filter-btn active" data-year="all">All Years</button>
+        {% for year in years %}
+        <button type="button" class="hof-filter-btn" data-year="{{ year }}">{{ year }}</button>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- MEMBER CARDS -->
+    <div class="hof-grid" id="hofGrid">
+      {% for m in members %}
+      <div class="hof-card" data-year="{{ m.recognition_year }}" data-search="{{ m.full_name|lower }} {{ m.institution|lower }} {{ m.areas_of_expertise|lower }}">
+        <div class="hof-card-photo">
+          {% if m.photo_url %}
+          <img src="{{ m.photo_url }}" alt="{{ m.full_name }}">
+          {% else %}
+          <span class="hof-card-avatar" style="background:{{ m.avatar_color }}">{{ m.initials }}</span>
+          {% endif %}
+        </div>
+        <div class="hof-card-body">
+          <h3>{{ m.full_name }}</h3>
+          {% if m.professional_title %}<p class="hof-card-title">{{ m.professional_title }}</p>{% endif %}
+          <p class="hof-card-inst">{{ m.institution|default:"" }}</p>
+          {% if m.position %}<p class="hof-card-pos">{{ m.position }}</p>{% endif %}
+          {% if m.areas_of_expertise %}<p class="hof-card-expertise">{{ m.areas_of_expertise|truncatewords:10 }}</p>{% endif %}
+          <div class="hof-card-foot">
+            <span class="hof-card-year">{{ m.recognition_year }}</span>
+            <a href="{% url 'hall_of_fame:profile' pk=m.pk %}" class="hof-card-link">View Profile &rsaquo;</a>
+          </div>
+        </div>
+      </div>
+      {% empty %}
+      <div class="hof-empty">
+        <p>No Hall of Fame members have been published yet. Check back soon.</p>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+</main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var search = document.getElementById('hofSearch');
+  var grid = document.getElementById('hofGrid');
+  var cards = Array.from(grid.querySelectorAll('.hof-card'));
+  var filterBtns = document.querySelectorAll('.hof-filter-btn');
+  var activeYear = 'all';
+
+  function apply() {
+    var q = (search.value || '').trim().toLowerCase();
+    cards.forEach(function(card) {
+      var matchYear = activeYear === 'all' || card.dataset.year === activeYear;
+      var matchSearch = !q || card.dataset.search.includes(q);
+      card.hidden = !(matchYear && matchSearch);
+    });
+  }
+
+  search.addEventListener('input', apply);
+  filterBtns.forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      filterBtns.forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      activeYear = btn.dataset.year;
+      apply();
+    });
+  });
+});
+</script>
+{% endblock %}

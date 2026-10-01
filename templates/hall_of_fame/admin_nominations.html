@@ -1,0 +1,79 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Hall of Fame Nominations | MSREC Admin{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}
+      {% include "dashboards/admin/_nav.html" with active="hof" %}
+{% endblock %}
+
+{% block topbar %}
+      {% include "dashboards/admin/_topbar.html" with page_title="Hall of Fame Nominations" page_subtitle="Review and manage member nominations" search_id="hofSearch" search_placeholder="Search by name, institution..." %}
+{% endblock %}
+
+{% block main_content %}
+
+<section class="panel acct-panel">
+  <div class="bc-admin-toolbar" style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+    <div class="filter-tabs acct-tabs" style="display:flex;flex-wrap:wrap;gap:6px;">
+      <a href="{% url 'hall_of_fame:admin_nominations' %}" class="filter-tab{% if not current_status %} active{% endif %}" style="text-decoration:none;">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></a>
+      <a href="?status=submitted" class="filter-tab{% if current_status == 'submitted' %} active{% endif %}" style="text-decoration:none;">Submitted <span class="count badge rounded-pill text-bg-secondary">{{ counts.submitted|default:0 }}</span></a>
+      <a href="?status=under_review" class="filter-tab{% if current_status == 'under_review' %} active{% endif %}" style="text-decoration:none;">Under Review <span class="count badge rounded-pill text-bg-secondary">{{ counts.under_review|default:0 }}</span></a>
+      <a href="?status=revision_requested" class="filter-tab{% if current_status == 'revision_requested' %} active{% endif %}" style="text-decoration:none;">Revision <span class="count badge rounded-pill text-bg-secondary">{{ counts.revision_requested|default:0 }}</span></a>
+      <a href="?status=approved" class="filter-tab{% if current_status == 'approved' %} active{% endif %}" style="text-decoration:none;">Approved <span class="count badge rounded-pill text-bg-secondary">{{ counts.approved|default:0 }}</span></a>
+      <a href="?status=published" class="filter-tab{% if current_status == 'published' %} active{% endif %}" style="text-decoration:none;">Published <span class="count badge rounded-pill text-bg-secondary">{{ counts.published|default:0 }}</span></a>
+      <a href="?status=rejected" class="filter-tab{% if current_status == 'rejected' %} active{% endif %}" style="text-decoration:none;">Rejected <span class="count badge rounded-pill text-bg-secondary">{{ counts.rejected|default:0 }}</span></a>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table class="acct-table" id="hofTable">
+      <thead>
+        <tr>
+          <th>Nominee</th>
+          <th>Institution</th>
+          <th>Reference</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for nom in nominations %}
+        <tr data-search="{{ nom.full_name|lower }} {{ nom.institution|lower }} {{ nom.reference_no|lower }}">
+          <td>
+            <div style="font-weight:600;">{{ nom.full_name }}</div>
+            <div style="font-size:12px;color:#56607a;">{{ nom.professional_title }}</div>
+          </td>
+          <td>{{ nom.institution|default:"—" }}</td>
+          <td style="font-family:monospace;font-size:12px;">{{ nom.reference_no }}</td>
+          <td>
+            <span class="badge {% if nom.status == 'published' or nom.status == 'approved' %}text-bg-success{% elif nom.status == 'rejected' %}text-bg-danger{% elif nom.status == 'revision_requested' %}text-bg-warning{% elif nom.status == 'draft' %}text-bg-secondary{% elif nom.status == 'resubmitted' %}text-bg-primary{% else %}text-bg-info{% endif %}">{{ nom.get_status_display }}</span>
+          </td>
+          <td>{{ nom.submitted_at|date:"d M Y"|default:"—" }}</td>
+          <td><a href="{% url 'hall_of_fame:admin_detail' pk=nom.pk %}" class="acct-btn acct-btn-edit" style="text-decoration:none;font-size:12px;padding:4px 12px;">Review</a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" style="text-align:center;padding:40px;color:#56607a;">No nominations found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var search = document.getElementById('hofSearch');
+  if (!search) return;
+  var rows = document.querySelectorAll('#hofTable tbody tr[data-search]');
+  search.addEventListener('input', function() {
+    var q = this.value.trim().toLowerCase();
+    rows.forEach(function(row) { row.hidden = q && !row.dataset.search.includes(q); });
+  });
+});
+</script>
+{% endblock %}

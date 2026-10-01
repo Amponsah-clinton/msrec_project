@@ -481,6 +481,40 @@
 
     </section><!-- /Testimonials Section -->
 
+    <!-- Hall of Fame Section -->
+    {% if hof_featured %}
+    <section id="hall-of-fame" class="section" style="padding:60px 0;">
+      <div class="container section-title" data-aos="fade-up">
+        <h2>Hall of Fame</h2>
+        <p>Recognising distinguished contributions to research ethics, scholarship and professional service.</p>
+      </div>
+      <div class="container" data-aos="fade-up" data-aos-delay="100">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:20px;margin-bottom:24px;">
+          {% for m in hof_featured %}
+          <a href="{% url 'hall_of_fame:profile' pk=m.pk %}" style="text-decoration:none;background:#fff;border:1px solid #e6e9ef;border-radius:12px;overflow:hidden;transition:box-shadow .2s,transform .2s;display:block;">
+            <div style="height:180px;background:#f0f2f6;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+              {% if m.photo_url %}
+              <img src="{{ m.photo_url }}" alt="{{ m.full_name }}" style="width:100%;height:100%;object-fit:cover;">
+              {% else %}
+              <span style="width:70px;height:70px;border-radius:50%;background:{{ m.avatar_color }};display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;font-weight:700;">{{ m.initials }}</span>
+              {% endif %}
+            </div>
+            <div style="padding:14px 16px;">
+              <h4 style="margin:0 0 2px;font-size:16px;color:#14233f;">{{ m.full_name }}</h4>
+              {% if m.professional_title %}<p style="margin:0 0 2px;font-size:12px;color:#0f8a86;font-weight:600;">{{ m.professional_title }}</p>{% endif %}
+              <p style="margin:0 0 6px;font-size:12px;color:#56607a;">{{ m.institution|default:"" }}</p>
+              <span style="font-size:12px;font-weight:700;color:#0f8a86;padding:2px 8px;background:#e8f5f4;border-radius:10px;">{{ m.recognition_year }}</span>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+        <div style="text-align:center;">
+          <a href="{% url 'hall_of_fame:directory' %}" style="display:inline-block;padding:10px 28px;background:#0f8a86;color:#fff;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;">View All Hall of Fame Members</a>
+        </div>
+      </div>
+    </section>
+    {% endif %}
+
     <!-- Pricing Section -->
     <section id="pricing" class="pricing section">
 

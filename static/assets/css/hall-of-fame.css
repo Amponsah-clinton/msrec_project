@@ -1,0 +1,71 @@
+.hof-main { padding: 40px 0 60px; }
+.hof-wrap { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+
+/* Hero */
+.hof-hero { text-align: center; padding: 40px 0 32px; }
+.hof-hero .section-label { display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: #0f8a86; margin-bottom: 8px; }
+.hof-hero h1 { font-size: 36px; font-weight: 700; color: #14233f; margin: 0 0 12px; }
+.hof-hero p { font-size: 16px; color: #56607a; max-width: 650px; margin: 0 auto 24px; line-height: 1.6; }
+.hof-hero-stats { display: flex; justify-content: center; gap: 40px; }
+.hof-stat { text-align: center; }
+.hof-stat span { display: block; font-size: 28px; font-weight: 700; color: #14233f; }
+.hof-stat small { font-size: 13px; color: #56607a; }
+
+/* Toolbar */
+.hof-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 28px; }
+.hof-search { flex: 1; min-width: 200px; padding: 10px 16px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; outline: none; }
+.hof-search:focus { border-color: #0f8a86; box-shadow: 0 0 0 3px rgba(15,138,134,.12); }
+.hof-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+.hof-filter-btn { padding: 6px 14px; border: 1px solid #d1d5db; border-radius: 20px; background: #fff; font-size: 13px; cursor: pointer; color: #56607a; transition: all .15s; }
+.hof-filter-btn:hover { border-color: #0f8a86; color: #0f8a86; }
+.hof-filter-btn.active { background: #0f8a86; color: #fff; border-color: #0f8a86; }
+
+/* Grid */
+.hof-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.hof-card { background: #fff; border: 1px solid #e6e9ef; border-radius: 12px; overflow: hidden; transition: box-shadow .2s, transform .2s; }
+.hof-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.08); transform: translateY(-2px); }
+.hof-card-photo { height: 200px; background: #f0f2f6; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.hof-card-photo img { width: 100%; height: 100%; object-fit: cover; }
+.hof-card-avatar { width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 28px; font-weight: 700; }
+.hof-card-body { padding: 16px 18px 18px; }
+.hof-card-body h3 { margin: 0 0 4px; font-size: 17px; color: #14233f; }
+.hof-card-title { margin: 0 0 2px; font-size: 13px; color: #0f8a86; font-weight: 600; }
+.hof-card-inst { margin: 0 0 2px; font-size: 13px; color: #56607a; }
+.hof-card-pos { margin: 0 0 4px; font-size: 12px; color: #8a93a3; }
+.hof-card-expertise { margin: 0 0 10px; font-size: 12px; color: #56607a; font-style: italic; }
+.hof-card-foot { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f0f2f6; padding-top: 10px; }
+.hof-card-year { font-size: 13px; font-weight: 700; color: #0f8a86; padding: 2px 10px; background: #e8f5f4; border-radius: 12px; }
+.hof-card-link { font-size: 13px; color: #0f8a86; text-decoration: none; font-weight: 600; }
+.hof-card-link:hover { text-decoration: underline; }
+.hof-empty { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: #56607a; }
+
+/* Profile Page */
+.hof-back { font-size: 13px; color: #0f8a86; text-decoration: none; }
+.hof-back:hover { text-decoration: underline; }
+
+.hof-profile { display: grid; grid-template-columns: 280px 1fr; gap: 32px; }
+.hof-profile-side { text-align: center; }
+.hof-profile-photo { width: 240px; height: 240px; border-radius: 12px; overflow: hidden; margin: 0 auto 16px; background: #f0f2f6; }
+.hof-profile-photo img { width: 100%; height: 100%; object-fit: cover; }
+.hof-profile-avatar { width: 240px; height: 240px; display: flex; align-items: center; justify-content: center; background: #2a4747; color: #fff; font-size: 64px; font-weight: 700; border-radius: 12px; }
+.hof-profile-badge { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #e8f5f4; border-radius: 20px; font-size: 14px; font-weight: 600; color: #0f8a86; margin-bottom: 16px; }
+.hof-profile-qr { margin-top: 12px; }
+.hof-profile-qr small { display: block; font-size: 11px; color: #8a93a3; margin-top: 4px; }
+
+.hof-profile-main h1 { font-size: 30px; color: #14233f; margin: 0 0 4px; }
+.hof-profile-title { font-size: 16px; color: #0f8a86; margin: 0 0 20px; font-weight: 600; }
+.hof-profile-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 28px; padding: 16px; background: #f8f9fb; border-radius: 10px; }
+.hof-meta-item strong { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #8a93a3; margin-bottom: 2px; }
+.hof-meta-item span { font-size: 14px; color: #14233f; }
+.hof-profile-bio, .hof-profile-section { margin-bottom: 24px; }
+.hof-profile-bio h2, .hof-profile-section h2 { font-size: 18px; color: #14233f; margin: 0 0 8px; padding-bottom: 6px; border-bottom: 2px solid #0f8a86; display: inline-block; }
+.hof-profile-bio p, .hof-profile-section p { font-size: 15px; line-height: 1.7; color: #3a4255; }
+
+@media (max-width: 768px) {
+  .hof-hero h1 { font-size: 26px; }
+  .hof-grid { grid-template-columns: 1fr; }
+  .hof-profile { grid-template-columns: 1fr; }
+  .hof-profile-side { order: -1; }
+  .hof-profile-photo { width: 180px; height: 180px; }
+  .hof-profile-meta { grid-template-columns: 1fr; }
+}

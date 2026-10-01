@@ -1,0 +1,297 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}{{ nom.full_name }} – Hall of Fame Review | MSREC Admin{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/site-settings.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}
+      {% include "dashboards/admin/_nav.html" with active="hof" %}
+{% endblock %}
+
+{% block topbar %}
+      {% include "dashboards/admin/_topbar.html" with page_title="Nomination Review" page_subtitle=nom.reference_no %}
+{% endblock %}
+
+{% block main_content %}
+
+<div style="margin-bottom:16px;">
+  <a href="{% url 'hall_of_fame:admin_nominations' %}" style="font-size:13px;color:#0f8a86;text-decoration:none;">&larr; Back to all nominations</a>
+</div>
+
+<!-- Status Bar -->
+<section class="panel" style="margin-bottom:20px;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+  <div>
+    <h2 style="margin:0;font-size:18px;">{{ nom.full_name }}</h2>
+    <p style="margin:4px 0 0;font-size:13px;color:#56607a;">{{ nom.professional_title }} &middot; {{ nom.institution|default:"No institution" }}</p>
+  </div>
+  <span class="badge {% if nom.status == 'published' or nom.status == 'approved' %}text-bg-success{% elif nom.status == 'rejected' %}text-bg-danger{% elif nom.status == 'revision_requested' %}text-bg-warning{% elif nom.status == 'draft' %}text-bg-secondary{% else %}text-bg-info{% endif %}" style="font-size:14px;padding:6px 14px;">{{ nom.get_status_display }}</span>
+</section>
+
+<!-- Actions -->
+{% if nom.status != 'draft' %}
+<section class="panel" style="margin-bottom:20px;padding:16px 24px;">
+  <h3 style="margin:0 0 12px;font-size:15px;">Actions</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:8px;">
+
+    {% if nom.status == 'submitted' or nom.status == 'resubmitted' %}
+    <form method="post" action="{% url 'hall_of_fame:admin_action' pk=nom.pk %}" style="display:inline;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="under_review">
+      <button type="submit" class="acct-btn acct-btn-edit">Mark Under Review</button>
+    </form>
+    {% endif %}
+
+    {% if nom.status == 'submitted' or nom.status == 'under_review' or nom.status == 'resubmitted' %}
+    <button type="button" class="acct-btn acct-btn-approve" onclick="document.getElementById('approveModal').hidden=false">Approve</button>
+    <button type="button" class="acct-btn acct-btn-edit" onclick="document.getElementById('publishModal').hidden=false">Approve &amp; Publish</button>
+    <button type="button" class="acct-btn" onclick="document.getElementById('revisionModal').hidden=false" style="color:#7a6600;border-color:#ffd666;">Request Revision</button>
+    <button type="button" class="acct-btn acct-btn-delete" onclick="document.getElementById('rejectModal').hidden=false">Reject</button>
+    {% endif %}
+
+    {% if nom.status == 'approved' %}
+    <form method="post" action="{% url 'hall_of_fame:admin_action' pk=nom.pk %}" style="display:inline;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="publish">
+      <button type="submit" class="acct-btn acct-btn-approve">Publish Profile</button>
+    </form>
+    <button type="button" class="acct-btn acct-btn-edit" onclick="document.getElementById('editBioModal').hidden=false">Edit Biography</button>
+    {% endif %}
+
+    {% if nom.status == 'published' %}
+    <form method="post" action="{% url 'hall_of_fame:admin_action' pk=nom.pk %}" style="display:inline;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="unpublish">
+      <button type="submit" class="acct-btn" style="color:#c0392b;">Unpublish</button>
+    </form>
+    <button type="button" class="acct-btn acct-btn-edit" onclick="document.getElementById('editBioModal').hidden=false">Edit Biography</button>
+    <form method="post" action="{% url 'hall_of_fame:admin_action' pk=nom.pk %}" style="display:inline;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="archive">
+      <button type="submit" class="acct-btn">Archive</button>
+    </form>
+    {% endif %}
+
+    {% if nom.status == 'published' or nom.status == 'approved' %}
+    <a href="{% url 'hall_of_fame:profile' pk=nom.pk %}" class="acct-btn" style="text-decoration:none;" target="_blank">View Public Profile</a>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+<!-- Nominee Details -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+  <section class="panel" style="padding:20px 24px;">
+    <h3 style="margin:0 0 14px;font-size:15px;">Personal Information</h3>
+    <table style="width:100%;font-size:14px;border-collapse:collapse;">
+      <tr><td style="padding:6px 0;color:#56607a;width:140px;">Full Name</td><td style="padding:6px 0;">{{ nom.full_name }}</td></tr>
+      <tr><td style="padding:6px 0;color:#56607a;">Title</td><td style="padding:6px 0;">{{ nom.professional_title|default:"—" }}</td></tr>
+      <tr><td style="padding:6px 0;color:#56607a;">Email</td><td style="padding:6px 0;">{{ nom.email }}</td></tr>
+      <tr><td style="padding:6px 0;color:#56607a;">Phone</td><td style="padding:6px 0;">{{ nom.phone|default:"—" }}</td></tr>
+      <tr><td style="padding:6px 0;color:#56607a;">Nationality</td><td style="padding:6px 0;">{{ nom.nationality|default:"—" }}</td></tr>
+      <tr><td style="padding:6px 0;color:#56607a;">Location</td><td style="padding:6px 0;">{{ nom.current_location|default:"—" }}</td></tr>
+    </table>
+  </section>
+
+  <section class="panel" style="padding:20px 24px;">
+    <h3 style="margin:0 0 14px;font-size:15px;">Professional Information</h3>
+    <table style="width:100%;font-size:14px;border-collapse:collapse;">
+      <tr><td style="padding:6px 0;color:#56607a;width:140px;">Institution</td><td style="padding:6px 0;">{{ nom.institution|default:"—" }}</td></tr>
+      <tr><td style="padding:6px 0;color:#56607a;">Position</td><td style="padding:6px 0;">{{ nom.position|default:"—" }}</td></tr>
+      <tr><td style="padding:6px 0;color:#56607a;">Department</td><td style="padding:6px 0;">{{ nom.department|default:"—" }}</td></tr>
+      <tr><td style="padding:6px 0;color:#56607a;">Experience</td><td style="padding:6px 0;">{{ nom.years_experience|default:"—" }} years</td></tr>
+      <tr><td style="padding:6px 0;color:#56607a;">Expertise</td><td style="padding:6px 0;">{{ nom.areas_of_expertise|default:"—" }}</td></tr>
+    </table>
+  </section>
+</div>
+
+<!-- Photo -->
+{% if photo_url %}
+<section class="panel" style="margin-top:20px;padding:20px 24px;">
+  <h3 style="margin:0 0 14px;font-size:15px;">Professional Photo</h3>
+  <img src="{{ photo_url }}" alt="{{ nom.full_name }}" style="max-width:200px;border-radius:8px;">
+</section>
+{% endif %}
+
+<!-- Recognition Profile -->
+<section class="panel" style="margin-top:20px;padding:20px 24px;">
+  <h3 style="margin:0 0 14px;font-size:15px;">Recognition Profile</h3>
+  <div style="margin-bottom:16px;"><strong style="font-size:13px;color:#56607a;">Biography</strong><p style="white-space:pre-wrap;font-size:14px;margin:4px 0 0;">{{ nom.biography|default:"—" }}</p></div>
+  <div style="margin-bottom:16px;"><strong style="font-size:13px;color:#56607a;">Achievements</strong><p style="white-space:pre-wrap;font-size:14px;margin:4px 0 0;">{{ nom.achievements|default:"—" }}</p></div>
+  <div style="margin-bottom:16px;"><strong style="font-size:13px;color:#56607a;">Contribution</strong><p style="white-space:pre-wrap;font-size:14px;margin:4px 0 0;">{{ nom.contribution|default:"—" }}</p></div>
+  <div><strong style="font-size:13px;color:#56607a;">Reason for Nomination</strong><p style="white-space:pre-wrap;font-size:14px;margin:4px 0 0;">{{ nom.reason_for_nomination|default:"—" }}</p></div>
+</section>
+
+<!-- Documents -->
+<section class="panel" style="margin-top:20px;padding:20px 24px;">
+  <h3 style="margin:0 0 14px;font-size:15px;">Uploaded Documents</h3>
+  <div style="display:flex;flex-wrap:wrap;gap:10px;">
+    {% if cv_url %}<a href="{{ cv_url }}" target="_blank" class="acct-btn acct-btn-edit" style="text-decoration:none;font-size:13px;">Download CV</a>{% else %}<span style="font-size:13px;color:#56607a;">No CV uploaded</span>{% endif %}
+    {% if report_url %}<a href="{{ report_url }}" target="_blank" class="acct-btn acct-btn-edit" style="text-decoration:none;font-size:13px;">Download Activity Report</a>{% endif %}
+    {% if evidence_url %}<a href="{{ evidence_url }}" target="_blank" class="acct-btn acct-btn-edit" style="text-decoration:none;font-size:13px;">Download Supporting Evidence</a>{% endif %}
+  </div>
+</section>
+
+<!-- Recognition IDs (if approved) -->
+{% if nom.hof_member_id %}
+<section class="panel" style="margin-top:20px;padding:20px 24px;">
+  <h3 style="margin:0 0 14px;font-size:15px;">Recognition Details</h3>
+  <table style="width:100%;font-size:14px;border-collapse:collapse;">
+    <tr><td style="padding:6px 0;color:#56607a;width:180px;">Hall of Fame ID</td><td style="padding:6px 0;font-weight:600;">{{ nom.hof_member_id }}</td></tr>
+    <tr><td style="padding:6px 0;color:#56607a;">Certificate Ref</td><td style="padding:6px 0;">{{ nom.certificate_ref }}</td></tr>
+    <tr><td style="padding:6px 0;color:#56607a;">Letter Ref</td><td style="padding:6px 0;">{{ nom.letter_ref }}</td></tr>
+    <tr><td style="padding:6px 0;color:#56607a;">Recognition Year</td><td style="padding:6px 0;">{{ nom.recognition_year }}</td></tr>
+    <tr><td style="padding:6px 0;color:#56607a;">Approved At</td><td style="padding:6px 0;">{{ nom.approved_at|date:"d M Y H:i" }}</td></tr>
+    <tr><td style="padding:6px 0;color:#56607a;">Published At</td><td style="padding:6px 0;">{{ nom.published_at|date:"d M Y H:i"|default:"Not yet published" }}</td></tr>
+  </table>
+</section>
+{% endif %}
+
+<!-- Audit Log -->
+<section class="panel" style="margin-top:20px;padding:20px 24px;">
+  <h3 style="margin:0 0 14px;font-size:15px;">Audit Trail</h3>
+  {% if audit_logs %}
+  <table style="width:100%;font-size:13px;border-collapse:collapse;">
+    <thead><tr><th style="text-align:left;padding:6px 0;color:#56607a;">Action</th><th style="text-align:left;padding:6px 0;color:#56607a;">By</th><th style="text-align:left;padding:6px 0;color:#56607a;">Date</th><th style="text-align:left;padding:6px 0;color:#56607a;">Detail</th></tr></thead>
+    <tbody>
+    {% for log in audit_logs %}
+    <tr style="border-top:1px solid #e6e9ef;">
+      <td style="padding:6px 0;">{{ log.action }}</td>
+      <td style="padding:6px 0;">{{ log.actor.full_name|default:"System" }}</td>
+      <td style="padding:6px 0;">{{ log.created_at|date:"d M Y H:i" }}</td>
+      <td style="padding:6px 0;max-width:200px;overflow:hidden;text-overflow:ellipsis;">{{ log.detail|truncatewords:20 }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p style="color:#56607a;font-size:13px;">No activity recorded yet.</p>
+  {% endif %}
+</section>
+
+<!-- MODALS -->
+
+<!-- Approve Modal -->
+<div class="acct-modal-overlay" id="approveModal" hidden>
+  <div class="acct-modal" role="dialog" aria-modal="true" style="max-width:520px;">
+    <form method="post" action="{% url 'hall_of_fame:admin_action' pk=nom.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="approve">
+      <div class="acct-modal-head"><h3>Approve Nomination</h3>
+        <button type="button" class="icon-btn" onclick="this.closest('.acct-modal-overlay').hidden=true" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="acct-modal-body">
+        <p style="font-size:14px;margin:0 0 12px;">Approve <strong>{{ nom.full_name }}</strong> for the Hall of Fame. You can edit the public biography below before approving.</p>
+        <label class="settings-label">Public Biography (editable)
+          <textarea name="approved_biography" rows="6" class="settings-input">{{ nom.approved_biography|default:nom.biography }}</textarea>
+        </label>
+      </div>
+      <div class="acct-modal-actions">
+        <button type="button" class="acct-btn acct-btn-cancel" onclick="this.closest('.acct-modal-overlay').hidden=true">Cancel</button>
+        <button type="submit" class="acct-btn acct-btn-approve">Approve</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Publish Modal -->
+<div class="acct-modal-overlay" id="publishModal" hidden>
+  <div class="acct-modal" role="dialog" aria-modal="true" style="max-width:520px;">
+    <form method="post" action="{% url 'hall_of_fame:admin_action' pk=nom.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="publish">
+      <div class="acct-modal-head"><h3>Approve &amp; Publish</h3>
+        <button type="button" class="icon-btn" onclick="this.closest('.acct-modal-overlay').hidden=true" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="acct-modal-body">
+        <p style="font-size:14px;margin:0 0 12px;">This will approve <strong>{{ nom.full_name }}</strong> and immediately publish their profile on the public Hall of Fame page.</p>
+        <label class="settings-label">Public Biography (editable)
+          <textarea name="approved_biography" rows="6" class="settings-input">{{ nom.approved_biography|default:nom.biography }}</textarea>
+        </label>
+      </div>
+      <div class="acct-modal-actions">
+        <button type="button" class="acct-btn acct-btn-cancel" onclick="this.closest('.acct-modal-overlay').hidden=true">Cancel</button>
+        <button type="submit" class="acct-btn acct-btn-approve">Approve &amp; Publish</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Revision Modal -->
+<div class="acct-modal-overlay" id="revisionModal" hidden>
+  <div class="acct-modal" role="dialog" aria-modal="true" style="max-width:520px;">
+    <form method="post" action="{% url 'hall_of_fame:admin_action' pk=nom.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="request_revision">
+      <div class="acct-modal-head"><h3>Request Revision</h3>
+        <button type="button" class="icon-btn" onclick="this.closest('.acct-modal-overlay').hidden=true" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="acct-modal-body">
+        <label class="settings-label">Message to nominee *
+          <textarea name="revision_message" rows="4" required class="settings-input" placeholder="Describe what needs to be corrected or added..."></textarea>
+        </label>
+      </div>
+      <div class="acct-modal-actions">
+        <button type="button" class="acct-btn acct-btn-cancel" onclick="this.closest('.acct-modal-overlay').hidden=true">Cancel</button>
+        <button type="submit" class="acct-btn" style="background:#7a6600;color:#fff;">Send Revision Request</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div class="acct-modal-overlay" id="rejectModal" hidden>
+  <div class="acct-modal" role="dialog" aria-modal="true" style="max-width:520px;">
+    <form method="post" action="{% url 'hall_of_fame:admin_action' pk=nom.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="reject">
+      <div class="acct-modal-head"><h3>Reject Nomination</h3>
+        <button type="button" class="icon-btn" onclick="this.closest('.acct-modal-overlay').hidden=true" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="acct-modal-body">
+        <label class="settings-label">Reason for rejection
+          <textarea name="rejection_reason" rows="3" class="settings-input" placeholder="Optional reason..."></textarea>
+        </label>
+      </div>
+      <div class="acct-modal-actions">
+        <button type="button" class="acct-btn acct-btn-cancel" onclick="this.closest('.acct-modal-overlay').hidden=true">Cancel</button>
+        <button type="submit" class="acct-btn acct-btn-delete">Reject Nomination</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Biography Modal -->
+<div class="acct-modal-overlay" id="editBioModal" hidden>
+  <div class="acct-modal" role="dialog" aria-modal="true" style="max-width:520px;">
+    <form method="post" action="{% url 'hall_of_fame:admin_action' pk=nom.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="edit_biography">
+      <div class="acct-modal-head"><h3>Edit Public Biography</h3>
+        <button type="button" class="icon-btn" onclick="this.closest('.acct-modal-overlay').hidden=true" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+      </div>
+      <div class="acct-modal-body">
+        <label class="settings-label">Biography
+          <textarea name="approved_biography" rows="8" class="settings-input">{{ nom.approved_biography|default:nom.biography }}</textarea>
+        </label>
+      </div>
+      <div class="acct-modal-actions">
+        <button type="button" class="acct-btn acct-btn-cancel" onclick="this.closest('.acct-modal-overlay').hidden=true">Cancel</button>
+        <button type="submit" class="acct-btn acct-btn-approve">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') document.querySelectorAll('.acct-modal-overlay').forEach(function(m) { m.hidden = true; });
+});
+document.querySelectorAll('.acct-modal-overlay').forEach(function(overlay) {
+  overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.hidden = true; });
+});
+</script>
+{% endblock %}

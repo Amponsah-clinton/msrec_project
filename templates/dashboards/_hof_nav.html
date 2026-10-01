@@ -1,0 +1,16 @@
+{% comment %}
+Hall of Fame section, merged into any member's dashboard sidebar.
+Uses the same collapsible nav-group pattern as _secretary_nav_group.html.
+{% endcomment %}
+      <div class="nav-group{% if active == 'hof_home' or active == 'hof_nominate' %} open{% endif %}">
+        <button type="button" class="nav-group-toggle" aria-expanded="{% if active == 'hof_home' or active == 'hof_nominate' %}true{% else %}false{% endif %}">
+          <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z"/></svg></span>
+          <span>Hall of Fame</span>
+          <svg class="nav-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <div class="nav-subnav">
+          <a href="{% url 'hall_of_fame:dashboard' %}" class="nav-sublink{% if active == 'hof_home' %} active{% endif %}">My Nomination</a>
+          <a href="{% url 'hall_of_fame:nominate' %}" class="nav-sublink{% if active == 'hof_nominate' %} active{% endif %}">Nominate Myself</a>
+          <a href="{% url 'hall_of_fame:directory' %}" class="nav-sublink" target="_blank">View Hall of Fame</a>
+        </div>
+      </div>

@@ -86,6 +86,7 @@
             <li><a href="{% url 'pages:resources' %}"{% if request.resolver_match.url_name == 'resources' %} class="active"{% endif %}>Resources</a></li>
             <li><a href="{% url 'pages:governance' %}"{% if request.resolver_match.url_name == 'governance' %} class="active"{% endif %}>Governance</a></li>
             <li><a href="{% url 'pages:board_committee' %}"{% if request.resolver_match.url_name == 'board_committee' %} class="active"{% endif %}>Board &amp; Committee</a></li>
+            <li><a href="{% url 'hall_of_fame:directory' %}">Hall of Fame</a></li>
             <li class="navmenu-mobile-only navmenu-divider"><a href="{% url 'pages:verify' %}">Verify Approval</a></li>
             <li class="navmenu-mobile-only"><a href="{% url 'pages:contact' %}">Contact</a></li>
             <li class="navmenu-mobile-only"><a href="{% url 'pages:apply' %}">Apply</a></li>

@@ -69,6 +69,7 @@ INSTALLED_APPS = [
     "secretariat_dashboard",
     "admin_dashboard",
     "institution_dashboard",
+    "hall_of_fame",
     "assistant",
 ]
 

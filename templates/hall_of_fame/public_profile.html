@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ nom.full_name }} | Hall of Fame | MSREC{% endblock %}
+{% block description %}{{ nom.full_name }} – MSREC Hall of Fame inductee {{ nom.recognition_year }}.{% endblock %}
+{% block body_class %}hof-page{% endblock %}
+{% block fonts %}{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/hall-of-fame.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+<main class="main hof-main">
+  <div class="hof-wrap">
+
+    <div style="margin-bottom:20px;">
+      <a href="{% url 'hall_of_fame:directory' %}" class="hof-back">&larr; Back to Hall of Fame</a>
+    </div>
+
+    <div class="hof-profile">
+      <!-- Left column: photo and badge -->
+      <div class="hof-profile-side">
+        <div class="hof-profile-photo">
+          {% if photo_url %}
+          <img src="{{ photo_url }}" alt="{{ nom.full_name }}">
+          {% else %}
+          <span class="hof-profile-avatar">{{ nom.full_name|make_list|first }}{{ nom.full_name|truncatewords:2|make_list|last }}</span>
+          {% endif %}
+        </div>
+        <div class="hof-profile-badge">
+          <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:#0f8a86;stroke-width:2;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z"/></svg>
+          <span>Hall of Fame {{ nom.recognition_year }}</span>
+        </div>
+        {% if qr_uri %}
+        <div class="hof-profile-qr">
+          <img src="{{ qr_uri }}" alt="Verification QR" style="width:120px;height:120px;">
+          <small>Scan to verify</small>
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Right column: details -->
+      <div class="hof-profile-main">
+        <h1>{{ nom.full_name }}</h1>
+        {% if nom.professional_title %}<p class="hof-profile-title">{{ nom.professional_title }}</p>{% endif %}
+
+        <div class="hof-profile-meta">
+          {% if nom.institution %}<div class="hof-meta-item"><strong>Institution</strong><span>{{ nom.institution }}</span></div>{% endif %}
+          {% if nom.position %}<div class="hof-meta-item"><strong>Position</strong><span>{{ nom.position }}</span></div>{% endif %}
+          {% if nom.areas_of_expertise %}<div class="hof-meta-item"><strong>Areas of Expertise</strong><span>{{ nom.areas_of_expertise }}</span></div>{% endif %}
+          <div class="hof-meta-item"><strong>Hall of Fame ID</strong><span>{{ nom.hof_member_id }}</span></div>
+          <div class="hof-meta-item"><strong>Recognition Year</strong><span>{{ nom.recognition_year }}</span></div>
+        </div>
+
+        {% if biography %}
+        <div class="hof-profile-bio">
+          <h2>Biography</h2>
+          <p>{{ biography|linebreaksbr }}</p>
+        </div>
+        {% endif %}
+
+        {% if nom.achievements %}
+        <div class="hof-profile-section">
+          <h2>Achievements</h2>
+          <p>{{ nom.achievements|linebreaksbr }}</p>
+        </div>
+        {% endif %}
+
+        {% if nom.contribution %}
+        <div class="hof-profile-section">
+          <h2>Contributions</h2>
+          <p>{{ nom.contribution|linebreaksbr }}</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</main>
+{% endblock %}
