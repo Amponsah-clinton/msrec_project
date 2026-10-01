@@ -995,9 +995,29 @@ section,
   padding: 140px 0 0 0;
 }
 
-.hero .container {
+.hero .container,
+.hero > .container-fluid {
   position: relative;
   z-index: 3;
+}
+
+.hero > .container-fluid {
+  padding-left: calc(90px - var(--bs-gutter-x, 1.5rem) * 0.5);
+  padding-right: calc(90px - var(--bs-gutter-x, 1.5rem) * 0.5);
+}
+
+@media (max-width: 991px) {
+  .hero > .container-fluid {
+    padding-left: calc(40px - var(--bs-gutter-x, 1.5rem) * 0.5);
+    padding-right: calc(40px - var(--bs-gutter-x, 1.5rem) * 0.5);
+  }
+}
+
+@media (max-width: 575px) {
+  .hero > .container-fluid {
+    padding-left: calc(20px - var(--bs-gutter-x, 1.5rem) * 0.5);
+    padding-right: calc(20px - var(--bs-gutter-x, 1.5rem) * 0.5);
+  }
 }
 
 .hero h2 {
