@@ -10,7 +10,13 @@
 {% endblock %}
 
 {% block nav_content %}
-      {% include "dashboards/_hof_nav.html" with active="hof_nominate" %}
+      {% if request.user.role == 'committee' %}
+        {% include "dashboards/committee/_nav.html" %}
+      {% elif request.user.role == 'reviewer' %}
+        {% include "dashboards/reviewer/_nav.html" %}
+      {% else %}
+        {% include "dashboards/applicant/_nav.html" %}
+      {% endif %}
 {% endblock %}
 
 {% block topbar %}
@@ -25,25 +31,41 @@
   <section class="panel" style="margin-bottom:20px;">
     <div class="panel-header"><h2>Personal Information</h2></div>
     <div style="padding:20px 24px;">
-      <div class="field-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <label class="settings-label">Full Name *
-          <input type="text" name="full_name" required value="{{ nomination.full_name|default:initial.full_name|default:'' }}" class="settings-input">
-        </label>
-        <label class="settings-label">Professional Title
-          <input type="text" name="professional_title" value="{{ nomination.professional_title|default:initial.professional_title|default:'' }}" class="settings-input" placeholder="e.g. Prof., Dr.">
-        </label>
-        <label class="settings-label">Email Address *
-          <input type="email" name="email" required value="{{ nomination.email|default:initial.email|default:'' }}" class="settings-input">
-        </label>
-        <label class="settings-label">Phone Number
-          <input type="text" name="phone" value="{{ nomination.phone|default:initial.phone|default:'' }}" class="settings-input">
-        </label>
-        <label class="settings-label">Nationality
-          <input type="text" name="nationality" value="{{ nomination.nationality|default:'' }}" class="settings-input">
-        </label>
-        <label class="settings-label">Current City / Country
-          <input type="text" name="current_location" value="{{ nomination.current_location|default:'' }}" class="settings-input">
-        </label>
+      <div class="field-grid">
+        <div class="field">
+          <label for="full_name">Full Name <span class="req">*</span></label>
+          <input type="text" id="full_name" name="full_name" required value="{{ nomination.full_name|default:initial.full_name|default:'' }}">
+        </div>
+        <div class="field">
+          <label for="professional_title">Professional Title</label>
+          {% with pt=nomination.professional_title|default:initial.professional_title|default:'' %}
+          <select id="professional_title" name="professional_title">
+            <option value="">Select title</option>
+            <option{% if pt == "Prof." %} selected{% endif %}>Prof.</option>
+            <option{% if pt == "Dr." %} selected{% endif %}>Dr.</option>
+            <option{% if pt == "Mr." %} selected{% endif %}>Mr.</option>
+            <option{% if pt == "Mrs." %} selected{% endif %}>Mrs.</option>
+            <option{% if pt == "Ms." %} selected{% endif %}>Ms.</option>
+            <option{% if pt == "Other" %} selected{% endif %}>Other</option>
+          </select>
+          {% endwith %}
+        </div>
+        <div class="field">
+          <label for="email">Email Address <span class="req">*</span></label>
+          <input type="email" id="email" name="email" required value="{{ nomination.email|default:initial.email|default:'' }}">
+        </div>
+        <div class="field">
+          <label for="phone">Phone Number</label>
+          <input type="text" id="phone" name="phone" value="{{ nomination.phone|default:initial.phone|default:'' }}">
+        </div>
+        <div class="field">
+          <label for="nationality">Nationality</label>
+          <input type="text" id="nationality" name="nationality" value="{{ nomination.nationality|default:'' }}">
+        </div>
+        <div class="field">
+          <label for="current_location">Current City / Country</label>
+          <input type="text" id="current_location" name="current_location" value="{{ nomination.current_location|default:'' }}">
+        </div>
       </div>
     </div>
   </section>
@@ -52,22 +74,27 @@
   <section class="panel" style="margin-bottom:20px;">
     <div class="panel-header"><h2>Professional Information</h2></div>
     <div style="padding:20px 24px;">
-      <div class="field-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <label class="settings-label">Institution / Organization
-          <input type="text" name="institution" value="{{ nomination.institution|default:initial.institution|default:'' }}" class="settings-input">
-        </label>
-        <label class="settings-label">Current Position
-          <input type="text" name="position" value="{{ nomination.position|default:initial.position|default:'' }}" class="settings-input">
-        </label>
-        <label class="settings-label">Department / Unit
-          <input type="text" name="department" value="{{ nomination.department|default:initial.department|default:'' }}" class="settings-input">
-        </label>
-        <label class="settings-label">Years of Experience
-          <input type="number" name="years_experience" min="0" value="{{ nomination.years_experience|default:'' }}" class="settings-input">
-        </label>
-        <label class="settings-label" style="grid-column:1/-1;">Areas of Expertise
-          <textarea name="areas_of_expertise" rows="3" class="settings-input" placeholder="e.g. Research Ethics, Bioethics, Clinical Trials...">{{ nomination.areas_of_expertise|default:'' }}</textarea>
-        </label>
+      <div class="field-grid">
+        <div class="field">
+          <label for="institution">Institution / Organization</label>
+          <input type="text" id="institution" name="institution" value="{{ nomination.institution|default:initial.institution|default:'' }}">
+        </div>
+        <div class="field">
+          <label for="position">Current Position</label>
+          <input type="text" id="position" name="position" value="{{ nomination.position|default:initial.position|default:'' }}">
+        </div>
+        <div class="field">
+          <label for="department">Department / Unit</label>
+          <input type="text" id="department" name="department" value="{{ nomination.department|default:initial.department|default:'' }}">
+        </div>
+        <div class="field">
+          <label for="years_experience">Years of Experience</label>
+          <input type="number" id="years_experience" name="years_experience" min="0" value="{{ nomination.years_experience|default:'' }}">
+        </div>
+        <div class="field field-wide">
+          <label for="areas_of_expertise">Areas of Expertise</label>
+          <textarea id="areas_of_expertise" name="areas_of_expertise" rows="3" placeholder="e.g. Research Ethics, Bioethics, Clinical Trials...">{{ nomination.areas_of_expertise|default:'' }}</textarea>
+        </div>
       </div>
     </div>
   </section>
@@ -76,19 +103,23 @@
   <section class="panel" style="margin-bottom:20px;">
     <div class="panel-header"><h2>Recognition Profile</h2></div>
     <div style="padding:20px 24px;">
-      <div style="display:grid;gap:14px;">
-        <label class="settings-label">Short Professional Biography *
-          <textarea name="biography" rows="5" required class="settings-input" placeholder="Write a professional biography that will be shown on your public profile if approved...">{{ nomination.biography|default:'' }}</textarea>
-        </label>
-        <label class="settings-label">Major Achievements *
-          <textarea name="achievements" rows="4" required class="settings-input" placeholder="Describe your major professional achievements...">{{ nomination.achievements|default:'' }}</textarea>
-        </label>
-        <label class="settings-label">Contribution to Research Ethics *
-          <textarea name="contribution" rows="4" required class="settings-input" placeholder="Describe your contribution to research ethics, scholarship, peer review, academia, public service, innovation, mentorship...">{{ nomination.contribution|default:'' }}</textarea>
-        </label>
-        <label class="settings-label">Reason for Nomination *
-          <textarea name="reason_for_nomination" rows="3" required class="settings-input" placeholder="Why do you believe you should be inducted into the MSREC Hall of Fame?">{{ nomination.reason_for_nomination|default:'' }}</textarea>
-        </label>
+      <div class="field-grid">
+        <div class="field field-wide">
+          <label for="biography">Short Professional Biography <span class="req">*</span></label>
+          <textarea id="biography" name="biography" rows="5" required placeholder="Write a professional biography that will be shown on your public profile if approved...">{{ nomination.biography|default:'' }}</textarea>
+        </div>
+        <div class="field field-wide">
+          <label for="achievements">Major Achievements <span class="req">*</span></label>
+          <textarea id="achievements" name="achievements" rows="4" required placeholder="Describe your major professional achievements...">{{ nomination.achievements|default:'' }}</textarea>
+        </div>
+        <div class="field field-wide">
+          <label for="contribution">Contribution to Research Ethics <span class="req">*</span></label>
+          <textarea id="contribution" name="contribution" rows="4" required placeholder="Describe your contribution to research ethics, scholarship, peer review, academia, public service, innovation, mentorship...">{{ nomination.contribution|default:'' }}</textarea>
+        </div>
+        <div class="field field-wide">
+          <label for="reason_for_nomination">Reason for Nomination <span class="req">*</span></label>
+          <textarea id="reason_for_nomination" name="reason_for_nomination" rows="3" required placeholder="Why do you believe you should be inducted into the MSREC Hall of Fame?">{{ nomination.reason_for_nomination|default:'' }}</textarea>
+        </div>
       </div>
     </div>
   </section>
@@ -97,23 +128,27 @@
   <section class="panel" style="margin-bottom:20px;">
     <div class="panel-header"><h2>Evidence &amp; Uploads</h2></div>
     <div style="padding:20px 24px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <label class="settings-label">CV (PDF) *
-          <input type="file" name="cv" accept=".pdf" class="settings-input"{% if not nomination or not nomination.cv_path %} required{% endif %}>
-          {% if nomination and nomination.cv_path %}<small style="color:#0f8a86;">CV already uploaded</small>{% endif %}
-        </label>
-        <label class="settings-label">MSREC Reviewer Activity Report
-          <input type="file" name="activity_report" accept=".pdf" class="settings-input">
-          {% if nomination and nomination.activity_report_path %}<small style="color:#0f8a86;">Report already uploaded</small>{% endif %}
-        </label>
-        <label class="settings-label">Supporting Evidence (Optional)
-          <input type="file" name="supporting_evidence" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="settings-input">
-          {% if nomination and nomination.supporting_evidence_path %}<small style="color:#0f8a86;">Evidence already uploaded</small>{% endif %}
-        </label>
-        <label class="settings-label">Professional Headshot *
-          <input type="file" name="photo" accept="image/*" class="settings-input"{% if not nomination or not nomination.photo_path %} required{% endif %}>
-          {% if nomination and nomination.photo_path %}<small style="color:#0f8a86;">Photo already uploaded</small>{% endif %}
-        </label>
+      <div class="field-grid">
+        <div class="field">
+          <label for="cv">CV (PDF) <span class="req">*</span></label>
+          <input type="file" id="cv" name="cv" accept=".pdf"{% if not nomination or not nomination.cv_path %} required{% endif %}>
+          {% if nomination and nomination.cv_path %}<p class="field-hint" style="color:var(--teal);">CV already uploaded</p>{% endif %}
+        </div>
+        <div class="field">
+          <label for="activity_report">MSREC Reviewer Activity Report</label>
+          <input type="file" id="activity_report" name="activity_report" accept=".pdf">
+          {% if nomination and nomination.activity_report_path %}<p class="field-hint" style="color:var(--teal);">Report already uploaded</p>{% endif %}
+        </div>
+        <div class="field">
+          <label for="supporting_evidence">Supporting Evidence (Optional)</label>
+          <input type="file" id="supporting_evidence" name="supporting_evidence" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
+          {% if nomination and nomination.supporting_evidence_path %}<p class="field-hint" style="color:var(--teal);">Evidence already uploaded</p>{% endif %}
+        </div>
+        <div class="field">
+          <label for="photo">Professional Headshot <span class="req">*</span></label>
+          <input type="file" id="photo" name="photo" accept="image/*"{% if not nomination or not nomination.photo_path %} required{% endif %}>
+          {% if nomination and nomination.photo_path %}<p class="field-hint" style="color:var(--teal);">Photo already uploaded</p>{% endif %}
+        </div>
       </div>
     </div>
   </section>

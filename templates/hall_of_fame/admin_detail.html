@@ -185,9 +185,10 @@
       </div>
       <div class="acct-modal-body">
         <p style="font-size:14px;margin:0 0 12px;">Approve <strong>{{ nom.full_name }}</strong> for the Hall of Fame. You can edit the public biography below before approving.</p>
-        <label class="settings-label">Public Biography (editable)
-          <textarea name="approved_biography" rows="6" class="settings-input">{{ nom.approved_biography|default:nom.biography }}</textarea>
-        </label>
+        <div class="field">
+          <label for="approve_bio">Public Biography (editable)</label>
+          <textarea id="approve_bio" name="approved_biography" rows="6">{{ nom.approved_biography|default:nom.biography }}</textarea>
+        </div>
       </div>
       <div class="acct-modal-actions">
         <button type="button" class="acct-btn acct-btn-cancel" onclick="this.closest('.acct-modal-overlay').hidden=true">Cancel</button>
@@ -208,9 +209,10 @@
       </div>
       <div class="acct-modal-body">
         <p style="font-size:14px;margin:0 0 12px;">This will approve <strong>{{ nom.full_name }}</strong> and immediately publish their profile on the public Hall of Fame page.</p>
-        <label class="settings-label">Public Biography (editable)
-          <textarea name="approved_biography" rows="6" class="settings-input">{{ nom.approved_biography|default:nom.biography }}</textarea>
-        </label>
+        <div class="field">
+          <label for="publish_bio">Public Biography (editable)</label>
+          <textarea id="publish_bio" name="approved_biography" rows="6">{{ nom.approved_biography|default:nom.biography }}</textarea>
+        </div>
       </div>
       <div class="acct-modal-actions">
         <button type="button" class="acct-btn acct-btn-cancel" onclick="this.closest('.acct-modal-overlay').hidden=true">Cancel</button>
@@ -230,9 +232,10 @@
         <button type="button" class="icon-btn" onclick="this.closest('.acct-modal-overlay').hidden=true" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       </div>
       <div class="acct-modal-body">
-        <label class="settings-label">Message to nominee *
-          <textarea name="revision_message" rows="4" required class="settings-input" placeholder="Describe what needs to be corrected or added..."></textarea>
-        </label>
+        <div class="field">
+          <label for="revision_msg">Message to nominee <span class="req">*</span></label>
+          <textarea id="revision_msg" name="revision_message" rows="4" required placeholder="Describe what needs to be corrected or added..."></textarea>
+        </div>
       </div>
       <div class="acct-modal-actions">
         <button type="button" class="acct-btn acct-btn-cancel" onclick="this.closest('.acct-modal-overlay').hidden=true">Cancel</button>
@@ -252,9 +255,10 @@
         <button type="button" class="icon-btn" onclick="this.closest('.acct-modal-overlay').hidden=true" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       </div>
       <div class="acct-modal-body">
-        <label class="settings-label">Reason for rejection
-          <textarea name="rejection_reason" rows="3" class="settings-input" placeholder="Optional reason..."></textarea>
-        </label>
+        <div class="field">
+          <label for="reject_reason">Reason for rejection</label>
+          <textarea id="reject_reason" name="rejection_reason" rows="3" placeholder="Optional reason..."></textarea>
+        </div>
       </div>
       <div class="acct-modal-actions">
         <button type="button" class="acct-btn acct-btn-cancel" onclick="this.closest('.acct-modal-overlay').hidden=true">Cancel</button>
@@ -274,9 +278,10 @@
         <button type="button" class="icon-btn" onclick="this.closest('.acct-modal-overlay').hidden=true" aria-label="Close"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
       </div>
       <div class="acct-modal-body">
-        <label class="settings-label">Biography
-          <textarea name="approved_biography" rows="8" class="settings-input">{{ nom.approved_biography|default:nom.biography }}</textarea>
-        </label>
+        <div class="field">
+          <label for="edit_bio">Biography</label>
+          <textarea id="edit_bio" name="approved_biography" rows="8">{{ nom.approved_biography|default:nom.biography }}</textarea>
+        </div>
       </div>
       <div class="acct-modal-actions">
         <button type="button" class="acct-btn acct-btn-cancel" onclick="this.closest('.acct-modal-overlay').hidden=true">Cancel</button>

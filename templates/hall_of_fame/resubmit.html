@@ -10,7 +10,13 @@
 {% endblock %}
 
 {% block nav_content %}
-      {% include "dashboards/_hof_nav.html" with active="hof_home" %}
+      {% if request.user.role == 'committee' %}
+        {% include "dashboards/committee/_nav.html" %}
+      {% elif request.user.role == 'reviewer' %}
+        {% include "dashboards/reviewer/_nav.html" %}
+      {% else %}
+        {% include "dashboards/applicant/_nav.html" %}
+      {% endif %}
 {% endblock %}
 
 {% block topbar %}
@@ -32,28 +38,43 @@
   <section class="panel" style="margin-bottom:20px;">
     <div class="panel-header"><h2>Update Your Nomination</h2></div>
     <div style="padding:20px 24px;">
-      <div class="field-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <label class="settings-label">Full Name
-          <input type="text" name="full_name" value="{{ nomination.full_name }}" class="settings-input">
-        </label>
-        <label class="settings-label">Professional Title
-          <input type="text" name="professional_title" value="{{ nomination.professional_title }}" class="settings-input">
-        </label>
-        <label class="settings-label">Institution
-          <input type="text" name="institution" value="{{ nomination.institution }}" class="settings-input">
-        </label>
-        <label class="settings-label">Position
-          <input type="text" name="position" value="{{ nomination.position }}" class="settings-input">
-        </label>
-        <label class="settings-label">Department
-          <input type="text" name="department" value="{{ nomination.department }}" class="settings-input">
-        </label>
-        <label class="settings-label">Years of Experience
-          <input type="number" name="years_experience" min="0" value="{{ nomination.years_experience|default:'' }}" class="settings-input">
-        </label>
-        <label class="settings-label" style="grid-column:1/-1;">Areas of Expertise
-          <textarea name="areas_of_expertise" rows="3" class="settings-input">{{ nomination.areas_of_expertise }}</textarea>
-        </label>
+      <div class="field-grid">
+        <div class="field">
+          <label for="full_name">Full Name</label>
+          <input type="text" id="full_name" name="full_name" value="{{ nomination.full_name }}">
+        </div>
+        <div class="field">
+          <label for="professional_title">Professional Title</label>
+          <select id="professional_title" name="professional_title">
+            <option value="">Select title</option>
+            <option{% if nomination.professional_title == "Prof." %} selected{% endif %}>Prof.</option>
+            <option{% if nomination.professional_title == "Dr." %} selected{% endif %}>Dr.</option>
+            <option{% if nomination.professional_title == "Mr." %} selected{% endif %}>Mr.</option>
+            <option{% if nomination.professional_title == "Mrs." %} selected{% endif %}>Mrs.</option>
+            <option{% if nomination.professional_title == "Ms." %} selected{% endif %}>Ms.</option>
+            <option{% if nomination.professional_title == "Other" %} selected{% endif %}>Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="institution">Institution</label>
+          <input type="text" id="institution" name="institution" value="{{ nomination.institution }}">
+        </div>
+        <div class="field">
+          <label for="position">Position</label>
+          <input type="text" id="position" name="position" value="{{ nomination.position }}">
+        </div>
+        <div class="field">
+          <label for="department">Department</label>
+          <input type="text" id="department" name="department" value="{{ nomination.department }}">
+        </div>
+        <div class="field">
+          <label for="years_experience">Years of Experience</label>
+          <input type="number" id="years_experience" name="years_experience" min="0" value="{{ nomination.years_experience|default:'' }}">
+        </div>
+        <div class="field field-wide">
+          <label for="areas_of_expertise">Areas of Expertise</label>
+          <textarea id="areas_of_expertise" name="areas_of_expertise" rows="3">{{ nomination.areas_of_expertise }}</textarea>
+        </div>
       </div>
     </div>
   </section>
@@ -61,19 +82,23 @@
   <section class="panel" style="margin-bottom:20px;">
     <div class="panel-header"><h2>Recognition Profile</h2></div>
     <div style="padding:20px 24px;">
-      <div style="display:grid;gap:14px;">
-        <label class="settings-label">Biography
-          <textarea name="biography" rows="5" class="settings-input">{{ nomination.biography }}</textarea>
-        </label>
-        <label class="settings-label">Achievements
-          <textarea name="achievements" rows="4" class="settings-input">{{ nomination.achievements }}</textarea>
-        </label>
-        <label class="settings-label">Contribution
-          <textarea name="contribution" rows="4" class="settings-input">{{ nomination.contribution }}</textarea>
-        </label>
-        <label class="settings-label">Reason for Nomination
-          <textarea name="reason_for_nomination" rows="3" class="settings-input">{{ nomination.reason_for_nomination }}</textarea>
-        </label>
+      <div class="field-grid">
+        <div class="field field-wide">
+          <label for="biography">Biography</label>
+          <textarea id="biography" name="biography" rows="5">{{ nomination.biography }}</textarea>
+        </div>
+        <div class="field field-wide">
+          <label for="achievements">Achievements</label>
+          <textarea id="achievements" name="achievements" rows="4">{{ nomination.achievements }}</textarea>
+        </div>
+        <div class="field field-wide">
+          <label for="contribution">Contribution</label>
+          <textarea id="contribution" name="contribution" rows="4">{{ nomination.contribution }}</textarea>
+        </div>
+        <div class="field field-wide">
+          <label for="reason_for_nomination">Reason for Nomination</label>
+          <textarea id="reason_for_nomination" name="reason_for_nomination" rows="3">{{ nomination.reason_for_nomination }}</textarea>
+        </div>
       </div>
     </div>
   </section>
@@ -81,20 +106,24 @@
   <section class="panel" style="margin-bottom:20px;">
     <div class="panel-header"><h2>Replace Uploads (Optional)</h2></div>
     <div style="padding:20px 24px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-        <label class="settings-label">Replace CV (PDF)
-          <input type="file" name="cv" accept=".pdf" class="settings-input">
-          {% if nomination.cv_path %}<small style="color:#0f8a86;">Current CV on file</small>{% endif %}
-        </label>
-        <label class="settings-label">Replace Activity Report
-          <input type="file" name="activity_report" accept=".pdf" class="settings-input">
-        </label>
-        <label class="settings-label">Replace Supporting Evidence
-          <input type="file" name="supporting_evidence" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" class="settings-input">
-        </label>
-        <label class="settings-label">Replace Photo
-          <input type="file" name="photo" accept="image/*" class="settings-input">
-        </label>
+      <div class="field-grid">
+        <div class="field">
+          <label for="cv">Replace CV (PDF)</label>
+          <input type="file" id="cv" name="cv" accept=".pdf">
+          {% if nomination.cv_path %}<p class="field-hint" style="color:var(--teal);">Current CV on file</p>{% endif %}
+        </div>
+        <div class="field">
+          <label for="activity_report">Replace Activity Report</label>
+          <input type="file" id="activity_report" name="activity_report" accept=".pdf">
+        </div>
+        <div class="field">
+          <label for="supporting_evidence">Replace Supporting Evidence</label>
+          <input type="file" id="supporting_evidence" name="supporting_evidence" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg">
+        </div>
+        <div class="field">
+          <label for="photo">Replace Photo</label>
+          <input type="file" id="photo" name="photo" accept="image/*">
+        </div>
       </div>
     </div>
   </section>

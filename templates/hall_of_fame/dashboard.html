@@ -8,7 +8,13 @@
 {% endblock %}
 
 {% block nav_content %}
-      {% include "dashboards/_hof_nav.html" with active="hof_home" %}
+      {% if request.user.role == 'committee' %}
+        {% include "dashboards/committee/_nav.html" %}
+      {% elif request.user.role == 'reviewer' %}
+        {% include "dashboards/reviewer/_nav.html" %}
+      {% else %}
+        {% include "dashboards/applicant/_nav.html" %}
+      {% endif %}
 {% endblock %}
 
 {% block topbar %}
