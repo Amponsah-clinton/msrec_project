@@ -1,0 +1,75 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Institutional Secretary Dashboard | MSREC{% endblock %}
+
+{% block nav_content %}{% include "dashboards/institution/_nav.html" with active="dashboard" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/institution/_topbar.html" with title="Institutional Secretary Dashboard" subtitle=institution %}{% endblock %}
+
+{% block main_content %}
+
+<section class="panel" style="margin-bottom:22px;">
+  <div class="panel-header"><h2><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V8l7-4 7 4v13"/><path d="M9 21v-6h6v6"/></svg> {{ institution|default:"Your institution" }}</h2></div>
+  <p class="panel-header-sub" style="padding:0 2px 6px;">Welcome back, {{ request.user.first_name }}. Here's a snapshot of your institution's activity on MSREC.</p>
+</section>
+
+<section class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(210px,1fr))">
+  <div class="stat-card">
+    <div class="stat-icon blue"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></div>
+    <p class="stat-label">Applications from my school</p>
+    <p class="stat-value">{{ application_count }}</p>
+    <a href="{% url 'institution_dashboard:applications' %}" class="stat-link">View all <span>&rsaquo;</span></a>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg></div>
+    <p class="stat-label">Approved studies</p>
+    <p class="stat-value">{{ approved_count }}</p>
+    <a href="{% url 'institution_dashboard:applications' %}" class="stat-link">View all <span>&rsaquo;</span></a>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
+    <p class="stat-label">Committee members</p>
+    <p class="stat-value">{{ committee_count }}</p>
+    <a href="{% url 'institution_dashboard:committee_members' %}" class="stat-link">View all <span>&rsaquo;</span></a>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon teal"><svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z"/><path d="m21 21-4.3-4.3"/></svg></div>
+    <p class="stat-label">Reviewers</p>
+    <p class="stat-value">{{ reviewer_count }}</p>
+    <a href="{% url 'institution_dashboard:reviewers' %}" class="stat-link">View all <span>&rsaquo;</span></a>
+  </div>
+</section>
+
+<section class="panel" style="margin-top:22px;">
+  <div class="panel-header">
+    <h2><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> Recent Applications</h2>
+    <a href="{% url 'institution_dashboard:applications' %}" class="panel-link">See all</a>
+  </div>
+  {% if recent_applications %}
+  <div class="table-wrap">
+    <table class="reviews-table">
+      <thead><tr><th>Reference</th><th>Title</th><th>Applicant</th><th>Status</th><th>Submitted</th></tr></thead>
+      <tbody>
+        {% for app in recent_applications %}
+        <tr>
+          <td class="ref-cell">{{ app.reference_no|default:"—" }}</td>
+          <td>{{ app.title }}</td>
+          <td>{{ app.applicant.full_name }}</td>
+          <td><span class="badge rounded-pill text-bg-secondary">{{ app.get_status_display }}</span></td>
+          <td>{{ app.submitted_at|date:"j M Y"|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span>
+    <h3>No applications yet</h3>
+    <p>When researchers at {{ institution|default:"your institution" }} submit applications, they'll appear here.</p>
+  </div>
+  {% endif %}
+</section>
+
+{% endblock %}

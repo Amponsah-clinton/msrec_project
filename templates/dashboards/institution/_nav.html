@@ -1,0 +1,31 @@
+{% comment %}
+Sidebar for the Institutional Secretary dashboard. Each page includes it
+with the key of the item to highlight:
+  {% include "dashboards/institution/_nav.html" with active="applications" %}
+Keys: dashboard, applications, committee, reviewers, other.
+{% endcomment %}
+
+      <a href="{% url 'institution_dashboard:home' %}" class="nav-item{% if active == 'dashboard' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10Zm0 8h8v-6H3v6Zm10 0h8V11h-8v10Zm0-18v6h8V3h-8Z"/></svg></span>
+        <span>Dashboard</span>
+      </a>
+
+      <a href="{% url 'institution_dashboard:applications' %}" class="nav-item{% if active == 'applications' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg></span>
+        <span>Applications from My School</span>
+      </a>
+
+      <a href="{% url 'institution_dashboard:committee_members' %}" class="nav-item{% if active == 'committee' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        <span>Committee Members</span>
+      </a>
+
+      <a href="{% url 'institution_dashboard:reviewers' %}" class="nav-item{% if active == 'reviewers' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z"/><path d="m21 21-4.3-4.3"/><path d="M8.5 11h5M11 8.5v5"/></svg></span>
+        <span>Reviewers</span>
+      </a>
+
+      <a href="{% url 'institution_dashboard:other_institutions' %}" class="nav-item{% if active == 'other' %} active{% endif %}">
+        <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M6 21V7l6-4 6 4v14"/><path d="M10 21v-5h4v5"/></svg></span>
+        <span>Other Institutions</span>
+      </a>

@@ -1,0 +1,49 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Reviewers | MSREC{% endblock %}
+
+{% block nav_content %}{% include "dashboards/institution/_nav.html" with active="reviewers" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/institution/_topbar.html" with title="Reviewers" subtitle=institution %}{% endblock %}
+
+{% block main_content %}
+
+<div class="page-head">
+  <div class="page-head-text">
+    <h2>Reviewers from {{ institution|default:"my institution" }}</h2>
+    <p>Approved MSREC Reviewers registered under your institution.</p>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2><svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z"/><path d="m21 21-4.3-4.3"/></svg> Reviewers <span class="count badge rounded-pill text-bg-secondary">{{ total }}</span></h2>
+  </div>
+
+  {% if reviewers %}
+  <div class="table-wrap">
+    <table class="reviews-table">
+      <thead><tr><th>Name</th><th>Email</th><th>MSREC Ethics ID</th><th>Discipline</th></tr></thead>
+      <tbody>
+        {% for r in reviewers %}
+        <tr>
+          <td>{{ r.full_name }}</td>
+          <td>{{ r.email }}</td>
+          <td class="ref-cell">{{ r.membership_ethics_id|default:"—" }}</td>
+          <td>{{ r.reviewer_profile.reviewerDiscipline|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Z"/><path d="m21 21-4.3-4.3"/></svg></span>
+    <h3>No reviewers yet</h3>
+    <p>When approved Reviewers are registered under {{ institution|default:"your institution" }}, they'll appear here.</p>
+  </div>
+  {% endif %}
+</section>
+
+{% endblock %}

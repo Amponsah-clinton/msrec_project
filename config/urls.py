@@ -12,6 +12,7 @@ urlpatterns = [
     path("dashboard/committee/", include("committee_dashboard.urls")),
     path("dashboard/chair/", include("chair_dashboard.urls")),
     path("dashboard/secretariat/", include("secretariat_dashboard.urls")),
+    path("dashboard/institution/", include("institution_dashboard.urls")),
     path("admins/", include("admin_dashboard.urls")),
     path("notifications/", include("notifications.urls")),
     path("assistant/", include("assistant.urls")),

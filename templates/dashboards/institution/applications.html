@@ -1,0 +1,51 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Applications from My School | MSREC{% endblock %}
+
+{% block nav_content %}{% include "dashboards/institution/_nav.html" with active="applications" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/institution/_topbar.html" with title="Applications from My School" subtitle=institution %}{% endblock %}
+
+{% block main_content %}
+
+<div class="page-head">
+  <div class="page-head-text">
+    <h2>Applications from {{ institution|default:"my institution" }}</h2>
+    <p>Every application submitted by a researcher registered under your institution.</p>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg> Applications <span class="count badge rounded-pill text-bg-secondary">{{ total }}</span></h2>
+  </div>
+
+  {% if applications %}
+  <div class="table-wrap">
+    <table class="reviews-table">
+      <thead><tr><th>Reference</th><th>Title</th><th>Applicant</th><th>Review Type</th><th>Status</th><th>Submitted</th></tr></thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          <td class="ref-cell">{{ app.reference_no|default:"—" }}</td>
+          <td>{{ app.title }}</td>
+          <td>{{ app.applicant.full_name }}</td>
+          <td>{{ app.review_type|default:"—" }}</td>
+          <td><span class="badge rounded-pill text-bg-secondary">{{ app.get_status_display }}</span></td>
+          <td>{{ app.submitted_at|date:"j M Y"|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg></span>
+    <h3>No applications yet</h3>
+    <p>When researchers at {{ institution|default:"your institution" }} submit applications, they'll appear here.</p>
+  </div>
+  {% endif %}
+</section>
+
+{% endblock %}

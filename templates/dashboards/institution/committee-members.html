@@ -1,0 +1,49 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Committee Members | MSREC{% endblock %}
+
+{% block nav_content %}{% include "dashboards/institution/_nav.html" with active="committee" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/institution/_topbar.html" with title="Committee Members" subtitle=institution %}{% endblock %}
+
+{% block main_content %}
+
+<div class="page-head">
+  <div class="page-head-text">
+    <h2>Committee Members from {{ institution|default:"my institution" }}</h2>
+    <p>Approved MSREC Committee members registered under your institution.</p>
+  </div>
+</div>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Committee Members <span class="count badge rounded-pill text-bg-secondary">{{ total }}</span></h2>
+  </div>
+
+  {% if members %}
+  <div class="table-wrap">
+    <table class="reviews-table">
+      <thead><tr><th>Name</th><th>Email</th><th>MSREC Ethics ID</th><th>Position</th></tr></thead>
+      <tbody>
+        {% for m in members %}
+        <tr>
+          <td>{{ m.full_name }}</td>
+          <td>{{ m.email }}</td>
+          <td class="ref-cell">{{ m.membership_ethics_id|default:"—" }}</td>
+          <td>{{ m.committee_profile.committeePosition|default:m.position|default:"—" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></span>
+    <h3>No committee members yet</h3>
+    <p>When approved Committee members are registered under {{ institution|default:"your institution" }}, they'll appear here.</p>
+  </div>
+  {% endif %}
+</section>
+
+{% endblock %}

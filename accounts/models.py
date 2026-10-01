@@ -67,6 +67,10 @@ class User(AbstractBaseUser, PermissionsMixin):
         CHAIR = "chair", "Chair"
         SECRETARIAT = "secretariat", "Secretariat"
         ADMIN = "admin", "Administrator"
+        # Value kept to 14 chars so it fits the users.role varchar(20)
+        # column without a schema change (the obvious "institution_
+        # secretary" is 21 chars and would overflow it).
+        INSTITUTION_SECRETARY = "inst_secretary", "Institutional Secretary"
 
     class RequestStatus(models.TextChoices):
         NOT_REQUESTED = "not_requested", "Not Requested"
@@ -328,6 +332,8 @@ class User(AbstractBaseUser, PermissionsMixin):
             return "secretariat_dashboard:home"
         if self.role == self.Role.CHAIR:
             return "chair_dashboard:home"
+        if self.role == self.Role.INSTITUTION_SECRETARY:
+            return "institution_dashboard:home"
         if self.committee_status == self.RequestStatus.APPROVED:
             return "committee_dashboard:home"
         if self.reviewer_status == self.RequestStatus.APPROVED:

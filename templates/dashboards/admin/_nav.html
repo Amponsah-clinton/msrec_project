@@ -42,6 +42,11 @@ and all thirteen pages get it.
   <span>Board &amp; Committee</span>
 </a>
 
+<a href="{% url 'admin_dashboard:institution_secretaries' %}" class="nav-item{% if active == 'institution_secretaries' %} active{% endif %}">
+  <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M5 21V8l7-4 7 4v13"/><path d="M9 21v-6h6v6"/><path d="M9 11h.01M15 11h.01"/></svg></span>
+  <span>Institutional Secretaries</span>
+</a>
+
 <a href="{% url 'admin_dashboard:resources_library' %}" class="nav-item{% if active == 'resources' %} active{% endif %}">
   <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span>
   <span>Resources</span>

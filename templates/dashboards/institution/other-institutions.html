@@ -1,0 +1,158 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Other Institutions | MSREC{% endblock %}
+
+{% block extra_css %}
+<style>
+  .acc-toolbar { display:flex; justify-content:flex-end; margin-bottom:14px; }
+  .acc-toolbar button {
+    background:none; border:1px solid var(--border); color:var(--text-sub);
+    font-size:12.5px; font-weight:600; padding:7px 14px; border-radius:8px; cursor:pointer;
+    transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .acc-toolbar button:hover { background:var(--hover-bg); color:var(--text-main); border-color:var(--text-faint); }
+
+  .acc-list { display:flex; flex-direction:column; gap:12px; }
+
+  .acc-item {
+    border:1px solid var(--border); border-radius:12px; background:var(--white);
+    overflow:hidden; transition:border-color .18s ease, box-shadow .18s ease;
+  }
+  .acc-item.open { border-color:var(--teal); box-shadow:0 1px 0 var(--teal) inset, 0 6px 20px rgba(0,0,0,.05); }
+
+  .acc-head {
+    width:100%; display:flex; align-items:center; gap:14px; padding:16px 18px;
+    background:none; border:none; cursor:pointer; text-align:left; color:var(--text-main);
+    font:inherit; transition:background .15s ease;
+  }
+  .acc-head:hover { background:var(--hover-bg); }
+
+  .acc-head .acc-ico {
+    width:40px; height:40px; flex-shrink:0; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    background:var(--bg); color:var(--teal);
+  }
+  .acc-head .acc-ico svg { width:20px; height:20px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+
+  .acc-head .acc-title { flex:1; min-width:0; }
+  .acc-head .acc-title strong { display:block; font-size:14.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .acc-head .acc-title span { font-size:12px; color:var(--text-sub); }
+
+  .acc-head .acc-chev { width:20px; height:20px; flex-shrink:0; color:var(--text-faint); transition:transform .25s ease; }
+  .acc-item.open .acc-head .acc-chev { transform:rotate(90deg); color:var(--teal); }
+
+  /* Smooth open/close via the grid 0fr → 1fr trick (animates unknown heights). */
+  .acc-body { display:grid; grid-template-rows:0fr; transition:grid-template-rows .28s ease; }
+  .acc-item.open .acc-body { grid-template-rows:1fr; }
+  .acc-body-inner { overflow:hidden; }
+  .acc-body .table-wrap { border-top:1px solid var(--border); }
+  .acc-body .reviews-table thead th { background:var(--bg); }
+</style>
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/institution/_nav.html" with active="other" %}{% endblock %}
+
+{% block topbar %}{% include "dashboards/institution/_topbar.html" with title="Other Institutions" subtitle="Applications across other institutions" %}{% endblock %}
+
+{% block main_content %}
+
+<div class="page-head">
+  <div class="page-head-text">
+    <h2>Applications grouped by institution</h2>
+    <p>Activity at other institutions on MSREC — {{ application_count }} application{{ application_count|pluralize }} across {{ institution_count }} institution{{ institution_count|pluralize }}. Your own school is on the <a href="{% url 'institution_dashboard:applications' %}">Applications</a> page.</p>
+  </div>
+</div>
+
+{% if groups %}
+<div class="acc-toolbar">
+  <button type="button" id="accToggleAll" data-state="collapsed">Expand all</button>
+</div>
+
+<div class="acc-list" id="accList">
+  {% for group in groups %}
+  <div class="acc-item{% if forloop.first %} open{% endif %}">
+    <button type="button" class="acc-head" aria-expanded="{% if forloop.first %}true{% else %}false{% endif %}">
+      <span class="acc-ico"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M6 21V7l6-4 6 4v14"/><path d="M10 21v-5h4v5"/></svg></span>
+      <span class="acc-title">
+        <strong>{{ group.institution }}</strong>
+        <span>{{ group.count }} application{{ group.count|pluralize }}</span>
+      </span>
+      <span class="count badge rounded-pill text-bg-secondary">{{ group.count }}</span>
+      <svg class="acc-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+    </button>
+    <div class="acc-body">
+      <div class="acc-body-inner">
+        <div class="table-wrap">
+          <table class="reviews-table">
+            <thead><tr><th>Reference</th><th>Title</th><th>Applicant</th><th>Status</th><th>Submitted</th></tr></thead>
+            <tbody>
+              {% for app in group.applications %}
+              <tr>
+                <td class="ref-cell">{{ app.reference_no|default:"—" }}</td>
+                <td>{{ app.title }}</td>
+                <td>{{ app.applicant.full_name }}</td>
+                <td><span class="badge rounded-pill text-bg-secondary">{{ app.get_status_display }}</span></td>
+                <td>{{ app.submitted_at|date:"j M Y"|default:"—" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<section class="panel">
+  <div class="empty-state">
+    <span class="empty-icon"><svg viewBox="0 0 24 24"><path d="M3 21h18"/><path d="M6 21V7l6-4 6 4v14"/><path d="M10 21v-5h4v5"/></svg></span>
+    <h3>Nothing to show yet</h3>
+    <p>When researchers at other institutions submit applications, they'll be grouped here by institution.</p>
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  var list = document.getElementById("accList");
+  if (!list) return;
+  var items = Array.prototype.slice.call(list.querySelectorAll(".acc-item"));
+
+  function setOpen(item, open) {
+    item.classList.toggle("open", open);
+    var head = item.querySelector(".acc-head");
+    if (head) head.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  items.forEach(function (item) {
+    var head = item.querySelector(".acc-head");
+    head.addEventListener("click", function () {
+      setOpen(item, !item.classList.contains("open"));
+      syncToggleAll();
+    });
+  });
+
+  var toggleAll = document.getElementById("accToggleAll");
+
+  function syncToggleAll() {
+    var allOpen = items.every(function (i) { return i.classList.contains("open"); });
+    toggleAll.dataset.state = allOpen ? "expanded" : "collapsed";
+    toggleAll.textContent = allOpen ? "Collapse all" : "Expand all";
+  }
+
+  if (toggleAll) {
+    toggleAll.addEventListener("click", function () {
+      var expand = toggleAll.dataset.state !== "expanded";
+      items.forEach(function (i) { setOpen(i, expand); });
+      syncToggleAll();
+    });
+    syncToggleAll();
+  }
+})();
+</script>
+{% endblock %}

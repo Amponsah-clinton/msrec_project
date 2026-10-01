@@ -3579,3 +3579,137 @@ def maintenance_preview(request):
     if end and end <= now:
         current["seconds_left"] = 0
     return render(request, "maintenance.html", maintenance_context(current, preview=True))
+
+
+# =====================================================================
+# Institutional Secretaries
+# ---------------------------------------------------------------------
+# An admin creates one with just name + email + institution. We create
+# the login account immediately (role=inst_secretary, unusable password)
+# and email a personalized activation link that lets them set their own
+# password and reach their dashboard. See institution_dashboard.
+# =====================================================================
+
+def _send_institution_secretary_invite(secretary, request):
+    """Emails the activation link carrying the (freshly issued) token.
+    Public page, no login needed -- the account has no usable password
+    until the invitee sets one. Returns True/False like every other
+    send_branded_email caller."""
+    user = secretary.user
+    activate_url = request.build_absolute_uri(
+        reverse("institution_dashboard:activate", kwargs={"token": secretary.invite_token})
+    )
+    return send_branded_email(
+        subject="You've been invited as an Institutional Secretary on MSREC",
+        to=user.email,
+        heading=f"Welcome, {user.first_name}",
+        paragraphs=[
+            f"Hi {user.full_name},",
+            f"You have been set up as the Institutional Secretary for "
+            f"{user.institution or 'your institution'} on MSREC "
+            "(Metascholar Research Ethics Committee).",
+            "Click below to set your password and open your dashboard, where you can "
+            "follow your institution's applications, reviewers and committee members.",
+        ],
+        cta_text="Set your password",
+        cta_url=activate_url,
+        quote_label="Institution",
+        quote_text=user.institution or "MSREC",
+        preheader="Set your password to activate your MSREC Institutional Secretary account.",
+    )
+
+
+def _handle_create_institution_secretary(request):
+    from institution_dashboard.models import InstitutionSecretary
+
+    first_name = request.POST.get("first_name", "").strip()
+    last_name = request.POST.get("last_name", "").strip()
+    email = request.POST.get("email", "").strip().lower()
+    institution = request.POST.get("institution", "").strip()
+
+    if not first_name or not last_name:
+        messages.error(request, "First and last name are required.")
+        return
+    if not institution:
+        messages.error(request, "Choose an institution.")
+        return
+    try:
+        validate_email(email)
+    except ValidationError:
+        messages.error(request, "Enter a valid email address.")
+        return
+    if User.objects.filter(email=email).exists():
+        messages.error(request, "An account with that email already exists.")
+        return
+
+    user = User(
+        email=email,
+        first_name=first_name,
+        last_name=last_name,
+        institution=institution,
+        role=User.Role.INSTITUTION_SECRETARY,
+        wants_applicant=False,
+        is_active=True,
+    )
+    # No usable password until they follow the activation link and set one.
+    user.set_unusable_password()
+    user.save()
+
+    secretary = InstitutionSecretary.objects.create(user=user, created_by=request.user)
+    secretary.issue_invite_token()
+
+    if _send_institution_secretary_invite(secretary, request):
+        messages.success(request, f"{user.full_name} was added and a set-up link was emailed to {email}.")
+    else:
+        messages.warning(
+            request,
+            f"{user.full_name} was added, but the set-up email couldn't be sent right now — use Resend to try again.",
+        )
+
+
+def _handle_resend_institution_secretary(request, secretary):
+    secretary.issue_invite_token()
+    if _send_institution_secretary_invite(secretary, request):
+        messages.success(request, f"Set-up link resent to {secretary.user.email}.")
+    else:
+        messages.error(request, "Couldn't resend the set-up email right now. Please try again.")
+
+
+def _handle_delete_institution_secretary(request, secretary):
+    name = secretary.user.full_name
+    # Removing the account removes the secretary row with it (cascade).
+    secretary.user.delete()
+    messages.success(request, f"{name} was removed.")
+
+
+@login_required
+@admin_required
+def institution_secretaries(request):
+    from institution_dashboard.models import InstitutionSecretary
+    from pages.models import Institution
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "create":
+            _handle_create_institution_secretary(request)
+            return redirect("admin_dashboard:institution_secretaries")
+
+        secretary = get_object_or_404(
+            InstitutionSecretary, pk=request.POST.get("secretary_id")
+        )
+        if action == "resend":
+            _handle_resend_institution_secretary(request, secretary)
+        elif action == "delete":
+            _handle_delete_institution_secretary(request, secretary)
+        else:
+            messages.error(request, "That request could not be processed.")
+        return redirect("admin_dashboard:institution_secretaries")
+
+    secretaries = list(
+        InstitutionSecretary.objects.select_related("user").order_by("-created_at")
+    )
+    return render(request, "dashboards/admin/institution_secretaries.html", {
+        "secretaries": secretaries,
+        "institutions": list(Institution.objects.filter(is_active=True)),
+        "total": len(secretaries),
+    })
