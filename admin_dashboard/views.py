@@ -213,6 +213,38 @@ def _send_role_approved_email(request, target, role):
     return sent
 
 
+def _send_role_rejected_email(request, target, role):
+    """Notifies a user that their Reviewer or Committee request was not
+    approved. Same fail_silently contract as the approval email."""
+    role_label = User.Role(role).label
+    login_url = request.build_absolute_uri(reverse("pages:login"))
+    try:
+        sent = send_branded_email(
+            subject=f"MSREC — your {role_label} request update",
+            to=target.email,
+            heading=f"Your {role_label} request was not approved",
+            paragraphs=[
+                f"Dear {target.full_name},",
+                f"Thank you for your interest in joining MSREC as a {role_label}. After careful review "
+                f"by the Secretariat, we regret to inform you that your {role_label} request was not "
+                f"approved at this time.",
+                "This decision may be based on current capacity, the information provided, or other "
+                "review criteria. It does not reflect on your qualifications or professional standing.",
+                "If you believe this decision was made in error, or if you would like to provide "
+                "additional information for reconsideration, please do not hesitate to contact the "
+                "MSREC Secretariat.",
+                "Thank you for your interest in supporting ethical research.",
+            ],
+            cta_text="Contact the Secretariat",
+            cta_url=login_url,
+            preheader=f"An update on your {role_label} request at MSREC.",
+        )
+        return sent
+    except Exception:
+        logger.exception("Failed to send role-rejected email to %s", target.email)
+        return False
+
+
 def _generate_login_password(length=12):
     """A strong, readable password that always satisfies the site's
     password rules (upper, lower, digit, symbol) and skips look-alike
@@ -259,13 +291,15 @@ def _handle_role_decision(request, target, role, action):
             user=target, role=role, action=RoleApprovalLog.Action.REJECTED, acted_by=request.user,
         )
         AuditLog.record(request.user, f"role.{role}.rejected", target=target)
+        emailed = _send_role_rejected_email(request, target, role)
         from notifications import sms as sms_service
         if sms_service.can_sms_user(target):
             sms_service.send_user_sms(
                 target,
                 f"MSREC: your {role.title()} role request was not approved this time. See your email for details.",
             )
-        messages.success(request, f"{role.title()} request for {target.full_name} was declined.")
+        suffix = "and notified by email." if emailed else "(the rejection email couldn't be sent -- check the email settings)."
+        messages.success(request, f"{role.title()} request for {target.full_name} was declined {suffix}")
 
 
 def _actor_is_admin(request):
