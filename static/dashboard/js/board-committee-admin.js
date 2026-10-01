@@ -104,7 +104,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const q = searchInput.value.trim().toLowerCase();
     const filter = currentFilter();
     rows.forEach((row) => {
-      const matchesTab = filter === "all" || row.dataset.filter === filter;
+      // A reviewer who already has a Board/Committee/Secretariat card only
+      // shows under the Reviewers tab, so "All" never lists anyone twice --
+      // same rule as the public page, so the tab counts tally.
+      const matchesTab = filter === "all"
+        ? !row.hasAttribute("data-also-member")
+        : row.dataset.filter === filter;
       const matchesSearch = !q || row.dataset.search.includes(q);
       row.hidden = !(matchesTab && matchesSearch);
     });

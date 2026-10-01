@@ -1549,21 +1549,28 @@ def board_committee(request):
     if active_tab not in BOARD_COMMITTEE_TABS:
         active_tab = "all"
 
-    members = list(GovernanceMember.objects.all())
-    for member in members:
-        member.photo_url = pages_storage.public_url(member.photo_path)
+    # Exactly the same live-backed data (and counts) the public Board &
+    # Committee page shows, so the two always tally: curated GovernanceMember
+    # rows are editable cards here, live accounts (approved Committee members,
+    # Secretariat staff, approved Reviewers) show read-only. Reviewers are
+    # merged into the one grid alongside the other groups.
+    from pages.views import build_governance_data
 
-    counts = {
-        "all": len(members),
-        "board": sum(1 for m in members if m.group == GovernanceMember.Group.BOARD),
-        "committee": sum(1 for m in members if m.group == GovernanceMember.Group.COMMITTEE),
-        "secretariat": sum(1 for m in members if m.group == GovernanceMember.Group.SECRETARIAT),
-        "reviewer": sum(1 for m in members if m.group == GovernanceMember.Group.REVIEWER),
-    }
+    data = build_governance_data()
+    members = data["members"] + data["reviewers"]
+
+    # Hidden curated rows (is_active=False) aren't in the live data above, but
+    # an admin still needs to see them to unhide/remove them -- append them as
+    # editable cards (clearly flagged Hidden; not counted in the tabs).
+    from pages.views import _gov_card
+    hidden = [
+        _gov_card(m) for m in GovernanceMember.objects.filter(is_active=False)
+    ]
+    members = members + hidden
 
     return render(request, "dashboards/admin/board-committee.html", {
         "members": members,
-        "counts": counts,
+        "counts": data["counts"],
         "active_tab": active_tab,
         "groups": GovernanceMember.Group.choices,
         "title_choices": GOVERNANCE_TITLE_CHOICES,
