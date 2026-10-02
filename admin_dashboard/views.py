@@ -13,6 +13,7 @@ from django.core.validators import URLValidator, validate_email
 from urllib.parse import urlencode
 
 from django.core.paginator import Paginator
+from django.db import IntegrityError, transaction
 from django.db.models import Count
 from django.db.models.functions import TruncMonth
 from django.http import Http404, HttpResponse, JsonResponse
@@ -472,19 +473,38 @@ def _cleanup_user_storage(target):
 
 
 def _handle_delete(request, target):
+    from reviewer_dashboard.models import ReviewerPerformanceReport
+
     if target.pk == request.user.pk:
         messages.error(request, "You can't delete your own account.")
         return
-    if target.is_superuser:
-        messages.error(request, "Superuser accounts can't be deleted from here.")
+    # Superuser and Administrator accounts can still be removed here (so
+    # leftover test accounts can be cleaned up), but only by an admin.
+    if (target.is_superuser or target.role == User.Role.ADMIN) and not _actor_is_admin(request):
+        messages.error(request, "Only an administrator can delete an Administrator or superuser account.")
         return
-    if target.role == User.Role.ADMIN and not _actor_is_admin(request):
-        messages.error(request, "Only an administrator can delete an Administrator account.")
-        return
+
     name = target.full_name
-    AuditLog.record(request.user, "user.deleted", target=target)
-    _cleanup_user_storage(target)
-    target.delete()
+    try:
+        with transaction.atomic():
+            AuditLog.record(request.user, "user.deleted", target=target)
+            # Detach audit-style references that are meant to outlive the
+            # account before deleting it. The model declares SET_NULL on
+            # generated_by, but a live DB whose constraint doesn't match
+            # (e.g. a pre-SET_NULL deploy) will otherwise trip the deferred
+            # foreign key at COMMIT with an IntegrityError. Clearing it here
+            # makes the delete succeed regardless of the DB-level rule.
+            ReviewerPerformanceReport.objects.filter(generated_by=target).update(generated_by=None)
+            _cleanup_user_storage(target)
+            target.delete()
+    except IntegrityError:
+        logger.exception("Could not delete user %s", target.pk)
+        messages.error(
+            request,
+            f"{name}'s account couldn't be deleted because other records still "
+            "reference it. Please remove those records first and try again.",
+        )
+        return
     messages.success(request, f"{name}'s account and files have been deleted.")
 
 
