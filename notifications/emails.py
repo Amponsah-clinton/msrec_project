@@ -173,7 +173,7 @@ def render_email_html(*, heading, paragraphs, cta_text=None, cta_url=None,
           <tr>
             <td style="padding:20px 32px 28px;border-top:1px solid {BORDER};">
               <p style="margin:0 0 4px;font-size:12.5px;color:{TEXT_SUB};">Metascholar Research Ethics Committee (MSREC)</p>
-              <p style="margin:0;font-size:12px;color:{TEXT_FAINT};">This is an automated message &mdash; please do not reply to this email. For any help, contact <a href="mailto:msrec@metascholar.edu" style="color:{TEAL_DARK};text-decoration:none;">msrec@metascholar.edu</a>.</p>
+              <p style="margin:0;font-size:12px;color:{TEXT_FAINT};">This is an automated message &mdash; please do not reply to this email. For any help, contact <a href="mailto:support@academicdigital.space" style="color:{TEAL_DARK};text-decoration:none;">support@academicdigital.space</a>.</p>
             </td>
           </tr>
 
@@ -400,7 +400,7 @@ def send_password_changed_email(user, request=None):
                 "  |  ".join(details),
                 "If this was you, no further action is needed.",
                 "If you did NOT make this change, reset your password immediately "
-                "and contact msrec@metascholar.edu.",
+                "and contact support@academicdigital.space.",
             ],
             cta_text="Reset my password",
             cta_url=f"{settings.SITE_URL.rstrip('/')}{reverse('pages:forgot_password')}",

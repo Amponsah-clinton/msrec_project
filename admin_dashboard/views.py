@@ -133,7 +133,7 @@ def _send_role_approved_email(request, target, role):
     from accounts import membership
 
     role_label = User.Role(role).label
-    dashboard_url = request.build_absolute_uri(reverse("pages:login"))
+    dashboard_url = django_settings.SITE_URL.rstrip("/") + reverse("pages:login")
     kind, member_label = membership.membership_role(target)
 
     paragraphs = [
@@ -159,8 +159,8 @@ def _send_role_approved_email(request, target, role):
     )
     certificate_line = len(paragraphs) - 1
     paragraphs.append(
-        "Your login details are below. For your security, please change this password after you first "
-        "log in (Profile & Security)."
+        "You can sign in below with your existing email address and the password you created when you "
+        "registered -- it stays exactly as you set it. If you've forgotten it, use the reset link below."
     )
     paragraphs.append("Thank you for supporting independent, rigorous and ethical research.")
 
@@ -187,10 +187,11 @@ def _send_role_approved_email(request, target, role):
             f"download from your dashboard, where your Ethics ID is also displayed."
         )
 
-    # A fresh password, printed in this email so it carries the member's
-    # real login details. Applied to the account only once the email has
-    # actually been sent -- a mail failure must never lock anyone out.
-    login_password = _generate_login_password()
+    # Approval no longer resets the password: the member keeps whatever
+    # password they chose at signup. send_branded_email still attaches a
+    # "Your MSREC login" block for approved members -- with no login_password
+    # passed, it shows their login email plus a reset link (never a password),
+    # so they can get in using the credentials they already have.
     sent = send_branded_email(
         subject=f"Welcome to MSREC — your {role_label} account is approved",
         to=target.email,
@@ -207,11 +208,7 @@ def _send_role_approved_email(request, target, role):
         cta_url=dashboard_url,
         preheader=f"Your {role_label} account is approved. Your Ethics ID is {target.membership_ethics_id}.",
         attachments=attachments,
-        login_password=login_password,
     )
-    if sent:
-        target.set_password(login_password)
-        target.save(update_fields=["password"])
     return sent
 
 
@@ -219,7 +216,7 @@ def _send_role_rejected_email(request, target, role):
     """Notifies a user that their Reviewer or Committee request was not
     approved. Same fail_silently contract as the approval email."""
     role_label = User.Role(role).label
-    login_url = request.build_absolute_uri(reverse("pages:login"))
+    login_url = django_settings.SITE_URL.rstrip("/") + reverse("pages:login")
     try:
         sent = send_branded_email(
             subject=f"MSREC — your {role_label} request update",
@@ -245,20 +242,6 @@ def _send_role_rejected_email(request, target, role):
     except Exception:
         logger.exception("Failed to send role-rejected email to %s", target.email)
         return False
-
-
-def _generate_login_password(length=12):
-    """A strong, readable password that always satisfies the site's
-    password rules (upper, lower, digit, symbol) and skips look-alike
-    characters (0/O, 1/l/I) so it's easy to type from an email."""
-    import secrets
-
-    upper, lower, digits, symbols = "ABCDEFGHJKLMNPQRSTUVWXYZ", "abcdefghijkmnopqrstuvwxyz", "23456789", "#$%&*@!?"
-    chars = [secrets.choice(upper), secrets.choice(lower), secrets.choice(digits), secrets.choice(symbols)]
-    pool = upper + lower + digits + symbols
-    chars += [secrets.choice(pool) for _ in range(length - len(chars))]
-    secrets.SystemRandom().shuffle(chars)
-    return "".join(chars)
 
 
 def _handle_role_decision(request, target, role, action):
@@ -3644,7 +3627,7 @@ def _send_secretary_appointment_email(request, target, *, activation_url=None):
     without one), the email carries an activation link; otherwise it just
     points them at the login. Same fail_silently contract as every other
     send_branded_email caller here."""
-    login_url = request.build_absolute_uri(reverse("pages:login"))
+    login_url = django_settings.SITE_URL.rstrip("/") + reverse("pages:login")
     paragraphs = [
         f"Dear {target.full_name},",
         f"You have been appointed as the Institutional Secretary for "
@@ -3710,8 +3693,8 @@ def _handle_appoint_secretary(request, target):
     activation_url = None
     if needs_activation:
         secretary.issue_invite_token()
-        activation_url = request.build_absolute_uri(
-            reverse("institution_dashboard:activate", kwargs={"token": secretary.invite_token})
+        activation_url = django_settings.SITE_URL.rstrip("/") + reverse(
+            "institution_dashboard:activate", kwargs={"token": secretary.invite_token}
         )
     elif not secretary.activated_at:
         secretary.activated_at = timezone.now()
@@ -3742,8 +3725,8 @@ def _send_institution_secretary_invite(secretary, request):
     until the invitee sets one. Returns True/False like every other
     send_branded_email caller."""
     user = secretary.user
-    activate_url = request.build_absolute_uri(
-        reverse("institution_dashboard:activate", kwargs={"token": secretary.invite_token})
+    activate_url = django_settings.SITE_URL.rstrip("/") + reverse(
+        "institution_dashboard:activate", kwargs={"token": secretary.invite_token}
     )
     return send_branded_email(
         subject="You've been invited as an Institutional Secretary on MSREC",

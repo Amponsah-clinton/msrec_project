@@ -1,6 +1,7 @@
 import logging
 import uuid
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
@@ -69,7 +70,7 @@ def _send_welcome_email(request, user):
     Reviewer/Committee request and is about that request's status, not
     the account itself -- both go out on the same signup when relevant,
     this one first."""
-    login_url = request.build_absolute_uri(reverse("pages:login"))
+    login_url = settings.SITE_URL.rstrip("/") + reverse("pages:login")
     return send_branded_email(
         subject="Welcome to MSREC",
         to=user.email,
@@ -121,7 +122,7 @@ def _send_role_pending_email(request, user):
             f"You don't have applicant access, since you didn't request it -- this account exists "
             f"solely for your {roles_text} request."
         )
-    login_url = request.build_absolute_uri(reverse("pages:login"))
+    login_url = settings.SITE_URL.rstrip("/") + reverse("pages:login")
     logger.info("Sending role-pending email to %s for %s", user.email, roles_text)
     try:
         sent = send_branded_email(
