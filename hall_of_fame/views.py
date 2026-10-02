@@ -1,3 +1,6 @@
+import logging
+
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -11,6 +14,8 @@ from . import storage
 from .certificate import render_hof_certificate_pdf
 from .letter import render_recognition_letter_pdf
 from .models import HallOfFameNomination, HofAuditLog
+
+logger = logging.getLogger(__name__)
 
 Status = HallOfFameNomination.Status
 
@@ -238,7 +243,88 @@ def admin_nominations(request):
         "counts": counts,
         "current_status": status_filter,
         "statuses": Status,
+        "current_year": timezone.now().year,
     })
+
+
+@login_required
+@staff_required
+@require_POST
+def admin_add_member(request):
+    """Let an admin/secretary add a Hall of Fame member directly, skipping the
+    nominate → review → approve chain. The record (and any photo) is saved to
+    Supabase just like a normal nomination, and can be published immediately so
+    it shows on the public directory.
+
+    The nomination's ``user`` FK is set to the staff member who created it (it's
+    a required ownership link, not the honoree's login); the honoree is
+    identified by the ``full_name``/``email`` fields, exactly as in the normal
+    flow where those are independent of the submitting account.
+    """
+    full_name = request.POST.get("full_name", "").strip()
+    email = request.POST.get("email", "").strip()
+    if not full_name or not email:
+        messages.error(request, "A full name and an email address are required to add a member.")
+        return redirect("hall_of_fame:admin_nominations")
+
+    nomination = HallOfFameNomination(user=request.user)
+    nomination.full_name = full_name
+    nomination.email = email
+    nomination.professional_title = request.POST.get("professional_title", "").strip()
+    nomination.phone = request.POST.get("phone", "").strip()
+    nomination.nationality = request.POST.get("nationality", "").strip()
+    nomination.current_location = request.POST.get("current_location", "").strip()
+    nomination.institution = request.POST.get("institution", "").strip()
+    nomination.position = request.POST.get("position", "").strip()
+    nomination.department = request.POST.get("department", "").strip()
+    years = request.POST.get("years_experience", "").strip()
+    nomination.years_experience = int(years) if years.isdigit() else None
+    nomination.areas_of_expertise = request.POST.get("areas_of_expertise", "").strip()
+    nomination.biography = request.POST.get("biography", "").strip()
+    nomination.achievements = request.POST.get("achievements", "").strip()
+    nomination.contribution = request.POST.get("contribution", "").strip()
+    nomination.reason_for_nomination = request.POST.get("reason_for_nomination", "").strip()
+
+    year = request.POST.get("recognition_year", "").strip()
+    nomination.recognition_year = int(year) if year.isdigit() else timezone.now().year
+
+    # Staff adding a member directly is vouching for them, so the consent and
+    # review fields that the normal pipeline fills get set here.
+    nomination.consent_accurate = True
+    nomination.consent_publish = True
+    nomination.consent_verify = True
+    nomination.approved_biography = nomination.biography
+    nomination.submitted_at = timezone.now()
+    nomination.reviewed_by = request.user
+    nomination.reviewed_at = timezone.now()
+    nomination.approved_at = timezone.now()
+
+    publish_now = bool(request.POST.get("publish_now"))
+
+    # First save mints the PK that the Supabase storage paths and the HoF IDs
+    # both need; then upload the photo and persist the IDs/photo path/status.
+    nomination.status = Status.APPROVED
+    nomination.save()
+    nomination.generate_hof_ids()
+    _save_files(request, nomination)
+    if publish_now:
+        nomination.status = Status.PUBLISHED
+        nomination.published_at = timezone.now()
+    nomination.save()
+
+    _log(nomination, request.user, "member_added",
+         f"Added directly by {request.user.full_name or request.user.email}")
+
+    if request.POST.get("send_email"):
+        try:
+            _send_approval_email(request, nomination)
+        except Exception:
+            logger.exception("Hall of Fame induction email failed for nomination %s", nomination.pk)
+            messages.warning(request, f"{full_name} was added, but the induction email couldn't be sent.")
+
+    where = "published to the public directory" if publish_now else "saved as an approved member"
+    messages.success(request, f"{full_name} has been added to the Hall of Fame and {where}.")
+    return redirect("hall_of_fame:admin_nominations")
 
 
 @login_required

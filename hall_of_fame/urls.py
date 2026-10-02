@@ -14,6 +14,7 @@ urlpatterns = [
 
     # Admin / Secretary review
     path("admin/", views.admin_nominations, name="admin_nominations"),
+    path("admin/add/", views.admin_add_member, name="admin_add_member"),
     path("admin/<int:pk>/", views.admin_nomination_detail, name="admin_detail"),
     path("admin/<int:pk>/action/", views.admin_action, name="admin_action"),
 

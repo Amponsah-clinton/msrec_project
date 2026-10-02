@@ -641,16 +641,39 @@ a.acct-page-nav:hover, a.acct-page-num:hover { background: var(--white); color: 
   color: var(--text-sub);
 }
 .acct-form-row input,
-.acct-form-row select {
+.acct-form-row select,
+.acct-form-row textarea {
   padding: 9px 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 13px;
   color: var(--text-main);
   background: var(--white);
+  width: 100%;
+  box-sizing: border-box;
 }
+.acct-form-row textarea {
+  resize: vertical;
+  min-height: 72px;
+  line-height: 1.5;
+  font-family: inherit;
+}
+.acct-form-row input[type="file"] { padding: 7px 10px; font-size: 12px; cursor: pointer; }
 .acct-form-row input:focus,
-.acct-form-row select:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+.acct-form-row select:focus,
+.acct-form-row textarea:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
+
+/* Section grouping inside a long modal form (e.g. Add Hall of Fame member) */
+.acct-form-section { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-faint); margin: 4px 0 -4px; }
+.acct-form-section:first-child { margin-top: 0; }
+.acct-form-hint { margin: 0; font-size: 12.5px; color: var(--text-sub); line-height: 1.55; }
+.acct-form-options { display: flex; flex-direction: column; gap: 12px; margin-top: 2px; padding: 13px 14px; background: var(--help-bg); border: 1px solid var(--border); border-radius: var(--radius-sm); }
+.acct-form-options label { display: flex; flex-direction: row; align-items: flex-start; gap: 10px; cursor: pointer; }
+.acct-form-options input[type="checkbox"] { width: 16px; height: 16px; margin-top: 1px; flex: none; accent-color: var(--teal); cursor: pointer; }
+.acct-form-options .acct-opt-text { display: flex; flex-direction: column; gap: 2px; }
+.acct-form-options .acct-opt-text strong { font-size: 13px; font-weight: 600; color: var(--text-main); }
+.acct-form-options .acct-opt-text em { font-size: 12px; font-style: normal; color: var(--text-sub); line-height: 1.45; }
+.acct-req { color: var(--red); }
 .acct-modal-actions {
   display: flex;
   justify-content: flex-end;
