@@ -10,90 +10,141 @@
 {% endblock %}
 
 {% block content %}
-<main class="main hof-main">
+<main class="main">
+
+  <!-- HERO -->
+  <section class="hof-hero">
+    <div class="hof-hero-glow" aria-hidden="true"></div>
+    <div class="hof-hero-inner">
+      <span class="hof-eyebrow"><span class="hof-eyebrow-rule"></span>Recognition<span class="hof-eyebrow-rule"></span></span>
+      <span class="hof-laurel" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 5 5.6.5-4.2 3.7 1.3 5.5L12 19l-5.1 2.7 1.3-5.5L4 12.5 9.6 12 12 2z"/></svg>
+      </span>
+      <h1>MSREC Hall of Fame</h1>
+      <p>Honouring members who have shaped research ethics, scholarship, peer review, academic excellence, mentorship and professional service across the Metascholar community.</p>
+      <div class="hof-hero-stats">
+        <div class="hof-stat"><span class="hof-stat-num">{{ total }}</span><small>Inducted {% if total == 1 %}Member{% else %}Members{% endif %}</small></div>
+        <span class="hof-stat-sep" aria-hidden="true"></span>
+        <div class="hof-stat"><span class="hof-stat-num">{{ years|length }}</span><small>Recognition {% if years|length == 1 %}Year{% else %}Years{% endif %}</small></div>
+      </div>
+    </div>
+  </section>
+
   <div class="hof-wrap">
 
-    <!-- HERO -->
-    <section class="hof-hero">
-      <span class="section-label">Recognition</span>
-      <h1>MSREC Hall of Fame</h1>
-      <p>Honouring members who have made distinguished contributions to research ethics, scholarship, peer review, academic excellence, mentorship, and professional service.</p>
-      <div class="hof-hero-stats">
-        <div class="hof-stat"><span>{{ total }}</span><small>Inducted Members</small></div>
-        <div class="hof-stat"><span>{{ years|length }}</span><small>Recognition Years</small></div>
-      </div>
-    </section>
-
+    {% if members %}
     <!-- SEARCH & FILTER -->
     <div class="hof-toolbar">
-      <input type="text" id="hofSearch" class="hof-search" placeholder="Search by name, institution, expertise...">
-      <div class="hof-filters">
+      <div class="hof-search-box">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <input type="text" id="hofSearch" class="hof-search" placeholder="Search by name, institution or expertise…" aria-label="Search Hall of Fame members">
+      </div>
+      {% if years %}
+      <div class="hof-filters" role="group" aria-label="Filter by recognition year">
         <button type="button" class="hof-filter-btn active" data-year="all">All Years</button>
         {% for year in years %}
         <button type="button" class="hof-filter-btn" data-year="{{ year }}">{{ year }}</button>
         {% endfor %}
       </div>
+      {% endif %}
     </div>
+    <p class="hof-count" id="hofCount" aria-live="polite"></p>
 
     <!-- MEMBER CARDS -->
     <div class="hof-grid" id="hofGrid">
       {% for m in members %}
-      <div class="hof-card" data-year="{{ m.recognition_year }}" data-search="{{ m.full_name|lower }} {{ m.institution|lower }} {{ m.areas_of_expertise|lower }}">
-        <div class="hof-card-photo">
-          {% if m.photo_url %}
-          <img src="{{ m.photo_url }}" alt="{{ m.full_name }}">
-          {% else %}
-          <span class="hof-card-avatar" style="background:{{ m.avatar_color }}">{{ m.initials }}</span>
-          {% endif %}
-        </div>
-        <div class="hof-card-body">
-          <h3>{{ m.full_name }}</h3>
-          {% if m.professional_title %}<p class="hof-card-title">{{ m.professional_title }}</p>{% endif %}
-          <p class="hof-card-inst">{{ m.institution|default:"" }}</p>
-          {% if m.position %}<p class="hof-card-pos">{{ m.position }}</p>{% endif %}
-          {% if m.areas_of_expertise %}<p class="hof-card-expertise">{{ m.areas_of_expertise|truncatewords:10 }}</p>{% endif %}
-          <div class="hof-card-foot">
-            <span class="hof-card-year">{{ m.recognition_year }}</span>
-            <a href="{% url 'hall_of_fame:profile' pk=m.pk %}" class="hof-card-link">View Profile &rsaquo;</a>
+      <article class="hof-card" data-year="{{ m.recognition_year }}" data-search="{{ m.full_name|lower }} {{ m.institution|lower }} {{ m.position|lower }} {{ m.areas_of_expertise|lower }}">
+        <a class="hof-card-inner" href="{% url 'hall_of_fame:profile' pk=m.pk %}">
+          <div class="hof-portrait">
+            {% if m.photo_url %}
+            <img src="{{ m.photo_url }}" alt="Portrait of {{ m.full_name }}" loading="lazy">
+            {% else %}
+            <span class="hof-avatar" style="--hof-av:{{ m.avatar_color }}">{{ m.initials }}</span>
+            {% endif %}
+            {% if m.recognition_year %}
+            <span class="hof-medal"><small>Inducted</small>{{ m.recognition_year }}</span>
+            {% endif %}
           </div>
-        </div>
-      </div>
-      {% empty %}
-      <div class="hof-empty">
-        <p>No Hall of Fame members have been published yet. Check back soon.</p>
-      </div>
+          <div class="hof-content">
+            <h3 class="hof-name">{{ m.full_name }}</h3>
+            <p class="hof-role">
+              {% if m.professional_title %}{{ m.professional_title }}{% endif %}
+              {% if m.professional_title and m.position %} · {% endif %}
+              {% if m.position %}{{ m.position }}{% endif %}
+            </p>
+            {% if m.institution %}<p class="hof-inst"><i class="bi bi-building" aria-hidden="true"></i>{{ m.institution }}</p>{% endif %}
+            {% if m.expertise_tags %}
+            <ul class="hof-tags">
+              {% for tag in m.expertise_tags %}<li>{{ tag }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+          <span class="hof-view">View profile <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+        </a>
+      </article>
       {% endfor %}
     </div>
+
+    <!-- NO SEARCH RESULTS -->
+    <div class="hof-noresults" id="hofNoResults" hidden>
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <h3>No members match your search</h3>
+      <p>Try a different name, institution, expertise or year.</p>
+    </div>
+
+    {% else %}
+    <!-- EMPTY STATE -->
+    <div class="hof-empty">
+      <span class="hof-empty-icon" aria-hidden="true"><i class="bi bi-award"></i></span>
+      <h3>No inductees yet</h3>
+      <p>The MSREC Hall of Fame will celebrate distinguished members here as they are recognised. Please check back soon.</p>
+    </div>
+    {% endif %}
 
   </div>
 </main>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
   var search = document.getElementById('hofSearch');
   var grid = document.getElementById('hofGrid');
+  if (!grid) return;
   var cards = Array.from(grid.querySelectorAll('.hof-card'));
-  var filterBtns = document.querySelectorAll('.hof-filter-btn');
+  var filterBtns = Array.from(document.querySelectorAll('.hof-filter-btn'));
+  var noResults = document.getElementById('hofNoResults');
+  var count = document.getElementById('hofCount');
   var activeYear = 'all';
 
   function apply() {
     var q = (search.value || '').trim().toLowerCase();
-    cards.forEach(function(card) {
+    var shown = 0;
+    cards.forEach(function (card) {
       var matchYear = activeYear === 'all' || card.dataset.year === activeYear;
-      var matchSearch = !q || card.dataset.search.includes(q);
-      card.hidden = !(matchYear && matchSearch);
+      var matchSearch = !q || card.dataset.search.indexOf(q) !== -1;
+      var visible = matchYear && matchSearch;
+      card.hidden = !visible;
+      if (visible) shown++;
     });
+    if (noResults) noResults.hidden = shown !== 0;
+    grid.hidden = shown === 0;
+    if (count) {
+      var total = cards.length;
+      count.textContent = (shown === total)
+        ? 'Showing all ' + total + (total === 1 ? ' member' : ' members')
+        : 'Showing ' + shown + ' of ' + total + ' members';
+    }
   }
 
   search.addEventListener('input', apply);
-  filterBtns.forEach(function(btn) {
-    btn.addEventListener('click', function() {
-      filterBtns.forEach(function(b) { b.classList.remove('active'); });
+  filterBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      filterBtns.forEach(function (b) { b.classList.remove('active'); });
       btn.classList.add('active');
       activeYear = btn.dataset.year;
       apply();
     });
   });
+  apply();
 });
 </script>
 {% endblock %}

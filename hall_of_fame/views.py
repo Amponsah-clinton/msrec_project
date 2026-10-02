@@ -408,6 +408,7 @@ def hall_of_fame_page(request):
             "institution": nom.institution,
             "position": nom.position,
             "areas_of_expertise": nom.areas_of_expertise,
+            "expertise_tags": [t.strip() for t in (nom.areas_of_expertise or "").replace(";", ",").split(",") if t.strip()][:4],
             "recognition_year": nom.recognition_year,
             "photo_url": storage.public_url(nom.photo_path) if nom.photo_path else None,
             "initials": "".join(w[0] for w in nom.full_name.split()[:2]).upper() if nom.full_name else "?",
@@ -432,9 +433,12 @@ def public_profile(request, pk):
     verify_data = f"MSREC Hall of Fame | {nomination.hof_member_id} | {nomination.full_name} | {nomination.recognition_year}"
     qr_uri = qr_svg_data_uri(verify_data)
 
+    initials = "".join(w[0] for w in nomination.full_name.split()[:2]).upper() if nomination.full_name else "?"
+
     return render(request, "hall_of_fame/public_profile.html", {
         "nom": nomination,
         "photo_url": photo_url,
         "qr_uri": qr_uri,
+        "initials": initials,
         "biography": nomination.approved_biography or nomination.biography,
     })

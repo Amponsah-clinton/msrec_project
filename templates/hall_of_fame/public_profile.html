@@ -10,12 +10,10 @@
 {% endblock %}
 
 {% block content %}
-<main class="main hof-main">
-  <div class="hof-wrap">
+<main class="main">
+  <div class="hof-profile-page">
 
-    <div style="margin-bottom:20px;">
-      <a href="{% url 'hall_of_fame:directory' %}" class="hof-back">&larr; Back to Hall of Fame</a>
-    </div>
+    <a href="{% url 'hall_of_fame:directory' %}" class="hof-back"><i class="bi bi-arrow-left" aria-hidden="true"></i> Back to Hall of Fame</a>
 
     <div class="hof-profile">
       <!-- Left column: photo and badge -->
@@ -24,13 +22,15 @@
           {% if photo_url %}
           <img src="{{ photo_url }}" alt="{{ nom.full_name }}">
           {% else %}
-          <span class="hof-profile-avatar">{{ nom.full_name|make_list|first }}{{ nom.full_name|truncatewords:2|make_list|last }}</span>
+          <span class="hof-profile-avatar">{{ initials }}</span>
           {% endif %}
         </div>
+        {% if nom.recognition_year %}
         <div class="hof-profile-badge">
-          <svg viewBox="0 0 24 24" style="width:20px;height:20px;fill:none;stroke:#0f8a86;stroke-width:2;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z"/></svg>
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:none;stroke:#3c2d0f;stroke-width:1.8;stroke-linejoin:round;"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z"/></svg>
           <span>Hall of Fame {{ nom.recognition_year }}</span>
         </div>
+        {% endif %}
         {% if qr_uri %}
         <div class="hof-profile-qr">
           <img src="{{ qr_uri }}" alt="Verification QR" style="width:120px;height:120px;">
