@@ -181,7 +181,25 @@ document.addEventListener("DOMContentLoaded", () => {
       confirmConfidentiality.checked = false;
       confirmCoi.checked = false;
     }
+    applyProfilePhotoRequirement();
   }
+
+  /* ============================================================
+     Profile photo — mandatory for Reviewer / Committee signups,
+     since the photo is published on the public Board & Committee
+     page the moment the role is approved. Optional for applicants.
+  ============================================================ */
+  const profilePhoto = document.getElementById("profilePhoto");
+  const profilePhotoReqTag = document.getElementById("profilePhotoReqTag");
+  const profilePhotoHint = document.getElementById("profilePhotoHint");
+
+  function applyProfilePhotoRequirement() {
+    const needed = isRoleChecked("reviewer") || isRoleChecked("committee");
+    if (profilePhoto) profilePhoto.required = needed;
+    if (profilePhotoReqTag) profilePhotoReqTag.hidden = !needed;
+    if (profilePhotoHint) profilePhotoHint.hidden = !needed;
+  }
+  applyProfilePhotoRequirement();
 
   roleCheckboxes.forEach((checkbox) => {
     checkbox.addEventListener("change", () => {

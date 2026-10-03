@@ -251,6 +251,11 @@ def _handle_role_decision(request, target, role, action):
 
     if action == "approve":
         target.approve_role(role)
+        # Publish them on the public Board & Committee page immediately -- an
+        # approved Reviewer/Committee member appears at /board-committee/ with
+        # no separate manual step (see pages.committee_services).
+        from pages.committee_services import sync_governance_member_from_user
+        sync_governance_member_from_user(target)
         RoleApprovalLog.objects.create(
             user=target, role=role, action=RoleApprovalLog.Action.APPROVED, acted_by=request.user,
         )
@@ -272,6 +277,10 @@ def _handle_role_decision(request, target, role, action):
         messages.success(request, f"{target.full_name} approved as {target.get_role_display()} {suffix}")
     else:
         target.reject_role(role)
+        # Pull them back off the public Board & Committee page if this leaves
+        # them with no approved Reviewer/Committee role.
+        from pages.committee_services import unpublish_governance_member_for_user
+        unpublish_governance_member_for_user(target)
         RoleApprovalLog.objects.create(
             user=target, role=role, action=RoleApprovalLog.Action.REJECTED, acted_by=request.user,
         )

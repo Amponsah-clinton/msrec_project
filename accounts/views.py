@@ -355,6 +355,21 @@ def signup(request):
             cd = form.cleaned_data
             roles = cd["role"]
 
+            # Reviewers and Committee members are published on the public
+            # Board & Committee page the moment they're approved (with this
+            # very photo -- see pages.committee_services), so a profile photo
+            # is mandatory for them. Applicant-only signups stay optional.
+            profile_photo = request.FILES.get("profilePhoto")
+            if ("reviewer" in roles or "committee" in roles) and not profile_photo:
+                messages.error(
+                    request,
+                    "A profile photo is required for Reviewer and Committee Member registration.",
+                )
+                return render(
+                    request, "pages/signup.html",
+                    {"form": form, "institutions": _active_institutions()}, status=400,
+                )
+
             user = User(
                 email=cd["email"],
                 first_name=cd["firstName"],
@@ -401,7 +416,7 @@ def signup(request):
             # accounts/storage.py) -- it doesn't fail the signup.
             upload_folder = uuid.uuid4().hex
             photo_path = storage.upload_signup_file(
-                request.FILES.get("profilePhoto"), folder=upload_folder, field_name="profilePhoto"
+                profile_photo, folder=upload_folder, field_name="profilePhoto"
             )
             if photo_path:
                 user.profile_photo_path = photo_path

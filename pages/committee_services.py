@@ -117,6 +117,106 @@ def handle_governance_delete(request, member):
 
 
 # ---------------------------------------------------------------------
+# Auto-publishing approved members onto the public Board & Committee page
+# ---------------------------------------------------------------------
+# When an admin/secretary approves a Reviewer or Committee request, the
+# person must appear on /board-committee/ immediately -- no separate manual
+# "add them to the board" step. These helpers mirror the login account onto
+# a GovernanceMember card, keyed on the account (OneToOne) so re-approval or
+# a Reviewer later joining the Committee updates the same card.
+
+
+def _name_without_title(user):
+    """User.full_name folds the title in ("Dr. Ama Owusu"), but
+    GovernanceMember keeps title separate and recombines it in display_name
+    -- so the card's full_name must be the bare name, or the title shows
+    twice."""
+    return " ".join(p for p in (user.first_name, user.middle_name, user.last_name) if p).strip()
+
+
+def _user_discipline(user, group):
+    """Short tag/discipline for the card, pulled from whatever the member
+    gave at signup. Best-effort -- a blank tag just renders no sub-label."""
+    if group == GovernanceMember.Group.COMMITTEE:
+        profile = user.committee_profile or {}
+        cats = profile.get("committeeExpertiseCategory")
+        if isinstance(cats, list) and cats:
+            return str(cats[0])[:150]
+        return (profile.get("committeeBackground") or "")[:150]
+
+    profile = user.reviewer_profile or {}
+    discipline = profile.get("reviewerDiscipline")
+    if discipline:
+        return str(discipline)[:150]
+    areas = profile.get("reviewerResearchAreas")
+    if isinstance(areas, str) and areas.strip():
+        return areas.split(",")[0].strip()[:150]
+    return ""
+
+
+def sync_governance_member_from_user(user):
+    """Publish (or update) the public Board & Committee card for an approved
+    Reviewer / Committee account. The card carries no photo of its own, so
+    pages.views._member_photo_url falls back to the account's own signup
+    photo automatically -- which is why that photo is mandatory at signup for
+    these roles.
+
+    A Committee approval outranks Reviewer, so an existing Reviewer card is
+    promoted into the Committee group. Admin-curated name/title/tag and any
+    separately uploaded card photo are preserved on an existing card."""
+    from accounts.models import User
+
+    approved = User.RequestStatus.APPROVED
+    if user.committee_status == approved:
+        group, role_title = GovernanceMember.Group.COMMITTEE, "Committee Member"
+    elif user.reviewer_status == approved:
+        group, role_title = GovernanceMember.Group.REVIEWER, "Reviewer"
+    else:
+        return None
+
+    member = GovernanceMember.objects.filter(user=user).first()
+    if member is None:
+        return GovernanceMember.objects.create(
+            user=user,
+            full_name=_name_without_title(user),
+            title=user.title or "",
+            role_title=role_title,
+            tag=_user_discipline(user, group),
+            group=group,
+            is_active=True,
+        )
+
+    # Existing card: re-publish it and promote Reviewer -> Committee if the
+    # account just gained Committee membership. A card an admin has already
+    # curated as Board/Secretariat/Committee keeps its group; only the
+    # auto-created Reviewer group is promoted.
+    member.is_active = True
+    if group == GovernanceMember.Group.COMMITTEE and member.group == GovernanceMember.Group.REVIEWER:
+        member.group = GovernanceMember.Group.COMMITTEE
+        if member.role_title in ("", "Reviewer"):
+            member.role_title = "Committee Member"
+    member.save()
+    return member
+
+
+def unpublish_governance_member_for_user(user):
+    """A Reviewer/Committee request was rejected: hide the auto-published
+    card if the account no longer holds either approved role. A card an admin
+    curated into Board/Secretariat is left untouched -- only the
+    auto-published Reviewer/Committee groups are hidden."""
+    from accounts.models import User
+
+    approved = User.RequestStatus.APPROVED
+    if user.reviewer_status == approved or user.committee_status == approved:
+        return
+
+    GovernanceMember.objects.filter(
+        user=user,
+        group__in=(GovernanceMember.Group.REVIEWER, GovernanceMember.Group.COMMITTEE),
+    ).update(is_active=False)
+
+
+# ---------------------------------------------------------------------
 # Membership / Appointments + Terms & Expiry (CommitteeAppointment)
 # ---------------------------------------------------------------------
 
