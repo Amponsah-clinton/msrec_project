@@ -487,6 +487,13 @@ def _handle_delete(request, target):
             # foreign key at COMMIT with an IntegrityError. Clearing it here
             # makes the delete succeed regardless of the DB-level rule.
             ReviewerPerformanceReport.objects.filter(generated_by=target).update(generated_by=None)
+            # Remove the account's auto-published Board & Committee card so it
+            # doesn't linger on /board-committee/ as an orphan once the
+            # account is gone. Only the auto-managed groups are removed; a
+            # card an admin hand-curated into the Board keeps its place (the
+            # OneToOne just goes null).
+            from pages.committee_services import delete_auto_governance_member_for_user
+            delete_auto_governance_member_for_user(target)
             _cleanup_user_storage(target)
             target.delete()
     except IntegrityError:

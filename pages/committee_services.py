@@ -245,6 +245,20 @@ def unpublish_governance_member_for_user(user):
     ).update(is_active=False)
 
 
+def delete_auto_governance_member_for_user(user):
+    """Remove an account's auto-published Board & Committee card entirely --
+    called when the account itself is deleted, so /board-committee/ never
+    shows an orphan card for a member who no longer exists. Only cards in the
+    auto-managed groups (Reviewer/Committee/Secretariat) are removed; a card
+    an admin hand-curated into the Board group is left for the OneToOne to
+    null out, preserving it as the model intends."""
+    cards = GovernanceMember.objects.filter(user=user, group__in=_AUTO_GROUPS)
+    for card in cards:
+        if card.photo_path:
+            pages_storage.delete_object(card.photo_path)
+    cards.delete()
+
+
 # ---------------------------------------------------------------------
 # Membership / Appointments + Terms & Expiry (CommitteeAppointment)
 # ---------------------------------------------------------------------
