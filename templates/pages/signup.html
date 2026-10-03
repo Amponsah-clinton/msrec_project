@@ -67,6 +67,10 @@
               <p class="role-error" id="roleError" hidden>Please select at least one role.</p>
             </section>
 
+            <!-- Everything below only appears once at least one role is
+                 selected -- see applyFormVisibility() in signup.js. -->
+            <div id="signupRestOfForm" hidden>
+
             <!-- ============ 2. PERSONAL INFORMATION ============ -->
             <section class="signup-section">
               <h2 class="signup-section-title">Personal Information</h2>
@@ -396,6 +400,8 @@
             </section>
 
             <button type="submit" class="btn-create-account">Create Account</button>
+
+            </div><!-- /#signupRestOfForm -->
 
             <p class="signin-instead">Already have an account? <a href="{% url 'pages:login' %}">Sign in</a></p>
           </form>

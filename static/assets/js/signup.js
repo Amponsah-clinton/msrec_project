@@ -199,13 +199,25 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   applyProfilePhotoRequirement();
 
+  /* ============================================================
+     Reveal the rest of the form only once a role is selected.
+  ============================================================ */
+  const restOfForm = document.getElementById("signupRestOfForm");
+
+  function applyFormVisibility() {
+    const anyRole = roleCheckboxes.some((c) => c.checked);
+    if (restOfForm) restOfForm.hidden = !anyRole;
+  }
+
   roleCheckboxes.forEach((checkbox) => {
     checkbox.addEventListener("change", () => {
       toggleRoleSection(checkbox);
       updateDeclarationsVisibility();
+      applyFormVisibility();
       if (roleCheckboxes.some((c) => c.checked)) roleError.hidden = true;
     });
   });
+  applyFormVisibility();
 
   /* ============================================================
      Institution dropdowns — reveal the "Other" free-text box
