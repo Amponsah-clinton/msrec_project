@@ -1047,8 +1047,17 @@
 
               <div class="policy-group">
                 <h4 class="policy-group-heading">Current Institutions <span class="count">({{ institutions|length }})</span></h4>
+
+                {% if institutions %}
+                <div style="margin-bottom:10px;">
+                  <input type="search" id="instSearch" placeholder="Search institutions…" autocomplete="off"
+                    style="width:100%;max-width:420px;padding:7px 12px;border:1px solid var(--border,#dde3ec);border-radius:6px;font-size:13px;background:var(--input-bg,#fff);color:var(--text,#1a1a2e);">
+                </div>
+                {% endif %}
+
+                <div id="instList">
                 {% for inst in institutions %}
-                <div class="policy-doc-row">
+                <div class="policy-doc-row inst-row">
                   <div class="policy-doc-info">
                     <strong>{{ inst.name }}</strong>
                     <span>Order {{ inst.display_order }}{% if not inst.is_active %} &middot; Hidden{% endif %} &middot; Updated {{ inst.updated_at|date:"j M Y" }}</span>
@@ -1066,7 +1075,115 @@
                 {% empty %}
                 <p class="doc-file-empty">No institutions yet -- the sign-up dropdown shows only the &ldquo;Other&rdquo; free-text option until you add one.</p>
                 {% endfor %}
+                </div>
+
+                <div id="instPagination" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:14px;"></div>
+                <p id="instEmpty" style="display:none;" class="doc-file-empty">No institutions match your search.</p>
               </div>
+
+              <script>
+              (function () {
+                var PAGE_SIZE = 30;
+                var rows = Array.from(document.querySelectorAll('#instList .inst-row'));
+                var pagination = document.getElementById('instPagination');
+                var searchInput = document.getElementById('instSearch');
+                var emptyMsg = document.getElementById('instEmpty');
+                if (!rows.length) return;
+
+                var currentPage = 1;
+                var filtered = rows;
+
+                function getSearchTerm() {
+                  return searchInput ? searchInput.value.trim().toLowerCase() : '';
+                }
+
+                function applyFilter() {
+                  var term = getSearchTerm();
+                  filtered = term
+                    ? rows.filter(function (r) { return r.textContent.toLowerCase().indexOf(term) !== -1; })
+                    : rows;
+                  currentPage = 1;
+                  render();
+                }
+
+                function render() {
+                  var total = filtered.length;
+                  var totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+                  if (currentPage > totalPages) currentPage = totalPages;
+                  var start = (currentPage - 1) * PAGE_SIZE;
+                  var end = start + PAGE_SIZE;
+
+                  rows.forEach(function (r) { r.style.display = 'none'; });
+                  filtered.forEach(function (r, i) {
+                    r.style.display = (i >= start && i < end) ? '' : 'none';
+                  });
+
+                  emptyMsg.style.display = total === 0 ? '' : 'none';
+
+                  // Build pagination buttons
+                  pagination.innerHTML = '';
+                  if (totalPages <= 1) return;
+
+                  function btn(label, page, disabled, active) {
+                    var b = document.createElement('button');
+                    b.type = 'button';
+                    b.textContent = label;
+                    b.style.cssText = [
+                      'padding:5px 11px',
+                      'font-size:13px',
+                      'border-radius:5px',
+                      'border:1px solid var(--border,#dde3ec)',
+                      'cursor:' + (disabled ? 'default' : 'pointer'),
+                      'background:' + (active ? 'var(--primary,#2563eb)' : 'var(--card-bg,#fff)'),
+                      'color:' + (active ? '#fff' : (disabled ? 'var(--text-muted,#9ca3af)' : 'var(--text,#1a1a2e)))')),
+                      'opacity:' + (disabled ? '0.45' : '1'),
+                    ].join(';');
+                    if (!disabled) {
+                      b.addEventListener('click', function () {
+                        currentPage = page;
+                        render();
+                        document.getElementById('institutions').scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      });
+                    }
+                    return b;
+                  }
+
+                  pagination.appendChild(btn('‹ Prev', currentPage - 1, currentPage === 1, false));
+
+                  // Show up to 7 page buttons with ellipsis
+                  var pages = [];
+                  for (var p = 1; p <= totalPages; p++) {
+                    if (p === 1 || p === totalPages || (p >= currentPage - 2 && p <= currentPage + 2)) {
+                      pages.push(p);
+                    }
+                  }
+                  var prev = 0;
+                  pages.forEach(function (p) {
+                    if (prev && p - prev > 1) {
+                      var span = document.createElement('span');
+                      span.textContent = '…';
+                      span.style.cssText = 'padding:5px 4px;color:var(--text-muted,#9ca3af);font-size:13px;';
+                      pagination.appendChild(span);
+                    }
+                    pagination.appendChild(btn(p, p, false, p === currentPage));
+                    prev = p;
+                  });
+
+                  pagination.appendChild(btn('Next ›', currentPage + 1, currentPage === totalPages, false));
+
+                  var info = document.createElement('span');
+                  info.style.cssText = 'font-size:12px;color:var(--text-muted,#9ca3af);margin-left:6px;';
+                  info.textContent = start + 1 + '–' + Math.min(end, total) + ' of ' + total;
+                  pagination.appendChild(info);
+                }
+
+                if (searchInput) {
+                  searchInput.addEventListener('input', applyFilter);
+                }
+
+                render();
+              })();
+              </script>
             </div>
           </div>
         </section>
