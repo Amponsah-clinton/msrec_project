@@ -2372,3 +2372,65 @@ def committee_conflict_records(request):
         "members": committee_services.active_governance_members(),
         "statuses": ConflictDeclaration.Status.choices,
     })
+
+
+# ---------------------------------------------------------------------
+# Secretary Settings -- the secretary's own public Board & Committee card
+# ---------------------------------------------------------------------
+# A Secretariat account controls how it appears on the public
+# /board-committee/ page from here: name, role title and photo, nothing
+# else. The card is a GovernanceMember row in the Secretariat group, keyed
+# to this account, with an empty tag so the public card shows only the name
+# and role (see pages/templates/.../board_committee.html). Saved straight to
+# Supabase via the ORM; the photo goes to the public "profile" bucket.
+
+@login_required
+@staff_required
+def secretary_settings(request):
+    card = GovernanceMember.objects.filter(user=request.user).first()
+
+    if request.method == "POST":
+        full_name = request.POST.get("full_name", "").strip()
+        title = request.POST.get("title", "").strip()
+        role_title = request.POST.get("role_title", "").strip() or "Secretary"
+        if not full_name:
+            messages.error(request, "Enter the secretary's name.")
+            return redirect(request.path)
+
+        if card is None:
+            card = GovernanceMember(user=request.user, group=GovernanceMember.Group.SECRETARIAT)
+        card.full_name = full_name
+        card.title = title
+        card.role_title = role_title
+        card.tag = ""  # public card shows only name + role for the secretary
+        card.group = GovernanceMember.Group.SECRETARIAT
+        card.is_active = True
+        card.save()
+
+        photo = request.FILES.get("photo")
+        if photo:
+            if not (photo.content_type or "").startswith("image/"):
+                messages.error(request, "Please upload an image file (JPG, PNG or WEBP).")
+                return redirect(request.path)
+            old_path = card.photo_path
+            object_path = pages_storage.upload_member_photo(photo, member_id=card.pk)
+            if object_path:
+                card.photo_path = object_path
+                card.save(update_fields=["photo_path"])
+                if old_path and old_path != object_path:
+                    pages_storage.delete_object(old_path)
+            else:
+                messages.warning(request, "Your details were saved, but the photo couldn't be uploaded right now.")
+
+        messages.success(
+            request,
+            "Saved. Your name and photo now appear on the public Board & Committee page.",
+        )
+        return redirect(request.path)
+
+    card_photo_url = pages_storage.public_url(card.photo_path) if (card and card.photo_path) else None
+    return render(request, "dashboards/secretariat/secretary-settings.html", {
+        "card": card,
+        "card_photo_url": card_photo_url,
+        "title_choices": GOVERNANCE_TITLE_CHOICES,
+    })

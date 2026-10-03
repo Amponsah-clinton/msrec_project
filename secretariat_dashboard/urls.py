@@ -98,6 +98,7 @@ urlpatterns = [
         "resources/", admin_dashboard_views.resources_library,
         {"template_name": "dashboards/secretariat/resources.html"}, name="resources_library",
     ),
+    path("secretary-settings/", views.secretary_settings, name="secretary_settings"),
     path(
         "profile-security/", admin_dashboard_views.profile_security,
         {"template_name": "dashboards/secretariat/profile-security.html"}, name="profile_security",
