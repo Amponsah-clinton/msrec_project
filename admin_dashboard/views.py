@@ -538,6 +538,14 @@ def _handle_edit(request, target):
         "first_name", "middle_name", "last_name", "email", "phone",
         "institution", "department", "position", "role",
     ])
+    # Keep the public Board & Committee page in step with the new role: a
+    # Secretariat account is published there (Secretariat group); a role
+    # change that removes an auto-published standing hides its card.
+    from pages.committee_services import (
+        sync_governance_member_from_user, unpublish_governance_member_for_user,
+    )
+    if sync_governance_member_from_user(target) is None:
+        unpublish_governance_member_for_user(target)
     AuditLog.record(request.user, "user.edited", target=target)
     messages.success(request, f"{target.full_name}'s account has been updated.")
 

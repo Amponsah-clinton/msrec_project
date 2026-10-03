@@ -1,14 +1,15 @@
 """Backfill the public Board & Committee page (/board-committee/) with every
-account that already holds an approved Reviewer or Committee role.
+account that already holds an auto-published standing: an approved Reviewer
+or Committee member, or a Secretariat account.
 
-New approvals publish themselves automatically (see
-admin_dashboard.views._handle_role_decision ->
+New approvals / role changes publish themselves automatically (see
+admin_dashboard.views._handle_role_decision and _handle_edit ->
 pages.committee_services.sync_governance_member_from_user); this command is
-the one-off catch-up for members approved before that was wired in.
+the one-off catch-up for accounts that reached that standing beforehand.
 
 Idempotent: a card already exists per account (keyed on the OneToOne user),
-so re-running only publishes the ones still missing and promotes any
-Reviewer card whose account has since joined the Committee.
+so re-running only publishes the ones still missing and moves any card whose
+account's standing has since changed (e.g. Reviewer -> Committee/Secretariat).
 
 Usage: python manage.py sync_board_members
 """
@@ -20,12 +21,14 @@ from pages.committee_services import sync_governance_member_from_user
 
 
 class Command(BaseCommand):
-    help = "Publish all already-approved reviewers/committee members on the Board & Committee page."
+    help = "Publish all approved reviewers/committee members and Secretariat accounts on the Board & Committee page."
 
     def handle(self, *args, **options):
         approved = User.RequestStatus.APPROVED
-        members = User.objects.filter(reviewer_status=approved) | User.objects.filter(
-            committee_status=approved
+        members = (
+            User.objects.filter(reviewer_status=approved)
+            | User.objects.filter(committee_status=approved)
+            | User.objects.filter(role=User.Role.SECRETARIAT)
         )
         members = members.distinct()
 

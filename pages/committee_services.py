@@ -154,24 +154,55 @@ def _user_discipline(user, group):
     return ""
 
 
-def sync_governance_member_from_user(user):
-    """Publish (or update) the public Board & Committee card for an approved
-    Reviewer / Committee account. The card carries no photo of its own, so
-    pages.views._member_photo_url falls back to the account's own signup
-    photo automatically -- which is why that photo is mandatory at signup for
-    these roles.
+# The three Board & Committee groups this module publishes to automatically
+# from login accounts. A card in any other group (currently only Board) is
+# treated as hand-curated and never auto-moved or auto-hidden.
+_AUTO_GROUPS = (
+    GovernanceMember.Group.COMMITTEE,
+    GovernanceMember.Group.SECRETARIAT,
+    GovernanceMember.Group.REVIEWER,
+)
 
-    A Committee approval outranks Reviewer, so an existing Reviewer card is
-    promoted into the Committee group. Admin-curated name/title/tag and any
-    separately uploaded card photo are preserved on an existing card."""
+# Default role_title per auto group, and the set of auto-assigned titles that
+# a group change is allowed to overwrite (so an admin's custom role_title,
+# e.g. "Deputy Secretary", is preserved).
+_AUTO_ROLE_TITLES = {
+    GovernanceMember.Group.COMMITTEE: "Committee Member",
+    GovernanceMember.Group.SECRETARIAT: "Secretariat",
+    GovernanceMember.Group.REVIEWER: "Reviewer",
+}
+
+
+def _target_group_and_role(user):
+    """Which Board & Committee group an account should auto-publish to, by its
+    current standing, highest first: Committee > Secretariat > Reviewer.
+    Returns (group, role_title), or (None, None) if the account qualifies for
+    none of them."""
     from accounts.models import User
 
     approved = User.RequestStatus.APPROVED
     if user.committee_status == approved:
-        group, role_title = GovernanceMember.Group.COMMITTEE, "Committee Member"
-    elif user.reviewer_status == approved:
-        group, role_title = GovernanceMember.Group.REVIEWER, "Reviewer"
-    else:
+        return GovernanceMember.Group.COMMITTEE, "Committee Member"
+    if user.role == User.Role.SECRETARIAT:
+        return GovernanceMember.Group.SECRETARIAT, (user.position or "").strip() or "Secretariat"
+    if user.reviewer_status == approved:
+        return GovernanceMember.Group.REVIEWER, "Reviewer"
+    return None, None
+
+
+def sync_governance_member_from_user(user):
+    """Publish (or update) the public Board & Committee card for an account
+    that holds an auto-published standing -- an approved Reviewer/Committee
+    member, or a Secretariat account. The card carries no photo of its own,
+    so pages.views._member_photo_url falls back to the account's own signup
+    photo automatically.
+
+    Standing is re-evaluated on every call, so a Reviewer who joins the
+    Committee (or is made Secretariat) has their existing card moved to the
+    right group. Admin-curated cards in the Board group, and any custom
+    name/title/role/tag or separately uploaded card photo, are preserved."""
+    group, role_title = _target_group_and_role(user)
+    if group is None:
         return None
 
     member = GovernanceMember.objects.filter(user=user).first()
@@ -186,33 +217,31 @@ def sync_governance_member_from_user(user):
             is_active=True,
         )
 
-    # Existing card: re-publish it and promote Reviewer -> Committee if the
-    # account just gained Committee membership. A card an admin has already
-    # curated as Board/Secretariat/Committee keeps its group; only the
-    # auto-created Reviewer group is promoted.
+    # Existing card: re-publish it and, if the account's standing moved it to
+    # a different auto group, follow that move. A card an admin curated into
+    # the Board group keeps its group; a custom role_title is preserved.
     member.is_active = True
-    if group == GovernanceMember.Group.COMMITTEE and member.group == GovernanceMember.Group.REVIEWER:
-        member.group = GovernanceMember.Group.COMMITTEE
-        if member.role_title in ("", "Reviewer"):
-            member.role_title = "Committee Member"
+    if member.group in _AUTO_GROUPS and member.group != group:
+        member.group = group
+        if member.role_title in ("", *_AUTO_ROLE_TITLES.values()):
+            member.role_title = role_title
     member.save()
     return member
 
 
 def unpublish_governance_member_for_user(user):
-    """A Reviewer/Committee request was rejected: hide the auto-published
-    card if the account no longer holds either approved role. A card an admin
-    curated into Board/Secretariat is left untouched -- only the
-    auto-published Reviewer/Committee groups are hidden."""
-    from accounts.models import User
-
-    approved = User.RequestStatus.APPROVED
-    if user.reviewer_status == approved or user.committee_status == approved:
+    """A standing was removed (Reviewer/Committee request rejected, or the
+    Secretariat role taken away): hide the auto-published card if the account
+    no longer qualifies for any auto group. A card an admin curated into the
+    Board group is left untouched."""
+    group, _ = _target_group_and_role(user)
+    if group is not None:
+        # Still qualifies for some group -- re-sync rather than hide.
+        sync_governance_member_from_user(user)
         return
 
     GovernanceMember.objects.filter(
-        user=user,
-        group__in=(GovernanceMember.Group.REVIEWER, GovernanceMember.Group.COMMITTEE),
+        user=user, group__in=_AUTO_GROUPS,
     ).update(is_active=False)
 
 
