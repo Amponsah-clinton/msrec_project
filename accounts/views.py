@@ -103,6 +103,65 @@ def _notify_staff_of_role_request(user, roles_text):
             pass
 
 
+def _secretariat_notification_emails():
+    """Who to email about a new Reviewer/Committee application: every active
+    Secretariat account, plus the configured Secretariat routing address
+    from Site Settings (so an install with no Secretariat account yet still
+    reaches a monitored inbox). De-duplicated, lower-cased."""
+    emails = set()
+    for addr in User.objects.filter(
+        role=User.Role.SECRETARIAT, is_active=True
+    ).values_list("email", flat=True):
+        if addr:
+            emails.add(addr.strip().lower())
+    try:
+        from pages.models import SiteSettings
+        site = SiteSettings.get_solo()
+        if site.contact_secretariat_email:
+            emails.add(site.contact_secretariat_email.strip().lower())
+    except Exception:
+        logger.exception("Could not read Secretariat routing email from Site Settings")
+    return sorted(emails)
+
+
+def _email_secretariat_of_role_request(request, user, roles_text):
+    """Emails the Secretariat the moment someone signs up requesting a
+    Reviewer and/or Committee role, so a pending application isn't waiting
+    only behind the in-app notification bell. Best-effort: a mail problem
+    never blocks sign-up."""
+    recipients = _secretariat_notification_emails()
+    if not recipients:
+        logger.warning("No Secretariat recipients for role-request email (%s)", user.email)
+        return False
+
+    review_url = settings.SITE_URL.rstrip("/") + reverse("secretariat_dashboard:users_access")
+    detail_bits = [f"Email: {user.email}"]
+    if user.phone:
+        detail_bits.append(f"Phone: {user.phone}")
+    if user.institution:
+        detail_bits.append(f"Institution: {user.institution}")
+
+    try:
+        return send_branded_email(
+            subject=f"New {roles_text} application — {user.full_name}",
+            to=recipients,
+            heading="New membership application",
+            paragraphs=[
+                "A new account has signed up and requested a role that needs Secretariat approval.",
+                f"{user.full_name} has applied to join MSREC as {roles_text}.",
+                " · ".join(detail_bits),
+                "Review their details (including the CV they uploaded) and approve or decline the "
+                "request from Users & Access.",
+            ],
+            cta_text="Review the application",
+            cta_url=review_url,
+            preheader=f"{user.full_name} applied to join MSREC as {roles_text}.",
+        )
+    except Exception:
+        logger.exception("Failed to send Secretariat role-request email for %s", user.email)
+        return False
+
+
 def _send_role_pending_email(request, user):
     """Sent once, right at signup, to whoever ticked Reviewer and/or
     Committee Member -- so "nothing happened, I was just dropped on the
@@ -471,6 +530,7 @@ def signup(request):
                 role_labels = [User.Role(role).label for role in user.requested_roles]
                 roles_text = " and ".join(role_labels)
                 _notify_staff_of_role_request(user, roles_text)
+                _email_secretariat_of_role_request(request, user, roles_text)
                 confirmation_note = (
                     "we've emailed you a confirmation, and we'll notify you again as soon as it's reviewed."
                     if emailed else
