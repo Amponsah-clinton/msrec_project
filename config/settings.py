@@ -40,12 +40,19 @@ CSRF_TRUSTED_ORIGINS = [
     if o.strip()
 ]
 
-# Absolute base URL for links in emails sent from *outside* a request (a
-# management command run by cron, for instance -- request.build_absolute_uri()
-# covers everything sent from a view). Only reviewer_dashboard.reminders
-# needs this today, since it's the one thing in this project that can fire
-# from a scheduled command rather than a page load.
-SITE_URL = os.getenv("SITE_URL", "https://ghethicalclearance.academicdigital.space" if not DEBUG else "http://127.0.0.1:8000")
+# Absolute base URL for every link in an outgoing email. Defaults to the
+# live site so a hosted deployment is correct out of the box -- even if its
+# environment forgets to set DEBUG=False -- and never leaks a 127.0.0.1 link
+# into a real email. For local development, set SITE_URL=http://127.0.0.1:8000
+# in your .env (see .env.example) so dev emails point back at your machine.
+SITE_URL = os.getenv("SITE_URL", "https://ghethicalclearance.academicdigital.space")
+
+# Behind the host's HTTPS reverse proxy, trust its forwarding headers so
+# request.build_absolute_uri() (used for links in some emails) returns the
+# real https://<domain>/... URL instead of http://127.0.0.1. The proxy
+# terminates TLS and forwards the original scheme/host in these headers.
+USE_X_FORWARDED_HOST = True
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 # Application definition
 INSTALLED_APPS = [
