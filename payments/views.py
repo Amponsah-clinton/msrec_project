@@ -157,13 +157,14 @@ def _reconcile_workshop_charge(reference):
         reg.payment_status = WorkshopRegistration.PaymentStatus.SUCCESS
         reg.paid_at = timezone.now()
         reg.paystack_response = data
-        reg.save(update_fields=["payment_status", "paid_at", "paystack_response"])
+        reg.ensure_certificate_ref()  # traceable id, verifiable at /verify/
+        reg.save(update_fields=["payment_status", "paid_at", "paystack_response", "certificate_ref"])
         # Payment confirmed server-side -- send the "registration received"
-        # email now (covers the case where the browser dropped out before
-        # the in-page verify ran).
+        # email + SMS now (covers the case where the browser dropped out
+        # before the in-page verify ran).
         try:
-            from workshop import emails
+            from workshop.views import _notify_registration_success
             from workshop.models import WorkshopSettings
-            emails.send_registration_received_email(reg, WorkshopSettings.get_solo())
+            _notify_registration_success(reg, WorkshopSettings.get_solo())
         except Exception:
-            logger.exception("Workshop webhook email failed for %s", reference)
+            logger.exception("Workshop webhook notify failed for %s", reference)

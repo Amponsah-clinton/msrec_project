@@ -48,6 +48,8 @@ def register(request):
             errors.append("Please choose your institution.")
         if not email:
             errors.append("Your email is required.")
+        if not phone:
+            errors.append("Your phone number is required.")
         if "wants_certificate" not in request.POST:
             errors.append("Please tell us whether you want a certificate.")
         if errors:
@@ -82,10 +84,10 @@ def register(request):
             return redirect("workshop:pay", pk=reg.pk)
 
         # Free registration (no certificate): complete immediately and
-        # confirm by email (carries the meeting link when one is set).
+        # confirm by email + SMS (carries the meeting link when one is set).
         reg.payment_status = WorkshopRegistration.PaymentStatus.NOT_REQUIRED
         reg.save(update_fields=["payment_status"])
-        _send_received_email(reg, ws)
+        _notify_registration_success(reg, ws)
         return redirect(f"{reverse('workshop:thanks')}?r={reg.pk}")
 
     return render(request, "workshop/register.html", _register_context(ws, {}))
@@ -99,13 +101,31 @@ def _register_context(ws, prefill):
     }
 
 
-def _send_received_email(reg, ws):
-    """Best-effort confirmation email -- a mail hiccup never blocks the flow."""
+def _notify_registration_success(reg, ws):
+    """Confirm a completed registration by email AND SMS. Both are best-
+    effort: a mail/SMS hiccup never blocks or rolls back the registration."""
     try:
         from . import emails
         emails.send_registration_received_email(reg, ws)
     except Exception:
         logger.exception("Workshop registration email failed for %s", reg.email)
+    _send_received_sms(reg, ws)
+
+
+def _send_received_sms(reg, ws):
+    """Texts the registrant a confirmation (with the meeting link when set).
+    Needs a reachable Ghana number; a non-Ghana/invalid number is simply
+    skipped by the SMS service."""
+    try:
+        from notifications import sms
+        parts = [f"MSREC: You're registered for {ws.workshop_title}."]
+        if reg.wants_certificate and reg.is_paid:
+            parts.append("Certificate fee received.")
+        if ws.meeting_link:
+            parts.append(f"Join: {ws.meeting_link}")
+        sms.send_sms([reg.phone], " ".join(parts))
+    except Exception:
+        logger.exception("Workshop registration SMS failed for %s", reg.phone)
 
 
 def _register_institution(name):
@@ -160,10 +180,11 @@ def pay_verify(request, pk):
         reg.payment_status = WorkshopRegistration.PaymentStatus.SUCCESS
         reg.paid_at = timezone.now()
         reg.paystack_response = data
-        reg.save(update_fields=["payment_status", "paid_at", "paystack_response"])
+        reg.ensure_certificate_ref()  # traceable id, verifiable at /verify/
+        reg.save(update_fields=["payment_status", "paid_at", "paystack_response", "certificate_ref"])
         # Now that payment has succeeded, the registration is complete --
-        # send the confirmation email (with the meeting link if set).
-        _send_received_email(reg, WorkshopSettings.get_solo())
+        # confirm by email + SMS (with the meeting link if set).
+        _notify_registration_success(reg, WorkshopSettings.get_solo())
         return JsonResponse({"ok": True, "redirect": f"{reverse('workshop:thanks')}?r={reg.pk}"})
 
     reg.payment_status = WorkshopRegistration.PaymentStatus.FAILED
@@ -171,6 +192,28 @@ def pay_verify(request, pk):
     reg.save(update_fields=["payment_status", "paystack_response"])
     reason = data.get("gateway_response") or "Payment was not successful. Please try again."
     return JsonResponse({"ok": False, "error": reason}, status=400)
+
+
+def cert_sample(request):
+    """A watermarked sample certificate for the public preview modal. Served
+    inline (never as an attachment); the modal embeds it with the PDF
+    toolbar hidden so there's no download button, and the baked-in SPECIMEN
+    watermark makes it unusable regardless."""
+    from django.http import HttpResponse
+
+    from .certificate import render_sample_certificate_pdf
+
+    name = (request.GET.get("name") or "").strip()[:80] or "Your Name Here"
+    try:
+        pdf = render_sample_certificate_pdf(name)
+    except Exception:
+        logger.exception("Workshop sample certificate failed")
+        return HttpResponse("Couldn't render the sample certificate.", status=500)
+    resp = HttpResponse(pdf, content_type="application/pdf")
+    resp["Content-Disposition"] = "inline; filename=sample-certificate.pdf"
+    resp["X-Frame-Options"] = "SAMEORIGIN"
+    resp["Cache-Control"] = "no-store"
+    return resp
 
 
 def thanks(request):
@@ -182,3 +225,51 @@ def thanks(request):
         "reg": reg,
         "ws": WorkshopSettings.get_solo(),
     })
+
+
+def _approved_or_404(token):
+    from django.http import Http404
+    reg = WorkshopRegistration.objects.filter(
+        download_token=token, approved_at__isnull=False
+    ).first()
+    if reg is None or not token:
+        raise Http404("No documents for this link.")
+    return reg
+
+
+def documents(request, token):
+    """Public, token-gated page listing a participant's issued documents."""
+    reg = _approved_or_404(token)
+    return render(request, "workshop/documents.html", {
+        "reg": reg,
+        "ws": WorkshopSettings.get_solo(),
+        "token": token,
+    })
+
+
+def download_document(request, token, kind):
+    """Streams one issued document (letter or certificate) for download."""
+    from django.http import Http404, HttpResponse
+
+    reg = _approved_or_404(token)
+    ws = WorkshopSettings.get_solo()
+    slug = "".join(c if c.isalnum() else "_" for c in (reg.name or "participant")).strip("_") or "participant"
+
+    if kind == "letter":
+        from .letter import render_confirmation_letter_pdf
+        pdf = render_confirmation_letter_pdf(reg, ws)
+        filename = f"{slug}_Confirmation_of_Participation.pdf"
+    elif kind == "certificate":
+        if not reg.is_paid:
+            raise Http404("No certificate for this participant.")
+        from .certificate import render_workshop_certificate_pdf
+        pdf = render_workshop_certificate_pdf(reg)
+        reg.save(update_fields=["certificate_ref"])
+        filename = f"{slug}_Certificate.pdf"
+    else:
+        raise Http404("Unknown document.")
+
+    resp = HttpResponse(pdf, content_type="application/pdf")
+    resp["Content-Disposition"] = f'attachment; filename="{filename}"'
+    resp["Cache-Control"] = "no-store"
+    return resp

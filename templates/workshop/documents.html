@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Your Workshop Documents | {{ ws.workshop_title }}{% endblock %}
+{% block body_class %}workshop-page{% endblock %}
+
+{% block extra_css %}
+<style>
+  .wsd-wrap { max-width: 640px; margin: 0 auto; padding: 140px 16px 90px; }
+  .wsd-head { text-align: center; margin-bottom: 26px; }
+  .wsd-head .wsd-icon { width: 60px; height: 60px; border-radius: 50%; background: rgba(15,138,134,.12); color: #0f8a86;
+    display: flex; align-items: center; justify-content: center; font-size: 28px; margin: 0 auto 14px; }
+  .wsd-head h1 { font-size: 26px; margin: 0 0 8px; }
+  .wsd-head p { color: var(--muted,#56607a); margin: 0; }
+  .wsd-card { background: var(--card-bg,#fff); border: 1px solid var(--border,#e5e9f0); border-radius: 14px;
+    padding: 6px 8px; box-shadow: 0 10px 30px -24px rgba(20,35,63,.4); }
+  .wsd-doc { display: flex; align-items: center; gap: 14px; padding: 16px 16px; border-bottom: 1px solid var(--border,#eef1f6); }
+  .wsd-doc:last-child { border-bottom: 0; }
+  .wsd-doc-ico { width: 44px; height: 44px; border-radius: 10px; background: #fdeceb; color: #c0392b;
+    display: flex; align-items: center; justify-content: center; font-size: 20px; flex: none; }
+  .wsd-doc-info { flex: 1; min-width: 0; }
+  .wsd-doc-info strong { display: block; font-size: 15px; }
+  .wsd-doc-info span { font-size: 12.5px; color: var(--muted,#6b7488); }
+  .wsd-dl { background: #0f8a86; color: #fff; text-decoration: none; border-radius: 9px; padding: 10px 18px;
+    font-size: 14px; font-weight: 700; white-space: nowrap; }
+  .wsd-dl:hover { background: #0c726e; }
+  .wsd-note { text-align: center; font-size: 12.5px; color: var(--muted,#6b7488); margin-top: 18px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+  <div class="wsd-wrap">
+    <div class="wsd-head">
+      <div class="wsd-icon"><i class="bi bi-folder2-open"></i></div>
+      <h1>Your workshop documents</h1>
+      <p>{{ reg.name }} — {{ ws.workshop_title }}</p>
+    </div>
+
+    <div class="wsd-card">
+      {% if reg.is_paid %}
+      <div class="wsd-doc">
+        <span class="wsd-doc-ico"><i class="bi bi-award"></i></span>
+        <div class="wsd-doc-info">
+          <strong>Certificate of Participation</strong>
+          <span>Certificate No. {{ reg.certificate_ref }} · verifiable at /verify/</span>
+        </div>
+        <a class="wsd-dl" href="{% url 'workshop:download_document' token=token kind='certificate' %}"><i class="bi bi-download"></i> Download</a>
+      </div>
+      {% endif %}
+
+      <div class="wsd-doc">
+        <span class="wsd-doc-ico"><i class="bi bi-file-earmark-text"></i></span>
+        <div class="wsd-doc-info">
+          <strong>Confirmation of Participation (Letter)</strong>
+          <span>Reference {{ reg.participation_ref }}</span>
+        </div>
+        <a class="wsd-dl" href="{% url 'workshop:download_document' token=token kind='letter' %}"><i class="bi bi-download"></i> Download</a>
+      </div>
+    </div>
+
+    <p class="wsd-note"><i class="bi bi-shield-lock"></i> This is your private link — please don't share it. Documents are issued by the MSREC Secretariat.</p>
+  </div>
+</main>
+{% endblock %}

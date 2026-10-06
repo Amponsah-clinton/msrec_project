@@ -29,6 +29,9 @@ from payments import fees
 CODE_PREFIX = "VER"
 _CODE_LEN = 8
 _REF_RE = re.compile(r"MSREC\D*(\d{4})\D*(\d{1,6})\s*$", re.IGNORECASE)
+# Workshop certificate ids look like MSREC/WS/CERT/2026/0001 -- matched before
+# the generic approval reference above so the "WS/CERT" part isn't stripped.
+_WS_REF_RE = re.compile(r"MSREC\W*WS\W*CERT\W*(\d{4})\W*(\d{1,6})\s*$", re.IGNORECASE)
 
 
 def verification_code(reference_no):
@@ -47,6 +50,15 @@ def normalize_reference(raw):
     if not match:
         return None
     return f"MSREC/{match.group(1)}/{int(match.group(2)):04d}"
+
+
+def normalize_workshop_ref(raw):
+    """'MSREC/WS/CERT/2026/1' / 'MSREC WS CERT 2026 0001' -> 'MSREC/WS/CERT/2026/0001',
+    or None when it isn't a workshop certificate id."""
+    match = _WS_REF_RE.match((raw or "").strip())
+    if not match:
+        return None
+    return f"MSREC/WS/CERT/{match.group(1)}/{int(match.group(2)):04d}"
 
 
 def _normalize_code(raw):
@@ -94,35 +106,72 @@ def _result(application):
     }
 
 
+def _workshop_result(reg):
+    from workshop.models import WorkshopSettings
+
+    return {
+        "found": True,
+        "kind": "workshop_certificate",
+        "status": "valid",
+        "number": reg.certificate_ref,
+        "code": verification_code(reg.certificate_ref),
+        "recipient": reg.name,
+        "institution": reg.institution or "",
+        "workshop": WorkshopSettings.get_solo().workshop_title,
+        "issuedOn": _date(reg.paid_at or reg.created_at),
+    }
+
+
+def _paid_workshop_certs():
+    """Paid workshop registrations that have been issued a certificate id --
+    the only ones that verify (an unpaid registration has no certificate)."""
+    from workshop.models import WorkshopRegistration
+
+    return WorkshopRegistration.objects.filter(
+        payment_status=WorkshopRegistration.PaymentStatus.SUCCESS,
+    ).exclude(certificate_ref="")
+
+
 def lookup(raw):
-    """Returns the public result dict for an approval number or verification
-    code, or {"found": False, ...} (same shape for every miss, whatever the
-    application's real state). Returns None for blank input."""
+    """Returns the public result dict for an approval number, a workshop
+    certificate id, or a verification code (any of them), or
+    {"found": False, ...} for a miss. Returns None for blank input."""
     from applicant_dashboard.models import Application
 
     query = extract_query(raw)
     if not query:
         return None
 
+    # Workshop certificate id (distinct namespace -- check before the generic
+    # approval reference, whose looser regex would otherwise swallow it).
+    ws_ref = normalize_workshop_ref(query)
+    if ws_ref:
+        reg = _paid_workshop_certs().filter(certificate_ref=ws_ref).first()
+        return _workshop_result(reg) if reg else {"found": False, "query": query[:80]}
+
     approved = Application.objects.filter(
         status=Application.Status.APPROVED, reference_no__isnull=False
     ).select_related("applicant")
 
-    application = None
     reference = normalize_reference(query)
     if reference:
         application = approved.filter(reference_no=reference).first()
-    else:
-        code = _normalize_code(query)
-        if code:
-            for candidate in approved:
-                if hmac.compare_digest(verification_code(candidate.reference_no), code):
-                    application = candidate
-                    break
-
-    if application is None:
+        if application is not None:
+            return _result(application)
         return {"found": False, "query": query[:80]}
-    return _result(application)
+
+    code = _normalize_code(query)
+    if code:
+        # A verification code could belong to an approval or a workshop
+        # certificate -- check approvals first, then workshop certificates.
+        for candidate in approved:
+            if hmac.compare_digest(verification_code(candidate.reference_no), code):
+                return _result(candidate)
+        for reg in _paid_workshop_certs():
+            if hmac.compare_digest(verification_code(reg.certificate_ref), code):
+                return _workshop_result(reg)
+
+    return {"found": False, "query": query[:80]}
 
 
 def verify_url(request, reference_no):

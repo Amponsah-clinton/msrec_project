@@ -11,6 +11,7 @@
 
   var STATUS_META = {
     approved: { label: "Approved & Valid", icon: "bi-patch-check-fill", tone: "approved" },
+    valid: { label: "Valid Certificate", icon: "bi-patch-check-fill", tone: "approved" },
     conditional: { label: "Conditionally Approved", icon: "bi-exclamation-circle-fill", tone: "conditional" },
     expired: { label: "Approval Expired", icon: "bi-hourglass-bottom", tone: "expired" },
     suspended: { label: "Approval Suspended", icon: "bi-x-octagon-fill", tone: "suspended" },
@@ -128,15 +129,26 @@
         html += '<div class="verify-result-note tone-muted"><i class="bi bi-hourglass-bottom"></i><span>This approval’s validity period has ended. Any research activity under it should have stopped as of the expiry date.</span></div>';
       }
 
-      html += '<dl class="verify-detail-grid">' +
-        detail("Study Title", record.title, true) +
-        detail("Principal Investigator", record.pi) +
-        detail("Institution", record.institution) +
-        detail("Review Type", record.reviewType) +
-        detail("Approved On", record.approvedOn) +
-        detail("Valid Until", record.expiresOn) +
-        detail("Verification Code", record.code) +
-        '</dl>';
+      if (record.kind === "workshop_certificate") {
+        html += '<dl class="verify-detail-grid">' +
+          detail("Recipient", record.recipient, true) +
+          detail("Institution", record.institution) +
+          detail("Workshop", record.workshop) +
+          detail("Issued On", record.issuedOn) +
+          detail("Certificate ID", record.number) +
+          detail("Verification Code", record.code) +
+          '</dl>';
+      } else {
+        html += '<dl class="verify-detail-grid">' +
+          detail("Study Title", record.title, true) +
+          detail("Principal Investigator", record.pi) +
+          detail("Institution", record.institution) +
+          detail("Review Type", record.reviewType) +
+          detail("Approved On", record.approvedOn) +
+          detail("Valid Until", record.expiresOn) +
+          detail("Verification Code", record.code) +
+          '</dl>';
+      }
 
       html += '<div class="verify-result-footer">' +
         '<div class="verify-result-qr">' +

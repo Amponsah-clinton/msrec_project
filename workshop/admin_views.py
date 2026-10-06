@@ -106,14 +106,34 @@ def _save_settings(request, ws):
 
 
 def _save_cert_template(request):
-    # The workshop certificate uses the shared platform design signed by the
-    # Chair (Site Settings -> Certificates), so only the workshop wording is
-    # set here: title tail, certifying statement and seal caption.
+    # The workshop certificate carries TWO signatures. Signatory 1 falls back
+    # to the Chair (Site Settings -> Certificates) when its name is left
+    # blank; signatory 2 is workshop-specific.
     tpl = WorkshopCertificateTemplate.get_solo()
     tpl.title_tail = request.POST.get("cert_title_tail", "").strip()[:80] or "of Participation"
     tpl.body = request.POST.get("cert_body", "").strip()
     tpl.seal_caption = request.POST.get("cert_seal_caption", "").strip()[:24] or "WORKSHOP"
-    tpl.save(update_fields=["title_tail", "body", "seal_caption", "updated_at"])
+    tpl.signatory1_name = request.POST.get("sig1_name", "").strip()[:150]
+    tpl.signatory1_title = request.POST.get("sig1_title", "").strip()[:150]
+    tpl.signatory2_name = request.POST.get("sig2_name", "").strip()[:150]
+    tpl.signatory2_title = request.POST.get("sig2_title", "").strip()[:150]
+
+    for which, field in ((1, "sig1_signature"), (2, "sig2_signature")):
+        f = request.FILES.get(field)
+        if f:
+            if not (f.content_type or "").startswith("image/"):
+                messages.error(request, f"Signature {which} must be an image (ideally a transparent PNG).")
+                continue
+            path = storage.upload_signature(f, which=which)
+            if path:
+                if which == 1:
+                    tpl.signatory1_signature_path = path
+                else:
+                    tpl.signatory2_signature_path = path
+            else:
+                messages.warning(request, f"Signature {which} couldn't be uploaded right now.")
+
+    tpl.save()
     messages.success(request, "Certificate design saved.")
 
 
@@ -134,6 +154,9 @@ def admin_workshop(request):
             _bulk(request, emails.send_certificate_email, ws, label="Certificate")
         elif action == "send_materials":
             _bulk(request, emails.send_materials_email, ws, label="Materials")
+        elif action == "approve_send":
+            from . import approval
+            _bulk(request, approval.approve_and_send, ws, label="Documents (certificate + letter)")
         elif action == "delete":
             reg = get_object_or_404(WorkshopRegistration, pk=request.POST.get("reg_id"))
             name = reg.name
@@ -188,11 +211,19 @@ def admin_cert_preview(request):
 
     tpl = None
     if request.method == "POST":
-        # Preview the unsaved workshop wording (signatory is always the Chair).
+        # Preview the unsaved wording + signatories. New signature images
+        # aren't persisted yet, so reuse any already-saved signature paths.
+        saved = WorkshopCertificateTemplate.get_solo()
         tpl = WorkshopCertificateTemplate(
             title_tail=request.POST.get("cert_title_tail", "").strip()[:80] or "of Participation",
             body=request.POST.get("cert_body", "").strip(),
             seal_caption=request.POST.get("cert_seal_caption", "").strip()[:24] or "WORKSHOP",
+            signatory1_name=request.POST.get("sig1_name", "").strip()[:150],
+            signatory1_title=request.POST.get("sig1_title", "").strip()[:150],
+            signatory2_name=request.POST.get("sig2_name", "").strip()[:150],
+            signatory2_title=request.POST.get("sig2_title", "").strip()[:150],
+            signatory1_signature_path=saved.signatory1_signature_path,
+            signatory2_signature_path=saved.signatory2_signature_path,
         )
 
     try:

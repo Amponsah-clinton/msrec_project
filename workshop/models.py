@@ -163,6 +163,15 @@ class WorkshopRegistration(models.Model):
 
     certificate_ref = models.CharField(max_length=60, blank=True)
 
+    # Post-workshop approval: the secretary approves a participant, which
+    # issues their documents (certificate for paid participants + a
+    # Confirmation of Participation letter), emails them, and texts a unique
+    # download link.
+    approved_at = models.DateTimeField(null=True, blank=True)
+    documents_sent_at = models.DateTimeField(null=True, blank=True)
+    # Opaque, unguessable token for the public download link (no login).
+    download_token = models.CharField(max_length=64, blank=True, db_index=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -186,3 +195,14 @@ class WorkshopRegistration(models.Model):
             year = (self.paid_at or self.created_at or timezone.now()).year
             self.certificate_ref = f"MSREC/WS/CERT/{year}/{self.pk:04d}"
         return self.certificate_ref
+
+    def ensure_download_token(self):
+        if not self.download_token:
+            import secrets
+            self.download_token = secrets.token_urlsafe(32)
+        return self.download_token
+
+    @property
+    def participation_ref(self):
+        year = (self.approved_at or self.paid_at or self.created_at or timezone.now()).year
+        return f"MSREC/WS/PART/{year}/{self.pk:04d}"
