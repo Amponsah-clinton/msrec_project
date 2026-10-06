@@ -52,6 +52,11 @@ and all thirteen pages get it.
   <span>Hall of Fame</span>
 </a>
 
+<a href="{% url 'workshop_admin:home' %}" class="nav-item{% if active == 'workshop' %} active{% endif %}">
+  <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1 2 3 6 3s6-2 6-3v-5"/></svg></span>
+  <span>Workshop</span>
+</a>
+
 <a href="{% url 'admin_dashboard:resources_library' %}" class="nav-item{% if active == 'resources' %} active{% endif %}">
   <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg></span>
   <span>Resources</span>

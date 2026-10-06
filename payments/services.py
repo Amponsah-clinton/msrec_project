@@ -9,6 +9,7 @@ import uuid
 from datetime import datetime
 from decimal import Decimal, InvalidOperation
 
+from django.db import transaction
 from django.db.models import Q, Sum
 from django.http import HttpResponse
 from django.utils import timezone
@@ -73,6 +74,11 @@ def verify_and_finalize(payment, *, on_success):
 
     On any mismatch or a Paystack-reported failure, the payment is marked
     FAILED and (False, reason) is returned.
+
+    Safe to call concurrently for the same payment -- the in-page browser
+    verify and the Paystack webhook can both fire for one charge. The
+    SUCCESS transition is claimed under a row lock, so on_success (which
+    finalizes the application and sends emails) runs exactly once, not twice.
     """
     if payment.status == Payment.Status.SUCCESS:
         return True, None
@@ -82,20 +88,30 @@ def verify_and_finalize(payment, *, on_success):
     except paystack.PaystackError as exc:
         return False, str(exc)
 
-    payment.paystack_response = data
-
     paystack_status = data.get("status")
     amount_ok = int(data.get("amount") or 0) == payment.amount_subunit
     currency_ok = (data.get("currency") or "").upper() == payment.currency.upper()
 
     if paystack_status == "success" and amount_ok and currency_ok:
+        # Claim the PENDING -> SUCCESS flip under a row lock so a racing
+        # caller (webhook vs. browser) sees it already done and bails out
+        # instead of finalizing a second time.
+        with transaction.atomic():
+            locked = Payment.objects.select_for_update().get(pk=payment.pk)
+            if locked.status == Payment.Status.SUCCESS:
+                return True, None
+            locked.status = Payment.Status.SUCCESS
+            locked.paid_at = timezone.now()
+            locked.paystack_response = data
+            locked.save(update_fields=["status", "paid_at", "paystack_response"])
         payment.status = Payment.Status.SUCCESS
-        payment.paid_at = timezone.now()
-        payment.save(update_fields=["status", "paid_at", "paystack_response"])
+        payment.paid_at = locked.paid_at
+        payment.paystack_response = data
         if payment.application is not None:
             on_success(payment.application)
         return True, None
 
+    payment.paystack_response = data
     payment.status = Payment.Status.FAILED
     payment.save(update_fields=["status", "paystack_response"])
     if paystack_status == "success" and (not amount_ok or not currency_ok):

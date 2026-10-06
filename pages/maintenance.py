@@ -48,6 +48,10 @@ EXEMPT_PREFIXES = (
     "/admins/",            # the admin area (its own views still require an admin login)
     "/login/", "/logout/", "/forgot-password/", "/reset-password/",
     "/static/", "/favicon.ico",
+    # Paystack's server-to-server webhook must keep reconciling real charges
+    # even while the site is locked -- otherwise a payment taken just before
+    # maintenance sits unconfirmed (see payments.views.paystack_webhook).
+    "/payments/webhook/",
 )
 # An applicant who has already paid is sent to this URL to confirm the
 # payment; blocking it would take their money without finalising the

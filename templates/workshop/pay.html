@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Pay Certificate Fee | {{ ws.workshop_title }}{% endblock %}
+{% block body_class %}workshop-page{% endblock %}
+
+{% block extra_css %}
+<style>
+  .wsp-wrap { max-width: 540px; margin: 0 auto; padding: 48px 16px 80px; }
+  .wsp-card { background: var(--card-bg,#fff); border: 1px solid var(--border,#e5e9f0);
+    border-radius: 16px; padding: 32px; text-align: center; box-shadow: 0 12px 34px -24px rgba(20,35,63,.45); }
+  .wsp-lock { width: 54px; height: 54px; border-radius: 50%; background: rgba(15,138,134,.12);
+    color: #0f8a86; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; font-size: 24px; }
+  .wsp-card h1 { font-size: 22px; margin: 0 0 8px; }
+  .wsp-card p { color: var(--muted,#56607a); font-size: 14.5px; margin: 0 0 22px; }
+  .wsp-summary { text-align: left; border: 1px solid var(--border,#e5e9f0); border-radius: 12px;
+    padding: 14px 16px; margin-bottom: 22px; }
+  .wsp-row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 14.5px; }
+  .wsp-row.total { border-top: 1px dashed var(--border,#d7deea); margin-top: 6px; padding-top: 12px; font-weight: 700; font-size: 17px; }
+  .wsp-btn { width: 100%; background: #0f8a86; color: #fff; border: none; border-radius: 10px;
+    padding: 14px; font-size: 15.5px; font-weight: 700; cursor: pointer; }
+  .wsp-btn:hover { background: #0c726e; }
+  .wsp-btn:disabled { opacity: .6; cursor: default; }
+  .wsp-error { color: #c0392b; font-size: 14px; margin-bottom: 14px; min-height: 1px; }
+  .wsp-skip { display: inline-block; margin-top: 16px; color: var(--muted,#56607a); font-size: 13.5px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+  <div class="wsp-wrap">
+    <div class="wsp-card">
+      <div class="wsp-lock"><i class="bi bi-shield-lock-fill"></i></div>
+      <h1>Pay your certificate fee</h1>
+      <p>A one-time fee applies for your certificate of participation. Your registration is already saved.</p>
+
+      <div class="wsp-summary">
+        <div class="wsp-row"><span>Workshop</span><strong>{{ ws.workshop_title }}</strong></div>
+        <div class="wsp-row"><span>Name</span><strong>{{ reg.name }}</strong></div>
+        <div class="wsp-row total"><span>Amount</span><strong>{{ reg.currency }} {{ reg.amount }}</strong></div>
+      </div>
+
+      {% csrf_token %}
+      <div class="wsp-error" id="wspError"></div>
+      <button type="button" class="wsp-btn" id="wspPayBtn"><i class="bi bi-lock-fill"></i> Pay {{ reg.currency }} {{ reg.amount }}</button>
+      <a href="{% url 'workshop:thanks' %}?r={{ reg.pk }}" class="wsp-skip">I'll pay later</a>
+    </div>
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var btn = document.getElementById("wspPayBtn");
+    var errorEl = document.getElementById("wspError");
+    var original = btn.innerHTML;
+
+    function csrf() {
+      var i = document.querySelector('input[name="csrfmiddlewaretoken"]');
+      return i ? i.value : "";
+    }
+
+    btn.addEventListener("click", function () {
+      errorEl.textContent = "";
+      if (typeof PaystackPop === "undefined") {
+        errorEl.textContent = "Couldn't load the payment popup. Check your connection and try again.";
+        return;
+      }
+      var handler = PaystackPop.setup({
+        key: "{{ paystack_public_key }}",
+        email: "{{ reg.email }}",
+        amount: {{ reg.amount_subunit }},
+        currency: "{{ reg.currency }}",
+        ref: "{{ reg.payment_reference }}",
+        metadata: { custom_fields: [
+          { display_name: "Workshop", variable_name: "workshop", value: "{{ ws.workshop_title|escapejs }}" },
+          { display_name: "Name", variable_name: "name", value: "{{ reg.name|escapejs }}" }
+        ]},
+        callback: function (response) {
+          btn.disabled = true; btn.innerHTML = "Confirming payment…";
+          fetch("{{ verify_url }}", {
+            method: "POST",
+            headers: { "X-CSRFToken": csrf(), "Content-Type": "application/x-www-form-urlencoded", "X-Requested-With": "XMLHttpRequest" },
+            body: new URLSearchParams({ reference: response.reference }),
+          })
+            .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
+            .then(function (r) {
+              if (r.ok && r.data.ok) { window.location.href = r.data.redirect; }
+              else { btn.disabled = false; btn.innerHTML = original; errorEl.textContent = (r.data && r.data.error) || ("Couldn't confirm payment. Reference: " + response.reference); }
+            })
+            .catch(function () { btn.disabled = false; btn.innerHTML = original; errorEl.textContent = "Payment may have gone through, but we couldn't confirm it. Reference: " + response.reference; });
+        },
+        onClose: function () { btn.disabled = false; btn.innerHTML = original; },
+      });
+      handler.openIframe();
+    });
+  });
+</script>
+{% endblock %}

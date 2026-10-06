@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ ws.workshop_title }} | MSREC{% endblock %}
+{% block description %}Register for {{ ws.workshop_title }} — {{ ws.workshop_tagline }}{% endblock %}
+{% block body_class %}workshop-page{% endblock %}
+
+{% block extra_css %}
+<style>
+  .ws-wrap { max-width: 920px; margin: 0 auto; padding: 28px 16px 72px; }
+  .ws-hero {
+    position: relative; border-radius: 18px; overflow: hidden; min-height: 240px;
+    display: flex; align-items: flex-end; margin-bottom: 26px;
+    background: linear-gradient(135deg, #0f8a86 0%, #14233f 85%);
+    box-shadow: 0 18px 40px -22px rgba(20,35,63,.55);
+  }
+  .ws-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .ws-hero::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(10,20,35,.05) 0%, rgba(10,20,35,.78) 100%);
+  }
+  .ws-hero-pattern { position: absolute; inset: 0; opacity: .14; }
+  .ws-hero-inner { position: relative; z-index: 2; padding: 30px 30px 26px; color: #fff; }
+  .ws-hero-badge {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700;
+    letter-spacing: .14em; text-transform: uppercase; background: rgba(255,255,255,.16);
+    padding: 6px 12px; border-radius: 999px; backdrop-filter: blur(4px); margin-bottom: 12px;
+  }
+  .ws-hero-inner h1 { font-size: clamp(26px, 4vw, 40px); line-height: 1.1; margin: 0 0 8px; color: #fff; }
+  .ws-hero-inner p { margin: 0; font-size: 16px; max-width: 640px; color: rgba(255,255,255,.92); }
+
+  .ws-intro { color: var(--muted, #56607a); font-size: 15.5px; line-height: 1.6; margin: 0 0 24px; }
+
+  .ws-wrap *, .ws-wrap *::before, .ws-wrap *::after { box-sizing: border-box; }
+  .ws-card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e9f0);
+    border-radius: 16px; padding: 28px; box-shadow: 0 10px 30px -24px rgba(20,35,63,.4); }
+  .ws-card h2 { font-size: 20px; margin: 0 0 4px; }
+  .ws-card .ws-sub { color: var(--muted, #56607a); font-size: 14px; margin: 0 0 22px; }
+
+  .ws-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
+  .ws-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .ws-field.ws-wide { grid-column: 1 / -1; }
+  .ws-field label { font-weight: 600; font-size: 13.5px; }
+  .ws-field .req { color: #c0392b; }
+  .ws-field input, .ws-field select, .ws-field textarea {
+    width: 100%; max-width: 100%; box-sizing: border-box;
+    border: 1px solid var(--border, #cdd5e0); border-radius: 9px; padding: 10px 12px;
+    font-size: 14.5px; background: var(--input-bg, #fff); color: inherit; font-family: inherit;
+  }
+  .ws-field textarea { resize: vertical; }
+  .ws-field input:focus, .ws-field select:focus, .ws-field textarea:focus {
+    outline: none; border-color: #0f8a86; box-shadow: 0 0 0 3px rgba(15,138,134,.15);
+  }
+  .ws-hint { font-size: 12.5px; color: var(--muted, #6b7488); }
+
+  .ws-cert-choice { grid-column: 1 / -1; min-width: 0; margin: 0; border: 1px solid var(--border, #e5e9f0);
+    border-radius: 12px; padding: 16px 18px; background: rgba(15,138,134,.04); }
+  .ws-cert-choice legend { font-weight: 700; font-size: 14.5px; padding: 0 4px; }
+  .ws-radio-row { display: flex; gap: 22px; margin-top: 10px; flex-wrap: wrap; }
+  .ws-radio { display: inline-flex; align-items: center; gap: 8px; font-size: 14.5px; cursor: pointer; }
+  .ws-fee-note { margin-top: 12px; font-size: 13.5px; color: #0f6b67; background: rgba(15,138,134,.1);
+    border-radius: 9px; padding: 10px 12px; display: none; }
+  .ws-fee-note.show { display: block; }
+
+  .ws-actions { margin-top: 24px; display: flex; justify-content: flex-end; }
+  .ws-btn { background: #0f8a86; color: #fff; border: none; border-radius: 10px; padding: 13px 26px;
+    font-size: 15px; font-weight: 700; cursor: pointer; transition: background .15s; }
+  .ws-btn:hover { background: #0c726e; }
+
+  .ws-msgs { margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; }
+  .ws-msg { border-radius: 9px; padding: 10px 14px; font-size: 14px; }
+  .ws-msg.error { background: #fdeaea; color: #a52222; border: 1px solid #f3c6c6; }
+  .ws-msg.success { background: #e9f7ef; color: #1c7a46; border: 1px solid #c3e9d3; }
+
+  @media (max-width: 640px) { .ws-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+  <div class="ws-wrap">
+
+    <div class="ws-hero">
+      <img src="{% if ws.banner_url %}{{ ws.banner_url }}{% else %}{% static 'assets/img/about.jpg' %}{% endif %}" alt="{{ ws.workshop_title }}">
+
+      <svg class="ws-hero-pattern" width="100%" height="100%" aria-hidden="true">
+        <defs><pattern id="wsdots" width="26" height="26" patternUnits="userSpaceOnUse">
+          <circle cx="2" cy="2" r="2" fill="#ffffff"/></pattern></defs>
+        <rect width="100%" height="100%" fill="url(#wsdots)"/>
+      </svg>
+      <div class="ws-hero-inner">
+        <span class="ws-hero-badge"><i class="bi bi-mortarboard-fill"></i> MSREC Workshop</span>
+        <h1>{{ ws.workshop_title }}</h1>
+        {% if ws.workshop_tagline %}<p>{{ ws.workshop_tagline }}</p>{% endif %}
+      </div>
+    </div>
+
+    {% if messages %}
+      <div class="ws-msgs">
+        {% for message in messages %}
+          <div class="ws-msg {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    {% if ws.workshop_description %}<p class="ws-intro">{{ ws.workshop_description|linebreaksbr }}</p>{% endif %}
+
+    <div class="ws-card">
+      <h2>Register</h2>
+      <p class="ws-sub">Fill in your details below to take part in the workshop.</p>
+
+      {% if not ws.registration_open %}
+        <div class="ws-msg error">Registration is currently closed. Please check back later.</div>
+      {% else %}
+      <form method="post" id="wsForm" novalidate>
+        {% csrf_token %}
+        <div class="ws-grid">
+          <div class="ws-field ws-wide">
+            <label for="wsName">Full Name <span class="req">*</span></label>
+            <input type="text" id="wsName" name="name" value="{{ prefill.name|default:'' }}" required>
+          </div>
+
+          <div class="ws-field">
+            <label for="wsInstitution">Institution <span class="req">*</span></label>
+            <select id="wsInstitution" name="institution" required>
+              <option value="">Select institution</option>
+              {% for inst in institutions %}<option value="{{ inst.name }}" {% if prefill.institution == inst.name %}selected{% endif %}>{{ inst.name }}</option>{% endfor %}
+              <option value="__other__">Other (not listed)</option>
+            </select>
+            <input type="text" id="wsInstitutionOther" name="institution_other" maxlength="200" placeholder="Enter your institution" hidden>
+          </div>
+
+          <div class="ws-field">
+            <label for="wsEmail">Email Address <span class="req">*</span></label>
+            <input type="email" id="wsEmail" name="email" value="{{ prefill.email|default:'' }}" required>
+          </div>
+
+          <div class="ws-field">
+            <label for="wsPhone">Phone Number <span class="ws-hint">(optional)</span></label>
+            <input type="tel" id="wsPhone" name="phone" value="{{ prefill.phone|default:'' }}">
+          </div>
+
+          <div class="ws-field"></div>
+
+          <fieldset class="ws-cert-choice">
+            <legend>Do you want a certificate after the workshop? <span class="req">*</span></legend>
+            <div class="ws-radio-row">
+              <label class="ws-radio"><input type="radio" name="wants_certificate" value="yes" required> Yes, I want a certificate</label>
+              <label class="ws-radio"><input type="radio" name="wants_certificate" value="no" required> No, thank you</label>
+            </div>
+            <div class="ws-fee-note" id="wsFeeNote">
+              A certificate fee of <strong>{{ ws.fee_currency }} {{ ws.certificate_fee }}</strong> applies.
+              You'll pay securely on the next step after registering.
+            </div>
+          </fieldset>
+
+          <div class="ws-field ws-wide">
+            <label for="wsComments">Any comments <span class="ws-hint">(optional)</span></label>
+            <textarea id="wsComments" name="comments" rows="3">{{ prefill.comments|default:'' }}</textarea>
+          </div>
+        </div>
+
+        <div class="ws-actions">
+          <button type="submit" class="ws-btn" id="wsSubmit">Register</button>
+        </div>
+      </form>
+      {% endif %}
+    </div>
+
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    var instSelect = document.getElementById("wsInstitution");
+    var instOther = document.getElementById("wsInstitutionOther");
+    function syncOther() {
+      var isOther = instSelect.value === "__other__";
+      instOther.hidden = !isOther;
+      instOther.required = isOther;
+      if (!isOther) instOther.value = "";
+    }
+    if (instSelect) { instSelect.addEventListener("change", syncOther); syncOther(); }
+
+    var feeNote = document.getElementById("wsFeeNote");
+    document.querySelectorAll('input[name="wants_certificate"]').forEach(function (r) {
+      r.addEventListener("change", function () {
+        feeNote.classList.toggle("show", this.value === "yes" && this.checked);
+      });
+    });
+
+    var form = document.getElementById("wsForm");
+    if (form) form.addEventListener("submit", function () {
+      var btn = document.getElementById("wsSubmit");
+      btn.disabled = true; btn.textContent = "Please wait…";
+    });
+  })();
+</script>
+{% endblock %}

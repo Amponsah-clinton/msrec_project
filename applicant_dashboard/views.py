@@ -182,7 +182,10 @@ def _send_submission_confirmation_email(application, request, *, is_resubmission
     inbox. Fires exactly once per real submission, same call site as that
     notify(), right after the reference number is assigned so it's
     already available to quote."""
-    login_url = request.build_absolute_uri(reverse("pages:login"))
+    login_url = (
+        request.build_absolute_uri(reverse("pages:login")) if request is not None
+        else settings.SITE_URL.rstrip("/") + reverse("pages:login")
+    )
     if is_resubmission:
         subject = f"MSREC — resubmission received ({application.reference_no})"
         heading = "Your resubmission has been received"
@@ -255,6 +258,11 @@ def finalize_submission(application, request):
     time). Assigns the reference number, notifies the Secretariat, exactly
     once either way.
 
+    `request` may be None when this runs from the Paystack webhook
+    (payments.views.paystack_webhook), which has no HTTP request -- the
+    applicant's confirmation email then builds its links from SITE_URL, and
+    the on-screen success flash is skipped (there's no page to show it on).
+
     A resubmission is detected from revision_requested_at/resubmitted_at
     rather than the application's current `status` -- status is DRAFT for
     the whole time a paid resubmission is sitting at checkout waiting on
@@ -293,7 +301,8 @@ def finalize_submission(application, request):
         application, is_resubmission=is_resubmission, notify_message=notify_message,
     )
     _send_submission_confirmation_email(application, request, is_resubmission=is_resubmission)
-    messages.success(request, f"Application {application.reference_no} submitted successfully.")
+    if request is not None:
+        messages.success(request, f"Application {application.reference_no} submitted successfully.")
     return application
 
 
