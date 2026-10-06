@@ -67,15 +67,13 @@ def register(request):
         # the next person can pick it (same idea as account signup).
         _register_institution(institution)
 
-        # Confirmation email (carries the meeting link when one is set).
-        # Best-effort -- a mail hiccup never blocks registration.
-        try:
-            from . import emails
-            emails.send_registration_received_email(reg, ws)
-        except Exception:
-            logger.exception("Workshop registration email failed for %s", reg.email)
-
         if wants_certificate:
+            # Payment is mandatory for a certificate: the registration is NOT
+            # treated as complete, and NO confirmation email is sent, until
+            # the fee is actually paid. The record is created as PENDING only
+            # so the Paystack charge has something to reconcile against; the
+            # "registration received" email goes out from pay_verify / the
+            # webhook once payment succeeds.
             reg.payment_status = WorkshopRegistration.PaymentStatus.PENDING
             reg.amount = ws.certificate_fee
             reg.currency = ws.fee_currency
@@ -83,8 +81,11 @@ def register(request):
             reg.save(update_fields=["payment_status", "amount", "currency", "payment_reference"])
             return redirect("workshop:pay", pk=reg.pk)
 
+        # Free registration (no certificate): complete immediately and
+        # confirm by email (carries the meeting link when one is set).
         reg.payment_status = WorkshopRegistration.PaymentStatus.NOT_REQUIRED
         reg.save(update_fields=["payment_status"])
+        _send_received_email(reg, ws)
         return redirect(f"{reverse('workshop:thanks')}?r={reg.pk}")
 
     return render(request, "workshop/register.html", _register_context(ws, {}))
@@ -96,6 +97,15 @@ def _register_context(ws, prefill):
         "institutions": _active_institutions(),
         "prefill": prefill,
     }
+
+
+def _send_received_email(reg, ws):
+    """Best-effort confirmation email -- a mail hiccup never blocks the flow."""
+    try:
+        from . import emails
+        emails.send_registration_received_email(reg, ws)
+    except Exception:
+        logger.exception("Workshop registration email failed for %s", reg.email)
 
 
 def _register_institution(name):
@@ -151,6 +161,9 @@ def pay_verify(request, pk):
         reg.paid_at = timezone.now()
         reg.paystack_response = data
         reg.save(update_fields=["payment_status", "paid_at", "paystack_response"])
+        # Now that payment has succeeded, the registration is complete --
+        # send the confirmation email (with the meeting link if set).
+        _send_received_email(reg, WorkshopSettings.get_solo())
         return JsonResponse({"ok": True, "redirect": f"{reverse('workshop:thanks')}?r={reg.pk}"})
 
     reg.payment_status = WorkshopRegistration.PaymentStatus.FAILED

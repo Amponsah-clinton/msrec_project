@@ -19,9 +19,10 @@ def send_registration_received_email(reg, ws):
         f"Hi {reg.name},",
         f"Thank you for registering for {ws.workshop_title}. Your registration has been received.",
     ]
-    if reg.wants_certificate and not reg.is_paid:
+    if reg.wants_certificate and reg.is_paid:
         paragraphs.append(
-            "You asked for a certificate — please complete the certificate fee payment to confirm it."
+            f"Your certificate fee of {reg.currency} {reg.amount} has been received — your certificate "
+            "will be emailed to you after the workshop."
         )
     if ws.meeting_link:
         paragraphs.append("Use the button below to join the workshop when it begins. Please join a few minutes early.")

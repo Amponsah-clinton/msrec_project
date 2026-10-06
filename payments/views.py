@@ -158,3 +158,12 @@ def _reconcile_workshop_charge(reference):
         reg.paid_at = timezone.now()
         reg.paystack_response = data
         reg.save(update_fields=["payment_status", "paid_at", "paystack_response"])
+        # Payment confirmed server-side -- send the "registration received"
+        # email now (covers the case where the browser dropped out before
+        # the in-page verify ran).
+        try:
+            from workshop import emails
+            from workshop.models import WorkshopSettings
+            emails.send_registration_received_email(reg, WorkshopSettings.get_solo())
+        except Exception:
+            logger.exception("Workshop webhook email failed for %s", reference)
