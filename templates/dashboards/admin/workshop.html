@@ -60,9 +60,20 @@
     padding: 9px 11px; font-size: 14px; background: var(--input-bg,#fff); color: inherit; font-family: inherit; }
   .wsa-f .hint { font-size: 12px; color: var(--muted,#6b7488); }
   .wsa-preview-img { max-height: 90px; border: 1px solid var(--border,#e5e9f0); border-radius: 8px; margin-top: 6px; background:#fff; padding:4px; }
-  .wsa-save-row { margin-top: 18px; display: flex; gap: 10px; align-items: center; }
+  .wsa-save-row { margin-top: 18px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
   .wsa-switch { display: inline-flex; align-items: center; gap: 9px; font-weight: 600; font-size: 14px; }
   @media (max-width: 720px) { .wsa-form-grid { grid-template-columns: 1fr; } }
+
+  /* Certificate design: controls on the left, live preview on the right. */
+  .wsa-cert-layout { display: grid; grid-template-columns: minmax(0,1.05fr) minmax(0,1fr); gap: 22px; align-items: start; }
+  .wsa-cert-preview { position: sticky; top: 14px; }
+  .wsa-cert-preview-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .wsa-cert-preview-head h4 { margin: 0; font-size: 14px; }
+  .wsa-cert-frame { width: 100%; height: 540px; border: 1px solid var(--border,#e5e9f0); border-radius: 12px; background: #eef1f6; }
+  .wsa-sample { display: flex; align-items: center; gap: 8px; }
+  .wsa-sample input { padding: 7px 10px; border: 1px solid var(--border,#cdd5e0); border-radius: 7px; font-size: 13px; width: 150px; }
+  .wsa-cert-tip { font-size: 12px; color: var(--muted,#6b7488); margin: 10px 0 0; }
+  @media (max-width: 960px) { .wsa-cert-layout { grid-template-columns: 1fr; } .wsa-cert-preview { position: static; } }
 </style>
 {% endblock %}
 
@@ -229,69 +240,66 @@
   <section class="wsa-panel" id="certificate">
     <div class="wsa-card">
       <h3>Certificate Design</h3>
-      <p class="wsa-note">Design the certificate sent to paid participants. Use <code>{name}</code> for the participant and <code>{workshop}</code> for the workshop title in the body.
-        <a href="{% url 'workshop_admin:cert_preview' %}" target="_blank" rel="noopener"><i class="fa-solid fa-eye"></i> Preview certificate</a></p>
-      <form method="post" enctype="multipart/form-data">
+      <p class="wsa-note">Design the certificate sent to paid participants, then see it live on the right. Use <code>{name}</code> for the participant and <code>{workshop}</code> for the workshop title in the body.</p>
+
+      <form method="post" enctype="multipart/form-data" action="{% url 'workshop_admin:home' %}" id="wsCertForm">
         {% csrf_token %}
         <input type="hidden" name="action" value="save_cert_template">
         <input type="hidden" name="tab" value="certificate">
 
-        <div class="wsa-form-grid">
-          <div class="wsa-f">
-            <label>Title (first word)</label>
-            <input type="text" name="cert_title" value="{{ cert_tpl.title }}" maxlength="60">
-          </div>
-          <div class="wsa-f">
-            <label>Title tail</label>
-            <input type="text" name="cert_title_tail" value="{{ cert_tpl.title_tail }}" maxlength="80" placeholder="of Participation">
-          </div>
-          <div class="wsa-f wide">
-            <label>Intro line</label>
-            <input type="text" name="cert_intro" value="{{ cert_tpl.intro }}" maxlength="200">
-          </div>
-          <div class="wsa-f wide">
-            <label>Body</label>
-            <textarea name="cert_body" rows="3">{{ cert_tpl.body }}</textarea>
-            <span class="hint">e.g. "participated in the {workshop} organised by MSREC…"</span>
-          </div>
-          <div class="wsa-f">
-            <label>Seal caption</label>
-            <input type="text" name="cert_seal_caption" value="{{ cert_tpl.seal_caption }}" maxlength="24">
-          </div>
-          <div class="wsa-f"></div>
+        <div class="wsa-cert-layout">
 
-          <div class="wsa-f">
-            <label>Signatory 1 — name</label>
-            <input type="text" name="sig1_name" value="{{ cert_tpl.signatory1_name }}" maxlength="150">
-          </div>
-          <div class="wsa-f">
-            <label>Signatory 1 — title</label>
-            <input type="text" name="sig1_title" value="{{ cert_tpl.signatory1_title }}" maxlength="150">
-          </div>
-          <div class="wsa-f wide">
-            <label>Signatory 1 — signature image (transparent PNG)</label>
-            <input type="file" name="sig1_signature" accept="image/*">
-            {% if cert_tpl.signatory1_signature_url %}<img class="wsa-preview-img" src="{{ cert_tpl.signatory1_signature_url }}" onerror="this.style.display='none'" alt="Signature 1">{% endif %}
+          <!-- Controls -->
+          <div>
+            <p class="wsa-note" style="margin-top:-4px;">This is the same certificate design awarded to committee members and reviewers — the MSREC letterhead, teal border and embossed seal, signed by the <strong>Chair</strong>. You only set the workshop wording here.</p>
+
+            <div class="wsa-form-grid">
+              <div class="wsa-f wide">
+                <label>Title tail</label>
+                <input type="text" name="cert_title_tail" value="{{ cert_tpl.title_tail }}" maxlength="80" placeholder="of Participation">
+                <span class="hint">Appears as "Certificate <em>{{ cert_tpl.title_tail|default:'of Participation' }}</em>".</span>
+              </div>
+              <div class="wsa-f wide">
+                <label>Certifying statement (body)</label>
+                <textarea name="cert_body" rows="4">{{ cert_tpl.body }}</textarea>
+                <span class="hint">Written after the recipient's name. Use <code>{workshop}</code> for the workshop title, e.g. "participated in the {workshop} organised by MSREC…"</span>
+              </div>
+              <div class="wsa-f">
+                <label>Seal caption</label>
+                <input type="text" name="cert_seal_caption" value="{{ cert_tpl.seal_caption }}" maxlength="24">
+                <span class="hint">The small caption inside the seal.</span>
+              </div>
+            </div>
+
+            <div class="wsa-note" style="margin-top:16px;padding:12px 14px;border:1px solid var(--border,#e5e9f0);border-radius:10px;background:rgba(15,138,134,.05);">
+              <i class="fa-solid fa-pen-nib"></i> <strong>Signatory</strong>: the certificate is signed by the Chair, exactly like the committee &amp; reviewer certificates. Set the Chair's name, title and signature image in
+              <a href="{% url 'admin_dashboard:settings' %}#certificates">Site Settings → Certificates</a>.
+            </div>
+
+            <div class="wsa-save-row">
+              <button class="wsa-btn primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save certificate design</button>
+            </div>
           </div>
 
-          <div class="wsa-f">
-            <label>Signatory 2 — name <span class="hint">(optional)</span></label>
-            <input type="text" name="sig2_name" value="{{ cert_tpl.signatory2_name }}" maxlength="150">
+          <!-- Live preview -->
+          <div class="wsa-cert-preview">
+            <div class="wsa-cert-preview-head">
+              <h4><i class="fa-solid fa-eye"></i> Live preview</h4>
+              <div class="wsa-sample">
+                <input type="text" name="sample_name" value="Jane A. Doe" placeholder="Sample name" aria-label="Sample recipient name">
+                <button type="submit" class="wsa-btn primary"
+                        formaction="{% url 'workshop_admin:cert_preview' %}"
+                        formmethod="post" formtarget="wsCertFrame" formnovalidate>
+                  <i class="fa-solid fa-rotate"></i> Update preview
+                </button>
+              </div>
+            </div>
+            <iframe id="wsCertFrame" name="wsCertFrame" class="wsa-cert-frame"
+                    src="{% url 'workshop_admin:cert_preview' %}" title="Certificate preview"></iframe>
+            <p class="wsa-cert-tip">The preview shows your current edits. New signature images appear here after you click <strong>Save certificate design</strong>.
+              <a href="{% url 'workshop_admin:cert_preview' %}" target="_blank" rel="noopener">Open full size ↗</a></p>
           </div>
-          <div class="wsa-f">
-            <label>Signatory 2 — title <span class="hint">(optional)</span></label>
-            <input type="text" name="sig2_title" value="{{ cert_tpl.signatory2_title }}" maxlength="150">
-          </div>
-          <div class="wsa-f wide">
-            <label>Signatory 2 — signature image <span class="hint">(optional)</span></label>
-            <input type="file" name="sig2_signature" accept="image/*">
-            {% if cert_tpl.signatory2_signature_url %}<img class="wsa-preview-img" src="{{ cert_tpl.signatory2_signature_url }}" onerror="this.style.display='none'" alt="Signature 2">{% endif %}
-          </div>
-        </div>
 
-        <div class="wsa-save-row">
-          <button class="wsa-btn primary" type="submit">Save certificate design</button>
-          <a class="wsa-btn ghost" href="{% url 'workshop_admin:cert_preview' %}" target="_blank" rel="noopener">Preview</a>
         </div>
       </form>
     </div>

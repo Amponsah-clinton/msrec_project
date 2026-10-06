@@ -106,33 +106,14 @@ def _save_settings(request, ws):
 
 
 def _save_cert_template(request):
+    # The workshop certificate uses the shared platform design signed by the
+    # Chair (Site Settings -> Certificates), so only the workshop wording is
+    # set here: title tail, certifying statement and seal caption.
     tpl = WorkshopCertificateTemplate.get_solo()
-    tpl.title = request.POST.get("cert_title", "").strip()[:60] or "Certificate"
-    tpl.title_tail = request.POST.get("cert_title_tail", "").strip()[:80]
-    tpl.intro = request.POST.get("cert_intro", "").strip()[:200]
+    tpl.title_tail = request.POST.get("cert_title_tail", "").strip()[:80] or "of Participation"
     tpl.body = request.POST.get("cert_body", "").strip()
     tpl.seal_caption = request.POST.get("cert_seal_caption", "").strip()[:24] or "WORKSHOP"
-    tpl.signatory1_name = request.POST.get("sig1_name", "").strip()[:150]
-    tpl.signatory1_title = request.POST.get("sig1_title", "").strip()[:150]
-    tpl.signatory2_name = request.POST.get("sig2_name", "").strip()[:150]
-    tpl.signatory2_title = request.POST.get("sig2_title", "").strip()[:150]
-
-    for which, field in ((1, "sig1_signature"), (2, "sig2_signature")):
-        f = request.FILES.get(field)
-        if f:
-            if not (f.content_type or "").startswith("image/"):
-                messages.error(request, f"Signature {which} must be a (preferably transparent PNG) image.")
-                continue
-            path = storage.upload_signature(f, which=which)
-            if path:
-                if which == 1:
-                    tpl.signatory1_signature_path = path
-                else:
-                    tpl.signatory2_signature_path = path
-            else:
-                messages.warning(request, f"Signature {which} couldn't be uploaded right now.")
-
-    tpl.save()
+    tpl.save(update_fields=["title_tail", "body", "seal_caption", "updated_at"])
     messages.success(request, "Certificate design saved.")
 
 
@@ -184,23 +165,42 @@ def admin_workshop(request):
 @login_required
 @staff_required
 def admin_cert_preview(request):
-    """A sample certificate PDF (dummy recipient) so an admin can see the
-    current design without emailing anyone."""
+    """A sample certificate PDF so an admin can see the design live.
+
+    GET  -> previews the *saved* design.
+    POST -> previews the design currently in the editor form (unsaved), so
+            the admin can iterate on the wording/signatories before saving.
+            Signature images come from the saved template (an unsaved, just-
+            picked file isn't persisted yet); a note in the editor says so.
+    A `sample_name` lets the admin preview with a real-looking recipient.
+    """
+    from django.utils import timezone
+
     from .certificate import render_workshop_certificate_pdf
 
+    sample_name = (request.POST.get("sample_name") or request.GET.get("sample_name") or "").strip() or "Jane A. Doe"
     sample = WorkshopRegistration(
-        name="Jane A. Doe", institution="Sample University", email="sample@example.com",
+        name=sample_name, institution="Sample University", email="sample@example.com",
         wants_certificate=True, payment_status=WorkshopRegistration.PaymentStatus.SUCCESS,
     )
-    from django.utils import timezone
     sample.paid_at = timezone.now()
     sample.pk = 0
+
+    tpl = None
+    if request.method == "POST":
+        # Preview the unsaved workshop wording (signatory is always the Chair).
+        tpl = WorkshopCertificateTemplate(
+            title_tail=request.POST.get("cert_title_tail", "").strip()[:80] or "of Participation",
+            body=request.POST.get("cert_body", "").strip(),
+            seal_caption=request.POST.get("cert_seal_caption", "").strip()[:24] or "WORKSHOP",
+        )
+
     try:
-        pdf = render_workshop_certificate_pdf(sample)
+        pdf = render_workshop_certificate_pdf(sample, tpl=tpl)
     except Exception:
         logger.exception("Workshop certificate preview failed")
-        messages.error(request, "Couldn't render the certificate preview.")
-        return redirect("workshop_admin:home")
+        return HttpResponse("Couldn't render the certificate preview.", status=500)
     resp = HttpResponse(pdf, content_type="application/pdf")
     resp["Content-Disposition"] = 'inline; filename="certificate-preview.pdf"'
+    resp["X-Frame-Options"] = "SAMEORIGIN"
     return resp
