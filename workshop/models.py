@@ -259,6 +259,10 @@ class Workshop(models.Model):
             return storage.public_url(self.materials_file_path)
         return self.materials_link or None
 
+    @property
+    def materials_filename(self):
+        return self.materials_file_path.rsplit("/", 1)[-1] if self.materials_file_path else ""
+
     def cert_signature_url(self, which):
         from . import storage
         path = self.cert_sig1_signature_path if which == 1 else self.cert_sig2_signature_path
