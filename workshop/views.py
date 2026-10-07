@@ -20,6 +20,43 @@ logger = logging.getLogger(__name__)
 
 INSTITUTION_OTHER = "__other__"
 
+# Who gets notified whenever someone registers for a workshop.
+WORKSHOP_NOTIFY_EMAIL = "ceo@academicdigital.space"
+
+
+def _notify_admin_of_registration(reg, ws):
+    """Emails the workshop organiser the moment someone registers -- every
+    registration, whether or not they want a certificate. Best-effort: never
+    blocks or rolls back the registration."""
+    try:
+        from django.conf import settings
+        from notifications.emails import send_branded_email
+
+        manage_url = settings.SITE_URL.rstrip("/") + reverse(
+            "workshop_admin:manage", kwargs={"pk": ws.pk}
+        )
+        contact = f"Email: {reg.email}" + (f" · Phone: {reg.phone}" if reg.phone else "")
+        extra = "Wants certificate: " + ("Yes" if reg.wants_certificate else "No")
+        if reg.comments:
+            extra += f" · Comments: {reg.comments}"
+        send_branded_email(
+            subject=f"New workshop registration — {reg.name}",
+            to=WORKSHOP_NOTIFY_EMAIL,
+            heading="New workshop registration",
+            paragraphs=[
+                f"A new person has registered for {ws.title}.",
+                f"Name: {reg.name}",
+                f"Institution: {reg.institution}",
+                contact,
+                extra,
+            ],
+            cta_text="View registrations",
+            cta_url=manage_url,
+            preheader=f"{reg.name} registered for {ws.title}.",
+        )
+    except Exception:
+        logger.exception("Workshop admin registration email failed for %s", reg.email)
+
 
 def _active_institutions():
     return list(Institution.objects.filter(is_active=True))
@@ -113,6 +150,8 @@ def register(request, slug):
             phone=phone[:40], wants_certificate=wants_certificate, comments=comments,
         )
         _register_institution(institution)
+        # Notify the organiser of every registration (paid or not).
+        _notify_admin_of_registration(reg, ws)
 
         if wants_certificate:
             reg.payment_status = WorkshopRegistration.PaymentStatus.PENDING
