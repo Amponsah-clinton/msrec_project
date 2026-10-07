@@ -107,8 +107,6 @@ def _result(application):
 
 
 def _workshop_result(reg):
-    from workshop.models import WorkshopSettings
-
     return {
         "found": True,
         "kind": "workshop_certificate",
@@ -117,7 +115,7 @@ def _workshop_result(reg):
         "code": verification_code(reg.certificate_ref),
         "recipient": reg.name,
         "institution": reg.institution or "",
-        "workshop": WorkshopSettings.get_solo().workshop_title,
+        "workshop": reg.workshop.title if reg.workshop_id else "",
         "issuedOn": _date(reg.paid_at or reg.created_at),
     }
 

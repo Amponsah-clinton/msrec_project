@@ -164,7 +164,6 @@ def _reconcile_workshop_charge(reference):
         # before the in-page verify ran).
         try:
             from workshop.views import _notify_registration_success
-            from workshop.models import WorkshopSettings
-            _notify_registration_success(reg, WorkshopSettings.get_solo())
+            _notify_registration_success(reg, reg.workshop)
         except Exception:
             logger.exception("Workshop webhook notify failed for %s", reference)

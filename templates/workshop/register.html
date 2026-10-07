@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}{{ ws.workshop_title }} | MSREC{% endblock %}
-{% block description %}Register for {{ ws.workshop_title }} — {{ ws.workshop_tagline }}{% endblock %}
+{% block title %}{{ ws.title }} | MSREC{% endblock %}
+{% block description %}Register for {{ ws.title }} — {{ ws.tagline }}{% endblock %}
 {% block body_class %}workshop-page{% endblock %}
 
 {% block extra_css %}
@@ -98,7 +98,7 @@
   <div class="ws-wrap">
 
     <div class="ws-hero">
-      <img src="{% if ws.banner_url %}{{ ws.banner_url }}{% else %}{% static 'assets/img/about.jpg' %}{% endif %}" alt="{{ ws.workshop_title }}">
+      <img src="{% if ws.banner_url %}{{ ws.banner_url }}{% else %}{% static 'assets/img/about.jpg' %}{% endif %}" alt="{{ ws.title }}">
 
       <svg class="ws-hero-pattern" width="100%" height="100%" aria-hidden="true">
         <defs><pattern id="wsdots" width="26" height="26" patternUnits="userSpaceOnUse">
@@ -107,8 +107,8 @@
       </svg>
       <div class="ws-hero-inner">
         <span class="ws-hero-badge"><i class="bi bi-mortarboard-fill"></i> MSREC Workshop</span>
-        <h1>{{ ws.workshop_title }}</h1>
-        {% if ws.workshop_tagline %}<p>{{ ws.workshop_tagline }}</p>{% endif %}
+        <h1>{{ ws.title }}</h1>
+        {% if ws.tagline %}<p>{{ ws.tagline }}</p>{% endif %}
       </div>
     </div>
 
@@ -120,7 +120,7 @@
       </div>
     {% endif %}
 
-    {% if ws.workshop_description %}<p class="ws-intro">{{ ws.workshop_description|linebreaksbr }}</p>{% endif %}
+    {% if ws.description %}<p class="ws-intro">{{ ws.description|linebreaksbr }}</p>{% endif %}
 
     <div class="ws-card">
       <h2>Register</h2>
@@ -236,7 +236,7 @@
     var nameInput = document.getElementById("wsName");
     function openModal() {
       var nm = (nameInput && nameInput.value.trim()) || "Your Name Here";
-      frame.src = "{% url 'workshop:cert_sample' %}?name=" + encodeURIComponent(nm) + "#toolbar=0&navpanes=0&scrollbar=0";
+      frame.src = "{% url 'workshop:cert_sample' ws.slug %}?name=" + encodeURIComponent(nm) + "#toolbar=0&navpanes=0&scrollbar=0";
       modal.hidden = false;
       document.body.style.overflow = "hidden";
     }

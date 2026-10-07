@@ -19,7 +19,7 @@ import re
 from io import BytesIO
 
 from django.utils import timezone
-from reportlab.lib.enums import TA_JUSTIFY
+from reportlab.lib.enums import TA_CENTER, TA_JUSTIFY
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
@@ -122,6 +122,10 @@ def build(user, content, header_image, footer_image, site, scale):
         "plain": ParagraphStyle("plain", fontName="Times-Roman", fontSize=size, leading=leading, textColor=BODY),
         "subject": ParagraphStyle("subject", fontName="Times-Bold", fontSize=s(11.4), leading=s(15.5),
                                   textColor=INK, spaceBefore=2, spaceAfter=s(8)),
+        # Optional centered document heading (e.g. "LETTER OF PARTICIPATION").
+        # Backward compatible: only drawn when content carries a "title".
+        "title": ParagraphStyle("title", fontName="Times-Bold", fontSize=s(14.5), leading=s(18),
+                                textColor=INK, alignment=TA_CENTER, spaceAfter=s(3)),
         "meta": ParagraphStyle("meta", fontName="Helvetica", fontSize=8.6, leading=12, textColor=INK_SOFT),
         "flag": ParagraphStyle("flag", fontName="Helvetica-Bold", fontSize=7.4, leading=10, textColor=INK_SOFT),
         "label": ParagraphStyle("label", fontName="Helvetica-Bold", fontSize=7, leading=10, textColor=INK_SOFT,
@@ -144,6 +148,14 @@ def build(user, content, header_image, footer_image, site, scale):
     story += [meta, Spacer(1, s(4) * mm)]
     if content.get("flag"):
         story += [Paragraph(_esc(content["flag"]), styles["flag"]), Spacer(1, s(2) * mm)]
+    if content.get("title"):
+        # Centered document heading above the addressee, underlined with a
+        # short rule for a formal "titled letter" look.
+        story.append(Paragraph(_esc(content["title"]), styles["title"]))
+        rule = Table([[""]], colWidths=[64 * mm], rowHeights=[1])
+        rule.hAlign = "CENTER"
+        rule.setStyle(TableStyle([("LINEABOVE", (0, 0), (-1, -1), 0.6, INK)]))
+        story += [rule, Spacer(1, s(4) * mm)]
 
     addressee = [user.full_name, getattr(user, "position", ""), getattr(user, "institution", ""), user.email]
     for index, line in enumerate(x for x in addressee if (x or "").strip()):

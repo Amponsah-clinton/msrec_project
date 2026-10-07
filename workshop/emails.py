@@ -1,5 +1,6 @@
-"""Emails the admin sends to workshop registrants from /admins/workshop/:
-the meeting link, the certificate (PDF attached) and the materials.
+"""Emails to workshop registrants: the registration confirmation (with the
+meeting link), the meeting link on its own, the certificate, and the
+materials. Each reads the registration's own workshop.
 """
 import logging
 
@@ -10,14 +11,18 @@ from notifications.emails import send_branded_email
 logger = logging.getLogger(__name__)
 
 
-def send_registration_received_email(reg, ws):
-    """Sent to the registrant the moment they submit the /workshop form -- a
-    "we've got you" confirmation that also carries the meeting link when one
-    is set, so they have it straight away without waiting for the admin to
-    send it."""
+def _ws(reg, workshop):
+    return workshop or reg.workshop
+
+
+def send_registration_received_email(reg, workshop=None):
+    """Sent when someone submits the form (for a free registration) or once
+    their certificate fee is paid -- a "we've got you" confirmation that also
+    carries the meeting link when one is set."""
+    ws = _ws(reg, workshop)
     paragraphs = [
         f"Hi {reg.name},",
-        f"Thank you for registering for {ws.workshop_title}. Your registration has been received.",
+        f"Thank you for registering for {ws.title}. Your registration has been received.",
     ]
     if reg.wants_certificate and reg.is_paid:
         paragraphs.append(
@@ -31,13 +36,13 @@ def send_registration_received_email(reg, ws):
 
     try:
         ok = send_branded_email(
-            subject=f"Registration received — {ws.workshop_title}",
+            subject=f"Registration received — {ws.title}",
             to=reg.email,
             heading="Your registration has been received",
             paragraphs=paragraphs,
             cta_text="Join the workshop" if ws.meeting_link else None,
             cta_url=ws.meeting_link or None,
-            preheader=f"You're registered for {ws.workshop_title}.",
+            preheader=f"You're registered for {ws.title}.",
         )
     except Exception:
         logger.exception("Workshop registration email failed for %s", reg.email)
@@ -48,21 +53,22 @@ def send_registration_received_email(reg, ws):
     return ok
 
 
-def send_meeting_link_email(reg, ws):
+def send_meeting_link_email(reg, workshop=None):
+    ws = _ws(reg, workshop)
     if not ws.meeting_link:
-        return False, "No meeting link is set yet (set it in Workshop Settings)."
+        return False, "No meeting link is set for this workshop yet."
     ok = send_branded_email(
-        subject=f"Your link for {ws.workshop_title}",
+        subject=f"Your link for {ws.title}",
         to=reg.email,
         heading="Your workshop meeting link",
         paragraphs=[
             f"Hi {reg.name},",
-            f"Thank you for registering for {ws.workshop_title}. Use the link below to join.",
+            f"Thank you for registering for {ws.title}. Use the link below to join.",
             "Please join a few minutes early. We look forward to seeing you there.",
         ],
         cta_text="Join the workshop",
         cta_url=ws.meeting_link,
-        preheader=f"Your link for {ws.workshop_title}.",
+        preheader=f"Your link for {ws.title}.",
     )
     if ok:
         reg.meeting_link_sent_at = timezone.now()
@@ -70,32 +76,31 @@ def send_meeting_link_email(reg, ws):
     return ok, "Meeting link sent." if ok else "The email couldn't be sent — check email settings."
 
 
-def send_certificate_email(reg, ws):
+def send_certificate_email(reg, workshop=None):
+    ws = _ws(reg, workshop)
     if not reg.is_paid:
         return False, "This person hasn't paid for a certificate."
     from .certificate import render_workshop_certificate_pdf
 
     try:
-        pdf = render_workshop_certificate_pdf(reg)
+        pdf = render_workshop_certificate_pdf(reg, workshop=ws)
     except Exception:
         logger.exception("Workshop certificate render failed for %s", reg.pk)
         return False, "The certificate could not be generated."
 
-    # Persist the reference assigned during rendering.
     reg.save(update_fields=["certificate_ref"])
 
     filename = f"{reg.name.replace(' ', '_')}_certificate.pdf"
     ok = send_branded_email(
-        subject=f"Your certificate — {ws.workshop_title}",
+        subject=f"Your certificate — {ws.title}",
         to=reg.email,
         heading="Your workshop certificate",
         paragraphs=[
             f"Hi {reg.name},",
-            f"Congratulations on completing {ws.workshop_title}. Your certificate of participation "
-            "is attached to this email.",
+            f"Congratulations on completing {ws.title}. Your certificate of participation is attached.",
             "You're welcome to share it or add it to your professional profile.",
         ],
-        preheader=f"Your certificate for {ws.workshop_title} is attached.",
+        preheader=f"Your certificate for {ws.title} is attached.",
         attachments=[(filename, pdf, "application/pdf")],
     )
     if ok:
@@ -104,7 +109,8 @@ def send_certificate_email(reg, ws):
     return ok, "Certificate sent." if ok else "The email couldn't be sent — check email settings."
 
 
-def send_materials_email(reg, ws):
+def send_materials_email(reg, workshop=None):
+    ws = _ws(reg, workshop)
     from . import storage
 
     attachments = None
@@ -115,23 +121,20 @@ def send_materials_email(reg, ws):
             fname = ws.materials_file_path.rsplit("/", 1)[-1] or "workshop-materials"
             attachments = [(fname, data, "application/octet-stream")]
     if not attachments and not has_link:
-        return False, "No materials have been uploaded or linked yet (set them in Workshop Settings)."
+        return False, "No materials have been uploaded or linked for this workshop yet."
 
-    paragraphs = [
-        f"Hi {reg.name},",
-        f"Here are the materials for {ws.workshop_title}.",
-    ]
+    paragraphs = [f"Hi {reg.name},", f"Here are the materials for {ws.title}."]
     if has_link:
         paragraphs.append("You can also access them online using the button below.")
 
     ok = send_branded_email(
-        subject=f"Workshop materials — {ws.workshop_title}",
+        subject=f"Workshop materials — {ws.title}",
         to=reg.email,
         heading="Your workshop materials",
         paragraphs=paragraphs,
         cta_text="Open materials" if has_link else None,
         cta_url=ws.materials_link or None,
-        preheader=f"Materials for {ws.workshop_title}.",
+        preheader=f"Materials for {ws.title}.",
         attachments=attachments,
     )
     if ok:

@@ -129,14 +129,160 @@ class WorkshopCertificateTemplate(models.Model):
         return self.signature_url(2)
 
 
+class Workshop(models.Model):
+    """One workshop -- its public page content, schedule, certificate fee and
+    its own certificate design. The platform can run many of these: upcoming
+    and past ones are all listed on /workshop (the Upcoming Workshops page),
+    and each has its own registration page at /workshop/<slug>/.
+    """
+
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(max_length=220, unique=True, blank=True)
+    tagline = models.CharField(max_length=300, blank=True)
+    description = models.TextField(blank=True)
+
+    # Schedule. starts_at drives whether registration is open and whether the
+    # workshop shows as upcoming or past. registration_closes_at defaults to
+    # starts_at when left blank.
+    starts_at = models.DateTimeField(null=True, blank=True)
+    ends_at = models.DateTimeField(null=True, blank=True)
+    registration_closes_at = models.DateTimeField(null=True, blank=True)
+    location = models.CharField(max_length=255, blank=True)
+
+    # Banner: uploaded image (public "workshop" bucket) wins over a link.
+    banner_image_path = models.CharField(max_length=255, blank=True)
+    banner_image_link = models.URLField(blank=True)
+
+    # Certificate fee (charged via Paystack when a registrant wants one).
+    certificate_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("100.00"))
+    fee_currency = models.CharField(max_length=10, default="GHS")
+
+    # Delivered to registrants from the admin page.
+    meeting_link = models.URLField(blank=True)
+    materials_file_path = models.CharField(max_length=255, blank=True)
+    materials_link = models.URLField(blank=True)
+
+    is_published = models.BooleanField(default=True)
+    # Manual override to force registration shut regardless of the schedule.
+    registration_closed = models.BooleanField(default=False)
+
+    # ---- Per-workshop certificate design -------------------------------
+    cert_title_tail = models.CharField(max_length=80, default="of Participation")
+    cert_intro = models.CharField(max_length=200, default="This is to certify that")
+    cert_body = models.TextField(default=CERT_BODY_DEFAULT)
+    cert_seal_caption = models.CharField(max_length=24, default="WORKSHOP")
+
+    cert_sig1_name = models.CharField(max_length=150, blank=True)
+    cert_sig1_title = models.CharField(max_length=150, blank=True, default="Workshop Coordinator")
+    cert_sig1_signature_path = models.CharField(max_length=255, blank=True)
+
+    cert_sig2_name = models.CharField(max_length=150, blank=True)
+    cert_sig2_title = models.CharField(max_length=150, blank=True, default="Workshop Coordinator")
+    cert_sig2_signature_path = models.CharField(max_length=255, blank=True)
+
+    # Feature toggles -- add/remove elements of the certificate per workshop.
+    cert_show_body = models.BooleanField(default=True)
+    cert_show_seal = models.BooleanField(default=True)
+    cert_show_second_signature = models.BooleanField(default=True)
+    cert_show_verification = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "workshops"
+        ordering = ["-starts_at", "-created_at"]
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = self._unique_slug()
+        super().save(*args, **kwargs)
+
+    def _unique_slug(self):
+        from django.utils.text import slugify
+        base = slugify(self.title) or "workshop"
+        slug, i = base, 2
+        while Workshop.objects.filter(slug=slug).exclude(pk=self.pk).exists():
+            slug = f"{base}-{i}"
+            i += 1
+        return slug[:220]
+
+    # ---- schedule helpers ---------------------------------------------
+    @property
+    def is_past(self):
+        end = self.ends_at or self.starts_at
+        return bool(end and timezone.now() > end)
+
+    @property
+    def is_upcoming(self):
+        return not self.is_past
+
+    @property
+    def registration_deadline(self):
+        return self.registration_closes_at or self.starts_at
+
+    @property
+    def registration_open(self):
+        if not self.is_published or self.registration_closed:
+            return False
+        deadline = self.registration_deadline
+        if deadline and timezone.now() > deadline:
+            return False
+        return True
+
+    @property
+    def status_label(self):
+        if self.is_past:
+            return "Past"
+        if self.registration_open:
+            return "Registration open"
+        return "Upcoming"
+
+    # ---- media helpers ------------------------------------------------
+    @property
+    def banner_url(self):
+        if self.banner_image_path:
+            from . import storage
+            return storage.public_url(self.banner_image_path)
+        return self.banner_image_link or None
+
+    @property
+    def materials_download_url(self):
+        if self.materials_file_path:
+            from . import storage
+            return storage.public_url(self.materials_file_path)
+        return self.materials_link or None
+
+    def cert_signature_url(self, which):
+        from . import storage
+        path = self.cert_sig1_signature_path if which == 1 else self.cert_sig2_signature_path
+        return storage.public_url(path) if path else None
+
+    @property
+    def cert_sig1_signature_url(self):
+        return self.cert_signature_url(1)
+
+    @property
+    def cert_sig2_signature_url(self):
+        return self.cert_signature_url(2)
+
+
 class WorkshopRegistration(models.Model):
-    """One person who registered on the public /workshop page."""
+    """One person who registered for a workshop (/workshop/<slug>/)."""
 
     class PaymentStatus(models.TextChoices):
         NOT_REQUIRED = "not_required", "No certificate"
         PENDING = "pending", "Payment pending"
         SUCCESS = "success", "Paid"
         FAILED = "failed", "Payment failed"
+
+    workshop = models.ForeignKey(
+        "workshop.Workshop", on_delete=models.CASCADE, related_name="registrations",
+        null=True, blank=True,
+    )
 
     name = models.CharField(max_length=200)
     institution = models.CharField(max_length=200)

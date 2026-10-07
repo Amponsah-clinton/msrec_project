@@ -2,11 +2,11 @@
 
 Same MSREC "white edition" look as the Peer Review / Committee certificates
 (it reuses their exact border, seal, logo letterhead, title and typography
-from reviewer_dashboard.certificate) -- but a workshop certificate carries
-TWO signatures instead of the single Chair + date block. The wording and the
-two signatories are admin-editable on WorkshopCertificateTemplate; signatory
-1 falls back to the Chair (Site Settings -> Certificates) when left blank, so
-it stays consistent with every other MSREC certificate.
+from reviewer_dashboard.certificate). A workshop certificate can carry TWO
+signatures, and each workshop sets its own wording, signatories and which
+elements (body, seal, second signature, verification footer) appear --
+Signature 1 falls back to the Chair (Site Settings -> Certificates) when left
+blank, keeping it consistent with every other MSREC certificate.
 """
 from io import BytesIO
 
@@ -22,8 +22,7 @@ from reviewer_dashboard.certificate import (
 )
 
 
-def _signatory_block(c, cx, y, name, title, signature_png):
-    """One signature column: signature above the line, name + title beneath."""
+def _sig_block(c, cx, y, name, title, signature_png):
     if signature_png:
         _signature_image(c, cx, y, signature_png)
     c.setStrokeColor(INK)
@@ -37,60 +36,65 @@ def _signatory_block(c, cx, y, name, title, signature_png):
         _spaced(c, title.upper(), cx, y - 11 * mm, "Times-Roman", 8.5, 1.2, INK_SOFT)
 
 
-def _two_signatories(tpl):
-    """[(name, title, png|None), (name, title, png|None)] -- the two people
-    who sign. Slot 1 falls back to the Chair when no name is set."""
+def _date_block(c, cx, y, issued_at):
+    c.setFillColor(INK)
+    c.setFont("Times-Bold", 13)
+    if issued_at:
+        c.drawCentredString(cx, y - 6 * mm, issued_at.strftime("%d %B %Y").lstrip("0"))
+    _spaced(c, "DATE OF ISSUE", cx, y - 11 * mm, "Times-Roman", 8.5, 1.2, INK_SOFT)
+
+
+def _signatories(workshop):
+    """(sig1, sig2) each (name, title, png|None). Slot 1 falls back to the
+    Chair when no name is set."""
     from . import storage
 
     def png(path):
         return storage.download_object(path) if path else None
 
-    s1_name = (tpl.signatory1_name or "").strip()
+    s1_name = (workshop.cert_sig1_name or "").strip()
     if s1_name:
-        sig1 = (s1_name, (tpl.signatory1_title or "").strip(), png(tpl.signatory1_signature_path))
+        sig1 = (s1_name, (workshop.cert_sig1_title or "").strip(), png(workshop.cert_sig1_signature_path))
     else:
         from pages.certificate_signatory import chair_details, chair_signature_bytes
         ch = chair_details()
         sig1 = (ch["name"], ch["title"], chair_signature_bytes(ch))
 
     sig2 = (
-        (tpl.signatory2_name or "").strip(),
-        (tpl.signatory2_title or "").strip() or "Workshop Coordinator",
-        png(tpl.signatory2_signature_path),
+        (workshop.cert_sig2_name or "").strip(),
+        (workshop.cert_sig2_title or "").strip() or "Workshop Coordinator",
+        png(workshop.cert_sig2_signature_path),
     )
     return sig1, sig2
 
 
-def render_workshop_certificate_pdf(registration, *, tpl=None, ws=None):
-    """Certificate PDF bytes for one registration (two signatures).
+def render_workshop_certificate_pdf(registration, *, workshop=None):
+    """Certificate PDF bytes for one registration, using its workshop's design.
 
-    `tpl`/`ws` let the admin preview an *unsaved* design: the editor passes a
-    transient WorkshopCertificateTemplate built from the posted fields. When
-    omitted, the saved singletons are used (the real issued certificate).
+    `workshop` lets the admin preview an *unsaved* design (a transient
+    Workshop built from the posted fields). When omitted, the registration's
+    saved workshop is used.
     """
-    from .models import WorkshopCertificateTemplate, WorkshopSettings
-
-    tpl = tpl or WorkshopCertificateTemplate.get_solo()
-    ws = ws or WorkshopSettings.get_solo()
+    workshop = workshop or registration.workshop
 
     cert_id = registration.ensure_certificate_ref()
     issued_at = registration.paid_at or registration.created_at
-    message = (tpl.body or "").replace("{workshop}", ws.workshop_title).replace("{name}", registration.name)
+    message = (workshop.cert_body or "").replace("{workshop}", workshop.title).replace("{name}", registration.name)
 
     buffer = BytesIO()
     c = rl_canvas.Canvas(buffer, pagesize=(PAGE_W, PAGE_H))
-    c.setTitle(f"{tpl.title or 'Certificate'} {tpl.title_tail} - {cert_id}")
+    c.setTitle(f"Certificate {workshop.cert_title_tail} - {cert_id}")
 
     _border(c)
     mid = PAGE_W / 2
     draw_header(c)
 
     title_y = PAGE_H - 60 * mm
-    draw_title(c, title_y, tpl.title or "Certificate", tpl.title_tail or "")
+    draw_title(c, title_y, "Certificate", workshop.cert_title_tail or "")
 
     c.setFont("Times-Italic", 14)
     c.setFillColor(INK_SOFT)
-    c.drawCentredString(mid, title_y - 22 * mm, (tpl.intro or "This is to certify that"))
+    c.drawCentredString(mid, title_y - 22 * mm, (workshop.cert_intro or "This is to certify that"))
 
     name = registration.name
     name_y = title_y - 36 * mm
@@ -112,23 +116,30 @@ def render_workshop_certificate_pdf(registration, *, tpl=None, ws=None):
         c.line(left + span * i / 40, name_y - 4 * mm, left + span * (i + 1) / 40, name_y - 4 * mm)
     c.setStrokeAlpha(1.0)
 
-    body = Paragraph(
-        message,
-        ParagraphStyle("body", fontName="Times-Roman", fontSize=14, leading=21,
-                       textColor=INK_SOFT, alignment=TA_CENTER),
-    )
-    body_w = 185 * mm
-    _, body_h = body.wrap(body_w, 45 * mm)
-    body.drawOn(c, mid - body_w / 2, name_y - 12 * mm - body_h)
+    if workshop.cert_show_body and message.strip():
+        body = Paragraph(
+            message,
+            ParagraphStyle("body", fontName="Times-Roman", fontSize=14, leading=21,
+                           textColor=INK_SOFT, alignment=TA_CENTER),
+        )
+        body_w = 185 * mm
+        _, body_h = body.wrap(body_w, 45 * mm)
+        body.drawOn(c, mid - body_w / 2, name_y - 12 * mm - body_h)
 
-    # Two signatures: left and right, with the seal between them.
     sign_y = 46 * mm
-    (s1_name, s1_title, s1_png), (s2_name, s2_title, s2_png) = _two_signatories(tpl)
-    _signatory_block(c, mid - 82 * mm, sign_y, s1_name, s1_title, s1_png)
-    _signatory_block(c, mid + 82 * mm, sign_y, s2_name, s2_title, s2_png)
-    _seal(c, mid, sign_y + 6 * mm, tpl.seal_caption or "WORKSHOP")
+    (s1_name, s1_title, s1_png), (s2_name, s2_title, s2_png) = _signatories(workshop)
+    if workshop.cert_show_second_signature:
+        _sig_block(c, mid - 82 * mm, sign_y, s1_name, s1_title, s1_png)
+        _sig_block(c, mid + 82 * mm, sign_y, s2_name, s2_title, s2_png)
+    else:
+        _date_block(c, mid - 82 * mm, sign_y, issued_at)
+        _sig_block(c, mid + 82 * mm, sign_y, s1_name, s1_title, s1_png)
 
-    _spaced(c, f"CERTIFICATE NO. {cert_id}", mid, 24 * mm, "Times-Roman", 8.5, 1.0, INK_SOFT)
+    if workshop.cert_show_seal:
+        _seal(c, mid, sign_y + 6 * mm, workshop.cert_seal_caption or "WORKSHOP")
+
+    if workshop.cert_show_verification:
+        _spaced(c, f"CERTIFICATE NO. {cert_id}", mid, 24 * mm, "Times-Roman", 8.5, 1.0, INK_SOFT)
 
     c.showPage()
     c.save()
@@ -136,9 +147,6 @@ def render_workshop_certificate_pdf(registration, *, tpl=None, ws=None):
 
 
 def _watermark_overlay_bytes(text="SPECIMEN · NOT A VALID CERTIFICATE"):
-    """A landscape-A4 overlay PDF: the watermark text tiled diagonally in
-    faint red across the whole page, stamped over the sample certificate so
-    the preview can never pass as a real one."""
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4, landscape
 
@@ -159,16 +167,15 @@ def _watermark_overlay_bytes(text="SPECIMEN · NOT A VALID CERTIFICATE"):
     return buf.getvalue()
 
 
-def render_sample_certificate_pdf(sample_name="Your Name Here"):
-    """A watermarked sample of the certificate for the public /workshop
-    preview -- same design as the real one, but stamped SPECIMEN so it is
-    visibly unusable. Never issued; only ever shown in the preview modal."""
+def render_sample_certificate_pdf(workshop, sample_name="Your Name Here"):
+    """Watermarked sample of a workshop's certificate for the public preview."""
     from django.utils import timezone
     from pypdf import PdfReader, PdfWriter
 
     from .models import WorkshopRegistration
 
     sample = WorkshopRegistration(
+        workshop=workshop,
         name=(sample_name or "Your Name Here").strip()[:80] or "Your Name Here",
         institution="Sample Institution", email="sample@example.com",
         wants_certificate=True, payment_status=WorkshopRegistration.PaymentStatus.SUCCESS,
@@ -176,7 +183,7 @@ def render_sample_certificate_pdf(sample_name="Your Name Here"):
     sample.paid_at = timezone.now()
     sample.pk = 0
 
-    base = render_workshop_certificate_pdf(sample)
+    base = render_workshop_certificate_pdf(sample, workshop=workshop)
     overlay = _watermark_overlay_bytes()
 
     base_reader = PdfReader(BytesIO(base))

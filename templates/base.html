@@ -49,7 +49,7 @@
             <i class="bi bi-file-earmark-text"></i>
             <span>Apply</span>
           </a>
-          <a href="{% url 'workshop:register' %}" class="topbar-btn topbar-btn-ghost">
+          <a href="{% url 'workshop:list' %}" class="topbar-btn topbar-btn-ghost">
             <i class="bi bi-mortarboard"></i>
             <span>Upcoming Workshop</span>
           </a>
@@ -94,7 +94,7 @@
             <li class="navmenu-mobile-only navmenu-divider"><a href="{% url 'pages:verify' %}">Verify Approval</a></li>
             <li class="navmenu-mobile-only"><a href="{% url 'pages:contact' %}">Contact</a></li>
             <li class="navmenu-mobile-only"><a href="{% url 'pages:apply' %}">Apply</a></li>
-            <li class="navmenu-mobile-only"><a href="{% url 'workshop:register' %}">Upcoming Workshop</a></li>
+            <li class="navmenu-mobile-only"><a href="{% url 'workshop:list' %}">Upcoming Workshop</a></li>
             <li class="navmenu-mobile-only"><a href="#" class="site-search-trigger">Search</a></li>
             {% if request.user.is_authenticated %}
             <li class="navmenu-mobile-only"><a href="{% url request.user.dashboard_url_name %}">Dashboard</a></li>

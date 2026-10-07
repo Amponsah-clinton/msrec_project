@@ -30,7 +30,7 @@ def _documents_for(reg, ws):
     )]
     if reg.is_paid:
         from .certificate import render_workshop_certificate_pdf
-        cert = render_workshop_certificate_pdf(reg)
+        cert = render_workshop_certificate_pdf(reg, workshop=ws)
         reg.save(update_fields=["certificate_ref"])  # ref assigned during render
         docs.append((f"{_slug(reg.name)}_Certificate.pdf", cert, "application/pdf"))
     return docs
@@ -42,10 +42,10 @@ def download_url(reg):
     )
 
 
-def approve_and_send(reg, ws):
+def approve_and_send(reg, workshop=None):
     """Approve `reg` and deliver their documents by email + SMS. Returns
     (ok, message). Best-effort on delivery; never raises."""
-    from .models import WorkshopRegistration
+    ws = workshop or reg.workshop
 
     if reg.is_paid:
         reg.ensure_certificate_ref()
@@ -69,17 +69,17 @@ def approve_and_send(reg, ws):
     emailed = False
     try:
         emailed = send_branded_email(
-            subject=f"Your documents — {ws.workshop_title}",
+            subject=f"Your documents — {ws.title}",
             to=reg.email,
             heading="Your workshop documents are ready",
             paragraphs=[
                 f"Hi {reg.name},",
-                f"Thank you for taking part in {ws.workshop_title}. Attached to this email you'll find {what}.",
+                f"Thank you for taking part in {ws.title}. Attached to this email you'll find {what}.",
                 "You can also download them at any time using your secure link below.",
             ],
             cta_text="Download my documents",
             cta_url=url,
-            preheader=f"Your documents for {ws.workshop_title} are ready.",
+            preheader=f"Your documents for {ws.title} are ready.",
             attachments=docs,
         )
     except Exception:
@@ -88,7 +88,7 @@ def approve_and_send(reg, ws):
     # Text the unique download link.
     try:
         from notifications import sms
-        sms.send_sms([reg.phone], f"MSREC: Your {ws.workshop_title} documents are ready. Download: {url}")
+        sms.send_sms([reg.phone], f"MSREC: Your {ws.title} documents are ready. Download: {url}")
     except Exception:
         logger.exception("Workshop documents SMS failed for %s", reg.phone)
 

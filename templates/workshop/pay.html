@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Pay Certificate Fee | {{ ws.workshop_title }}{% endblock %}
+{% block title %}Pay Certificate Fee | {{ ws.title }}{% endblock %}
 {% block body_class %}workshop-page{% endblock %}
 
 {% block extra_css %}
@@ -35,7 +35,7 @@
       <p>A one-time fee applies for your certificate of participation. Your registration is already saved.</p>
 
       <div class="wsp-summary">
-        <div class="wsp-row"><span>Workshop</span><strong>{{ ws.workshop_title }}</strong></div>
+        <div class="wsp-row"><span>Workshop</span><strong>{{ ws.title }}</strong></div>
         <div class="wsp-row"><span>Name</span><strong>{{ reg.name }}</strong></div>
         <div class="wsp-row total"><span>Amount</span><strong>{{ reg.currency }} {{ reg.amount }}</strong></div>
       </div>
@@ -75,7 +75,7 @@
         currency: "{{ reg.currency }}",
         ref: "{{ reg.payment_reference }}",
         metadata: { custom_fields: [
-          { display_name: "Workshop", variable_name: "workshop", value: "{{ ws.workshop_title|escapejs }}" },
+          { display_name: "Workshop", variable_name: "workshop", value: "{{ ws.title|escapejs }}" },
           { display_name: "Name", variable_name: "name", value: "{{ reg.name|escapejs }}" }
         ]},
         callback: function (response) {

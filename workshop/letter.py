@@ -10,13 +10,11 @@ from types import SimpleNamespace
 from django.utils import timezone
 
 
-def render_confirmation_letter_pdf(reg, ws=None):
+def render_confirmation_letter_pdf(reg, workshop=None):
     """PDF bytes of the Confirmation of Participation letter for `reg`."""
     from accounts import letters as letter_engine
 
-    from .models import WorkshopSettings
-
-    ws = ws or WorkshopSettings.get_solo()
+    ws_obj = workshop or reg.workshop
 
     # A blank letterhead/signatory template -> the engine falls back to the
     # built-in text letterhead and the Chair's signature (Site Settings ->
@@ -27,8 +25,8 @@ def render_confirmation_letter_pdf(reg, ws=None):
     )
 
     issued = reg.approved_at or timezone.now()
-    workshop = ws.workshop_title
-    details = (ws.workshop_description or "").strip()
+    workshop = ws_obj.title
+    details = (ws_obj.description or "").strip()
 
     body = [
         ("text",
@@ -50,6 +48,7 @@ def render_confirmation_letter_pdf(reg, ws=None):
         "ethics_id": "",  # not an ethics approval -- keeps the meta line blank
         "date": issued,
         "flag": "",
+        "title": "LETTER OF PARTICIPATION",
         "salutation": f"Dear {reg.name},",
         "subject": f"RE: CONFIRMATION OF PARTICIPATION IN {workshop.upper()}",
         "body": body,

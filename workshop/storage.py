@@ -55,25 +55,25 @@ def _ext(uploaded_file):
     return ""
 
 
-def upload_banner(uploaded_file):
+def upload_banner(uploaded_file, *, workshop_id):
     if not uploaded_file or not _configured():
         return None
-    object_path = f"banner/banner{_ext(uploaded_file)}"
+    object_path = f"workshops/{workshop_id}/banner{_ext(uploaded_file)}"
     return _upload(object_path, uploaded_file.read(), _content_type_for(uploaded_file))
 
 
-def upload_materials(uploaded_file):
+def upload_materials(uploaded_file, *, workshop_id):
     if not uploaded_file or not _configured():
         return None
     safe = uploaded_file.name.replace("/", "_").replace("\\", "_").strip() or "materials"
-    object_path = f"materials/{safe}"
+    object_path = f"workshops/{workshop_id}/materials/{safe}"
     return _upload(object_path, uploaded_file.read(), _content_type_for(uploaded_file))
 
 
-def upload_signature(uploaded_file, *, which):
+def upload_signature(uploaded_file, *, workshop_id, which):
     if not uploaded_file or not _configured():
         return None
-    object_path = f"signatures/signatory{which}{_ext(uploaded_file)}"
+    object_path = f"workshops/{workshop_id}/signatory{which}{_ext(uploaded_file)}"
     return _upload(object_path, uploaded_file.read(), _content_type_for(uploaded_file))
 
 

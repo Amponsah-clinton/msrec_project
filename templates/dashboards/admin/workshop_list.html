@@ -1,0 +1,72 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Workshops | MSREC{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<style>
+  .wsl { padding: 4px 2px 40px; }
+  .wsl-create { background: var(--card-bg,#fff); border: 1px solid var(--border,#e5e9f0); border-radius: 12px;
+    padding: 16px 18px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .wsl-create input { flex: 1; min-width: 220px; padding: 10px 12px; border: 1px solid var(--border,#cdd5e0); border-radius: 8px; font-size: 14px; }
+  .wsl-btn { border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; font-weight: 700; cursor: pointer; background: #0f8a86; color: #fff; text-decoration: none; display: inline-block; }
+  .wsl-btn:hover { background: #0c726e; }
+  .wsl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; }
+  .wsl-card { background: var(--card-bg,#fff); border: 1px solid var(--border,#e5e9f0); border-radius: 12px; padding: 16px 18px; }
+  .wsl-card h3 { margin: 0 0 6px; font-size: 16px; }
+  .wsl-card .meta { font-size: 12.5px; color: var(--muted,#64748b); margin-bottom: 12px; display:flex; flex-direction:column; gap:3px; }
+  .wsl-pill { display:inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
+  .wsl-pill.open { background:#e9f7ef; color:#1c7a46; } .wsl-pill.past { background:#eef2f7; color:#64748b; }
+  .wsl-pill.draft { background:#fff4e5; color:#b4731f; }
+  .wsl-card-foot { display:flex; gap:8px; align-items:center; }
+  .wsl-link { font-size: 13px; color:#0f8a86; text-decoration:none; font-weight:600; }
+</style>
+{% endblock %}
+
+{% block nav_content %}
+{% if dashboard == 'secretariat' %}{% include "dashboards/_secretariat_nav.html" %}{% else %}{% include "dashboards/admin/_nav.html" with active="workshop" %}{% endif %}
+{% endblock %}
+
+{% block topbar %}
+{% include "dashboards/_staff_topbar.html" with page_title="Workshops" page_subtitle="Create and manage workshops — each has its own page, schedule, fee and certificate design" %}
+{% endblock %}
+
+{% block main_content %}
+<div class="wsl sc-scope ad-scope">
+
+  <form method="post" class="wsl-create">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="create">
+    <input type="text" name="title" placeholder="New workshop title…" required>
+    <button class="wsl-btn" type="submit"><i class="fa-solid fa-plus"></i> Create workshop</button>
+  </form>
+
+  {% if workshops %}
+  <div class="wsl-grid">
+    {% for w in workshops %}
+    <div class="wsl-card">
+      <h3>{{ w.title }}</h3>
+      <div class="meta">
+        {% if w.starts_at %}<span><i class="fa-regular fa-clock"></i> {{ w.starts_at|date:"j M Y, g:i A" }}</span>{% endif %}
+        <span><i class="fa-solid fa-users"></i> {{ w.reg_count }} registration{{ w.reg_count|pluralize }}</span>
+      </div>
+      <div style="margin-bottom:12px;">
+        {% if not w.is_published %}<span class="wsl-pill draft">Unpublished</span>
+        {% elif w.is_past %}<span class="wsl-pill past">Past</span>
+        {% elif w.registration_open %}<span class="wsl-pill open">Registration open</span>
+        {% else %}<span class="wsl-pill past">Closed</span>{% endif %}
+      </div>
+      <div class="wsl-card-foot">
+        <a class="wsl-btn" href="{% url 'workshop_admin:manage' w.pk %}">Manage</a>
+        {% if w.is_published %}<a class="wsl-link" href="{% url 'workshop:register' w.slug %}" target="_blank" rel="noopener">View public page ↗</a>{% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <p style="text-align:center;color:#94a3b8;padding:40px;">No workshops yet. Create your first one above.</p>
+  {% endif %}
+
+</div>
+{% endblock %}
