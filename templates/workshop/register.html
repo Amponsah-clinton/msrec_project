@@ -107,7 +107,7 @@
       </svg>
       <div class="ws-hero-inner">
         <span class="ws-hero-badge"><i class="bi bi-mortarboard-fill"></i> MSREC Workshop</span>
-        <h1>{{ ws.title }}</h1>
+        <h1 style="font-size: clamp(18px, 2.6vw, {{ ws.title_font_size|default:30 }}px);">{{ ws.title }}</h1>
         {% if ws.tagline %}<p>{{ ws.tagline }}</p>{% endif %}
       </div>
     </div>

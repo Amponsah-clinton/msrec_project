@@ -175,7 +175,8 @@
           <div class="wsa-f wide"><label class="wsa-switch"><input type="checkbox" name="is_published" {% if ws.is_published %}checked{% endif %}> Published (visible on the public workshops page)</label></div>
           <div class="wsa-f wide"><label class="wsa-switch"><input type="checkbox" name="registration_closed" {% if ws.registration_closed %}checked{% endif %}> Force registration closed (overrides the schedule)</label></div>
 
-          <div class="wsa-f wide"><label>Title</label><input type="text" name="title" value="{{ ws.title }}" maxlength="200"></div>
+          <div class="wsa-f"><label>Title</label><input type="text" name="title" value="{{ ws.title }}" maxlength="200"></div>
+          <div class="wsa-f"><label>Title font size (px)</label><input type="number" name="title_font_size" value="{{ ws.title_font_size }}" min="14" max="72" step="1"><span class="hint">Size of the title on the public workshop page (scales down on small screens).</span></div>
           <div class="wsa-f wide"><label>Tagline</label><input type="text" name="tagline" value="{{ ws.tagline }}" maxlength="300"></div>
           <div class="wsa-f wide"><label>Description</label><textarea name="description" rows="3">{{ ws.description }}</textarea></div>
 

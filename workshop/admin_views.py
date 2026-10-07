@@ -124,6 +124,10 @@ def _save_settings(request, ws):
     ws.ends_at = _parse_dt(request.POST.get("ends_at"))
     ws.registration_closes_at = _parse_dt(request.POST.get("registration_closes_at"))
 
+    raw_size = (request.POST.get("title_font_size") or "").strip()
+    if raw_size.isdigit():
+        ws.title_font_size = max(14, min(int(raw_size), 72))
+
     raw_fee = request.POST.get("certificate_fee", "").strip()
     if raw_fee:
         try:

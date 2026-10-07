@@ -140,6 +140,9 @@ class Workshop(models.Model):
     slug = models.SlugField(max_length=220, unique=True, blank=True)
     tagline = models.CharField(max_length=300, blank=True)
     description = models.TextField(blank=True)
+    # Display size (px) of the title in the hero on the public workshop page.
+    # Used as the max of a responsive clamp, so it scales down on small screens.
+    title_font_size = models.PositiveSmallIntegerField(default=30)
 
     # Schedule. starts_at drives whether registration is open and whether the
     # workshop shows as upcoming or past. registration_closes_at defaults to
