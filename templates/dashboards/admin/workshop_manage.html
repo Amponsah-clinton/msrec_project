@@ -96,6 +96,15 @@
         <button class="wsa-btn ghost" name="action" value="send_materials"><i class="fa-solid fa-folder-open"></i> Materials</button>
         <button class="wsa-btn ghost" name="action" value="send_certificate"><i class="fa-solid fa-award"></i> Certificate (paid)</button>
       </form>
+      {% if counts.all == 0 %}
+      <p class="wsa-note" style="color:#b4731f;margin:12px 0 0;"><i class="fa-solid fa-triangle-exclamation"></i> No one has registered for this workshop yet, so there's nobody to send to. Share <code>/workshop/{{ ws.slug }}/</code>.</p>
+      {% endif %}
+      {% if not ws.meeting_link %}
+      <p class="wsa-note" style="color:#b4731f;margin:8px 0 0;"><i class="fa-solid fa-triangle-exclamation"></i> No meeting link set yet — add it under <a href="#settings" class="wsa-gotab" data-tab="settings">Settings &amp; Schedule</a> before sending it.</p>
+      {% endif %}
+      {% if not ws.materials_file_path and not ws.materials_link %}
+      <p class="wsa-note" style="color:#b4731f;margin:8px 0 0;"><i class="fa-solid fa-triangle-exclamation"></i> No materials uploaded or linked yet — add them under <a href="#settings" class="wsa-gotab" data-tab="settings">Settings &amp; Schedule</a>.</p>
+      {% endif %}
     </div>
 
     <div class="wsa-card" style="border-color:#bfe3e1;background:rgba(15,138,134,.04);">
@@ -257,6 +266,22 @@
     function show(t) { tabs.forEach(function (x){x.classList.toggle("active", x.dataset.target===t);}); panels.forEach(function (p){p.classList.toggle("active", p.id===t);}); }
     tabs.forEach(function (t){ t.addEventListener("click", function(){ show(t.dataset.target); history.replaceState(null,"","#"+t.dataset.target); }); });
     var hash=(location.hash||"").replace("#",""); if (hash && document.getElementById(hash)) show(hash);
+
+    // Links that jump to a tab (e.g. "add it under Settings").
+    document.querySelectorAll(".wsa-gotab").forEach(function (a) {
+      a.addEventListener("click", function (e) { e.preventDefault(); show(a.dataset.tab); window.scrollTo({top:0,behavior:"smooth"}); });
+    });
+
+    // Flash feedback as a floating toast, so it's visible even though the
+    // page scrolls to #registrations after an action.
+    var flash = document.querySelector(".flash-messages");
+    if (flash) {
+      flash.style.cssText = "position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:4000;max-width:560px;width:calc(100% - 32px);box-shadow:0 14px 40px -16px rgba(0,0,0,.4);";
+      setTimeout(function () {
+        flash.style.transition = "opacity .4s"; flash.style.opacity = "0";
+        setTimeout(function () { if (flash.parentNode) flash.parentNode.removeChild(flash); }, 420);
+      }, 6000);
+    }
 
     // Clickable count chips -> filter the registrations table.
     var chips = document.querySelectorAll(".wsa-chip[data-filter]");
