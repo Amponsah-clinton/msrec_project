@@ -21,6 +21,8 @@
   .wsl-pill.draft { background:#fff4e5; color:#b4731f; }
   .wsl-card-foot { display:flex; gap:8px; align-items:center; }
   .wsl-link { font-size: 13px; color:#0f8a86; text-decoration:none; font-weight:600; }
+  .wsl-del { margin-left:auto; border:1px solid #f1cccc; background:var(--card-bg,#fff); color:#b4261f; border-radius:7px; width:32px; height:32px; cursor:pointer; font-size:13px; }
+  .wsl-del:hover { background:#fdeaea; }
 </style>
 {% endblock %}
 
@@ -60,6 +62,11 @@
       <div class="wsl-card-foot">
         <a class="wsl-btn" href="{% url 'workshop_admin:manage' w.pk %}">Manage</a>
         {% if w.is_published %}<a class="wsl-link" href="{% url 'workshop:register' w.slug %}" target="_blank" rel="noopener">View public page ↗</a>{% endif %}
+        <form method="post" action="{% url 'workshop_admin:manage' w.pk %}" data-confirm="Delete &quot;{{ w.title|escapejs }}&quot; and ALL its {{ w.reg_count }} registration{{ w.reg_count|pluralize }}? This can't be undone." data-confirm-variant="danger">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="delete_workshop">
+          <button type="submit" class="wsl-del" title="Delete workshop"><i class="fa-solid fa-trash"></i></button>
+        </form>
       </div>
     </div>
     {% endfor %}
