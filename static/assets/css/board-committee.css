@@ -376,13 +376,13 @@ body.bc-page {
 .bc-person.is-hidden { display: none; }
 
 .bc-avatar {
-  width: 96px; height: 96px;
+  width: 132px; height: 132px;
   border-radius: 50%;
   background: var(--av-bg, var(--accent-color));
   color: #fff;
   display: flex; align-items: center; justify-content: center;
   font-family: var(--bc-heading-font);
-  font-size: 26px;
+  font-size: 38px;
   font-weight: 700;
   letter-spacing: .02em;
   flex-shrink: 0;
