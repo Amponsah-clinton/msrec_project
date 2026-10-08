@@ -201,6 +201,7 @@
             <h4>{{ member.display_name }}</h4>
             <span class="bc-person-role">{{ member.role_title }}</span>
             {% if member.tag %}<span class="bc-person-tag">{{ member.tag }}</span>{% endif %}
+            {% if member.institution %}<span class="bc-person-inst"><i class="bi bi-building"></i>{{ member.institution }}</span>{% endif %}
           </div>
           {% endfor %}
           {% for member in reviewers %}
@@ -213,6 +214,7 @@
             <h4>{{ member.display_name }}</h4>
             <span class="bc-person-role">{{ member.role_title }}</span>
             {% if member.tag %}<span class="bc-person-tag">{{ member.tag }}</span>{% endif %}
+            {% if member.institution %}<span class="bc-person-inst"><i class="bi bi-building"></i>{{ member.institution }}</span>{% endif %}
           </div>
           {% endfor %}
           {% if not members and not reviewers %}

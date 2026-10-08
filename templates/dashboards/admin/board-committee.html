@@ -62,6 +62,12 @@
             <h4 class="bc-card-name">{{ member.display_name }}</h4>
             <p class="bc-card-role">{{ member.role_title }}</p>
             {% if member.tag %}<span class="bc-card-tag">{{ member.tag }}</span>{% endif %}
+            {% if member.institution %}
+            <p class="bc-card-institution" title="{{ member.institution }}">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V10l7-5 7 5v11M9 21v-6h6v6"/></svg>
+              <span>{{ member.institution }}</span>
+            </p>
+            {% endif %}
 
             <div class="bc-card-meta">
               {% if member.editable %}
