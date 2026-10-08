@@ -141,7 +141,16 @@
                 </label>
               </div>
               <div class="acct-form-row">
-                <label class="span-2">Institution / organization (optional)<input type="text" name="institution" maxlength="200" placeholder="e.g. University of Ghana"></label>
+                <label class="span-2">Institution / organization (optional)
+                  <select name="institution" data-bc-inst-select>
+                    <option value="">None</option>
+                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
+                    <option value="__other__">Other (not listed)...</option>
+                  </select>
+                </label>
+              </div>
+              <div class="acct-form-row" data-bc-inst-other-row hidden>
+                <label class="span-2">Please specify the institution / organization<input type="text" name="institution_other" data-bc-inst-other maxlength="200" placeholder="e.g. University of Ghana"></label>
               </div>
               <div class="acct-form-row">
                 <label>Tag / discipline (optional)
@@ -208,7 +217,16 @@
                 </label>
               </div>
               <div class="acct-form-row">
-                <label class="span-2">Institution / organization (optional)<input type="text" name="institution" id="bcEditInstitution" maxlength="200" placeholder="e.g. University of Ghana"></label>
+                <label class="span-2">Institution / organization (optional)
+                  <select name="institution" id="bcEditInstitution" data-bc-inst-select>
+                    <option value="">None</option>
+                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
+                    <option value="__other__">Other (not listed)...</option>
+                  </select>
+                </label>
+              </div>
+              <div class="acct-form-row" id="bcEditInstOtherRow" data-bc-inst-other-row hidden>
+                <label class="span-2">Please specify the institution / organization<input type="text" name="institution_other" id="bcEditInstitutionOther" data-bc-inst-other maxlength="200" placeholder="e.g. University of Ghana"></label>
               </div>
               <div class="acct-form-row">
                 <label>Tag / discipline (optional)

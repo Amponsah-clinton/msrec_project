@@ -1,15 +1,35 @@
-// Wires a Tag / discipline <select data-bc-tag-select> up to its sibling
-// "Please specify" row (data-bc-tag-other-row / data-bc-tag-other) --
-// shared by both the Add and Edit modals so picking "Other..." reveals a
-// free-text input instead of submitting the literal "__other__" value.
-function bcWireTagOther(form) {
-  const select = form.querySelector("[data-bc-tag-select]");
-  const row = form.querySelector("[data-bc-tag-other-row]");
-  const other = form.querySelector("[data-bc-tag-other]");
-  if (!select || !row || !other) return;
+// Wires a <select> (Tag / discipline, or Institution) up to its sibling
+// "Please specify" row so picking "Other..." reveals a free-text input
+// instead of submitting the literal "__other__" value. Shared by the Add
+// and Edit modals.
+function bcWireOther(form, selectSel, rowSel) {
+  const select = form.querySelector(selectSel);
+  const row = form.querySelector(rowSel);
+  if (!select || !row) return;
   const sync = () => { row.hidden = select.value !== "__other__"; };
   select.addEventListener("change", sync);
   sync();
+}
+
+function bcWireTagOther(form) {
+  bcWireOther(form, "[data-bc-tag-select]", "[data-bc-tag-other-row]");
+  bcWireOther(form, "[data-bc-inst-select]", "[data-bc-inst-other-row]");
+}
+
+// Selects `value` in a dropdown that has an "Other..." escape hatch: an
+// exact match is picked directly; anything else selects "Other" and drops
+// the value into the companion free-text input, then shows/hides its row.
+function bcFillSelectWithOther(select, other, row, value) {
+  const v = value || "";
+  const known = Array.from(select.options).some((opt) => opt.value === v && opt.value !== "__other__");
+  if (v && !known) {
+    select.value = "__other__";
+    if (other) other.value = v;
+  } else {
+    select.value = v;
+    if (other) other.value = "";
+  }
+  if (row) row.hidden = select.value !== "__other__";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -49,23 +69,22 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("bcEditFullName").value = row.dataset.fullName;
         document.getElementById("bcEditTitle").value = row.dataset.title || "";
         document.getElementById("bcEditRoleTitle").value = row.dataset.roleTitle;
-        document.getElementById("bcEditInstitution").value = row.dataset.institution || "";
         document.getElementById("bcEditGroup").value = row.dataset.group;
         document.getElementById("bcEditDisplayOrder").value = row.dataset.displayOrder;
         document.getElementById("bcEditIsActive").checked = row.dataset.isActive === "1";
 
-        const tagSelect = document.getElementById("bcEditTag");
-        const tagOther = document.getElementById("bcEditTagOther");
-        const tagValue = row.dataset.tag || "";
-        const knownTag = Array.from(tagSelect.options).some((opt) => opt.value === tagValue);
-        if (tagValue && !knownTag) {
-          tagSelect.value = "__other__";
-          tagOther.value = tagValue;
-        } else {
-          tagSelect.value = tagValue;
-          tagOther.value = "";
-        }
-        document.getElementById("bcEditTagOtherRow").hidden = tagSelect.value !== "__other__";
+        bcFillSelectWithOther(
+          document.getElementById("bcEditInstitution"),
+          document.getElementById("bcEditInstitutionOther"),
+          document.getElementById("bcEditInstOtherRow"),
+          row.dataset.institution,
+        );
+        bcFillSelectWithOther(
+          document.getElementById("bcEditTag"),
+          document.getElementById("bcEditTagOther"),
+          document.getElementById("bcEditTagOtherRow"),
+          row.dataset.tag,
+        );
 
         if (row.dataset.photoUrl) {
           currentPhotoImg.src = row.dataset.photoUrl;

@@ -45,6 +45,7 @@ from pages.models import (
     ConflictDeclaration,
     GovernanceMember,
     Inquiry,
+    Institution,
     TrainingRecord,
 )
 from reviewer_dashboard import qa as reviewer_qa_lib
@@ -2202,6 +2203,7 @@ def committee_members(request):
         "groups": GovernanceMember.Group.choices,
         "title_choices": GOVERNANCE_TITLE_CHOICES,
         "tag_choices": GOVERNANCE_TAG_CHOICES,
+        "institutions": list(Institution.objects.filter(is_active=True)),
     })
 
 

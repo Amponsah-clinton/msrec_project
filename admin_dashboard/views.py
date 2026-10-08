@@ -1687,6 +1687,7 @@ def board_committee(request):
         "groups": GovernanceMember.Group.choices,
         "title_choices": GOVERNANCE_TITLE_CHOICES,
         "tag_choices": GOVERNANCE_TAG_CHOICES,
+        "institutions": list(Institution.objects.filter(is_active=True)),
     })
 
 

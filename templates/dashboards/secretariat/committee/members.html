@@ -166,7 +166,16 @@
                 </label>
               </div>
               <div class="acct-form-row">
-                <label class="span-2 cmt-full">Institution / organization (optional)<input type="text" name="institution" maxlength="200" placeholder="e.g. University of Ghana"></label>
+                <label class="span-2 cmt-full">Institution / organization (optional)
+                  <select name="institution" data-cmt-inst-select>
+                    <option value="">None</option>
+                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
+                    <option value="__other__">Other (not listed)...</option>
+                  </select>
+                </label>
+              </div>
+              <div class="acct-form-row" data-cmt-inst-other-row hidden>
+                <label class="span-2 cmt-full">Please specify the institution / organization<input type="text" name="institution_other" data-cmt-inst-other maxlength="200" placeholder="e.g. University of Ghana"></label>
               </div>
               <div class="acct-form-row">
                 <label>Tag / discipline (optional)
@@ -229,7 +238,16 @@
                 </label>
               </div>
               <div class="acct-form-row">
-                <label class="span-2 cmt-full">Institution / organization (optional)<input type="text" name="institution" id="cmMemberEditInstitution" maxlength="200" placeholder="e.g. University of Ghana"></label>
+                <label class="span-2 cmt-full">Institution / organization (optional)
+                  <select name="institution" id="cmMemberEditInstitution" data-cmt-inst-select>
+                    <option value="">None</option>
+                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
+                    <option value="__other__">Other (not listed)...</option>
+                  </select>
+                </label>
+              </div>
+              <div class="acct-form-row" id="cmMemberEditInstOtherRow" data-cmt-inst-other-row hidden>
+                <label class="span-2 cmt-full">Please specify the institution / organization<input type="text" name="institution_other" id="cmMemberEditInstitutionOther" data-cmt-inst-other maxlength="200" placeholder="e.g. University of Ghana"></label>
               </div>
               <div class="acct-form-row">
                 <label>Tag / discipline (optional)
@@ -268,19 +286,36 @@
 <script src="{% static 'dashboard/js/committee.js' %}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-  // Wires a Tag / discipline select to its "Please specify" row -- shared
-  // shape with board-committee-admin.js's bcWireTagOther, scoped to this
-  // template's own data-cmt-* attributes.
-  function wireTagOther(form) {
-    const select = form.querySelector("[data-cmt-tag-select]");
-    const row = form.querySelector("[data-cmt-tag-other-row]");
-    const other = form.querySelector("[data-cmt-tag-other]");
-    if (!select || !row || !other) return;
+  // Wires a <select> (Tag / discipline, or Institution) to its "Please
+  // specify" row -- shared shape with board-committee-admin.js, scoped to
+  // this template's own data-cmt-* attributes.
+  function wireOther(form, selectSel, rowSel) {
+    const select = form.querySelector(selectSel);
+    const row = form.querySelector(rowSel);
+    if (!select || !row) return;
     const sync = () => { row.hidden = select.value !== "__other__"; };
     select.addEventListener("change", sync);
     sync();
   }
-  document.querySelectorAll("#cmMemberAddOverlay form, #cmMemberEditOverlay form").forEach(wireTagOther);
+  document.querySelectorAll("#cmMemberAddOverlay form, #cmMemberEditOverlay form").forEach((form) => {
+    wireOther(form, "[data-cmt-tag-select]", "[data-cmt-tag-other-row]");
+    wireOther(form, "[data-cmt-inst-select]", "[data-cmt-inst-other-row]");
+  });
+
+  // Picks `value` in a dropdown with an "Other..." escape hatch, dropping an
+  // unlisted value into the companion free-text input.
+  function fillSelectWithOther(select, other, row, value) {
+    const v = value || "";
+    const known = Array.from(select.options).some((opt) => opt.value === v && opt.value !== "__other__");
+    if (v && !known) {
+      select.value = "__other__";
+      if (other) other.value = v;
+    } else {
+      select.value = v;
+      if (other) other.value = "";
+    }
+    if (row) row.hidden = select.value !== "__other__";
+  }
 
   document.querySelectorAll("[data-cm-member-edit]").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -290,23 +325,22 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("cmMemberEditFullName").value = row.dataset.fullName;
       document.getElementById("cmMemberEditTitle").value = row.dataset.title || "";
       document.getElementById("cmMemberEditRoleTitle").value = row.dataset.roleTitle;
-      document.getElementById("cmMemberEditInstitution").value = row.dataset.institution || "";
       document.getElementById("cmMemberEditGroup").value = row.dataset.group;
       document.getElementById("cmMemberEditDisplayOrder").value = row.dataset.displayOrder;
       document.getElementById("cmMemberEditIsActive").checked = row.dataset.isActive === "1";
 
-      const tagSelect = document.getElementById("cmMemberEditTag");
-      const tagOther = document.getElementById("cmMemberEditTagOther");
-      const tagValue = row.dataset.tag || "";
-      const knownTag = Array.from(tagSelect.options).some((opt) => opt.value === tagValue);
-      if (tagValue && !knownTag) {
-        tagSelect.value = "__other__";
-        tagOther.value = tagValue;
-      } else {
-        tagSelect.value = tagValue;
-        tagOther.value = "";
-      }
-      document.getElementById("cmMemberEditTagOtherRow").hidden = tagSelect.value !== "__other__";
+      fillSelectWithOther(
+        document.getElementById("cmMemberEditInstitution"),
+        document.getElementById("cmMemberEditInstitutionOther"),
+        document.getElementById("cmMemberEditInstOtherRow"),
+        row.dataset.institution,
+      );
+      fillSelectWithOther(
+        document.getElementById("cmMemberEditTag"),
+        document.getElementById("cmMemberEditTagOther"),
+        document.getElementById("cmMemberEditTagOtherRow"),
+        row.dataset.tag,
+      );
     });
   });
 });
