@@ -38,11 +38,22 @@ def _resolve_tag(request):
     return tag
 
 
+def _resolve_institution(request):
+    """Same "__other__" + companion free-text pattern as the sign-up form's
+    Institution dropdowns (accounts.views._resolve_institution_choices): an
+    institution not in the admin-managed list is typed into institution_other.
+    Returns the single value GovernanceMember.institution stores (max 200)."""
+    institution = request.POST.get("institution", "").strip()
+    if institution == "__other__":
+        institution = request.POST.get("institution_other", "").strip()
+    return institution[:200]
+
+
 def handle_governance_add(request):
     full_name = request.POST.get("full_name", "").strip()
     title = request.POST.get("title", "").strip()
     role_title = request.POST.get("role_title", "").strip()
-    institution = request.POST.get("institution", "").strip()
+    institution = _resolve_institution(request)
     tag = _resolve_tag(request)
     group = request.POST.get("group", "")
     display_order = request.POST.get("display_order", "").strip()
