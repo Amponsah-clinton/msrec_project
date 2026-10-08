@@ -258,6 +258,11 @@ class GovernanceMember(models.Model):
     # title as part of full_name -- see initials, below).
     title = models.CharField(max_length=20, blank=True)
     role_title = models.CharField(max_length=150)
+    # Institution / organization the person represents, shown on their card.
+    # For a curated card this is typed in on the Board & Committee admin form;
+    # for a card auto-published from a login account (_gov_card) it falls back
+    # to that account's own institution when left blank here.
+    institution = models.CharField(max_length=200, blank=True)
     # Short descriptor shown under the role, e.g. "Health & Biomedical
     # Science" for a Committee member or "Secretariat" for admin staff.
     tag = models.CharField(max_length=150, blank=True)

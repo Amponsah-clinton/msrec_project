@@ -42,6 +42,7 @@ def handle_governance_add(request):
     full_name = request.POST.get("full_name", "").strip()
     title = request.POST.get("title", "").strip()
     role_title = request.POST.get("role_title", "").strip()
+    institution = request.POST.get("institution", "").strip()
     tag = _resolve_tag(request)
     group = request.POST.get("group", "")
     display_order = request.POST.get("display_order", "").strip()
@@ -54,7 +55,8 @@ def handle_governance_add(request):
         return
 
     member = GovernanceMember.objects.create(
-        full_name=full_name, title=title, role_title=role_title, tag=tag, group=group,
+        full_name=full_name, title=title, role_title=role_title,
+        institution=institution[:200], tag=tag, group=group,
         display_order=int(display_order) if display_order.isdigit() else 0,
     )
 
@@ -88,6 +90,7 @@ def handle_governance_edit(request, member):
     member.full_name = full_name
     member.title = title
     member.role_title = role_title
+    member.institution = request.POST.get("institution", "").strip()[:200]
     member.tag = tag
     member.group = group
     member.display_order = int(display_order) if display_order.isdigit() else 0

@@ -41,6 +41,7 @@
                data-full-name="{{ member.full_name }}"
                data-title="{{ member.title }}"
                data-role-title="{{ member.role_title }}"
+               data-institution="{{ member.institution_own }}"
                data-tag="{{ member.tag }}"
                data-group="{{ member.group }}"
                data-display-order="{{ member.display_order }}"
@@ -140,6 +141,9 @@
                 </label>
               </div>
               <div class="acct-form-row">
+                <label class="span-2">Institution / organization (optional)<input type="text" name="institution" maxlength="200" placeholder="e.g. University of Ghana"></label>
+              </div>
+              <div class="acct-form-row">
                 <label>Tag / discipline (optional)
                   <select name="tag" data-bc-tag-select>
                     <option value="">None</option>
@@ -202,6 +206,9 @@
                     {% for value, label in groups %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
                   </select>
                 </label>
+              </div>
+              <div class="acct-form-row">
+                <label class="span-2">Institution / organization (optional)<input type="text" name="institution" id="bcEditInstitution" maxlength="200" placeholder="e.g. University of Ghana"></label>
               </div>
               <div class="acct-form-row">
                 <label>Tag / discipline (optional)

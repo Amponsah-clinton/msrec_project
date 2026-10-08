@@ -331,9 +331,14 @@ def _gov_card(member):
         "display_name": member.display_name,
         "role_title": member.role_title,
         "tag": member.tag,
-        # The person's institution, pulled from their linked login account
-        # (blank for the many Board/Secretariat people who never sign in).
-        "institution": (member.user.institution or "").strip() if member.user_id else "",
+        # The person's institution: what was typed on the card, falling back
+        # to their linked login account's institution (blank for the many
+        # Board/Secretariat people who never sign in and have neither).
+        "institution": (member.institution or "").strip()
+        or ((member.user.institution or "").strip() if member.user_id else ""),
+        # The value actually stored on the card (no account fallback), so the
+        # admin Edit form shows exactly what's saved rather than the fallback.
+        "institution_own": member.institution,
         "photo_url": _member_photo_url(member),
         "initials": member.initials,
         "avatar_color": _AVATAR_COLORS[member.pk % len(_AVATAR_COLORS)],

@@ -49,6 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("bcEditFullName").value = row.dataset.fullName;
         document.getElementById("bcEditTitle").value = row.dataset.title || "";
         document.getElementById("bcEditRoleTitle").value = row.dataset.roleTitle;
+        document.getElementById("bcEditInstitution").value = row.dataset.institution || "";
         document.getElementById("bcEditGroup").value = row.dataset.group;
         document.getElementById("bcEditDisplayOrder").value = row.dataset.displayOrder;
         document.getElementById("bcEditIsActive").checked = row.dataset.isActive === "1";

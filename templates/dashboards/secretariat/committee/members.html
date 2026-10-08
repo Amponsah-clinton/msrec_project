@@ -77,6 +77,7 @@
                data-full-name="{{ member.full_name }}"
                data-title="{{ member.title }}"
                data-role-title="{{ member.role_title }}"
+               data-institution="{{ member.institution }}"
                data-tag="{{ member.tag }}"
                data-group="{{ member.group }}"
                data-display-order="{{ member.display_order }}"
@@ -165,6 +166,9 @@
                 </label>
               </div>
               <div class="acct-form-row">
+                <label class="span-2 cmt-full">Institution / organization (optional)<input type="text" name="institution" maxlength="200" placeholder="e.g. University of Ghana"></label>
+              </div>
+              <div class="acct-form-row">
                 <label>Tag / discipline (optional)
                   <select name="tag" data-cmt-tag-select>
                     <option value="">None</option>
@@ -225,6 +229,9 @@
                 </label>
               </div>
               <div class="acct-form-row">
+                <label class="span-2 cmt-full">Institution / organization (optional)<input type="text" name="institution" id="cmMemberEditInstitution" maxlength="200" placeholder="e.g. University of Ghana"></label>
+              </div>
+              <div class="acct-form-row">
                 <label>Tag / discipline (optional)
                   <select name="tag" id="cmMemberEditTag" data-cmt-tag-select>
                     <option value="">None</option>
@@ -283,6 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("cmMemberEditFullName").value = row.dataset.fullName;
       document.getElementById("cmMemberEditTitle").value = row.dataset.title || "";
       document.getElementById("cmMemberEditRoleTitle").value = row.dataset.roleTitle;
+      document.getElementById("cmMemberEditInstitution").value = row.dataset.institution || "";
       document.getElementById("cmMemberEditGroup").value = row.dataset.group;
       document.getElementById("cmMemberEditDisplayOrder").value = row.dataset.displayOrder;
       document.getElementById("cmMemberEditIsActive").checked = row.dataset.isActive === "1";
