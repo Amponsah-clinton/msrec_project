@@ -16,6 +16,7 @@ file is just not attached.
 import logging
 import mimetypes
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from django.conf import settings
@@ -29,11 +30,20 @@ def _configured():
     return bool(settings.SUPABASE_URL and settings.SUPABASE_SERVICE_KEY)
 
 
+def _object_url(object_path):
+    """Build the Supabase Storage object URL, percent-encoding the object
+    path so a filename with spaces or other characters that http.client
+    rejects (e.g. "My Handbook (2).docx") doesn't raise InvalidURL. The "/"
+    folder separators are kept intact. Same approach as workshop/storage.py."""
+    encoded = urllib.parse.quote(object_path, safe="/")
+    return f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{encoded}"
+
+
 def _upload_bytes(object_path, data, content_type):
     """Shared PUT-an-object call behind upload_application_file() and
     upload_avatar_file(). Returns `object_path` on success, None on any
     failure (unconfigured, network error, non-2xx response)."""
-    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{object_path}"
+    url = _object_url(object_path)
     req = urllib.request.Request(
         url,
         data=data,
@@ -112,7 +122,7 @@ def delete_object(object_path):
     if not object_path or not _configured():
         return False
 
-    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{object_path}"
+    url = _object_url(object_path)
     req = urllib.request.Request(
         url,
         method="DELETE",
@@ -147,7 +157,7 @@ def download_bytes(object_path):
     if not object_path or not _configured():
         return None
 
-    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{BUCKET}/{object_path}"
+    url = _object_url(object_path)
     req = urllib.request.Request(
         url,
         headers={

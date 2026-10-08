@@ -30,6 +30,7 @@ import logging
 import mimetypes
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from django.conf import settings
@@ -68,7 +69,11 @@ def build_url(bucket, object_path, *, expires_in=None):
 
 
 def _fetch(bucket, object_path):
-    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{bucket}/{object_path}"
+    # Percent-encode the object path (keeping "/" separators) so a filename
+    # with spaces or other characters http.client rejects doesn't raise
+    # InvalidURL. Same approach as workshop/storage.py.
+    encoded_path = urllib.parse.quote(object_path, safe="/")
+    url = f"{settings.SUPABASE_URL.rstrip('/')}/storage/v1/object/{bucket}/{encoded_path}"
     req = urllib.request.Request(
         url,
         headers={
