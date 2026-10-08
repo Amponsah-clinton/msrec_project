@@ -36,7 +36,7 @@
         <div class="bc-grid" id="bcAdminList">
           {% for member in members %}
           <div class="acct-row bc-card{% if not member.is_active %} acct-row-suspended{% endif %}" data-filter-item data-filter="{{ member.group }}"{% if member.also_member %} data-also-member{% endif %}
-               data-search="{{ member.full_name|lower }} {{ member.role_title|lower }} {{ member.tag|lower }}"
+               data-search="{{ member.full_name|lower }} {{ member.role_title|lower }} {{ member.tag|lower }} {{ member.institution|lower }}"
                data-member-id="{{ member.pk }}"
                data-full-name="{{ member.full_name }}"
                data-title="{{ member.title }}"

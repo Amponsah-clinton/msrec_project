@@ -303,6 +303,9 @@ def _gov_card(member):
         "display_name": member.display_name,
         "role_title": member.role_title,
         "tag": member.tag,
+        # The person's institution, pulled from their linked login account
+        # (blank for the many Board/Secretariat people who never sign in).
+        "institution": (member.user.institution or "").strip() if member.user_id else "",
         "photo_url": _member_photo_url(member),
         "initials": member.initials,
         "avatar_color": _AVATAR_COLORS[member.pk % len(_AVATAR_COLORS)],
