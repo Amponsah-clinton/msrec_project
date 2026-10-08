@@ -65,7 +65,35 @@ def index(request):
         "testimonials": testimonials,
         "hero_image_url": SiteSettings.get_solo().hero_image_url,
         "hof_featured": hof_featured,
+        # The one workshop promoted on the homepage: the soonest-starting
+        # published workshop that's still open for registration. A workshop
+        # drops out of here the moment its registration deadline passes
+        # (Workshop.registration_open goes False), so the homepage band
+        # disappears on its own without anyone editing the page -- see the
+        # {% if featured_workshop %} guard in templates/pages/index.html.
+        "featured_workshop": _featured_workshop(),
     })
+
+
+def _featured_workshop():
+    """The single upcoming workshop to promote on the homepage, or None.
+
+    Picks the published workshop with the nearest start date whose
+    registration is still open (deadline not yet passed, not manually
+    closed). Returns None when nothing qualifies, which hides the whole
+    homepage workshop band.
+    """
+    from workshop.models import Workshop
+
+    open_workshops = [
+        w for w in Workshop.objects.filter(is_published=True)
+        if w.registration_open and not w.is_past
+    ]
+    if not open_workshops:
+        return None
+    from django.utils import timezone
+    open_workshops.sort(key=lambda w: (w.starts_at is None, w.starts_at or timezone.now()))
+    return open_workshops[0]
 
 
 # Post-approval item order for the dedicated Fees page -- matches the

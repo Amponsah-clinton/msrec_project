@@ -84,6 +84,46 @@
 
     </section><!-- /Hero Section -->
 
+    {% if featured_workshop %}
+    <!-- Upcoming Workshop Section -- shown only while the promoted
+         workshop is still open for registration; it is rendered entirely
+         by the server (see pages.views._featured_workshop), so once the
+         registration deadline passes the whole band disappears. -->
+    <section id="upcoming-workshop" class="upcoming-workshop section">
+      <div class="container" data-aos="fade-up">
+        <div class="uw-card">
+          {% if featured_workshop.banner_url %}
+          <div class="uw-media">
+            <img src="{{ featured_workshop.banner_url }}" alt="{{ featured_workshop.title }}" loading="lazy">
+          </div>
+          {% endif %}
+          <div class="uw-body">
+            <span class="uw-eyebrow"><i class="bi bi-mortarboard"></i> Upcoming Workshop</span>
+            <h2 class="uw-title">{{ featured_workshop.title }}</h2>
+            {% if featured_workshop.tagline %}<p class="uw-tagline">{{ featured_workshop.tagline }}</p>{% endif %}
+
+            <ul class="uw-meta">
+              {% if featured_workshop.starts_at %}
+              <li><i class="bi bi-calendar-event"></i><span>{{ featured_workshop.starts_at|date:"l, j F Y" }}<small>{{ featured_workshop.starts_at|date:"g:i A" }}{% if featured_workshop.ends_at %} &ndash; {{ featured_workshop.ends_at|date:"g:i A" }}{% endif %}</small></span></li>
+              {% endif %}
+              {% if featured_workshop.location %}
+              <li><i class="bi bi-geo-alt"></i><span>{{ featured_workshop.location }}</span></li>
+              {% endif %}
+              {% if featured_workshop.registration_deadline %}
+              <li><i class="bi bi-hourglass-split"></i><span>Register by<small>{{ featured_workshop.registration_deadline|date:"j F Y, g:i A" }}</small></span></li>
+              {% endif %}
+            </ul>
+
+            <div class="uw-actions">
+              <a href="{% url 'workshop:register' slug=featured_workshop.slug %}" class="uw-btn-primary">Register Now <i class="bi bi-arrow-right"></i></a>
+              <a href="{% url 'workshop:list' %}" class="uw-btn-ghost">All workshops</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section><!-- /Upcoming Workshop Section -->
+    {% endif %}
+
     <!-- About Section -->
     <section id="about" class="about-simple section">
 

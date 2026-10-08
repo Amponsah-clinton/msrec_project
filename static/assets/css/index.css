@@ -388,3 +388,153 @@
 @media (max-width: 575.98px) {
   .fee-card { padding: 28px 22px 24px; }
 }
+
+/* ==========================================================
+   Upcoming Workshop band (homepage) -- a single promoted
+   workshop sitting just under the hero. Server-rendered only
+   while registration is open, so it vanishes on its own once
+   the deadline passes. Brand teal (--accent-color), matched to
+   the rest of the homepage rather than a generic card.
+========================================================== */
+.upcoming-workshop { padding-top: 0; }
+
+.upcoming-workshop .uw-card {
+  display: grid;
+  grid-template-columns: 1fr;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent-color), transparent 86%);
+  border-radius: 18px;
+  background: var(--surface-color);
+  box-shadow: 0 18px 44px rgba(23, 42, 40, 0.09);
+}
+.upcoming-workshop .uw-card:has(.uw-media) {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+}
+
+.upcoming-workshop .uw-media {
+  position: relative;
+  min-height: 220px;
+  background: color-mix(in srgb, var(--accent-color), transparent 90%);
+}
+.upcoming-workshop .uw-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.upcoming-workshop .uw-body {
+  padding: 34px 36px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.upcoming-workshop .uw-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  align-self: flex-start;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent-color), transparent 90%);
+  color: var(--accent-color);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.upcoming-workshop .uw-title {
+  margin: 0;
+  font-size: clamp(22px, 2.6vw, 30px);
+  font-weight: 700;
+  color: var(--heading-color);
+  line-height: 1.22;
+}
+
+.upcoming-workshop .uw-tagline {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: color-mix(in srgb, var(--default-color), transparent 20%);
+}
+
+.upcoming-workshop .uw-meta {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 16px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px 28px;
+  border-top: 1px solid color-mix(in srgb, var(--accent-color), transparent 88%);
+  border-bottom: 1px solid color-mix(in srgb, var(--accent-color), transparent 88%);
+}
+.upcoming-workshop .uw-meta li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--heading-color);
+}
+.upcoming-workshop .uw-meta i {
+  margin-top: 1px;
+  font-size: 18px;
+  color: var(--accent-color);
+}
+.upcoming-workshop .uw-meta small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--default-color), transparent 35%);
+}
+
+.upcoming-workshop .uw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+.upcoming-workshop .uw-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 999px;
+  background: var(--accent-color);
+  color: var(--contrast-color);
+  font-size: 14.5px;
+  font-weight: 600;
+  transition: transform .18s, box-shadow .18s, background .18s;
+}
+.upcoming-workshop .uw-btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px color-mix(in srgb, var(--accent-color), transparent 60%);
+  color: var(--contrast-color);
+}
+.upcoming-workshop .uw-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 20px;
+  border-radius: 999px;
+  color: var(--accent-color);
+  font-size: 14.5px;
+  font-weight: 600;
+}
+.upcoming-workshop .uw-btn-ghost:hover {
+  color: color-mix(in srgb, var(--accent-color), var(--heading-color) 40%);
+}
+
+@media (max-width: 767.98px) {
+  .upcoming-workshop .uw-card,
+  .upcoming-workshop .uw-card:has(.uw-media) {
+    grid-template-columns: 1fr;
+  }
+  .upcoming-workshop .uw-media { min-height: 180px; }
+  .upcoming-workshop .uw-body { padding: 26px 22px; }
+}
