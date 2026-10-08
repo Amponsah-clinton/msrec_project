@@ -42,8 +42,8 @@
 }
 
 .bc-card-photo {
-  width: 84px;
-  height: 84px;
+  width: 104px;
+  height: 104px;
   border-radius: 50%;
   margin: 14px 0 14px;
   flex-shrink: 0;
@@ -101,7 +101,7 @@
   max-width: 100%;
   margin: 8px 0 0;
   padding: 0 6px;
-  font-size: 11.5px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--text-sub);
   line-height: 1.3;
