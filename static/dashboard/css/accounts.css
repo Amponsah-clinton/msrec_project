@@ -663,6 +663,31 @@ a.acct-page-nav:hover, a.acct-page-num:hover { background: var(--white); color: 
 .acct-form-row select:focus,
 .acct-form-row textarea:focus { outline: 2px solid var(--teal); outline-offset: 1px; }
 
+/* Reviewer / Committee application blocks inside the Edit Account modal --
+   revealed by dashboard/js/accounts.js only for the relevant accounts. */
+.acct-role-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 14px;
+  margin-top: 2px;
+  border-top: 1px solid var(--border);
+}
+.acct-role-section[hidden] { display: none; }
+.acct-section-head { display: flex; flex-direction: column; gap: 2px; }
+.acct-section-head h4 { margin: 0; font-size: 13px; font-weight: 700; color: var(--text-main); }
+.acct-section-note { font-size: 11.5px; color: var(--text-faint); }
+.acct-check {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+.acct-check input[type="checkbox"] { width: 16px; height: 16px; flex: none; accent-color: var(--teal); cursor: pointer; }
+
 /* Section grouping inside a long modal form (e.g. Add Hall of Fame member) */
 .acct-form-section { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-faint); margin: 4px 0 -4px; }
 .acct-form-section:first-child { margin-top: 0; }

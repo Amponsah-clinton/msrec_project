@@ -1,0 +1,23 @@
+{% comment %}
+Row data attributes carrying each account's Reviewer/Committee application
+(reviewer_profile / committee_profile) into the Edit Account modal. Shared by
+the admin and Secretariat accounts pages so the two stay identical. Expects `u`
+(the User) in context, and is included inside the row's opening tag.
+{% endcomment %}
+               data-has-reviewer="{% if u.reviewer_status != 'not_requested' or u.reviewer_profile %}1{% else %}0{% endif %}"
+               data-rev-independent="{{ u.reviewer_profile.independentReviewer }}"
+               data-rev-position="{{ u.reviewer_profile.reviewerPosition }}"
+               data-rev-institution="{{ u.reviewer_profile.reviewerInstitution }}"
+               data-rev-discipline="{{ u.reviewer_profile.reviewerDiscipline }}"
+               data-rev-years-professional="{{ u.reviewer_profile.reviewerYearsProfessional }}"
+               data-rev-years-research="{{ u.reviewer_profile.reviewerYearsResearch }}"
+               data-rev-expertise="{{ u.reviewer_profile.reviewerExpertise }}"
+               data-rev-research-areas="{{ u.reviewer_profile.reviewerResearchAreas }}"
+               data-rev-bio="{{ u.reviewer_profile.reviewerBio }}"
+               data-has-committee="{% if u.committee_status != 'not_requested' or u.committee_profile %}1{% else %}0{% endif %}"
+               data-com-position="{{ u.committee_profile.committeePosition }}"
+               data-com-institution="{{ u.committee_profile.committeeInstitution }}"
+               data-com-years="{{ u.committee_profile.committeeYears }}"
+               data-com-background="{{ u.committee_profile.committeeBackground }}"
+               data-com-reference="{{ u.committee_profile.committeeReference }}"
+               data-com-bio="{{ u.committee_profile.committeeBio }}"

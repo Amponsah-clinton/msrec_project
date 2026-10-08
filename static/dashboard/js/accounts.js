@@ -12,11 +12,36 @@ document.addEventListener("DOMContentLoaded", () => {
   const editForm = document.getElementById("acctEditForm");
   if (editOverlay && editForm) {
     const closeEdit = () => { editOverlay.hidden = true; };
+    const roleField = document.getElementById("editRole");
+    const setVal = (id, value) => { const el = document.getElementById(id); if (el) el.value = value || ""; };
+
+    // The Reviewer/Committee application sections are only relevant to an
+    // account that holds (or is here being given) that standing. Shown from
+    // the clicked row's data, and re-evaluated when the Role dropdown changes
+    // so an admin promoting someone can fill in the matching application
+    // straight away. `currentRow` lets the one change-listener below know
+    // which account is open without re-binding a listener on every open.
+    const revSection = document.getElementById("editReviewerSection");
+    const comSection = document.getElementById("editCommitteeSection");
+    const revFlag = document.getElementById("editReviewerFlag");
+    const comFlag = document.getElementById("editCommitteeFlag");
+    let currentRow = null;
+
+    const syncRoleSections = () => {
+      if (!currentRow) return;
+      const role = roleField ? roleField.value : "";
+      const showRev = currentRow.dataset.hasReviewer === "1" || role === "reviewer" || role === "committee";
+      const showCom = currentRow.dataset.hasCommittee === "1" || role === "committee";
+      if (revSection) { revSection.hidden = !showRev; if (revFlag) revFlag.value = showRev ? "1" : "0"; }
+      if (comSection) { comSection.hidden = !showCom; if (comFlag) comFlag.value = showCom ? "1" : "0"; }
+    };
+    if (roleField) roleField.addEventListener("change", syncRoleSections);
 
     document.querySelectorAll("[data-acct-edit]").forEach((btn) => {
       btn.addEventListener("click", () => {
         const row = btn.closest(".acct-row");
         if (!row) return;
+        currentRow = row;
         document.getElementById("editUserId").value = row.dataset.userId;
         document.getElementById("editFirstName").value = row.dataset.firstName;
         document.getElementById("editMiddleName").value = row.dataset.middleName;
@@ -28,9 +53,32 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("editInstitution").value = row.dataset.institution;
         document.getElementById("editDepartment").value = row.dataset.department;
         document.getElementById("editPosition").value = row.dataset.position;
-        const roleField = document.getElementById("editRole");
-        roleField.value = row.dataset.role;
-        roleField.disabled = row.dataset.isSuperuser === "1";
+        if (roleField) {
+          roleField.value = row.dataset.role;
+          roleField.disabled = row.dataset.isSuperuser === "1";
+        }
+
+        // Reviewer application fields.
+        setVal("editRevPosition", row.dataset.revPosition);
+        setVal("editRevInstitution", row.dataset.revInstitution);
+        setVal("editRevDiscipline", row.dataset.revDiscipline);
+        setVal("editRevYearsProfessional", row.dataset.revYearsProfessional);
+        setVal("editRevYearsResearch", row.dataset.revYearsResearch);
+        setVal("editRevExpertise", row.dataset.revExpertise);
+        setVal("editRevResearchAreas", row.dataset.revResearchAreas);
+        setVal("editRevBio", row.dataset.revBio);
+        const indep = document.getElementById("editRevIndependent");
+        if (indep) indep.checked = !!(row.dataset.revIndependent || "").trim();
+
+        // Committee application fields.
+        setVal("editComPosition", row.dataset.comPosition);
+        setVal("editComInstitution", row.dataset.comInstitution);
+        setVal("editComYears", row.dataset.comYears);
+        setVal("editComBackground", row.dataset.comBackground);
+        setVal("editComReference", row.dataset.comReference);
+        setVal("editComBio", row.dataset.comBio);
+
+        syncRoleSections();
         editOverlay.hidden = false;
       });
     });

@@ -89,7 +89,8 @@
                   data-department="{{ u.department }}"
                   data-position="{{ u.position }}"
                   data-role="{{ u.role }}"
-                  data-is-superuser="{{ u.is_superuser|yesno:'1,0' }}">
+                  data-is-superuser="{{ u.is_superuser|yesno:'1,0' }}"
+                  {% include "dashboards/_acct_edit_data.html" %}>
 
                 <td data-label="Member">
                   <div class="acct-person">
@@ -317,6 +318,8 @@
                   </select>
                 </label>
               </div>
+
+              {% include "dashboards/_acct_edit_fields.html" %}
             </div>
 
             <div class="acct-modal-actions">

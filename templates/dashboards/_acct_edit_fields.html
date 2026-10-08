@@ -1,0 +1,59 @@
+{% comment %}
+Reviewer and Committee application fields for the Edit Account modal, shared by
+the admin and Secretariat accounts pages. Hidden by default; dashboard/js/
+accounts.js reveals a section for an account that holds (or is being given)
+that standing and fills it from the row's data-rev-* / data-com-* attributes.
+The hidden edit_*_profile markers tell admin_dashboard.views._save_role_profiles
+which sections to persist, so editing a plain applicant never rewrites a profile.
+{% endcomment %}
+<div class="acct-role-section" id="editReviewerSection" hidden>
+  <input type="hidden" name="edit_reviewer_profile" id="editReviewerFlag" value="0">
+  <div class="acct-section-head">
+    <h4>Reviewer application</h4>
+    <span class="acct-section-note">What this person submitted to review for MSREC.</span>
+  </div>
+  <label class="acct-check">
+    <input type="checkbox" name="independentReviewer" id="editRevIndependent" value="on">
+    <span>Independent reviewer (no institutional affiliation)</span>
+  </label>
+  <div class="acct-form-row">
+    <label>Professional title / position<input type="text" name="reviewerPosition" id="editRevPosition"></label>
+    <label>Institution / organization<input type="text" name="reviewerInstitution" id="editRevInstitution"></label>
+  </div>
+  <div class="acct-form-row">
+    <label>Primary discipline<input type="text" name="reviewerDiscipline" id="editRevDiscipline"></label>
+    <label>Years of professional experience<input type="number" name="reviewerYearsProfessional" id="editRevYearsProfessional" min="0"></label>
+  </div>
+  <div class="acct-form-row">
+    <label>Years of research experience<input type="number" name="reviewerYearsResearch" id="editRevYearsResearch" min="0"></label>
+    <label>Areas of expertise<input type="text" name="reviewerExpertise" id="editRevExpertise" placeholder="Comma-separated"></label>
+  </div>
+  <div class="acct-form-row">
+    <label class="span-2">Research areas able to review<input type="text" name="reviewerResearchAreas" id="editRevResearchAreas" placeholder="Comma-separated"></label>
+  </div>
+  <div class="acct-form-row">
+    <label class="span-2">Short professional biography<textarea name="reviewerBio" id="editRevBio" rows="3"></textarea></label>
+  </div>
+</div>
+
+<div class="acct-role-section" id="editCommitteeSection" hidden>
+  <input type="hidden" name="edit_committee_profile" id="editCommitteeFlag" value="0">
+  <div class="acct-section-head">
+    <h4>Committee application</h4>
+    <span class="acct-section-note">What this person submitted to serve on the Committee.</span>
+  </div>
+  <div class="acct-form-row">
+    <label>Current professional position<input type="text" name="committeePosition" id="editComPosition"></label>
+    <label>Institution / organization<input type="text" name="committeeInstitution" id="editComInstitution"></label>
+  </div>
+  <div class="acct-form-row">
+    <label>Years of professional experience<input type="number" name="committeeYears" id="editComYears" min="0"></label>
+    <label>Reference / referee<input type="text" name="committeeReference" id="editComReference"></label>
+  </div>
+  <div class="acct-form-row">
+    <label class="span-2">Professional background<textarea name="committeeBackground" id="editComBackground" rows="3"></textarea></label>
+  </div>
+  <div class="acct-form-row">
+    <label class="span-2">Short biography<textarea name="committeeBio" id="editComBio" rows="3"></textarea></label>
+  </div>
+</div>

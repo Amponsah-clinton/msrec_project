@@ -111,7 +111,8 @@
                data-department="{{ u.department }}"
                data-position="{{ u.position }}"
                data-role="{{ u.role }}"
-               data-is-superuser="{{ u.is_superuser|yesno:'1,0' }}">
+               data-is-superuser="{{ u.is_superuser|yesno:'1,0' }}"
+               {% include "dashboards/_acct_edit_data.html" %}>
 
             <span class="acct-avatar cat-{{ u.category }}">{{ u.initials }}</span>
 
@@ -309,7 +310,8 @@
                   </select>
                 </label>
               </div>
-              <p class="field-hint">Only an administrator can grant the Administrator role -- that option isn't offered here.</p>
+
+              {% include "dashboards/_acct_edit_fields.html" %}
             </div>
 
             <div class="acct-modal-actions">

@@ -507,6 +507,79 @@ def _handle_delete(request, target):
     messages.success(request, f"{name}'s account and files have been deleted.")
 
 
+def _reconcile_member_standing(target, role):
+    """Bring a user's reviewer/committee *standing* into line with the role an
+    admin just picked on the Edit form.
+
+    The rest of the app -- the Users list category (_categorize), the
+    post-login dashboard (User.dashboard_url_name) and the public Board &
+    Committee page (pages.committee_services._target_group_and_role) -- all
+    decide a person's membership from reviewer_status/committee_status (and,
+    for Secretariat, from role), never from `role` alone. So editing the role
+    dropdown to Reviewer/Committee isn't just a relabel: it has to move the
+    matching request to APPROVED, exactly like the dedicated Approve action
+    (User.approve_role, which also issues the one-time membership ID). A
+    demotion to any role that shouldn't carry a standing withdraws it, so the
+    governance card and list category follow the change instead of lingering.
+    """
+    approved = User.RequestStatus.APPROVED
+    not_requested = User.RequestStatus.NOT_REQUESTED
+
+    if role == User.Role.REVIEWER and target.reviewer_status != approved:
+        target.approve_role(User.Role.REVIEWER, promote=True)
+    elif role == User.Role.COMMITTEE and target.committee_status != approved:
+        target.approve_role(User.Role.COMMITTEE, promote=True)
+
+    # Reviewer standing belongs to Reviewer and Committee roles; committee
+    # standing only to Committee. Strip anything the chosen role shouldn't
+    # keep (Committee -> Reviewer drops the seat; -> Applicant drops both).
+    fields = []
+    keeps_reviewer = role in (User.Role.REVIEWER, User.Role.COMMITTEE)
+    keeps_committee = role == User.Role.COMMITTEE
+    if not keeps_reviewer and target.reviewer_status == approved:
+        target.reviewer_status = not_requested
+        fields.append("reviewer_status")
+    if not keeps_committee and target.committee_status == approved:
+        target.committee_status = not_requested
+        fields.append("committee_status")
+    if fields:
+        target.save(update_fields=fields)
+
+
+def _save_role_profiles(request, target):
+    """Persist edits to the Reviewer/Committee application JSON (reviewer_profile
+    / committee_profile) made in the Edit Account modal.
+
+    Only a section whose hidden marker was submitted is touched -- the modal
+    renders the Reviewer fields only for reviewer accounts and the Committee
+    fields only for committee accounts, so editing a plain applicant never
+    rewrites an empty profile. Keys the form doesn't own (e.g. the uploaded
+    `cv_path`, or committeeExpertiseCategory) are preserved; a field left blank
+    is removed, matching how signup first stored the profile."""
+    from accounts.views import COMMITTEE_PROFILE_FIELDS, REVIEWER_PROFILE_FIELDS
+
+    update_fields = []
+    sections = (
+        ("edit_reviewer_profile", "reviewer_profile", REVIEWER_PROFILE_FIELDS),
+        ("edit_committee_profile", "committee_profile", COMMITTEE_PROFILE_FIELDS),
+    )
+    for marker, attr, keys in sections:
+        if request.POST.get(marker) != "1":
+            continue
+        profile = dict(getattr(target, attr) or {})
+        for key in keys:
+            value = request.POST.get(key, "").strip()
+            if value:
+                profile[key] = value
+            else:
+                profile.pop(key, None)
+        setattr(target, attr, profile)
+        update_fields.append(attr)
+
+    if update_fields:
+        target.save(update_fields=update_fields)
+
+
 def _handle_edit(request, target):
     if target.role == User.Role.ADMIN and not _actor_is_admin(request):
         messages.error(request, "Only an administrator can edit an Administrator account.")
@@ -545,9 +618,21 @@ def _handle_edit(request, target):
         "first_name", "middle_name", "last_name", "email", "phone",
         "institution", "department", "position", "role",
     ])
-    # Keep the public Board & Committee page in step with the new role: a
-    # Secretariat account is published there (Secretariat group); a role
-    # change that removes an auto-published standing hides its card.
+    # The full Reviewer/Committee application (the fields the person filled at
+    # signup) is editable in the same modal -- persist whichever sections the
+    # form actually carried, so an admin can correct any of it in one place.
+    _save_role_profiles(request, target)
+    # A role change here is a real promotion/demotion -- move the matching
+    # reviewer/committee standing to match, so Edit grants membership the
+    # same way the Approve action does (without this, `role` said "reviewer"
+    # but the status stayed NOT_REQUESTED, so the person never reached the
+    # governance page and still read as an Applicant everywhere).
+    if not target.is_superuser:
+        _reconcile_member_standing(target, target.role)
+    # Keep the public Board & Committee page in step with the new standing: an
+    # approved Reviewer/Committee member or a Secretariat account is published
+    # there; a demotion that removes every auto-published standing hides its
+    # card.
     from pages.committee_services import (
         sync_governance_member_from_user, unpublish_governance_member_for_user,
     )
