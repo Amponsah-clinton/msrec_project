@@ -14,7 +14,7 @@ from urllib.parse import urlencode
 
 from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.db.models.functions import TruncMonth
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -1535,18 +1535,26 @@ def profile_security(request, template_name="dashboards/admin/profile-security.h
 # Send SMS (admin + secretariat)
 # ---------------------------------------------------------------------
 
+# Each group carries the Q that actually identifies its members. Reviewer
+# and Committee membership is governed by *_status == APPROVED, NOT the
+# primary `role` field -- same reasoning as reviewer_dashboard.views.
+# is_reviewer / committee_dashboard.views.is_committee. `role` only picks
+# a default post-login dashboard and routinely goes out of step (an
+# approved reviewer/committee member can keep role="applicant", and every
+# approved Committee member is also granted Reviewer access), so filtering
+# these two groups by `role` would miss real members.
 _SMS_GROUPS = [
-    ("applicants",  "Applicants",         User.Role.APPLICANT),
-    ("reviewers",   "Reviewers",          User.Role.REVIEWER),
-    ("committee",   "Committee Members",  User.Role.COMMITTEE),
-    ("secretariat", "Secretariat",        User.Role.SECRETARIAT),
-    ("admins",      "Administrators",     User.Role.ADMIN),
+    ("applicants",  "Applicants",         Q(role=User.Role.APPLICANT)),
+    ("reviewers",   "Reviewers",          Q(reviewer_status=User.RequestStatus.APPROVED)),
+    ("committee",   "Committee Members",  Q(committee_status=User.RequestStatus.APPROVED)),
+    ("secretariat", "Secretariat",        Q(role=User.Role.SECRETARIAT)),
+    ("admins",      "Administrators",     Q(role=User.Role.ADMIN)),
 ]
 
 
-def _sms_group_qs(role):
+def _sms_group_qs(group_q):
     from notifications import sms as sms_service
-    users = User.objects.filter(role=role, is_active=True, sms_notifications_enabled=True).exclude(phone="")
+    users = User.objects.filter(group_q, is_active=True, sms_notifications_enabled=True).exclude(phone="")
     return [u for u in users if sms_service.clean_phone(u.phone)]
 
 
@@ -1604,11 +1612,12 @@ def send_sms_page(request, template_name="dashboards/admin/send-sms.html"):
         "configured": sms_service.is_configured(),
         "sender_id": sms_service._sender_id(),
         "balance": sms_service.sms_balance() if sms_service.is_configured() else None,
+        # "reachable" is the count that will actually receive the SMS, so it
+        # goes through the same resolver (incl. clean_phone) the send uses --
+        # a user with a non-Ghanaian / unparseable phone isn't reachable.
         "groups": [
-            {"key": key, "label": label,
-             "count": User.objects.filter(role=role, is_active=True, sms_notifications_enabled=True)
-                                  .exclude(phone="").count()}
-            for key, label, role in _SMS_GROUPS
+            {"key": key, "label": label, "count": len(_sms_group_qs(group_q))}
+            for key, label, group_q in _SMS_GROUPS
         ],
         # Only users with a phone number appear as individually pickable.
         "pickable_users": list(
