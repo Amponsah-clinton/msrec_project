@@ -209,7 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const el = document.getElementById(id);
       if (el) el.required = active;
     });
-    document.getElementById("reviewerCv").required = active;
+    // CV / Résumé is optional for Reviewer registration.
     applyReviewerInstitutionRequirement();
 
     reviewerCommitteeExperienceField.hidden = reviewerPriorExperience.value !== "yes";
