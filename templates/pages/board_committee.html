@@ -41,9 +41,9 @@
       <!-- ============ CATEGORY NAV ============ -->
       <nav class="bc-toolbar" id="bcCatNav" aria-label="Board and Committee sections">
         <a href="#bc-structure" data-cat="bc-structure"><i class="bi bi-diagram-3"></i> Board Structure</a>
+        <a href="#bc-profiles" data-cat="bc-profiles"><i class="bi bi-person-badge"></i> Member Profiles</a>
         <a href="#bc-responsibilities" data-cat="bc-responsibilities"><i class="bi bi-clipboard-check"></i> Board Responsibilities</a>
         <a href="#bc-composition" data-cat="bc-composition"><i class="bi bi-people"></i> Committee Composition</a>
-        <a href="#bc-profiles" data-cat="bc-profiles"><i class="bi bi-person-badge"></i> Member Profiles</a>
         <a href="#bc-secretariat" data-cat="bc-secretariat"><i class="bi bi-folder2-open"></i> Secretariat</a>
         <a href="#bc-meetings" data-cat="bc-meetings"><i class="bi bi-calendar-week"></i> Meeting Arrangements</a>
       </nav>
@@ -83,6 +83,57 @@
               <div class="bc-flow-text"><strong>Secretariat</strong><span>Screening, records &amp; scheduling</span></div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- ============ MEMBER PROFILES ============ -->
+      <section class="bc-section" id="bc-profiles">
+        <div class="bc-section-head">
+          <span class="bc-section-icon"><i class="bi bi-person-badge"></i></span>
+          <div>
+            <h2>Member Profiles</h2>
+            <p>Every named individual currently serving across the Board, Committee, Secretariat and Reviewer panel.</p>
+          </div>
+        </div>
+
+        <div class="bc-people-filter" id="bcPeopleFilter">
+          <button type="button" class="bc-filter-btn is-active" data-group="all">All <span>{{ counts.all }}</span></button>
+          <button type="button" class="bc-filter-btn" data-group="board">Board <span>{{ counts.board }}</span></button>
+          <button type="button" class="bc-filter-btn" data-group="committee">Committee <span>{{ counts.committee }}</span></button>
+          <button type="button" class="bc-filter-btn" data-group="secretariat">Secretariat <span>{{ counts.secretariat }}</span></button>
+          <button type="button" class="bc-filter-btn" data-group="reviewer">Reviewers <span>{{ counts.reviewer }}</span></button>
+        </div>
+
+        <div class="bc-people-grid" id="bcPeopleGrid">
+          {% for member in members %}
+          <div class="bc-person" data-group="{{ member.group }}">
+            {% if member.photo_url %}
+            <span class="bc-avatar bc-avatar-photo"><img src="{{ member.photo_url }}" alt="{{ member.display_name }}" loading="lazy"></span>
+            {% else %}
+            <span class="bc-avatar" style="--av-bg:{{ member.avatar_color }};">{{ member.initials }}</span>
+            {% endif %}
+            <h4>{{ member.display_name }}</h4>
+            <span class="bc-person-role">{{ member.role_title }}</span>
+            {% if member.tag %}<span class="bc-person-tag">{{ member.tag }}</span>{% endif %}
+            {% if member.institution %}<span class="bc-person-inst"><i class="bi bi-building"></i>{{ member.institution }}</span>{% endif %}
+          </div>
+          {% endfor %}
+          {% for member in reviewers %}
+          <div class="bc-person" data-group="reviewer"{% if member.also_member %} data-also-member{% endif %}>
+            {% if member.photo_url %}
+            <span class="bc-avatar bc-avatar-photo"><img src="{{ member.photo_url }}" alt="{{ member.display_name }}" loading="lazy"></span>
+            {% else %}
+            <span class="bc-avatar" style="--av-bg:{{ member.avatar_color }};">{{ member.initials }}</span>
+            {% endif %}
+            <h4>{{ member.display_name }}</h4>
+            <span class="bc-person-role">{{ member.role_title }}</span>
+            {% if member.tag %}<span class="bc-person-tag">{{ member.tag }}</span>{% endif %}
+            {% if member.institution %}<span class="bc-person-inst"><i class="bi bi-building"></i>{{ member.institution }}</span>{% endif %}
+          </div>
+          {% endfor %}
+          {% if not members and not reviewers %}
+          <p class="bc-people-empty">Member profiles will appear here once the Secretariat adds them.</p>
+          {% endif %}
         </div>
       </section>
 
@@ -169,57 +220,6 @@
             <span class="bc-fact-num">0</span>
             <span class="bc-fact-label">Conflicted members permitted to vote on that item</span>
           </div>
-        </div>
-      </section>
-
-      <!-- ============ MEMBER PROFILES ============ -->
-      <section class="bc-section" id="bc-profiles">
-        <div class="bc-section-head">
-          <span class="bc-section-icon"><i class="bi bi-person-badge"></i></span>
-          <div>
-            <h2>Member Profiles</h2>
-            <p>Every named individual currently serving across the Board, Committee, Secretariat and Reviewer panel.</p>
-          </div>
-        </div>
-
-        <div class="bc-people-filter" id="bcPeopleFilter">
-          <button type="button" class="bc-filter-btn is-active" data-group="all">All <span>{{ counts.all }}</span></button>
-          <button type="button" class="bc-filter-btn" data-group="board">Board <span>{{ counts.board }}</span></button>
-          <button type="button" class="bc-filter-btn" data-group="committee">Committee <span>{{ counts.committee }}</span></button>
-          <button type="button" class="bc-filter-btn" data-group="secretariat">Secretariat <span>{{ counts.secretariat }}</span></button>
-          <button type="button" class="bc-filter-btn" data-group="reviewer">Reviewers <span>{{ counts.reviewer }}</span></button>
-        </div>
-
-        <div class="bc-people-grid" id="bcPeopleGrid">
-          {% for member in members %}
-          <div class="bc-person" data-group="{{ member.group }}">
-            {% if member.photo_url %}
-            <span class="bc-avatar bc-avatar-photo"><img src="{{ member.photo_url }}" alt="{{ member.display_name }}" loading="lazy"></span>
-            {% else %}
-            <span class="bc-avatar" style="--av-bg:{{ member.avatar_color }};">{{ member.initials }}</span>
-            {% endif %}
-            <h4>{{ member.display_name }}</h4>
-            <span class="bc-person-role">{{ member.role_title }}</span>
-            {% if member.tag %}<span class="bc-person-tag">{{ member.tag }}</span>{% endif %}
-            {% if member.institution %}<span class="bc-person-inst"><i class="bi bi-building"></i>{{ member.institution }}</span>{% endif %}
-          </div>
-          {% endfor %}
-          {% for member in reviewers %}
-          <div class="bc-person" data-group="reviewer"{% if member.also_member %} data-also-member{% endif %}>
-            {% if member.photo_url %}
-            <span class="bc-avatar bc-avatar-photo"><img src="{{ member.photo_url }}" alt="{{ member.display_name }}" loading="lazy"></span>
-            {% else %}
-            <span class="bc-avatar" style="--av-bg:{{ member.avatar_color }};">{{ member.initials }}</span>
-            {% endif %}
-            <h4>{{ member.display_name }}</h4>
-            <span class="bc-person-role">{{ member.role_title }}</span>
-            {% if member.tag %}<span class="bc-person-tag">{{ member.tag }}</span>{% endif %}
-            {% if member.institution %}<span class="bc-person-inst"><i class="bi bi-building"></i>{{ member.institution }}</span>{% endif %}
-          </div>
-          {% endfor %}
-          {% if not members and not reviewers %}
-          <p class="bc-people-empty">Member profiles will appear here once the Secretariat adds them.</p>
-          {% endif %}
         </div>
       </section>
 
