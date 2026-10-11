@@ -60,7 +60,7 @@
                   <div class="field field-wide" style="margin:0;">
                     <label for="logoUpload">{% if logo_url %}Replace logo{% else %}Upload a custom logo (optional){% endif %}</label>
                     <input type="file" id="logoUpload" name="logo" accept="image/*">
-                    <p class="field-hint">Saved to Supabase Storage's "profile" bucket. Without one, the bundled MSREC logo is shown.</p>
+                    <p class="field-hint">Without one, the bundled MSREC logo is shown.</p>
                   </div>
                 </div>
 
@@ -96,7 +96,7 @@
                   <div class="field field-wide" style="margin:0;">
                     <label for="heroImageUpload">{% if hero_image_url %}Replace hero image{% else %}Upload a custom hero image{% endif %}</label>
                     <input type="file" id="heroImageUpload" name="hero_image" accept="image/*">
-                    <p class="field-hint">Saved to Supabase Storage's "hero" bucket. Without one, the bundled default image is shown.</p>
+                    <p class="field-hint">Without one, the bundled default image is shown.</p>
                     <p class="field-error" id="heroImageLockedMsg" role="alert" hidden>You have exhausted all the changes.</p>
                   </div>
                 </div>
@@ -292,7 +292,7 @@
           <div class="panel settings-full-panel">
             <div class="form-section">
               <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg> Policy Library</h3>
-              <p class="section-note">MSREC SOPs, Reviewer Guidance and Ethics Guidelines shown on the Reviewer dashboard's Policies &amp; Guidance pages. Files are saved to Supabase Storage's "ethics" bucket.</p>
+              <p class="section-note">MSREC SOPs, Reviewer Guidance and Ethics Guidelines shown on the Reviewer dashboard's Policies &amp; Guidance pages.</p>
 
               <form method="post" enctype="multipart/form-data" class="settings-form">
                 {% csrf_token %}
