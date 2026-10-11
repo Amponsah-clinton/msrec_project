@@ -81,7 +81,7 @@
               <h3 class="form-section-title"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg> Homepage Hero Image</h3>
               <p class="section-note">The large image shown beside the headline in the homepage hero section.</p>
 
-              <form method="post" enctype="multipart/form-data" class="settings-form">
+              <form method="post" enctype="multipart/form-data" class="settings-form" id="heroImageForm" data-hero-locked>
                 {% csrf_token %}
                 <input type="hidden" name="action" value="update_hero">
 
@@ -95,8 +95,9 @@
                   </div>
                   <div class="field field-wide" style="margin:0;">
                     <label for="heroImageUpload">{% if hero_image_url %}Replace hero image{% else %}Upload a custom hero image{% endif %}</label>
-                    <input type="file" id="heroImageUpload" name="hero_image" accept="image/*" required>
+                    <input type="file" id="heroImageUpload" name="hero_image" accept="image/*">
                     <p class="field-hint">Saved to Supabase Storage's "hero" bucket. Without one, the bundled default image is shown.</p>
+                    <p class="field-error" id="heroImageLockedMsg" role="alert" hidden>You have exhausted all the changes.</p>
                   </div>
                 </div>
 
@@ -1222,6 +1223,21 @@
   var initial = (window.location.hash || '').slice(1);
   if (initial && document.getElementById(initial)) {
     activate(initial);
+  }
+
+  // Homepage hero image is locked: the input stays usable-looking, but any
+  // attempt to submit the form is blocked and the notice is shown. The server
+  // rejects the POST too (see _handle_settings_hero), so this is just the UX.
+  var heroForm = document.getElementById('heroImageForm');
+  if (heroForm && heroForm.hasAttribute('data-hero-locked')) {
+    heroForm.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var msg = document.getElementById('heroImageLockedMsg');
+      if (msg) {
+        msg.hidden = false;
+        msg.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
   }
 })();
 </script>

@@ -2299,26 +2299,11 @@ def _handle_settings_identity(request, site):
 
 
 def _handle_settings_hero(request, site):
-    hero_image = request.FILES.get("hero_image")
-    if not hero_image:
-        messages.error(request, "Choose an image to upload.")
-        return
-    if not (hero_image.content_type or "").startswith("image/"):
-        messages.error(request, "Hero image must be an image file.")
-        return
-
-    old_path = site.hero_image_path
-    object_path = hero_storage.upload_hero_image(hero_image)
-    if not object_path:
-        messages.error(request, "The hero image couldn't be uploaded right now -- please try again.")
-        return
-
-    site.hero_image_path = object_path
-    site.updated_by = request.user
-    site.save()
-    if old_path and old_path != object_path:
-        hero_storage.delete_object(old_path)
-    messages.success(request, "Homepage hero image updated.")
+    # The homepage hero image is locked -- no further changes are accepted,
+    # whatever is submitted. This guard is authoritative (the UI also disables
+    # the form), so a hand-crafted POST can't slip a new image through either.
+    messages.error(request, "You have exhausted all the changes.")
+    return
 
 
 def _handle_settings_auth_image(request, site):
