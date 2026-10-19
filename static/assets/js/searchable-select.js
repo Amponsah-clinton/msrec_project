@@ -21,7 +21,12 @@
   "use strict";
 
   var OTHER_VALUE = "__other__";
-  var MAX_VISIBLE = 120;
+  // Under this width the panel stops hanging off the field and becomes a
+  // sheet at the bottom of the screen, where there is room for the search
+  // box and the list above the on-screen keyboard.
+  var SHEET_WIDTH = 640;
+  var GAP = 6;
+  var EDGE = 8;
 
   // Copied off the native select so the button matches whatever the page
   // styles its own form controls like -- public site or dashboard, light
@@ -38,7 +43,7 @@
   ];
 
   var seq = 0;
-  var open = null; // only one panel is ever open
+  var openPanel = null; // only one panel is ever open
 
   /* Folds case, accents and runs of whitespace, so "universite" matches
      "Université" and "  ghana " matches "Ghana". */
@@ -72,19 +77,6 @@
       if (!isTransparent(color)) return color;
     }
     return "#fff";
-  }
-
-  /* The nearest ancestor that would clip the panel -- the dashboards open
-     these fields inside a modal that scrolls (.acct-modal), so "the room
-     below" is not simply the room left in the window. */
-  function clipBox(element) {
-    for (var node = element.parentElement; node && node !== document.body; node = node.parentElement) {
-      var overflow = window.getComputedStyle(node).overflowY;
-      if (overflow === "auto" || overflow === "scroll" || overflow === "hidden") {
-        return node.getBoundingClientRect();
-      }
-    }
-    return null;
   }
 
   function labelFor(select) {
@@ -148,9 +140,12 @@
     var panel = document.createElement("div");
     panel.className = "ss-panel";
     panel.hidden = true;
-    panel.style.backgroundColor = solidBackground(select.parentElement || select);
-    panel.style.color = styles.color;
-    panel.style.borderColor = styles.borderTopColor;
+    this.panelBackground = solidBackground(select.parentElement || select);
+    this.panelColor = styles.color;
+    this.panelBorder = styles.borderTopColor;
+    panel.style.backgroundColor = this.panelBackground;
+    panel.style.color = this.panelColor;
+    panel.style.borderColor = this.panelBorder;
 
     var searchRow = document.createElement("div");
     searchRow.className = "ss-search-row";
@@ -174,8 +169,17 @@
     clear.hidden = true;
     clear.setAttribute("aria-label", "Clear search");
     clear.textContent = "×";
-    searchRow.appendChild(search);
-    searchRow.appendChild(clear);
+    var done = document.createElement("button");
+    done.type = "button";
+    done.className = "ss-done";
+    done.textContent = "Done";
+
+    var searchBox = document.createElement("span");
+    searchBox.className = "ss-search-box";
+    searchBox.appendChild(search);
+    searchBox.appendChild(clear);
+    searchRow.appendChild(searchBox);
+    searchRow.appendChild(done);
 
     var list = document.createElement("ul");
     list.className = "ss-list";
@@ -198,6 +202,7 @@
     this.panel = panel;
     this.search = search;
     this.clear = clear;
+    this.done = done;
     this.list = list;
     this.empty = empty;
   };
@@ -242,21 +247,11 @@
   SearchableSelect.prototype.filter = function () {
     var query = normalize(this.search.value);
     var tokens = query ? query.split(" ") : [];
-    var shown = 0;
-    var hiddenByCap = 0;
     var found = 0;
 
     this.items.forEach(function (item) {
       var hit = item.pinned || !tokens.length || matches(item.norm, tokens);
       if (hit && !item.pinned) found += 1;
-      // A very long list is capped per keystroke: the rest stay one more
-      // typed letter away, and nothing has to render 300 rows to show it.
-      if (hit && !item.pinned && shown >= MAX_VISIBLE) {
-        hiddenByCap += 1;
-        hit = false;
-      } else if (hit && !item.pinned) {
-        shown += 1;
-      }
       item.visible = hit;
       item.el.hidden = !hit;
       item.el.classList.remove("ss-active");
@@ -269,9 +264,6 @@
       this.empty.textContent = this.items.some(function (i) { return i.pinned; })
         ? 'No match for "' + this.search.value.trim() + '". Choose "Other (not listed)" to enter it.'
         : 'No match for "' + this.search.value.trim() + '".';
-    } else if (hiddenByCap) {
-      this.empty.hidden = false;
-      this.empty.textContent = hiddenByCap + " more match — keep typing to narrow it down.";
     } else {
       this.empty.hidden = true;
     }
@@ -319,7 +311,9 @@
     // the "Other" box opening, its required flag, the dashboards' rows.
     this.select.dispatchEvent(new Event("change", { bubbles: true }));
 
-    var toOther = value === OTHER_VALUE && other && other.offsetParent !== null;
+    // On screen unless it, or something it sits in, carries the hidden
+    // attribute -- which is how every one of these boxes is toggled.
+    var toOther = value === OTHER_VALUE && other && !other.hidden && !other.closest("[hidden]");
     // Searched for something that isn't on the list and reached for
     // "Other"? Carry what was typed across rather than ask for it twice.
     if (value === OTHER_VALUE && other && typed && !other.value) other.value = typed;
@@ -343,57 +337,123 @@
     return !this.panel.hidden;
   };
 
+  /* The page behind a phone sheet must not scroll under it. */
+  function lockScroll(on) {
+    if (on) {
+      lockScroll.previous = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = lockScroll.previous || "";
+    }
+  }
+
+  function buildBackdrop(instance) {
+    var backdrop = document.createElement("div");
+    backdrop.className = "ss-backdrop";
+    backdrop.hidden = true;
+    backdrop.addEventListener("click", function () { instance.close(true); });
+    return backdrop;
+  }
+
+  SearchableSelect.prototype.isSheet = function () {
+    return window.innerWidth <= SHEET_WIDTH;
+  };
+
   SearchableSelect.prototype.open = function (seed) {
     if (this.isOpen() || this.select.disabled) return;
-    if (open && open !== this) open.close(false);
-    open = this;
+    if (openPanel && openPanel !== this) openPanel.close(false);
+    openPanel = this;
 
     this.render();
     this.search.value = seed || "";
     this.panel.hidden = false;
-    this.wrap.classList.add("ss-is-open");
-    this.trigger.setAttribute("aria-expanded", "true");
+
+    // Out of the field and into a layer of its own, on the body. These
+    // dropdowns sit inside sections, cards and modals that clip or scroll
+    // their overflow -- the sign-up form's role sections are `overflow:
+    // clip` -- and a list sliced off at the edge of its section is the one
+    // thing this must never do.
+    this.sheet = this.isSheet();
+    this.panel.classList.toggle("ss-sheet", this.sheet);
+    if (this.sheet) {
+      this.backdrop = this.backdrop || buildBackdrop(this);
+      document.body.appendChild(this.backdrop);
+      this.backdrop.hidden = false;
+      lockScroll(true);
+    }
+    document.body.appendChild(this.panel);
+
     this.placePanel();
     this.filter();
-    // On a phone this brings the field (and the panel under it) above the
-    // keyboard that is about to open.
-    if (this.wrap.scrollIntoView) this.wrap.scrollIntoView({ block: "nearest" });
+    if (!this.sheet && this.wrap.scrollIntoView) this.wrap.scrollIntoView({ block: "nearest" });
+    this.trigger.setAttribute("aria-expanded", "true");
+    this.wrap.classList.add("ss-is-open");
     this.search.focus();
   };
 
-  /* Opens upward when the panel would otherwise run off the bottom of the
-     screen (or of the modal it is in) -- the Institution field sits low on
-     more than one of these forms -- and gives it only the height it can
-     actually have there. */
+  /* Anchors the panel to the field it belongs to. On a phone it is pinned
+     to the bottom of the screen instead, where the search box stays put and
+     the list has room above the keyboard. */
   SearchableSelect.prototype.placePanel = function () {
-    this.wrap.classList.remove("ss-drop-up");
-    this.panel.style.maxHeight = "";
+    var style = this.panel.style;
+
+    if (this.sheet) {
+      // visualViewport knows how much of the screen the on-screen keyboard
+      // has taken; without it, the bottom of the window is the best guess.
+      var view = window.visualViewport;
+      var covered = view ? Math.max(0, window.innerHeight - view.height - view.offsetTop) : 0;
+      var usable = view ? view.height : window.innerHeight;
+      style.left = "0px";
+      style.right = "0px";
+      style.width = "auto";
+      style.top = "auto";
+      style.bottom = Math.round(covered) + "px";
+      style.maxHeight = Math.round(usable * 0.8) + "px";
+      return;
+    }
 
     var box = this.trigger.getBoundingClientRect();
-    var clip = clipBox(this.wrap);
-    var ceiling = clip ? Math.max(0, clip.top) : 0;
-    var floor = clip ? Math.min(window.innerHeight, clip.bottom) : window.innerHeight;
-    var below = floor - box.bottom;
-    var above = box.top - ceiling;
+    var below = window.innerHeight - box.bottom - GAP - EDGE;
+    var above = box.top - GAP - EDGE;
+    // 220px is about six rows: less than that below the field and it is
+    // worth opening upward instead, if there is more room up there.
+    var up = below < Math.min(220, above);
 
-    var needed = this.panel.offsetHeight || 300;
-    var up = below < needed && above > below;
-    if (up) this.wrap.classList.add("ss-drop-up");
-
-    // Only ever shrink the panel: the stylesheet stays in charge of how
-    // tall it gets when there is room for it.
-    var room = (up ? above : below) - 14;
-    if (room > 150 && room < needed) this.panel.style.maxHeight = room + "px";
+    style.left = Math.round(box.left) + "px";
+    style.right = "auto";
+    style.width = Math.round(box.width) + "px";
+    style.maxHeight = Math.max(160, Math.min(up ? above : below, 340)) + "px";
+    if (up) {
+      style.top = "auto";
+      style.bottom = Math.round(window.innerHeight - box.top + GAP) + "px";
+    } else {
+      style.bottom = "auto";
+      style.top = Math.round(box.bottom + GAP) + "px";
+    }
+    this.wrap.classList.toggle("ss-drop-up", up);
   };
 
   SearchableSelect.prototype.close = function (refocus) {
     if (!this.isOpen()) return;
     this.panel.hidden = true;
+    // Back where it belongs, so the field carries its own panel around.
+    this.wrap.appendChild(this.panel);
+    this.panel.classList.remove("ss-sheet");
+    this.panel.removeAttribute("style");
+    this.panel.style.backgroundColor = this.panelBackground;
+    this.panel.style.color = this.panelColor;
+    this.panel.style.borderColor = this.panelBorder;
+    if (this.backdrop) {
+      this.backdrop.hidden = true;
+      if (this.backdrop.parentNode) this.backdrop.parentNode.removeChild(this.backdrop);
+    }
+    if (this.sheet) lockScroll(false);
+    this.sheet = false;
     this.wrap.classList.remove("ss-is-open", "ss-drop-up");
     this.trigger.setAttribute("aria-expanded", "false");
     this.search.value = "";
     this.search.removeAttribute("aria-activedescendant");
-    if (open === this) open = null;
+    if (openPanel === this) openPanel = null;
     if (refocus) this.trigger.focus();
   };
 
@@ -443,6 +503,8 @@
       }
     });
 
+    this.done.addEventListener("click", function () { self.close(true); });
+
     this.clear.addEventListener("click", function () {
       self.search.value = "";
       self.filter();
@@ -483,20 +545,49 @@
   }
 
   document.addEventListener("click", function (event) {
-    if (!open) return;
-    var within = event.target && event.target.closest ? event.target.closest(".ss") : null;
-    if (within !== open.wrap) open.close(false);
+    if (!openPanel) return;
+    var target = event.target;
+    if (!target || !target.closest) return;
+    var inside = target.closest(".ss") === openPanel.wrap || openPanel.panel.contains(target);
+    if (!inside) openPanel.close(false);
   });
   document.addEventListener("keydown", function (event) {
-    if (open && event.key === "Escape" && !open.panel.contains(event.target)) {
+    if (openPanel && event.key === "Escape" && !openPanel.panel.contains(event.target)) {
       event.stopPropagation();
-      open.close(true);
+      openPanel.close(true);
     }
   });
-  window.addEventListener("resize", function () { if (open) open.placePanel(); });
+  // The on-screen keyboard opening or closing moves the sheet, and neither
+  // fires a window resize on every platform.
+  if (window.visualViewport) {
+    ["resize", "scroll"].forEach(function (type) {
+      window.visualViewport.addEventListener(type, function () {
+        if (openPanel && openPanel.sheet) openPanel.placePanel();
+      });
+    });
+  }
+
+  window.addEventListener("resize", function () {
+    // A phone rotated into landscape may no longer want a sheet, or may
+    // now want one: reopen the panel in the shape that fits.
+    if (!openPanel) return;
+    if (openPanel.sheet !== openPanel.isSheet()) {
+      var instance = openPanel;
+      var typed = instance.search.value;
+      instance.close(false);
+      instance.open(typed);
+    } else {
+      openPanel.placePanel();
+    }
+  });
   // A panel left hanging where its field no longer is would be worse than
-  // one that simply closed.
-  window.addEventListener("scroll", function () { if (open) open.placePanel(); }, true);
+  // one that simply closed; a sheet is pinned to the screen and stays put.
+  window.addEventListener("scroll", function () {
+    if (!openPanel || openPanel.sheet) return;
+    var box = openPanel.trigger.getBoundingClientRect();
+    if (box.bottom < 0 || box.top > window.innerHeight) openPanel.close(false);
+    else openPanel.placePanel();
+  }, true);
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () { enhanceAll(); });

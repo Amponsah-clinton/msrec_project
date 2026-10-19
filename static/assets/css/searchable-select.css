@@ -79,12 +79,14 @@
 }
 
 /* ---------------------------------------------------------------- panel */
+/* While it is open the panel lives on the <body>, not in the field: these
+   dropdowns sit inside sections, cards and modals that clip or scroll their
+   overflow, and a list sliced off at the edge of its section is the one
+   thing it must never do. The script sets top/left/width/max-height, and
+   the colours are copied off the native select. */
 .ss-panel {
-  position: absolute;
-  z-index: 70;
-  top: calc(100% + 6px);
-  left: 0;
-  right: 0;
+  position: fixed;
+  z-index: 1000001;
   display: flex;
   flex-direction: column;
   max-height: min(58vh, 340px);
@@ -93,24 +95,61 @@
   box-shadow: 0 18px 40px rgba(14, 25, 22, .18);
   overflow: hidden;
 }
-/* Not enough room below the field -- the Institution box sits low on more
-   than one of these forms. */
-.ss-drop-up .ss-panel {
-  top: auto;
-  bottom: calc(100% + 6px);
+.ss-panel[hidden] { display: none; }
+
+/* Phones: a sheet at the bottom of the screen, with the search box pinned
+   at its top where the keyboard can't bury it. */
+.ss-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000000;
+  background: rgba(10, 20, 18, .45);
+  -webkit-tap-highlight-color: transparent;
 }
+.ss-panel.ss-sheet {
+  border-radius: 16px 16px 0 0;
+  border-bottom: 0;
+  box-shadow: 0 -10px 40px rgba(14, 25, 22, .3);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.ss-panel.ss-sheet .ss-option { min-height: 46px; font-size: 15px; }
+.ss-panel.ss-sheet .ss-list { padding: 6px 10px 10px; }
+.ss-panel.ss-sheet .ss-done { display: block; }
 
 .ss-search-row {
   position: relative;
+  /* Never let a long list squeeze the search box: it is the first thing
+     the panel is for. */
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
+  gap: 8px;
   padding: 10px;
   border-bottom: 1px solid;
   border-color: inherit;
 }
-.ss-search {
+/* "Done" closes the sheet on a phone; on a pointer there is nothing to
+   close it for -- clicking away does that. */
+.ss-done {
+  display: none;
+  flex: 0 0 auto;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 650;
+  color: inherit;
+  background: rgba(127, 127, 127, .16);
+  cursor: pointer;
+}
+.ss-search-box {
+  position: relative;
   flex: 1 1 auto;
   min-width: 0;
+  display: block;
+}
+.ss-search {
   box-sizing: border-box;
   width: 100%;
   padding: 9px 32px 9px 12px;
@@ -133,7 +172,7 @@
 .ss-clear {
   position: absolute;
   top: 50%;
-  right: 18px;
+  right: 6px;
   transform: translateY(-50%);
   width: 24px;
   height: 24px;
@@ -152,6 +191,9 @@
 
 .ss-list {
   flex: 1 1 auto;
+  /* Without this the list refuses to shrink and pushes the search box out
+     of the panel. */
+  min-height: 0;
   margin: 0;
   padding: 6px;
   list-style: none;
@@ -186,6 +228,7 @@
 }
 
 .ss-empty {
+  flex: 0 0 auto;
   margin: 0;
   padding: 10px 14px 14px;
   font-size: 12.5px;
@@ -195,12 +238,6 @@
 
 /* ------------------------------------------------------------ phones */
 @media (max-width: 640px) {
-  .ss-panel {
-    /* Taller share of a short screen, and the search box stays above the
-       on-screen keyboard because the field is scrolled into view first. */
-    max-height: min(62vh, 400px);
-    border-radius: 14px;
-  }
   .ss-option {
     display: flex;
     align-items: center;
@@ -208,7 +245,7 @@
     padding: 10px 12px;
     font-size: 15px;
   }
-  .ss-search { padding-block: 11px; }
+  .ss-search { padding-block: 12px; }
 }
 
 /* A long list is unusable at these heights; give the panel the room it can
