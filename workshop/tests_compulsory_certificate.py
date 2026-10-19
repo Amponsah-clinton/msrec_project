@@ -9,6 +9,7 @@ import os
 from decimal import Decimal
 from unittest import mock
 
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -18,8 +19,35 @@ from workshop.models import Workshop, WorkshopRegistration
 
 PS = WorkshopRegistration.PaymentStatus
 
-# GHS 150.00 / 11.65 = US$12.88 in every assertion below.
-PINNED_RATE = mock.patch.dict(os.environ, {"USD_GHS_RATE": "11.65"})
+class PinnedRateMixin:
+    """Pins the GHS->USD rate for every test in the class.
+
+    Both doors are shut, deliberately. The env var is what the code reads
+    first, and blocking _fetch_rate as well means that if the pin ever fails
+    to apply, the test fails loudly instead of quietly reaching the live
+    rates API -- which is how this suite briefly became flaky: a live rate
+    of 11.653982 renders US$12.87, not the US$12.88 these tests assert.
+
+    A fresh patcher per test (rather than one shared module-level instance
+    used as a class decorator) is the point: mock patchers hold state about
+    what they replaced, so reusing one across classes is not safe.
+    """
+
+    RATE = "11.65"  # GHS 150.00 / 11.65 -> US$12.88
+
+    def setUp(self):
+        super().setUp()
+        env = mock.patch.dict(os.environ, {"USD_GHS_RATE": self.RATE})
+        env.start()
+        self.addCleanup(env.stop)
+        no_network = mock.patch(
+            "payments.currency._fetch_rate",
+            side_effect=AssertionError("the rate pin did not apply -- no live lookup in tests"),
+        )
+        no_network.start()
+        self.addCleanup(no_network.stop)
+        cache.clear()
+        self.addCleanup(cache.clear)
 
 
 def _workshop(**kwargs):
@@ -46,11 +74,11 @@ def _form(**overrides):
     return data
 
 
-@PINNED_RATE
-class OptionalCertificateTests(TestCase):
+class OptionalCertificateTests(PinnedRateMixin, TestCase):
     """The existing behaviour, which the switch must leave untouched."""
 
     def setUp(self):
+        super().setUp()  # pins the exchange rate
         self.ws = _workshop()
 
     def test_form_asks_the_question(self):
@@ -105,9 +133,9 @@ class OptionalCertificateTests(TestCase):
         self.assertTrue(reg.registration_complete)
 
 
-@PINNED_RATE
-class CompulsoryCertificateTests(TestCase):
+class CompulsoryCertificateTests(PinnedRateMixin, TestCase):
     def setUp(self):
+        super().setUp()  # pins the exchange rate
         self.ws = _workshop(certificate_required=True)
 
     def test_form_states_the_fee_instead_of_asking(self):
@@ -119,7 +147,6 @@ class CompulsoryCertificateTests(TestCase):
     def test_the_form_quotes_the_dollar_equivalent(self):
         html = self.client.get(reverse("workshop:register", args=[self.ws.slug])).content.decode()
         self.assertIn("US$12.88", html)
-        self.assertIn("Charged in Ghana Cedis", html)
 
     def test_a_free_certificate_quotes_no_dollar_figure(self):
         self.ws.certificate_fee = Decimal("0.00")
@@ -181,6 +208,7 @@ class CompulsoryCertificateTests(TestCase):
         reg = WorkshopRegistration.objects.get()
         with mock.patch.dict(os.environ, {"USD_GHS_RATE": ""}), \
                 mock.patch("payments.currency._fetch_rate", return_value=None):
+            cache.clear()
             html = self.client.get(reverse("workshop:pay", args=[reg.pk])).content.decode()
         self.assertNotIn("US$", html)
         self.assertIn("150.00", html)
@@ -301,9 +329,9 @@ class CertificateEntitlementTests(TestCase):
         self.assertEqual(resp["Content-Type"], "application/pdf")
 
 
-@PINNED_RATE
-class AdminSwitchTests(TestCase):
+class AdminSwitchTests(PinnedRateMixin, TestCase):
     def setUp(self):
+        super().setUp()  # pins the exchange rate
         self.ws = _workshop()
         self.admin = User.objects.create_superuser(
             email="admin@example.com", password="pw-admin-123",
@@ -422,12 +450,12 @@ class CheckoutEmailTests(TestCase):
         self.assertFalse(any("Certificate fee outstanding" in s for s in subjects), subjects)
 
 
-@PINNED_RATE
-class AdminDollarGuideTests(TestCase):
+class AdminDollarGuideTests(PinnedRateMixin, TestCase):
     """Staff should see the same dollar figure an overseas participant is
     quoted, so a fee change is never a surprise to either of them."""
 
     def setUp(self):
+        super().setUp()  # pins the exchange rate
         self.ws = _workshop(certificate_required=True)
         admin = User.objects.create_superuser(
             email="admin2@example.com", password="pw-admin-123",

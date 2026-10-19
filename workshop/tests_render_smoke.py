@@ -5,6 +5,7 @@ import os
 from decimal import Decimal
 from unittest import mock
 
+from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -14,13 +15,40 @@ from workshop.models import Workshop, WorkshopRegistration
 
 PS = WorkshopRegistration.PaymentStatus
 
-# Pinned so no page render in this suite reaches for the live rates API.
-PINNED_RATE = mock.patch.dict(os.environ, {"USD_GHS_RATE": "11.65"})
+class PinnedRateMixin:
+    """Pins the GHS->USD rate for every test in the class.
 
+    Both doors are shut, deliberately. The env var is what the code reads
+    first, and blocking _fetch_rate as well means that if the pin ever fails
+    to apply, the test fails loudly instead of quietly reaching the live
+    rates API -- which is how this suite briefly became flaky: a live rate
+    of 11.653982 renders US$12.87, not the US$12.88 these tests assert.
 
-@PINNED_RATE
-class RenderSmokeTests(TestCase):
+    A fresh patcher per test (rather than one shared module-level instance
+    used as a class decorator) is the point: mock patchers hold state about
+    what they replaced, so reusing one across classes is not safe.
+    """
+
+    RATE = "11.65"  # GHS 150.00 / 11.65 -> US$12.88
+
     def setUp(self):
+        super().setUp()
+        env = mock.patch.dict(os.environ, {"USD_GHS_RATE": self.RATE})
+        env.start()
+        self.addCleanup(env.stop)
+        no_network = mock.patch(
+            "payments.currency._fetch_rate",
+            side_effect=AssertionError("the rate pin did not apply -- no live lookup in tests"),
+        )
+        no_network.start()
+        self.addCleanup(no_network.stop)
+        cache.clear()
+        self.addCleanup(cache.clear)
+
+
+class RenderSmokeTests(PinnedRateMixin, TestCase):
+    def setUp(self):
+        super().setUp()  # pins the exchange rate
         self.admin = User.objects.create_superuser(
             email="admin@example.com", password="pw-admin-123",
             first_name="Ada", last_name="Admin",
@@ -104,6 +132,7 @@ class RenderSmokeTests(TestCase):
         )
         with mock.patch.dict(os.environ, {"USD_GHS_RATE": ""}), \
                 mock.patch("payments.currency._fetch_rate", return_value=None):
+            cache.clear()
             for url in (
                 reverse("workshop:list"),
                 reverse("workshop:register", args=[ws.slug]),
