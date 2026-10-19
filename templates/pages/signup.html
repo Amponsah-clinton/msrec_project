@@ -219,8 +219,8 @@
                   <label for="institution">Institution / Organization <span class="req">*</span></label>
                   <select id="institution" name="institution" data-institution-select data-other-input="institutionOther" data-require-on-show>
                     <option value="">Select institution</option>
-                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                     <option value="__other__">Other (not listed)</option>
+                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                   </select>
                   <input type="text" class="institution-other" id="institutionOther" name="institutionOther" maxlength="200" placeholder="Enter your institution / organization" hidden>
                 </div>
@@ -270,8 +270,8 @@
                   <label for="reviewerInstitution">Institution / Organization <span class="req" id="reviewerInstitutionReqTag">*</span></label>
                   <select id="reviewerInstitution" name="reviewerInstitution" data-institution-select data-other-input="reviewerInstitutionOther">
                     <option value="">Select institution</option>
-                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                     <option value="__other__">Other (not listed)</option>
+                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                   </select>
                   <input type="text" class="institution-other" id="reviewerInstitutionOther" name="reviewerInstitutionOther" maxlength="200" placeholder="Enter your institution / organization" hidden>
                 </div>
@@ -348,8 +348,8 @@
                   <label for="committeeInstitution">Institution / Organization <span class="req" id="committeeInstitutionReqTag">*</span></label>
                   <select id="committeeInstitution" name="committeeInstitution" data-institution-select data-other-input="committeeInstitutionOther">
                     <option value="">Select institution</option>
-                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                     <option value="__other__">Other (not listed)</option>
+                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                   </select>
                   <input type="text" class="institution-other" id="committeeInstitutionOther" name="committeeInstitutionOther" maxlength="200" placeholder="Enter your institution / organization" hidden>
                 </div>
@@ -415,6 +415,7 @@
 
 {% block extra_js %}
 <script src="{% static 'assets/js/country-list.js' %}"></script>
+<script src="{% static 'assets/js/institutions.js' %}"></script>
 <script src="{% static 'assets/js/signup.js' %}"></script>
 <script src="{% static 'assets/js/auth-alerts.js' %}"></script>
 {% endblock %}

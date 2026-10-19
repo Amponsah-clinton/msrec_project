@@ -248,6 +248,18 @@ document.addEventListener("DOMContentLoaded", () => {
   institutionSelects.forEach((select) => {
     select.addEventListener("change", () => syncInstitutionOther(select));
     syncInstitutionOther(select);
+    // Once the institution has been typed, it is Title-Cased and added to
+    // every Institution dropdown on the form, then selected -- so it is
+    // picked from the list like any other, here and (because the server
+    // adds it to the admin-managed list) for whoever signs up next.
+    // See assets/js/institutions.js.
+    if (window.MSRECInstitutions) {
+      window.MSRECInstitutions.wire(
+        select,
+        document.getElementById(select.dataset.otherInput),
+        institutionSelects
+      );
+    }
   });
 
   /* ============================================================

@@ -421,9 +421,11 @@ class Institution(models.Model):
     the public sign-up form (templates/pages/signup.html) -- across the
     Applicant, Reviewer and Committee Member sections. The list is managed
     by an administrator from admin_dashboard's Settings page (Institutions
-    tab). Only active rows are shown in the dropdown; sign-up always also
-    offers an "Other" option with a free-text box for anything not listed,
-    so an empty list never blocks registration.
+    tab). Only active rows are shown in the dropdown; every dropdown also
+    offers "Other (not listed)" first, ahead of the list, with a free-text
+    box for anything not listed -- so an empty list never blocks
+    registration. What is typed into that box is Title-Cased and added here
+    (pages.institutions), so the next person picks it from the list.
     """
 
     name = models.CharField(max_length=200, unique=True)

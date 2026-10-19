@@ -14,6 +14,20 @@ function bcWireOther(form, selectSel, rowSel) {
 function bcWireTagOther(form) {
   bcWireOther(form, "[data-bc-tag-select]", "[data-bc-tag-other-row]");
   bcWireOther(form, "[data-bc-inst-select]", "[data-bc-inst-other-row]");
+  bcWireInstitutionOther(form);
+}
+
+// An institution typed into the "Please specify" box is Title-Cased and
+// added to the Institution dropdown of both modals, then selected there --
+// see assets/js/institutions.js. The server (pages.institutions) adds it to
+// the admin-managed list too, so the next form offers it outright.
+function bcWireInstitutionOther(form) {
+  if (!window.MSRECInstitutions) return;
+  window.MSRECInstitutions.wire(
+    form.querySelector("[data-bc-inst-select]"),
+    form.querySelector("[data-bc-inst-other]"),
+    document.querySelectorAll("[data-bc-inst-select]")
+  );
 }
 
 // Selects `value` in a dropdown that has an "Other..." escape hatch: an

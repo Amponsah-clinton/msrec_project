@@ -12,13 +12,12 @@ from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from pages.models import Institution, SiteSettings
+from pages import institutions
+from pages.models import SiteSettings
 
 from .models import Workshop, WorkshopRegistration
 
 logger = logging.getLogger(__name__)
-
-INSTITUTION_OTHER = "__other__"
 
 # Who gets notified whenever someone registers for a workshop.
 WORKSHOP_NOTIFY_EMAIL = "ceo@academicdigital.space"
@@ -59,7 +58,7 @@ def _notify_admin_of_registration(reg, ws):
 
 
 def _active_institutions():
-    return list(Institution.objects.filter(is_active=True))
+    return institutions.active()
 
 
 def workshop_list(request):
@@ -97,16 +96,9 @@ def _send_received_sms(reg, ws):
 
 
 def _register_institution(name):
-    from django.db import transaction
-    name = (name or "").strip()
-    if not name:
-        return
-    try:
-        with transaction.atomic():
-            if not Institution.objects.filter(name__iexact=name).exists():
-                Institution.objects.create(name=name[:200], is_active=True)
-    except Exception:
-        logger.exception("Could not auto-add workshop institution %r", name)
+    """Fold whatever the registrant typed into the Institution dropdown's
+    "Other" box into the admin-managed list (pages.institutions)."""
+    institutions.register([name])
 
 
 def register(request, slug):
@@ -118,9 +110,9 @@ def register(request, slug):
             return redirect("workshop:register", slug=ws.slug)
 
         name = request.POST.get("name", "").strip()
-        institution = request.POST.get("institution", "").strip()
-        if institution == INSTITUTION_OTHER:
-            institution = request.POST.get("institution_other", "").strip()
+        institution = institutions.resolve_choice(
+            request.POST.get("institution", ""), request.POST.get("institution_other", "")
+        )
         email = request.POST.get("email", "").strip().lower()
         phone = request.POST.get("phone", "").strip()
         wants_certificate = request.POST.get("wants_certificate") == "yes"

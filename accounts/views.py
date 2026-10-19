@@ -15,6 +15,7 @@ from django.utils import timezone
 from notifications.emails import send_branded_email, send_password_changed_email
 from notifications.models import Notification
 from notifications.services import notify
+from pages import institutions
 
 from . import storage
 from .forms import LoginForm, SignupForm
@@ -353,8 +354,9 @@ def reset_password(request):
 # Committee) each post a select value plus a companion free-text field used
 # only when "Other" is picked. _resolve_institution_choices folds each pair
 # into the single canonical field name the form/profile collection already
-# reads, so an institution not in the admin-managed list still comes through.
-INSTITUTION_OTHER_VALUE = "__other__"
+# reads, so an institution not in the admin-managed list still comes through
+# -- in Title Case, and spelled the way the list spells it when it is
+# already there (see pages.institutions).
 INSTITUTION_FIELD_PAIRS = [
     ("institution", "institutionOther"),
     ("reviewerInstitution", "reviewerInstitutionOther"),
@@ -363,44 +365,25 @@ INSTITUTION_FIELD_PAIRS = [
 
 
 def _resolve_institution_choices(post):
-    """Returns a mutable copy of `post` where any Institution dropdown set to
-    "Other" is replaced by the typed-in companion value."""
+    """Returns a mutable copy of `post` where each Institution dropdown
+    holds one canonical institution name -- the typed-in companion value
+    when the dropdown is set to "Other", normalised either way."""
     data = post.copy()
     for select_name, other_name in INSTITUTION_FIELD_PAIRS:
-        if data.get(select_name, "").strip() == INSTITUTION_OTHER_VALUE:
-            data[select_name] = data.get(other_name, "").strip()
+        if select_name not in data and other_name not in data:
+            continue
+        data[select_name] = institutions.resolve_choice(
+            data.get(select_name, ""), data.get(other_name, "")
+        )
     return data
 
 
 def _active_institutions():
-    from pages.models import Institution
-
-    return list(Institution.objects.filter(is_active=True))
+    return institutions.active()
 
 
 def _register_institutions(names):
-    """Any institution a new member typed into an "Other" box is added to the
-    admin-managed list here, so it's offered in the dropdown to the next
-    person signing up. Matching is case-insensitive, so a differently-cased
-    duplicate is never created, and an institution picked straight from the
-    existing list is simply left as-is. Each insert is isolated and best
-    effort -- it must never block (or roll back) account creation."""
-    from django.db import transaction
-
-    from pages.models import Institution
-
-    for raw in names:
-        name = (raw or "").strip()
-        if not name:
-            continue
-        try:
-            with transaction.atomic():
-                if not Institution.objects.filter(name__iexact=name).exists():
-                    Institution.objects.create(name=name[:200], is_active=True)
-        except Exception:
-            # A race on the unique name, or any storage hiccup -- the member's
-            # own record already holds the institution, so this is non-fatal.
-            logger.exception("Could not auto-add institution %r to the list", name)
+    institutions.register(names)
 
 
 def signup(request):

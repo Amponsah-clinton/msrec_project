@@ -169,8 +169,8 @@
                 <label class="span-2 cmt-full">Institution / organization (optional)
                   <select name="institution" data-cmt-inst-select>
                     <option value="">None</option>
-                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                     <option value="__other__">Other (not listed)...</option>
+                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                   </select>
                 </label>
               </div>
@@ -241,8 +241,8 @@
                 <label class="span-2 cmt-full">Institution / organization (optional)
                   <select name="institution" id="cmMemberEditInstitution" data-cmt-inst-select>
                     <option value="">None</option>
-                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                     <option value="__other__">Other (not listed)...</option>
+                    {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                   </select>
                 </label>
               </div>
@@ -283,6 +283,7 @@
 {% endblock %}
 
 {% block extra_js %}
+<script src="{% static 'assets/js/institutions.js' %}"></script>
 <script src="{% static 'dashboard/js/committee.js' %}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
@@ -297,9 +298,21 @@ document.addEventListener("DOMContentLoaded", () => {
     select.addEventListener("change", sync);
     sync();
   }
+  const instSelects = document.querySelectorAll("[data-cmt-inst-select]");
   document.querySelectorAll("#cmMemberAddOverlay form, #cmMemberEditOverlay form").forEach((form) => {
     wireOther(form, "[data-cmt-tag-select]", "[data-cmt-tag-other-row]");
     wireOther(form, "[data-cmt-inst-select]", "[data-cmt-inst-other-row]");
+    // An institution typed into the "Please specify" box is Title-Cased and
+    // added to the Institution dropdown of both modals, then selected --
+    // see assets/js/institutions.js. The server (pages.institutions) adds
+    // it to the admin-managed list, so the next form offers it outright.
+    if (window.MSRECInstitutions) {
+      window.MSRECInstitutions.wire(
+        form.querySelector("[data-cmt-inst-select]"),
+        form.querySelector("[data-cmt-inst-other]"),
+        instSelects
+      );
+    }
   });
 
   // Picks `value` in a dropdown with an "Other..." escape hatch, dropping an

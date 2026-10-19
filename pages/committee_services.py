@@ -14,7 +14,7 @@ into here for the actual create/update work.
 from django.contrib import messages
 from django.shortcuts import get_object_or_404
 
-from pages import documents_storage
+from pages import documents_storage, institutions
 from pages import storage as pages_storage
 from pages.models import CommitteeAppointment, ConflictDeclaration, GovernanceMember, TrainingRecord
 
@@ -42,11 +42,14 @@ def _resolve_institution(request):
     """Same "__other__" + companion free-text pattern as the sign-up form's
     Institution dropdowns (accounts.views._resolve_institution_choices): an
     institution not in the admin-managed list is typed into institution_other.
-    Returns the single value GovernanceMember.institution stores (max 200)."""
-    institution = request.POST.get("institution", "").strip()
-    if institution == "__other__":
-        institution = request.POST.get("institution_other", "").strip()
-    return institution[:200]
+    Returns the single value GovernanceMember.institution stores (max 200),
+    in Title Case, and also adds a new one to the admin-managed list so the
+    next form offers it in the dropdown."""
+    institution = institutions.resolve_choice(
+        request.POST.get("institution", ""), request.POST.get("institution_other", "")
+    )
+    institutions.register([institution])
+    return institution[:institutions.MAX_NAME_LENGTH]
 
 
 def handle_governance_add(request):
