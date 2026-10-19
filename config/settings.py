@@ -133,18 +133,62 @@ WSGI_APPLICATION = "config.wsgi.application"
 # string (it carries the DB password) here, since this file is committed.
 _database_url = os.getenv("DATABASE_URL", "").strip()
 if _database_url:
+    # Which Supabase pooler port the URL points at decides how connections
+    # have to be managed, and getting it wrong is what produces
+    # "(EMAXCONNSESSION) max clients reached in session mode":
+    #
+    #   :5432  session mode -- one real Postgres connection is pinned to
+    #          each client for the whole session. Hard-capped at the
+    #          project's pool_size (15 by default). Every Gunicorn worker
+    #          holding a persistent connection burns one of those 15, so a
+    #          multi-worker deploy exhausts it on its own, before a single
+    #          extra psql or `manage.py` command is run.
+    #
+    #   :6543  transaction mode (Supavisor) -- a backend connection is
+    #          borrowed only for the length of each transaction, so many
+    #          more clients share the same 15. This is the right port for a
+    #          multi-worker web app, and what this deployment should use.
+    #
+    # Transaction mode multiplexes, so consecutive statements from one
+    # Django connection can land on different backends. Two things must
+    # therefore be off: server-side cursors (a cursor opened on one backend
+    # isn't there on the next) and prepared statements (same reason) --
+    # hence DISABLE_SERVER_SIDE_CURSORS and prepare_threshold below.
+    # Persistent connections are pointless there too: the pooler is already
+    # the pool, and holding connections open is exactly what starves it.
     DATABASES = {
         "default": dj_database_url.config(
             default=_database_url,
-            conn_max_age=60,
             ssl_require=True,
         )
     }
-    # Supabase's pooler can close idle connections; health checks avoid
-    # "connection already closed" errors on the next request.
-    DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
-    DATABASES["default"].setdefault("OPTIONS", {})
-    DATABASES["default"]["OPTIONS"].setdefault("connect_timeout", 10)
+    _db = DATABASES["default"]
+    _db.setdefault("OPTIONS", {})
+    _db["OPTIONS"].setdefault("connect_timeout", 10)
+
+    _transaction_pooler = str(_db.get("PORT") or "") == "6543"
+
+    if _transaction_pooler:
+        # Let the pooler do the pooling. CONN_MAX_AGE can still be raised
+        # deliberately via the environment, but 0 is correct by default.
+        _db["CONN_MAX_AGE"] = int(os.getenv("DB_CONN_MAX_AGE", "0"))
+        _db["DISABLE_SERVER_SIDE_CURSORS"] = True
+        # psycopg3 only -- psycopg2's connect() has no such keyword and
+        # would raise TypeError on every connection. requirements.txt pins
+        # psycopg2-binary, so this genuinely has to be conditional.
+        try:
+            import psycopg  # noqa: F401  (psycopg 3; Django prefers it when present)
+        except ImportError:
+            pass
+        else:
+            _db["OPTIONS"]["prepare_threshold"] = None
+    else:
+        # Session mode: connections are scarce, so reuse them rather than
+        # reconnecting, and health-check them because Supabase's pooler
+        # closes idle ones (otherwise the next request hits "connection
+        # already closed").
+        _db["CONN_MAX_AGE"] = int(os.getenv("DB_CONN_MAX_AGE", "60"))
+        _db["CONN_HEALTH_CHECKS"] = True
 else:
     DATABASES = {
         "default": {

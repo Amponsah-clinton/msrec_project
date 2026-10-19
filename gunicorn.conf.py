@@ -21,7 +21,18 @@ graceful_timeout = 30
 # Slow document uploads can hold a connection open; keep-alive a touch higher.
 keepalive = 10
 
-workers = int(os.environ.get("WEB_CONCURRENCY", str(multiprocessing.cpu_count() * 2 + 1)))
+# Each worker is its own process with its own database connection, so the
+# worker count is also a database-connection count. Supabase's pooler caps
+# clients at the project's pool_size (15 by default), and the unbounded
+# cpu_count() * 2 + 1 default walks straight through it: 9 workers on a
+# 4-core host, 17 on an 8-core one -- which exhausts the cap on its own,
+# giving "(EMAXCONNSESSION) max clients reached in session mode" before any
+# other client connects. Capped here so a bigger host can't silently take
+# the database down with it; raise WEB_CONCURRENCY deliberately (and only
+# when DATABASE_URL points at the :6543 transaction pooler, which shares
+# backend connections -- see config/settings.py).
+_cpu_default = min(multiprocessing.cpu_count() * 2 + 1, 5)
+workers = int(os.environ.get("WEB_CONCURRENCY", str(_cpu_default)))
 
 # Recycle workers periodically so a leak can't accumulate across many uploads.
 max_requests = 1000
