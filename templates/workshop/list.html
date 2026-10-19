@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load currency_tags %}
 {% load static %}
 
 {% block title %}Workshops | MSREC{% endblock %}
@@ -63,7 +64,7 @@
           <div class="wsl-meta">
             {% if w.starts_at %}<span><i class="bi bi-clock"></i> {{ w.starts_at|date:"D, j M Y · g:i A" }}</span>{% endif %}
             {% if w.location %}<span><i class="bi bi-geo-alt"></i> {{ w.location }}</span>{% endif %}
-            {% if w.certificate_required and w.certificate_fee_payable %}<span><i class="bi bi-award"></i> Certificate included · {{ w.fee_currency }} {{ w.certificate_fee }}</span>{% endif %}
+            {% if w.certificate_required and w.certificate_fee_payable %}<span><i class="bi bi-award"></i> Certificate included · {{ w.fee_currency }} {{ w.certificate_fee }}{% with usd=w.certificate_fee|usd %}{% if usd %} (≈ {{ usd }}){% endif %}{% endwith %}</span>{% endif %}
           </div>
           {% if w.tagline %}<p class="wsl-desc">{{ w.tagline }}</p>{% elif w.description %}<p class="wsl-desc">{{ w.description }}</p>{% endif %}
           <div class="wsl-foot">

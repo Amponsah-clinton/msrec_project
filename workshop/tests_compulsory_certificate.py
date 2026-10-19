@@ -5,6 +5,7 @@ certificate and only those who say yes are charged. On, the question is gone:
 every registration is booked for a certificate, sent to checkout, and isn't
 complete until the fee is paid.
 """
+import os
 from decimal import Decimal
 from unittest import mock
 
@@ -16,6 +17,9 @@ from accounts.models import User
 from workshop.models import Workshop, WorkshopRegistration
 
 PS = WorkshopRegistration.PaymentStatus
+
+# GHS 150.00 / 11.65 = US$12.88 in every assertion below.
+PINNED_RATE = mock.patch.dict(os.environ, {"USD_GHS_RATE": "11.65"})
 
 
 def _workshop(**kwargs):
@@ -42,6 +46,7 @@ def _form(**overrides):
     return data
 
 
+@PINNED_RATE
 class OptionalCertificateTests(TestCase):
     """The existing behaviour, which the switch must leave untouched."""
 
@@ -51,7 +56,11 @@ class OptionalCertificateTests(TestCase):
     def test_form_asks_the_question(self):
         html = self.client.get(reverse("workshop:register", args=[self.ws.slug])).content.decode()
         self.assertIn('type="radio" name="wants_certificate"', html)
-        self.assertNotIn("A certificate of participation is included", html)
+        self.assertNotIn("Included for everyone", html)
+
+    def test_the_optional_fee_note_also_quotes_dollars(self):
+        html = self.client.get(reverse("workshop:register", args=[self.ws.slug])).content.decode()
+        self.assertIn("US$12.88", html)
 
     def test_not_answering_is_rejected(self):
         resp = self.client.post(reverse("workshop:register", args=[self.ws.slug]), _form())
@@ -96,6 +105,7 @@ class OptionalCertificateTests(TestCase):
         self.assertTrue(reg.registration_complete)
 
 
+@PINNED_RATE
 class CompulsoryCertificateTests(TestCase):
     def setUp(self):
         self.ws = _workshop(certificate_required=True)
@@ -103,8 +113,20 @@ class CompulsoryCertificateTests(TestCase):
     def test_form_states_the_fee_instead_of_asking(self):
         html = self.client.get(reverse("workshop:register", args=[self.ws.slug])).content.decode()
         self.assertNotIn('type="radio" name="wants_certificate"', html)
-        self.assertIn("A certificate of participation is included", html)
-        self.assertIn("GHS 150.00", html)
+        self.assertIn("Certificate of participation", html)
+        self.assertIn("150.00", html)
+
+    def test_the_form_quotes_the_dollar_equivalent(self):
+        html = self.client.get(reverse("workshop:register", args=[self.ws.slug])).content.decode()
+        self.assertIn("US$12.88", html)
+        self.assertIn("Charged in Ghana Cedis", html)
+
+    def test_a_free_certificate_quotes_no_dollar_figure(self):
+        self.ws.certificate_fee = Decimal("0.00")
+        self.ws.save()
+        html = self.client.get(reverse("workshop:register", args=[self.ws.slug])).content.decode()
+        self.assertNotIn("US$", html)
+        self.assertIn("No fee", html)
 
     def test_everyone_is_charged_and_sent_to_checkout(self):
         resp = self.client.post(reverse("workshop:register", args=[self.ws.slug]), _form())
@@ -137,6 +159,31 @@ class CompulsoryCertificateTests(TestCase):
         html = self.client.get(f"{reverse('workshop:thanks')}?r={reg.pk}").content.decode()
         self.assertIn("One step left", html)
         self.assertIn("not complete", html)
+
+    def test_pay_page_shows_cedis_and_the_dollar_equivalent(self):
+        self.client.post(reverse("workshop:register", args=[self.ws.slug]), _form())
+        reg = WorkshopRegistration.objects.get()
+        html = self.client.get(reverse("workshop:pay", args=[reg.pk])).content.decode()
+        # The charge, in cedis.
+        self.assertIn("GHS", html)
+        self.assertIn("150.00", html)
+        # The guide, in dollars, labelled as approximate.
+        self.assertIn("US$12.88", html)
+        self.assertIn("Approximate equivalent", html)
+        self.assertIn("converts at its own rate", html)
+        # Paystack is still handed cedi subunits, never the dollar figure.
+        self.assertIn('currency: "GHS"', html)
+        self.assertIn("amount: 15000", html)
+
+    def test_pay_page_hides_the_dollar_line_when_no_rate_is_available(self):
+        """No rate must degrade to the cedi price alone, never to a guess."""
+        self.client.post(reverse("workshop:register", args=[self.ws.slug]), _form())
+        reg = WorkshopRegistration.objects.get()
+        with mock.patch.dict(os.environ, {"USD_GHS_RATE": ""}), \
+                mock.patch("payments.currency._fetch_rate", return_value=None):
+            html = self.client.get(reverse("workshop:pay", args=[reg.pk])).content.decode()
+        self.assertNotIn("US$", html)
+        self.assertIn("150.00", html)
 
     def test_pay_page_offers_no_way_to_skip(self):
         self.client.post(reverse("workshop:register", args=[self.ws.slug]), _form())
@@ -254,6 +301,7 @@ class CertificateEntitlementTests(TestCase):
         self.assertEqual(resp["Content-Type"], "application/pdf")
 
 
+@PINNED_RATE
 class AdminSwitchTests(TestCase):
     def setUp(self):
         self.ws = _workshop()
@@ -372,3 +420,28 @@ class CheckoutEmailTests(TestCase):
             )
         subjects = [c.kwargs.get("subject", "") for c in send.call_args_list]
         self.assertFalse(any("Certificate fee outstanding" in s for s in subjects), subjects)
+
+
+@PINNED_RATE
+class AdminDollarGuideTests(TestCase):
+    """Staff should see the same dollar figure an overseas participant is
+    quoted, so a fee change is never a surprise to either of them."""
+
+    def setUp(self):
+        self.ws = _workshop(certificate_required=True)
+        admin = User.objects.create_superuser(
+            email="admin2@example.com", password="pw-admin-123",
+            first_name="Ada", last_name="Admin",
+        )
+        self.client.force_login(admin)
+
+    def test_the_fee_field_quotes_the_dollar_equivalent(self):
+        html = self.client.get(reverse("workshop_admin:manage", args=[self.ws.pk])).content.decode()
+        self.assertIn("US$12.88", html)
+        self.assertIn("the charge is always in GHS", html)
+
+    def test_a_zero_fee_quotes_no_dollar_figure(self):
+        self.ws.certificate_fee = Decimal("0.00")
+        self.ws.save()
+        html = self.client.get(reverse("workshop_admin:manage", args=[self.ws.pk])).content.decode()
+        self.assertNotIn("US$", html)

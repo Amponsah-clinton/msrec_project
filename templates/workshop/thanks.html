@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load currency_tags %}
 
 {% block title %}Thank you | {{ ws.title }}{% endblock %}
 {% block body_class %}workshop-page{% endblock %}
@@ -18,6 +19,11 @@
   .wst-pay { display: inline-block; margin-top: 16px; background: #0f8a86; color: #fff; border-radius: 10px;
     padding: 12px 24px; font-size: 15px; font-weight: 700; text-decoration: none; }
   .wst-pay:hover { background: #0c726e; color: #fff; }
+  .wst-usd { display: block; margin-top: 9px; font-size: 12.5px; color: var(--muted,#6b7488); }
+  @media (max-width: 640px) {
+    .wst-wrap { padding: 104px 16px 64px; }
+    .wst-pay { display: block; width: 100%; }
+  }
 </style>
 {% endblock %}
 
@@ -37,16 +43,20 @@
         <span class="wst-pill"><i class="bi bi-patch-check-fill"></i> Certificate fee paid</span>
         <p>Your certificate will be emailed to you after the workshop.</p>
       {% elif reg.payment_outstanding %}
+        {% with usd=reg.amount|usd %}
         {% if reg.certificate_required_at_signup %}
           <div class="wst-warn"><i class="bi bi-exclamation-triangle-fill"></i>
             A certificate is part of this workshop, so the fee of
             <strong>{{ reg.currency }} {{ reg.amount }}</strong> applies to every participant.
-            Your registration is <strong>not complete</strong> until it is paid.</div>
+            Your registration is <strong>not complete</strong> until it is paid.
+            {% if usd %}<span class="wst-usd">Approximately {{ usd }} — charged in Ghana Cedis.</span>{% endif %}</div>
         {% else %}
           <div class="wst-warn">You asked for a certificate, and the fee of
-            <strong>{{ reg.currency }} {{ reg.amount }}</strong> hasn't been paid yet.</div>
+            <strong>{{ reg.currency }} {{ reg.amount }}</strong> hasn't been paid yet.
+            {% if usd %}<span class="wst-usd">Approximately {{ usd }} — charged in Ghana Cedis.</span>{% endif %}</div>
         {% endif %}
         <div><a class="wst-pay" href="{% url 'workshop:pay' reg.pk %}"><i class="bi bi-lock-fill"></i> Pay {{ reg.currency }} {{ reg.amount }} now</a></div>
+        {% endwith %}
       {% elif reg.certificate_ready %}
         <span class="wst-pill"><i class="bi bi-award-fill"></i> Certificate included</span>
         <p>Your certificate will be emailed to you after the workshop. We'll also send the meeting link and any materials beforehand.</p>

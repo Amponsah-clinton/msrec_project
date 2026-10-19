@@ -1,7 +1,9 @@
 """Every workshop page the compulsory-certificate switch touches must render
 in both modes -- a template error here is invisible until a real visitor or
 an admin hits the page."""
+import os
 from decimal import Decimal
+from unittest import mock
 
 from django.test import TestCase
 from django.urls import reverse
@@ -12,7 +14,11 @@ from workshop.models import Workshop, WorkshopRegistration
 
 PS = WorkshopRegistration.PaymentStatus
 
+# Pinned so no page render in this suite reaches for the live rates API.
+PINNED_RATE = mock.patch.dict(os.environ, {"USD_GHS_RATE": "11.65"})
 
+
+@PINNED_RATE
 class RenderSmokeTests(TestCase):
     def setUp(self):
         self.admin = User.objects.create_superuser(
@@ -88,6 +94,26 @@ class RenderSmokeTests(TestCase):
         resp = self.client.get(reverse("workshop:documents", kwargs={"token": reg.download_token}))
         self.assertEqual(resp.status_code, 200)
         self.assertContains(resp, "Certificate of Participation")
+
+    def test_pages_render_with_no_exchange_rate_available(self):
+        """Every price surface has to survive the rates API being down."""
+        ws = self._workshop(certificate_required=True)
+        reg = self._reg(
+            ws, wants_certificate=True, certificate_required_at_signup=True,
+            payment_status=PS.PENDING, amount=Decimal("150.00"), payment_reference="REF-X",
+        )
+        with mock.patch.dict(os.environ, {"USD_GHS_RATE": ""}), \
+                mock.patch("payments.currency._fetch_rate", return_value=None):
+            for url in (
+                reverse("workshop:list"),
+                reverse("workshop:register", args=[ws.slug]),
+                reverse("workshop:pay", args=[reg.pk]),
+                f"{reverse('workshop:thanks')}?r={reg.pk}",
+            ):
+                with self.subTest(url=url):
+                    resp = self.client.get(url)
+                    self.assertEqual(resp.status_code, 200)
+                    self.assertNotContains(resp, "US$")
 
     def test_admin_manage_page_renders_in_both_modes(self):
         self.client.force_login(self.admin)

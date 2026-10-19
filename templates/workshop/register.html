@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static currency_tags %}
 
 {% block title %}{{ ws.title }} | MSREC{% endblock %}
 {% block description %}Register for {{ ws.title }} — {{ ws.tagline }}{% endblock %}
@@ -8,8 +8,28 @@
 {% block extra_css %}
 <link href="{% static 'assets/css/searchable-select.css' %}" rel="stylesheet">
 <style>
-  .ws-wrap { max-width: 920px; margin: 0 auto; padding: 130px 16px 72px; }
-  @media (max-width: 640px) { .ws-wrap { padding-top: 110px; } }
+  /* ------------------------------------------------------------------
+     Workshop registration page.
+
+     Layout is one column of blocks inside .ws-wrap; the form itself is a
+     two-column grid that folds to one at 720px. Fields are top-aligned
+     (align-items: start) rather than stretched, so the Institution
+     field growing a second box underneath it can't drag the Email field
+     beside it out of line -- the original cause of the uneven rows here.
+
+     The Institution <select> is upgraded to a searchable dropdown at
+     runtime (assets/js/searchable-select.js), which copies this
+     stylesheet's font, border, radius, padding and colours off the
+     native control onto its own button. So the select is styled exactly
+     like the text inputs and nothing extra is needed for the widget --
+     but anything applied to inputs and *not* to the select (a leading
+     icon absorbed into padding, say) would silently not carry over.
+     ------------------------------------------------------------------ */
+
+  .ws-wrap { max-width: 920px; margin: 0 auto; padding: 130px 20px 72px; }
+  .ws-wrap *, .ws-wrap *::before, .ws-wrap *::after { box-sizing: border-box; }
+
+  /* ---- Hero -------------------------------------------------------- */
   .ws-hero {
     position: relative; border-radius: 18px; overflow: hidden; min-height: 240px;
     display: flex; align-items: flex-end; margin-bottom: 26px;
@@ -28,85 +48,229 @@
     letter-spacing: .14em; text-transform: uppercase; background: rgba(255,255,255,.16);
     padding: 6px 12px; border-radius: 999px; backdrop-filter: blur(4px); margin-bottom: 12px;
   }
-  .ws-hero-inner h1 { font-size: clamp(20px, 2.6vw, 30px); line-height: 1.22; margin: 0 0 8px; color: #fff; }
+  .ws-hero-inner h1 { line-height: 1.22; margin: 0 0 8px; color: #fff; }
   .ws-hero-inner p { margin: 0; font-size: 16px; max-width: 640px; color: rgba(255,255,255,.92); }
+  /* Facts strip under the title: date, venue, certificate. */
+  .ws-hero-facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .ws-hero-fact {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600;
+    color: #fff; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.2);
+    padding: 6px 12px; border-radius: 9px; backdrop-filter: blur(4px);
+  }
 
-  .ws-intro { color: var(--muted, #56607a); font-size: 15.5px; line-height: 1.6; margin: 0 0 24px; }
+  .ws-intro { color: var(--muted, #56607a); font-size: 15.5px; line-height: 1.65; margin: 0 0 24px; }
 
-  .ws-wrap *, .ws-wrap *::before, .ws-wrap *::after { box-sizing: border-box; }
+  /* ---- Card -------------------------------------------------------- */
   .ws-card { background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e9f0);
-    border-radius: 16px; padding: 28px; box-shadow: 0 10px 30px -24px rgba(20,35,63,.4); }
-  .ws-card h2 { font-size: 20px; margin: 0 0 4px; }
-  .ws-card .ws-sub { color: var(--muted, #56607a); font-size: 14px; margin: 0 0 22px; }
+    border-radius: 16px; padding: 30px; box-shadow: 0 10px 30px -24px rgba(20,35,63,.4); }
+  .ws-card-head { margin-bottom: 24px; }
+  .ws-card h2 { font-size: 21px; margin: 0 0 5px; }
+  .ws-card .ws-sub { color: var(--muted, #56607a); font-size: 14.5px; margin: 0; line-height: 1.55; }
 
-  .ws-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
-  .ws-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  /* ---- Section headers inside the form ----------------------------- */
+  .ws-section { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; margin: 4px 0 -2px; }
+  .ws-section:not(:first-child) { margin-top: 18px; }
+  .ws-section span { font-size: 11.5px; font-weight: 800; letter-spacing: .13em;
+    text-transform: uppercase; color: #0f8a86; white-space: nowrap; }
+  .ws-section::after { content: ""; flex: 1; height: 1px; background: var(--border, #e8ecf3); }
+
+  /* ---- Fields ------------------------------------------------------ */
+  .ws-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+  /* Paired fields are the one case that should match heights. */
+  .ws-grid > .ws-pair { align-self: stretch; }
+  .ws-field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
   .ws-field.ws-wide { grid-column: 1 / -1; }
-  .ws-field label { font-weight: 600; font-size: 13.5px; }
-  .ws-field .req { color: #c0392b; }
-  /* The "Other (not listed)" box that opens under the Institution
-     dropdown -- a question of its own, so it is set apart from it. */
-  .ws-inst-other { margin-top: 8px; padding-left: 12px; border-left: 2px solid var(--border, #cdd5e0); }
-  .ws-inst-other label { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted, #56607a); margin-bottom: 6px; }
+  .ws-field > label { display: flex; align-items: baseline; gap: 6px; font-weight: 600;
+    font-size: 13.5px; color: var(--heading-color, #172a28); line-height: 1.35; }
+  .ws-field .req { color: #c0392b; font-weight: 700; }
+  .ws-field .opt { font-weight: 500; font-size: 12.5px; color: var(--muted, #8a93a6); }
+
+  /* The chrome below is shared by inputs, textareas AND the select, so the
+     searchable dropdown's button inherits all of it. Keep them together. */
   .ws-field input, .ws-field select, .ws-field textarea {
-    width: 100%; max-width: 100%; box-sizing: border-box;
-    border: 1px solid var(--border, #cdd5e0); border-radius: 9px; padding: 10px 12px;
-    font-size: 14.5px; background: var(--input-bg, #fff); color: inherit; font-family: inherit;
+    width: 100%; max-width: 100%; min-height: 46px;
+    border: 1px solid var(--border, #d4dbe6); border-radius: 11px; padding: 12px 14px;
+    font-size: 15px; font-family: inherit; line-height: 1.4;
+    background: var(--input-bg, #fff); color: inherit;
+    box-shadow: inset 0 1px 2px rgba(16,24,40,.04);
+    transition: border-color .15s, box-shadow .15s, background-color .15s;
   }
-  .ws-field textarea { resize: vertical; }
-  .ws-field input:focus, .ws-field select:focus, .ws-field textarea:focus {
-    outline: none; border-color: #0f8a86; box-shadow: 0 0 0 3px rgba(15,138,134,.15);
+  .ws-field textarea { min-height: 92px; resize: vertical; }
+  .ws-field input::placeholder, .ws-field textarea::placeholder { color: #a3adbf; }
+  .ws-field input:hover, .ws-field select:hover, .ws-field textarea:hover { border-color: #b6c2d2; }
+  .ws-field input:focus, .ws-field select:focus, .ws-field textarea:focus,
+  .ws-field .ss-trigger:focus-visible {
+    outline: none; border-color: #0f8a86; background: #fff;
+    box-shadow: 0 0 0 3.5px rgba(15,138,134,.16);
   }
-  .ws-hint { font-size: 12.5px; color: var(--muted, #6b7488); }
+  /* Only after a failed submit, so the form isn't red while it's being
+     filled in (see .ws-validated below). */
+  .ws-validated .ws-field input:invalid, .ws-validated .ws-field textarea:invalid {
+    border-color: #e2a0a0; box-shadow: 0 0 0 3.5px rgba(192,57,43,.1);
+  }
+  .ws-hint { font-size: 12.5px; color: var(--muted, #6b7488); line-height: 1.5; }
+  /* Email and Phone share a row and both carry a hint, one of which wraps
+     to two lines on a narrow column. Pushing the hint to the bottom of the
+     cell keeps the two inputs themselves on one line. */
+  .ws-field.ws-pair { height: 100%; }
+  .ws-field.ws-pair .ws-hint { margin-top: auto; }
 
-  .ws-cert-choice { grid-column: 1 / -1; min-width: 0; margin: 0; border: 1px solid var(--border, #e5e9f0);
-    border-radius: 12px; padding: 16px 18px; background: rgba(15,138,134,.04); }
-  .ws-cert-choice legend { font-weight: 700; font-size: 14.5px; padding: 0 4px; }
-  .ws-radio-row { display: flex; gap: 22px; margin-top: 10px; flex-wrap: wrap; }
-  .ws-radio { display: inline-flex; align-items: center; gap: 8px; font-size: 14.5px; cursor: pointer; }
-  .ws-fee-note { margin-top: 12px; font-size: 13.5px; color: #0f6b67; background: rgba(15,138,134,.1);
-    border-radius: 9px; padding: 10px 12px; display: none; }
+  /* The "Other (not listed)" box that opens under Institution -- a
+     question of its own, so it reads as a branch off that field. */
+  .ws-inst-other { margin-top: 10px; padding-left: 13px; border-left: 2px solid #bfe3e1; }
+  .ws-inst-other > label { display: flex; align-items: baseline; gap: 5px; font-size: 12.5px;
+    font-weight: 600; color: var(--muted, #56607a); margin-bottom: 7px; }
+
+  /* ---- Price block (shared by both certificate modes) -------------- */
+  .ws-price { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin-top: 14px; }
+  .ws-price .amt { font-size: 26px; font-weight: 800; letter-spacing: -.02em; color: #0b6b67; line-height: 1.1; }
+  .ws-price .amt small { font-size: 14px; font-weight: 700; color: #0f8a86; margin-right: 3px; }
+  .ws-price .usd {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 13.5px; font-weight: 700;
+    color: #345; background: #eef2f7; border: 1px solid #dde4ed; border-radius: 999px; padding: 4px 11px;
+  }
+  .ws-price .free-tag { font-size: 20px; font-weight: 800; color: #1c7a46; }
+  .ws-fx {
+    margin: 10px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--muted, #6b7488);
+    display: flex; gap: 7px; align-items: flex-start;
+  }
+  .ws-fx i { color: #0f8a86; margin-top: 2px; }
+
+  /* ---- Certificate: compulsory ------------------------------------- */
+  .ws-cert-included {
+    grid-column: 1 / -1; min-width: 0; border: 1px solid #bfe3e1; border-radius: 14px;
+    padding: 20px; background: linear-gradient(180deg, rgba(15,138,134,.07), rgba(15,138,134,.03));
+    display: flex; gap: 16px; align-items: flex-start;
+  }
+  .ws-cert-included .ico {
+    flex: none; width: 42px; height: 42px; border-radius: 12px; background: #0f8a86;
+    color: #fff; display: flex; align-items: center; justify-content: center; font-size: 19px;
+    box-shadow: 0 6px 14px -6px rgba(15,138,134,.7);
+  }
+  .ws-cert-included .body { min-width: 0; flex: 1; }
+  .ws-cert-included h3 { margin: 0 0 5px; font-size: 16px; }
+  .ws-cert-included p { margin: 0; font-size: 13.5px; color: var(--muted, #56607a); line-height: 1.6; }
+  .ws-req-pill {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 800;
+    letter-spacing: .07em; text-transform: uppercase; background: #0f8a86; color: #fff;
+    border-radius: 999px; padding: 4px 10px; margin-bottom: 9px;
+  }
+
+  /* ---- Certificate: optional (the yes/no question) ----------------- */
+  .ws-cert-choice {
+    grid-column: 1 / -1; min-width: 0; margin: 0; border: 1px solid var(--border, #e5e9f0);
+    border-radius: 14px; padding: 20px; background: var(--card-bg, #fcfdfe);
+  }
+  .ws-cert-choice legend { display: flex; align-items: baseline; gap: 6px; float: left; width: 100%;
+    font-weight: 700; font-size: 15px; padding: 0; margin: 0 0 4px; color: var(--heading-color, #172a28); }
+  .ws-cert-choice .ws-hint { clear: both; display: block; margin-bottom: 14px; }
+  .ws-radio-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  /* Each choice is a full card, so the whole thing is a target -- not just
+     the 13px radio dot, which is a miss waiting to happen on a phone. */
+  .ws-radio {
+    display: flex; align-items: center; gap: 11px; min-height: 52px; cursor: pointer;
+    border: 1.5px solid var(--border, #dbe2ec); border-radius: 11px; padding: 12px 15px;
+    font-size: 14.5px; font-weight: 600; background: #fff;
+    transition: border-color .15s, background-color .15s, box-shadow .15s;
+  }
+  .ws-radio:hover { border-color: #0f8a86; background: rgba(15,138,134,.04); }
+  .ws-radio input { flex: none; width: 18px; height: 18px; accent-color: #0f8a86; margin: 0; }
+  .ws-radio:has(input:checked) { border-color: #0f8a86; background: rgba(15,138,134,.07);
+    box-shadow: 0 0 0 3px rgba(15,138,134,.1); }
+  .ws-radio:focus-within { box-shadow: 0 0 0 3.5px rgba(15,138,134,.16); }
+  .ws-fee-note {
+    margin-top: 14px; border: 1px solid #bfe3e1; border-radius: 12px; padding: 16px 18px;
+    background: rgba(15,138,134,.05); display: none;
+  }
   .ws-fee-note.show { display: block; }
+  .ws-fee-note h4 { margin: 0 0 4px; font-size: 14.5px; }
+  .ws-fee-note p { margin: 0; font-size: 13.5px; color: var(--muted, #56607a); line-height: 1.6; }
+  .ws-fee-note .ws-price { margin-top: 12px; }
 
-  /* Compulsory certificate: there is nothing to choose, so the question is
-     replaced by a statement of what is included and what it costs. */
-  .ws-cert-included { grid-column: 1 / -1; min-width: 0; border: 1px solid #bfe3e1; border-radius: 12px;
-    padding: 16px 18px; background: rgba(15,138,134,.06); display: flex; gap: 14px; align-items: flex-start; }
-  .ws-cert-included .ico { flex: none; width: 38px; height: 38px; border-radius: 50%; background: rgba(15,138,134,.14);
-    color: #0f8a86; display: flex; align-items: center; justify-content: center; font-size: 18px; }
-  .ws-cert-included h3 { margin: 0 0 4px; font-size: 15px; }
-  .ws-cert-included p { margin: 0; font-size: 13.5px; color: var(--muted, #56607a); line-height: 1.55; }
-  .ws-cert-included .fee { display: inline-block; margin-top: 9px; background: #0f8a86; color: #fff;
-    border-radius: 999px; padding: 5px 13px; font-size: 13px; font-weight: 700; }
-  .ws-cert-included .free { background: #1c7a46; }
-
-  .ws-actions { margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
-  .ws-btn { background: #0f8a86; color: #fff; border: none; border-radius: 10px; padding: 13px 26px;
-    font-size: 15px; font-weight: 700; cursor: pointer; transition: background .15s; }
+  /* ---- Actions ----------------------------------------------------- */
+  .ws-actions {
+    margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--border, #eef1f6);
+    display: flex; justify-content: flex-end; align-items: center; gap: 12px; flex-wrap: wrap;
+  }
+  .ws-actions .ws-secure { margin-right: auto; font-size: 12.5px; color: var(--muted, #6b7488);
+    display: inline-flex; align-items: center; gap: 6px; }
+  .ws-btn {
+    background: #0f8a86; color: #fff; border: none; border-radius: 11px; padding: 14px 28px;
+    font-size: 15.5px; font-weight: 700; font-family: inherit; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px;
+    box-shadow: 0 10px 22px -12px rgba(15,138,134,.9); transition: background-color .15s, transform .08s, box-shadow .15s;
+  }
   .ws-btn:hover { background: #0c726e; }
-  .ws-btn-outline { background: #fff; color: #0f8a86; border: 1.5px solid #0f8a86; border-radius: 10px;
-    padding: 12px 22px; font-size: 14.5px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
-  .ws-btn-outline:hover { background: rgba(15,138,134,.07); }
+  .ws-btn:active { transform: translateY(1px); }
+  .ws-btn:disabled { opacity: .62; cursor: default; box-shadow: none; transform: none; }
+  .ws-btn-outline {
+    background: #fff; color: #0f8a86; border: 1.5px solid #0f8a86; border-radius: 11px;
+    padding: 13px 22px; font-size: 14.5px; font-weight: 700; font-family: inherit; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px;
+    transition: background-color .15s;
+  }
+  .ws-btn-outline:hover { background: rgba(15,138,134,.08); }
 
-  /* Certificate preview modal */
+  /* ---- Certificate preview modal ----------------------------------- */
   .ws-modal { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; }
   .ws-modal[hidden] { display: none; }
   .ws-modal-backdrop { position: absolute; inset: 0; background: rgba(12,20,32,.6); backdrop-filter: blur(2px); }
   .ws-modal-panel { position: relative; z-index: 1; background: #fff; border-radius: 14px; width: 100%; max-width: 900px;
     max-height: 92vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 30px 70px -30px rgba(0,0,0,.5); }
-  .ws-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #eef1f6; }
+  .ws-modal-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid #eef1f6; }
   .ws-modal-head h3 { margin: 0; font-size: 17px; }
-  .ws-modal-close { border: none; background: none; font-size: 26px; line-height: 1; cursor: pointer; color: #64748b; }
-  .ws-modal-note { margin: 0; padding: 10px 20px; font-size: 13px; color: #b4261f; background: #fdeaea; }
+  .ws-modal-close { border: none; background: none; font-size: 28px; line-height: 1; cursor: pointer; color: #64748b; padding: 0 4px; }
+  .ws-modal-note { margin: 0; padding: 11px 20px; font-size: 13px; line-height: 1.5; color: #b4261f; background: #fdeaea; }
   .ws-cert-frame-wrap { flex: 1; min-height: 0; background: #eef1f6; }
   .ws-cert-frame-wrap iframe { width: 100%; height: 62vh; border: 0; display: block; }
 
+  /* ---- Messages ---------------------------------------------------- */
   .ws-msgs { margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; }
-  .ws-msg { border-radius: 9px; padding: 10px 14px; font-size: 14px; }
+  .ws-msg { border-radius: 11px; padding: 12px 15px; font-size: 14px; line-height: 1.5;
+    display: flex; gap: 9px; align-items: flex-start; }
   .ws-msg.error { background: #fdeaea; color: #a52222; border: 1px solid #f3c6c6; }
   .ws-msg.success { background: #e9f7ef; color: #1c7a46; border: 1px solid #c3e9d3; }
+  .ws-msg.warning { background: #fff7e6; color: #8a5a10; border: 1px solid #f3dcae; }
+  .ws-msg.info { background: #eef4ff; color: #1e4ba0; border: 1px solid #cfdcf7; }
 
-  @media (max-width: 640px) { .ws-grid { grid-template-columns: 1fr; } }
+  /* ---- Responsive -------------------------------------------------- */
+  @media (max-width: 860px) {
+    .ws-hero { min-height: 210px; }
+    .ws-hero-inner { padding: 24px 22px 22px; }
+    .ws-card { padding: 24px; }
+  }
+  @media (max-width: 720px) {
+    .ws-grid { grid-template-columns: 1fr; gap: 16px; }
+    .ws-radio-row { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .ws-wrap { padding: 104px 16px 56px; }
+    .ws-hero { min-height: 180px; border-radius: 14px; margin-bottom: 20px; }
+    .ws-hero-inner { padding: 20px 18px 18px; }
+    .ws-hero-inner p { font-size: 14.5px; }
+    .ws-hero-fact { font-size: 12px; padding: 5px 10px; }
+    .ws-card { padding: 20px 17px; border-radius: 14px; }
+    .ws-card h2 { font-size: 19px; }
+    .ws-cert-included { padding: 17px; gap: 13px; }
+    .ws-cert-choice { padding: 17px; }
+    .ws-fee-note { padding: 14px 15px; }
+    .ws-price .amt { font-size: 23px; }
+    /* Full-width, thumb-sized buttons, primary action first. */
+    .ws-actions { flex-direction: column-reverse; align-items: stretch; gap: 10px; }
+    .ws-actions .ws-btn, .ws-actions .ws-btn-outline { width: 100%; }
+    .ws-actions .ws-secure { margin: 2px 0 0; justify-content: center; }
+    .ws-modal { padding: 0; align-items: stretch; }
+    .ws-modal-panel { max-width: none; max-height: 100vh; border-radius: 0; }
+    .ws-cert-frame-wrap iframe { height: calc(100vh - 150px); }
+  }
+  @media (max-width: 400px) {
+    .ws-cert-included { flex-direction: column; gap: 12px; }
+    .ws-price .amt { font-size: 21px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .ws-btn, .ws-btn-outline, .ws-radio, .ws-field input, .ws-field select, .ws-field textarea { transition: none; }
+    .ws-btn:active { transform: none; }
+  }
 </style>
 {% endblock %}
 
@@ -126,13 +290,20 @@
         <span class="ws-hero-badge"><i class="bi bi-mortarboard-fill"></i> MSREC Workshop</span>
         <h1 style="font-size: clamp(18px, 2.6vw, {{ ws.title_font_size|default:30 }}px);">{{ ws.title }}</h1>
         {% if ws.tagline %}<p>{{ ws.tagline }}</p>{% endif %}
+        {% if ws.starts_at or ws.location or ws.certificate_required %}
+        <div class="ws-hero-facts">
+          {% if ws.starts_at %}<span class="ws-hero-fact"><i class="bi bi-calendar-event"></i> {{ ws.starts_at|date:"D, j M Y · g:i A" }}</span>{% endif %}
+          {% if ws.location %}<span class="ws-hero-fact"><i class="bi bi-geo-alt"></i> {{ ws.location }}</span>{% endif %}
+          {% if ws.certificate_required %}<span class="ws-hero-fact"><i class="bi bi-award"></i> Certificate included</span>{% endif %}
+        </div>
+        {% endif %}
       </div>
     </div>
 
     {% if messages %}
       <div class="ws-msgs">
         {% for message in messages %}
-          <div class="ws-msg {{ message.tags }}">{{ message }}</div>
+          <div class="ws-msg {{ message.tags }}"><i class="bi bi-exclamation-circle-fill"></i><span>{{ message }}</span></div>
         {% endfor %}
       </div>
     {% endif %}
@@ -140,87 +311,140 @@
     {% if ws.description %}<p class="ws-intro">{{ ws.description|linebreaksbr }}</p>{% endif %}
 
     <div class="ws-card">
-      <h2>Register</h2>
-      <p class="ws-sub">Fill in your details below to take part in the workshop.</p>
+      <div class="ws-card-head">
+        <h2>Register for this workshop</h2>
+        <p class="ws-sub">
+          {% if ws.certificate_required and ws.certificate_fee_payable %}
+            Takes a minute. You'll go straight to secure checkout for the certificate fee afterwards.
+          {% else %}
+            Takes a minute. We'll email you the joining link and any materials beforehand.
+          {% endif %}
+        </p>
+      </div>
 
       {% if not ws.registration_open %}
-        <div class="ws-msg error">Registration is currently closed. Please check back later.</div>
+        <div class="ws-msg error"><i class="bi bi-lock-fill"></i><span>Registration is currently closed. Please check back later.</span></div>
       {% else %}
       <form method="post" id="wsForm" novalidate>
         {% csrf_token %}
         <div class="ws-grid">
+
+          <div class="ws-section"><span>Your details</span></div>
+
           <div class="ws-field ws-wide">
-            <label for="wsName">Full Name <span class="req">*</span></label>
-            <input type="text" id="wsName" name="name" value="{{ prefill.name|default:'' }}" required>
+            <label for="wsName">Full name <span class="req" aria-hidden="true">*</span></label>
+            <input type="text" id="wsName" name="name" value="{{ prefill.name|default:'' }}"
+                   autocomplete="name" placeholder="As it should appear on your certificate" required>
           </div>
 
-          <div class="ws-field">
-            <label for="wsInstitution">Institution <span class="req">*</span></label>
+          <div class="ws-field ws-wide">
+            <label for="wsInstitution">Institution <span class="req" aria-hidden="true">*</span></label>
             <select id="wsInstitution" name="institution" required data-other-input="wsInstitutionOther" data-searchable-select data-search-placeholder="Search institutions…">
               <option value="">Select institution</option>
               <option value="__other__">Other (not listed)</option>
               {% for inst in institutions %}<option value="{{ inst.name }}" {% if prefill.institution == inst.name %}selected{% endif %}>{{ inst.name }}</option>{% endfor %}
             </select>
             <div class="ws-inst-other" id="wsInstitutionOtherBlock" hidden>
-              <label for="wsInstitutionOther">Enter your institution <span class="req">*</span></label>
-              <input type="text" id="wsInstitutionOther" name="institution_other" maxlength="200" placeholder="e.g. University of Ghana">
+              <label for="wsInstitutionOther">Enter your institution <span class="req" aria-hidden="true">*</span></label>
+              <input type="text" id="wsInstitutionOther" name="institution_other" maxlength="200"
+                     autocomplete="organization" placeholder="e.g. University of Ghana">
             </div>
           </div>
 
-          <div class="ws-field">
-            <label for="wsEmail">Email Address <span class="req">*</span></label>
-            <input type="email" id="wsEmail" name="email" value="{{ prefill.email|default:'' }}" required>
+          <div class="ws-field ws-pair">
+            <label for="wsEmail">Email address <span class="req" aria-hidden="true">*</span></label>
+            <input type="email" id="wsEmail" name="email" value="{{ prefill.email|default:'' }}"
+                   autocomplete="email" inputmode="email" placeholder="you@example.com" required>
+            <span class="ws-hint">Your certificate and joining link go here.</span>
           </div>
 
-          <div class="ws-field">
-            <label for="wsPhone">Phone Number <span class="req">*</span></label>
-            <input type="tel" id="wsPhone" name="phone" value="{{ prefill.phone|default:'' }}" required placeholder="e.g. 0241234567">
-            <span class="ws-hint">We'll text you a confirmation — use a Ghana number (02… or 05…).</span>
+          <div class="ws-field ws-pair">
+            <label for="wsPhone">Phone number <span class="req" aria-hidden="true">*</span></label>
+            <input type="tel" id="wsPhone" name="phone" value="{{ prefill.phone|default:'' }}"
+                   autocomplete="tel" inputmode="tel" placeholder="e.g. 0241234567 or +233 24 123 4567" required>
+            <span class="ws-hint">We'll text you a confirmation. Include your country code if you're outside Ghana.</span>
           </div>
+
+          <div class="ws-section"><span>Certificate</span></div>
 
           {% if ws.certificate_required %}
           <!-- Certificates are compulsory for this workshop: everyone gets
                one, so there is nothing to opt out of. -->
           <div class="ws-cert-included">
             <span class="ico"><i class="bi bi-award-fill"></i></span>
-            <div>
-              <h3>A certificate of participation is included</h3>
+            <div class="body">
+              <span class="ws-req-pill"><i class="bi bi-check-circle-fill"></i> Included for everyone</span>
+              <h3>Certificate of participation</h3>
               {% if ws.certificate_fee_payable %}
-                <p>Every participant in this workshop receives a certificate, and the fee below applies to all registrations. You'll pay securely on the next step — your registration is complete once the fee is paid.</p>
-                <span class="fee"><i class="bi bi-lock-fill"></i> {{ ws.fee_currency }} {{ ws.certificate_fee }}</span>
+                <p>Every participant receives a certificate, so the fee below applies to all registrations.
+                   You'll pay securely on the next step — your registration is complete once it's paid.</p>
+                {% with usd=ws.certificate_fee|usd %}
+                <div class="ws-price">
+                  <span class="amt"><small>{{ ws.fee_currency }}</small>{{ ws.certificate_fee }}</span>
+                  {% if usd %}<span class="usd"><i class="bi bi-globe-americas"></i> ≈ {{ usd }}</span>{% endif %}
+                </div>
+                {% if usd %}
+                <p class="ws-fx"><i class="bi bi-info-circle-fill"></i>
+                  <span>Charged in Ghana Cedis ({{ ws.fee_currency }}). The dollar figure is an approximate
+                  guide for participants outside Ghana — your bank converts at its own rate.</span></p>
+                {% endif %}
+                {% endwith %}
               {% else %}
-                <p>Every participant in this workshop receives a certificate. There is nothing to pay — it will be emailed to you after the workshop.</p>
-                <span class="fee free"><i class="bi bi-check-lg"></i> No fee</span>
+                <p>Every participant receives a certificate. There's nothing to pay — it will be emailed to you after the workshop.</p>
+                <div class="ws-price"><span class="free-tag"><i class="bi bi-check-lg"></i> No fee</span></div>
               {% endif %}
             </div>
           </div>
           {% else %}
           <fieldset class="ws-cert-choice">
-            <legend>Do you want a certificate after the workshop? <span class="req">*</span></legend>
+            <legend>Would you like a certificate? <span class="req" aria-hidden="true">*</span></legend>
+            <span class="ws-hint">Issued in your name after the workshop and verifiable online.</span>
             <div class="ws-radio-row">
-              <label class="ws-radio"><input type="radio" name="wants_certificate" value="yes" required> Yes, I want a certificate</label>
+              <label class="ws-radio"><input type="radio" name="wants_certificate" value="yes" required> Yes, I'd like one</label>
               <label class="ws-radio"><input type="radio" name="wants_certificate" value="no" required> No, thank you</label>
             </div>
             <div class="ws-fee-note" id="wsFeeNote">
               {% if ws.certificate_fee_payable %}
-                A certificate fee of <strong>{{ ws.fee_currency }} {{ ws.certificate_fee }}</strong> applies.
-                You'll pay securely on the next step after registering.
+                {% with usd=ws.certificate_fee|usd %}
+                <h4>Certificate fee</h4>
+                <p>You'll pay securely on the next step, straight after registering.</p>
+                <div class="ws-price">
+                  <span class="amt"><small>{{ ws.fee_currency }}</small>{{ ws.certificate_fee }}</span>
+                  {% if usd %}<span class="usd"><i class="bi bi-globe-americas"></i> ≈ {{ usd }}</span>{% endif %}
+                </div>
+                {% if usd %}
+                <p class="ws-fx"><i class="bi bi-info-circle-fill"></i>
+                  <span>Charged in Ghana Cedis ({{ ws.fee_currency }}). The dollar figure is an approximate
+                  guide for participants outside Ghana — your bank converts at its own rate.</span></p>
+                {% endif %}
+                {% endwith %}
               {% else %}
-                There is no fee for a certificate on this workshop — it will be emailed to you afterwards.
+                <h4>No fee for this workshop</h4>
+                <p>Your certificate is free — it will be emailed to you after the workshop.</p>
               {% endif %}
             </div>
           </fieldset>
           {% endif %}
 
+          <div class="ws-section"><span>Anything else</span></div>
+
           <div class="ws-field ws-wide">
-            <label for="wsComments">Any comments <span class="ws-hint">(optional)</span></label>
-            <textarea id="wsComments" name="comments" rows="3">{{ prefill.comments|default:'' }}</textarea>
+            <label for="wsComments">Comments <span class="opt">(optional)</span></label>
+            <textarea id="wsComments" name="comments" rows="3"
+                      placeholder="Questions, access needs, or anything we should know">{{ prefill.comments|default:'' }}</textarea>
           </div>
         </div>
 
         <div class="ws-actions">
+          <span class="ws-secure"><i class="bi bi-shield-lock-fill"></i> Your details are kept private</span>
           <button type="button" class="ws-btn-outline" id="wsPreviewCertBtn" {% if not ws.certificate_required %}hidden{% endif %}><i class="bi bi-eye"></i> Preview certificate</button>
-          <button type="submit" class="ws-btn" id="wsSubmit">{% if ws.certificate_required and ws.certificate_fee_payable %}Register &amp; pay{% else %}Register{% endif %}</button>
+          <button type="submit" class="ws-btn" id="wsSubmit">
+            {% if ws.certificate_required and ws.certificate_fee_payable %}
+              <i class="bi bi-lock-fill"></i> Register &amp; pay {{ ws.fee_currency }} {{ ws.certificate_fee }}
+            {% else %}
+              Register <i class="bi bi-arrow-right"></i>
+            {% endif %}
+          </button>
         </div>
       </form>
       {% endif %}
@@ -305,10 +529,28 @@
       document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !modal.hidden) closeModal(); });
     }
 
+    // The form is novalidate so the server owns validation, but checking
+    // here first saves a round trip -- and scrolls to the offending field
+    // instead of leaving someone staring at an unchanged page. Invalid
+    // styling only switches on after a failed attempt (.ws-validated).
     var form = document.getElementById("wsForm");
-    if (form) form.addEventListener("submit", function () {
+    if (form) form.addEventListener("submit", function (e) {
+      if (typeof form.checkValidity === "function" && !form.checkValidity()) {
+        e.preventDefault();
+        form.classList.add("ws-validated");
+        var bad = form.querySelector(":invalid");
+        if (bad) {
+          bad.scrollIntoView({ block: "center", behavior: "smooth" });
+          // The real Institution select is invisible under its button, so
+          // focus the button the viewer can actually see.
+          var wrap = bad.closest(".ss");
+          (wrap ? wrap.querySelector(".ss-trigger") || bad : bad).focus({ preventScroll: true });
+        }
+        return;
+      }
       var btn = document.getElementById("wsSubmit");
-      btn.disabled = true; btn.textContent = "Please wait…";
+      btn.disabled = true;
+      btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Please wait…';
     });
   })();
 </script>
