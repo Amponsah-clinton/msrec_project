@@ -53,6 +53,16 @@
   .wsa-badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; }
   .wsa-badge.yes { background: #e9f7ef; color: #1c7a46; } .wsa-badge.no { background: #eef2f7; color: #64748b; }
   .wsa-badge.paid { background: #e3f0ff; color: #1e5fb0; } .wsa-badge.pending { background: #fff4e5; color: #b4731f; } .wsa-badge.failed { background: #fdeaea; color: #b4261f; }
+  .wsa-badge.req { background: #ede9fe; color: #6d28d9; }
+  .wsa-req-box { border: 1px dashed var(--border,#d7deea); border-radius: 10px; padding: 12px 14px; background: rgba(109,40,217,.035); }
+  .wsa-req-box .hint { display: block; margin-top: 7px; }
+  /* Mode banner above the registration list. */
+  .wsa-mode { display: flex; align-items: flex-start; gap: 12px; border-radius: 12px; padding: 13px 16px; margin-bottom: 14px;
+    font-size: 13.5px; line-height: 1.55; border: 1px solid #ddd6fe; background: rgba(109,40,217,.06); color: #4c1d95; }
+  .wsa-mode.optional { border-color: var(--border,#e5e9f0); background: var(--card-bg,#f8fafc); color: var(--muted,#56607a); }
+  .wsa-mode i.lead { font-size: 16px; margin-top: 1px; }
+  .wsa-mode a { color: inherit; font-weight: 700; }
+  .wsa-owed { display: inline-block; margin-left: 6px; background: #fff4e5; color: #b4731f; border-radius: 999px; padding: 2px 9px; font-weight: 700; font-size: 12px; }
   .wsa-sent { font-size: 11px; color: #1c7a46; display: inline-flex; align-items: center; gap: 3px; }
   .wsa-row-actions { display: flex; gap: 5px; flex-wrap: wrap; } .wsa-row-actions form { display: inline; }
   .wsa-icon-btn { border: 1px solid var(--border,#dbe2ec); background: var(--card-bg,#fff); border-radius: 7px; width: 30px; height: 30px; cursor: pointer; font-size: 13px; color: var(--text,#333); }
@@ -103,10 +113,42 @@
 
   <!-- ===== REGISTRATIONS ===== -->
   <section class="wsa-panel active" id="registrations">
+    {% if ws.certificate_required %}
+    <div class="wsa-mode">
+      <i class="fa-solid fa-lock lead"></i>
+      <div>
+        <strong>Certificates are compulsory for this workshop.</strong>
+        {% if ws.certificate_fee_payable %}
+          Everyone who registers is booked for a certificate and charged <strong>{{ ws.fee_currency }} {{ ws.certificate_fee }}</strong>; nobody can opt out.
+        {% else %}
+          Everyone who registers gets a certificate, but the fee is <strong>0</strong> — nobody is charged. <a href="#settings" class="wsa-gotab" data-tab="settings">Set a fee →</a>
+        {% endif %}
+        {% if counts.no_cert %}
+          <br><span style="color:#b4731f;"><i class="fa-solid fa-triangle-exclamation"></i>
+          {{ counts.no_cert }} person(s) registered before this was switched on and have no certificate.</span>
+          <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}" style="display:inline;" data-confirm="Book all {{ counts.no_cert }} of these registrants for a certificate{% if ws.certificate_fee_payable %} and email them a payment link for {{ ws.fee_currency }} {{ ws.certificate_fee }}{% endif %}?">
+            {% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="scope" value="no_cert"><input type="hidden" name="action" value="require_certificates">
+            <button class="wsa-btn ghost" type="submit" style="margin-left:6px;"><i class="fa-solid fa-wand-magic-sparkles"></i> Require it for them too</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <div class="wsa-mode optional">
+      <i class="fa-regular fa-circle-question lead"></i>
+      <div>
+        <strong>Certificates are optional.</strong> The form asks each registrant, and only those who say yes pay
+        {% if ws.certificate_fee_payable %}the {{ ws.fee_currency }} {{ ws.certificate_fee }} fee{% else %}(the fee is currently 0){% endif %}.
+        <a href="#settings" class="wsa-gotab" data-tab="settings">Make it compulsory for everyone →</a>
+      </div>
+    </div>
+    {% endif %}
+
     <div class="wsa-chips">
       <button type="button" class="wsa-chip active" data-filter="all"><b>{{ counts.all }}</b><span>Registered</span></button>
       <button type="button" class="wsa-chip" data-filter="wants_cert"><b>{{ counts.wants_cert }}</b><span>Want certificate</span></button>
       <button type="button" class="wsa-chip" data-filter="paid"><b>{{ counts.paid }}</b><span>Paid</span></button>
+      <button type="button" class="wsa-chip" data-filter="unpaid"><b>{{ counts.unpaid }}</b><span>Fee unpaid</span></button>
       <button type="button" class="wsa-chip" data-filter="no_cert"><b>{{ counts.no_cert }}</b><span>No certificate</span></button>
     </div>
 
@@ -150,13 +192,20 @@
           <option value="all">Everyone ({{ counts.all }})</option>
           <option value="wants_cert">Wants a certificate ({{ counts.wants_cert }})</option>
           <option value="paid">Paid ({{ counts.paid }})</option>
+          <option value="unpaid">Fee unpaid ({{ counts.unpaid }})</option>
           <option value="no_cert">No certificate ({{ counts.no_cert }})</option>
         </select>
         <span class="wsa-actionbar-sp"></span>
         <button class="wsa-btn primary" name="action" value="send_meeting_link"><i class="fa-solid fa-link"></i> Meeting link</button>
         <button class="wsa-btn ghost" name="action" value="send_materials"><i class="fa-solid fa-folder-open"></i> Materials</button>
         <button class="wsa-btn ghost" name="action" value="send_certificate"><i class="fa-solid fa-award"></i> Certificate <span class="wsa-btn-sub">(paid)</span></button>
+        <button class="wsa-btn ghost" name="action" value="send_payment_link"><i class="fa-solid fa-credit-card"></i> Payment link <span class="wsa-btn-sub">(unpaid)</span></button>
       </form>
+      {% if counts.unpaid %}
+      <p class="wsa-inline-warn"><i class="fa-solid fa-triangle-exclamation"></i>
+        {{ counts.unpaid }} registrant(s) owe a certificate fee<span class="wsa-owed">{{ ws.fee_currency }} {{ counts.outstanding }} outstanding</span>
+        — send them the payment link above. They get the letter but no certificate until they pay.</p>
+      {% endif %}
       {% if counts.all == 0 %}
       <p class="wsa-inline-warn"><i class="fa-solid fa-triangle-exclamation"></i> No one has registered yet — share <code>/workshop/{{ ws.slug }}/</code> to collect registrations.</p>
       {% endif %}
@@ -174,6 +223,7 @@
           <option value="paid">Paid participants ({{ counts.paid }})</option>
           <option value="all">Everyone ({{ counts.all }})</option>
           <option value="no_cert">No certificate — letter only ({{ counts.no_cert }})</option>
+          <option value="unpaid">Fee unpaid — letter only ({{ counts.unpaid }})</option>
         </select>
         <span class="wsa-actionbar-sp"></span>
         <button class="wsa-btn primary" name="action" value="approve_send" data-confirm="Approve the selected group for this workshop and email + SMS their documents now?"><i class="fa-solid fa-paper-plane"></i> Approve &amp; send documents</button>
@@ -187,15 +237,18 @@
           <thead><tr><th>Name</th><th>Institution</th><th>Contact</th><th>Certificate</th><th>Sent</th><th>Actions</th></tr></thead>
           <tbody>
             {% for r in regs %}
-            <tr class="wsa-reg-row" data-wants="{{ r.wants_certificate|yesno:'1,0' }}" data-paid="{{ r.is_paid|yesno:'1,0' }}">
+            <tr class="wsa-reg-row" data-wants="{{ r.wants_certificate|yesno:'1,0' }}" data-paid="{{ r.is_paid|yesno:'1,0' }}" data-unpaid="{{ r.payment_outstanding|yesno:'1,0' }}">
               <td><strong>{{ r.name }}</strong><br><span style="font-size:11px;color:#94a3b8;">{{ r.created_at|date:"j M Y" }}</span></td>
               <td>{{ r.institution }}</td>
               <td>{{ r.email }}{% if r.phone %}<br>{{ r.phone }}{% endif %}</td>
               <td>
-                {% if r.wants_certificate %}<span class="wsa-badge yes">Wants cert</span><br>
+                {% if r.wants_certificate %}
+                  {% if r.certificate_required_at_signup %}<span class="wsa-badge req" title="The certificate was compulsory when this person registered">Required</span>
+                  {% else %}<span class="wsa-badge yes">Wants cert</span>{% endif %}<br>
                   {% if r.payment_status == 'success' %}<span class="wsa-badge paid">Paid {{ r.currency }} {{ r.amount }}</span>
-                  {% elif r.payment_status == 'pending' %}<span class="wsa-badge pending">Pending</span>
-                  {% elif r.payment_status == 'failed' %}<span class="wsa-badge failed">Failed</span>{% endif %}
+                  {% elif r.payment_status == 'pending' %}<span class="wsa-badge pending">Owes {{ r.currency }} {{ r.amount }}</span>
+                  {% elif r.payment_status == 'failed' %}<span class="wsa-badge failed">Failed — {{ r.currency }} {{ r.amount }}</span>
+                  {% else %}<span class="wsa-badge yes">Free</span>{% endif %}
                 {% else %}<span class="wsa-badge no">No cert</span>{% endif %}
               </td>
               <td>
@@ -208,6 +261,7 @@
                 <div class="wsa-row-actions">
                   <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="send_meeting_link"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn" title="Send meeting link"><i class="fa-solid fa-link"></i></button></form>
                   <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="send_materials"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn" title="Send materials"><i class="fa-solid fa-folder-open"></i></button></form>
+                  {% if r.payment_outstanding %}<form method="post" action="{% url 'workshop_admin:manage' ws.pk %}" data-confirm="Email + SMS {{ r.name }} a link to pay {{ r.currency }} {{ r.amount }}?">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="send_payment_link"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn" style="color:#b4731f;border-color:#f3dcae;" title="Send payment link"><i class="fa-solid fa-credit-card"></i></button></form>{% endif %}
                   <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}" data-confirm="Approve {{ r.name }} and email + SMS their documents?">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="approve_send"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn" style="color:#0f8a86;border-color:#bfe3e1;" title="Approve & send documents"><i class="fa-solid fa-user-check"></i></button></form>
                   <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}" data-confirm="Delete {{ r.name }}'s registration?" data-confirm-variant="danger">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="delete_registration"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn danger" title="Delete"><i class="fa-solid fa-trash"></i></button></form>
                 </div>
@@ -232,6 +286,17 @@
         <div class="wsa-form-grid">
           <div class="wsa-f wide"><label class="wsa-switch"><input type="checkbox" name="is_published" {% if ws.is_published %}checked{% endif %}> Published (visible on the public workshops page)</label></div>
           <div class="wsa-f wide"><label class="wsa-switch"><input type="checkbox" name="registration_closed" {% if ws.registration_closed %}checked{% endif %}> Force registration closed (overrides the schedule)</label></div>
+          <div class="wsa-f wide wsa-req-box">
+            <label class="wsa-switch"><input type="checkbox" name="certificate_required" id="wsaCertRequired" {% if ws.certificate_required %}checked{% endif %}> <strong>Certificate compulsory for everyone</strong></label>
+            <span class="hint" id="wsaCertReqOn" {% if not ws.certificate_required %}hidden{% endif %}>
+              <i class="fa-solid fa-lock"></i> <strong>On:</strong> the public form stops asking. Every registration is booked for a certificate and sent straight to checkout for
+              <strong>{{ ws.fee_currency }} {{ ws.certificate_fee }}</strong> — a registration isn't complete until that fee is paid.
+            </span>
+            <span class="hint" id="wsaCertReqOff" {% if ws.certificate_required %}hidden{% endif %}>
+              <i class="fa-solid fa-unlock"></i> <strong>Off:</strong> registrants choose. Only those who ask for a certificate pay; everyone who opts out pays nothing.
+            </span>
+            <span class="hint" id="wsaCertReqFree" hidden><i class="fa-solid fa-triangle-exclamation" style="color:#b4731f;"></i> The certificate fee below is 0, so nobody would be charged. Set a fee for payment to be compulsory too.</span>
+          </div>
 
           <div class="wsa-f"><label>Title</label><input type="text" name="title" value="{{ ws.title }}" maxlength="200"></div>
           <div class="wsa-f"><label>Title font size (px)</label><input type="number" name="title_font_size" value="{{ ws.title_font_size }}" min="14" max="72" step="1"><span class="hint">Size of the title on the public workshop page (scales down on small screens).</span></div>
@@ -379,6 +444,26 @@
       document.addEventListener("keydown", function (e) { if (e.key === "Escape" && imgModal.classList.contains("open")) closeImg(); });
     }
 
+    // The compulsory-certificate switch: spell out, as it is toggled, what
+    // it means -- and warn when a 0 fee would make it charge nobody.
+    var certReq = document.getElementById("wsaCertRequired");
+    var feeInput = document.querySelector('input[name="certificate_fee"]');
+    var reqOn = document.getElementById("wsaCertReqOn");
+    var reqOff = document.getElementById("wsaCertReqOff");
+    var reqFree = document.getElementById("wsaCertReqFree");
+    function syncCertReq() {
+      var on = certReq.checked;
+      var free = !(parseFloat(feeInput && feeInput.value) > 0);
+      if (reqOn) reqOn.hidden = !on || free;
+      if (reqOff) reqOff.hidden = on;
+      if (reqFree) reqFree.hidden = !on || !free;
+    }
+    if (certReq) {
+      certReq.addEventListener("change", syncCertReq);
+      if (feeInput) feeInput.addEventListener("input", syncCertReq);
+      syncCertReq();
+    }
+
     // Clickable count chips -> filter the registrations table.
     var chips = document.querySelectorAll(".wsa-chip[data-filter]");
     var rows = Array.prototype.slice.call(document.querySelectorAll(".wsa-reg-row"));
@@ -388,6 +473,7 @@
       if (f === "wants_cert") return row.dataset.wants === "1";
       if (f === "no_cert") return row.dataset.wants === "0";
       if (f === "paid") return row.dataset.paid === "1";
+      if (f === "unpaid") return row.dataset.unpaid === "1";
       return true;
     }
     function applyFilter(f) {

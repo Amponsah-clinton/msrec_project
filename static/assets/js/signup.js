@@ -214,6 +214,9 @@ document.addEventListener("DOMContentLoaded", () => {
       toggleRoleSection(checkbox);
       updateDeclarationsVisibility();
       applyFormVisibility();
+      // Showing or hiding a role's section changes whether its "Other"
+      // institution box is in play, and so whether it is compulsory.
+      syncInstitutionOthers();
       if (roleCheckboxes.some((c) => c.checked)) roleError.hidden = true;
     });
   });
@@ -234,10 +237,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const other = document.getElementById(select.dataset.otherInput);
     if (!other) return;
     const isOther = select.value === "__other__";
-    // Never leave a hidden field required — browsers refuse to submit a
-    // form with a required control that can't be focused.
-    other.hidden = !isOther;
-    other.required = isOther && select.required;
+    // The box sits in its own block (label + input) so it reads as a
+    // question of its own rather than part of the dropdown — show and hide
+    // the whole block, not just the input.
+    const block = other.closest("[data-institution-other-block]") || other;
+    // Picking "Other" is itself the answer that the institution has to be
+    // typed, so the box is compulsory from that moment — whether or not the
+    // dropdown above it was required. The one exception is a box inside a
+    // section that is currently hidden (a role that isn't being applied
+    // for): never leave a hidden field required, because browsers refuse to
+    // submit a form with a required control that can't be focused.
+    const outOfPlay = !isOther || Boolean(select.closest("[hidden]"));
+    block.hidden = !isOther;
+    other.required = !outOfPlay;
     if (!isOther) other.value = "";
   }
 
@@ -296,6 +308,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const independent = independentReviewer.checked;
     reviewerInstitution.required = isRoleChecked("reviewer") && !independent;
     reviewerInstitutionReqTag.hidden = independent;
+    if (independent && reviewerInstitution.value === "__other__") {
+      // Nothing to type: close the "Other" box rather than leave a
+      // compulsory field behind for a reviewer with no affiliation.
+      reviewerInstitution.value = "";
+    }
     syncInstitutionOthers();
   }
   independentReviewer.addEventListener("change", applyReviewerInstitutionRequirement);

@@ -13,24 +13,43 @@
   .wst-pill { display: inline-block; margin-top: 10px; background: rgba(15,138,134,.12); color: #0f6b67;
     border-radius: 999px; padding: 7px 16px; font-size: 13.5px; font-weight: 600; }
   .wst-home { display: inline-block; margin-top: 26px; color: #0f8a86; font-weight: 600; text-decoration: none; }
+  .wst-warn { background: #fff7e6; border: 1px solid #f3dcae; color: #8a5a10; border-radius: 12px;
+    padding: 14px 16px; margin: 18px auto 4px; max-width: 460px; font-size: 14px; line-height: 1.55; text-align: left; }
+  .wst-pay { display: inline-block; margin-top: 16px; background: #0f8a86; color: #fff; border-radius: 10px;
+    padding: 12px 24px; font-size: 15px; font-weight: 700; text-decoration: none; }
+  .wst-pay:hover { background: #0c726e; color: #fff; }
 </style>
 {% endblock %}
 
 {% block content %}
 <main class="main">
   <div class="wst-wrap">
-    <div class="wst-icon"><i class="bi bi-check-lg"></i></div>
-    <h1>You're registered!</h1>
+    {% if reg and not reg.registration_complete %}
+      <div class="wst-icon" style="background:rgba(180,115,31,.14);color:#b4731f;"><i class="bi bi-hourglass-split"></i></div>
+      <h1>One step left</h1>
+    {% else %}
+      <div class="wst-icon"><i class="bi bi-check-lg"></i></div>
+      <h1>You're registered!</h1>
+    {% endif %}
     {% if reg %}
-      <p>Thank you, <strong>{{ reg.name }}</strong>. Your registration for <strong>{{ ws.title }}</strong> has been received.</p>
-      {% if reg.wants_certificate %}
-        {% if reg.is_paid %}
-          <span class="wst-pill"><i class="bi bi-patch-check-fill"></i> Certificate fee paid</span>
-          <p>Your certificate will be emailed to you after the workshop.</p>
+      <p>Thank you, <strong>{{ reg.name }}</strong>. Your details for <strong>{{ ws.title }}</strong> have been received.</p>
+      {% if reg.is_paid %}
+        <span class="wst-pill"><i class="bi bi-patch-check-fill"></i> Certificate fee paid</span>
+        <p>Your certificate will be emailed to you after the workshop.</p>
+      {% elif reg.payment_outstanding %}
+        {% if reg.certificate_required_at_signup %}
+          <div class="wst-warn"><i class="bi bi-exclamation-triangle-fill"></i>
+            A certificate is part of this workshop, so the fee of
+            <strong>{{ reg.currency }} {{ reg.amount }}</strong> applies to every participant.
+            Your registration is <strong>not complete</strong> until it is paid.</div>
         {% else %}
-          <p>You asked for a certificate but haven't completed payment yet.</p>
-          <a class="wst-home" href="{% url 'workshop:pay' reg.pk %}">Complete certificate payment →</a>
+          <div class="wst-warn">You asked for a certificate, and the fee of
+            <strong>{{ reg.currency }} {{ reg.amount }}</strong> hasn't been paid yet.</div>
         {% endif %}
+        <div><a class="wst-pay" href="{% url 'workshop:pay' reg.pk %}"><i class="bi bi-lock-fill"></i> Pay {{ reg.currency }} {{ reg.amount }} now</a></div>
+      {% elif reg.certificate_ready %}
+        <span class="wst-pill"><i class="bi bi-award-fill"></i> Certificate included</span>
+        <p>Your certificate will be emailed to you after the workshop. We'll also send the meeting link and any materials beforehand.</p>
       {% else %}
         <p>We'll email you the meeting link and any materials ahead of the workshop.</p>
       {% endif %}

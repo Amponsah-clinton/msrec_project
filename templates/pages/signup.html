@@ -6,6 +6,7 @@
 {% block body_class %}signup-page{% endblock %}
 {% block extra_css %}
 <link href="{% static 'assets/css/signup.css' %}" rel="stylesheet">
+<link href="{% static 'assets/css/searchable-select.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -217,12 +218,15 @@
 
                 <div class="field">
                   <label for="institution">Institution / Organization <span class="req">*</span></label>
-                  <select id="institution" name="institution" data-institution-select data-other-input="institutionOther" data-require-on-show>
+                  <select id="institution" name="institution" data-institution-select data-other-input="institutionOther" data-require-on-show data-searchable-select data-search-placeholder="Search institutions…">
                     <option value="">Select institution</option>
                     <option value="__other__">Other (not listed)</option>
                     {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                   </select>
-                  <input type="text" class="institution-other" id="institutionOther" name="institutionOther" maxlength="200" placeholder="Enter your institution / organization" hidden>
+                  <div class="institution-other-block" data-institution-other-block hidden>
+                    <label class="institution-other-label" for="institutionOther">Enter your institution / organization <span class="req">*</span></label>
+                    <input type="text" class="institution-other" id="institutionOther" name="institutionOther" maxlength="200" placeholder="e.g. University of Ghana">
+                  </div>
                 </div>
 
                 <div class="field field-wide">
@@ -268,12 +272,15 @@
                 </div>
                 <div class="field">
                   <label for="reviewerInstitution">Institution / Organization <span class="req" id="reviewerInstitutionReqTag">*</span></label>
-                  <select id="reviewerInstitution" name="reviewerInstitution" data-institution-select data-other-input="reviewerInstitutionOther">
+                  <select id="reviewerInstitution" name="reviewerInstitution" data-institution-select data-other-input="reviewerInstitutionOther" data-searchable-select data-search-placeholder="Search institutions…">
                     <option value="">Select institution</option>
                     <option value="__other__">Other (not listed)</option>
                     {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                   </select>
-                  <input type="text" class="institution-other" id="reviewerInstitutionOther" name="reviewerInstitutionOther" maxlength="200" placeholder="Enter your institution / organization" hidden>
+                  <div class="institution-other-block" data-institution-other-block hidden>
+                    <label class="institution-other-label" for="reviewerInstitutionOther">Enter your institution / organization <span class="req">*</span></label>
+                    <input type="text" class="institution-other" id="reviewerInstitutionOther" name="reviewerInstitutionOther" maxlength="200" placeholder="e.g. University of Ghana">
+                  </div>
                 </div>
                 <div class="field">
                   <label for="reviewerDiscipline">Primary Discipline <span class="req">*</span></label>
@@ -346,12 +353,15 @@
                 </div>
                 <div class="field">
                   <label for="committeeInstitution">Institution / Organization <span class="req" id="committeeInstitutionReqTag">*</span></label>
-                  <select id="committeeInstitution" name="committeeInstitution" data-institution-select data-other-input="committeeInstitutionOther">
+                  <select id="committeeInstitution" name="committeeInstitution" data-institution-select data-other-input="committeeInstitutionOther" data-searchable-select data-search-placeholder="Search institutions…">
                     <option value="">Select institution</option>
                     <option value="__other__">Other (not listed)</option>
                     {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
                   </select>
-                  <input type="text" class="institution-other" id="committeeInstitutionOther" name="committeeInstitutionOther" maxlength="200" placeholder="Enter your institution / organization" hidden>
+                  <div class="institution-other-block" data-institution-other-block hidden>
+                    <label class="institution-other-label" for="committeeInstitutionOther">Enter your institution / organization <span class="req">*</span></label>
+                    <input type="text" class="institution-other" id="committeeInstitutionOther" name="committeeInstitutionOther" maxlength="200" placeholder="e.g. University of Ghana">
+                  </div>
                 </div>
                 <div class="field">
                   <label for="committeeYears">Years of Professional Experience <span class="req">*</span></label>
@@ -416,6 +426,7 @@
 {% block extra_js %}
 <script src="{% static 'assets/js/country-list.js' %}"></script>
 <script src="{% static 'assets/js/institutions.js' %}"></script>
+<script src="{% static 'assets/js/searchable-select.js' %}"></script>
 <script src="{% static 'assets/js/signup.js' %}"></script>
 <script src="{% static 'assets/js/auth-alerts.js' %}"></script>
 {% endblock %}

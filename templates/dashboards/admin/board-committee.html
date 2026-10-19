@@ -7,6 +7,7 @@
 <link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
 <link href="{% static 'dashboard/css/board-committee-admin.css' %}" rel="stylesheet">
 <link href="{% static 'dashboard/css/board-committee-cards.css' %}" rel="stylesheet">
+<link href="{% static 'assets/css/searchable-select.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block nav_content %}
@@ -142,7 +143,7 @@
               </div>
               <div class="acct-form-row">
                 <label class="span-2">Institution / organization (optional)
-                  <select name="institution" data-bc-inst-select>
+                  <select name="institution" data-bc-inst-select data-other-input="bcAddInstitutionOther" data-searchable-select data-search-placeholder="Search institutions…">
                     <option value="">None</option>
                     <option value="__other__">Other (not listed)...</option>
                     {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
@@ -150,7 +151,7 @@
                 </label>
               </div>
               <div class="acct-form-row" data-bc-inst-other-row hidden>
-                <label class="span-2">Please specify the institution / organization<input type="text" name="institution_other" data-bc-inst-other maxlength="200" placeholder="e.g. University of Ghana"></label>
+                <label class="span-2">Please specify the institution / organization<input type="text" id="bcAddInstitutionOther" name="institution_other" data-bc-inst-other maxlength="200" placeholder="e.g. University of Ghana"></label>
               </div>
               <div class="acct-form-row">
                 <label>Tag / discipline (optional)
@@ -218,7 +219,7 @@
               </div>
               <div class="acct-form-row">
                 <label class="span-2">Institution / organization (optional)
-                  <select name="institution" id="bcEditInstitution" data-bc-inst-select>
+                  <select name="institution" id="bcEditInstitution" data-bc-inst-select data-other-input="bcEditInstitutionOther" data-searchable-select data-search-placeholder="Search institutions…">
                     <option value="">None</option>
                     <option value="__other__">Other (not listed)...</option>
                     {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
@@ -262,5 +263,6 @@
 
 {% block extra_js %}
 <script src="{% static 'assets/js/institutions.js' %}"></script>
+<script src="{% static 'assets/js/searchable-select.js' %}"></script>
 <script src="{% static 'dashboard/js/board-committee-admin.js' %}"></script>
 {% endblock %}

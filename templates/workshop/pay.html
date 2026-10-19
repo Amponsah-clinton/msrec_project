@@ -23,6 +23,9 @@
   .wsp-btn:disabled { opacity: .6; cursor: default; }
   .wsp-error { color: #c0392b; font-size: 14px; margin-bottom: 14px; min-height: 1px; }
   .wsp-skip { display: inline-block; margin-top: 16px; color: var(--muted,#56607a); font-size: 13.5px; }
+  .wsp-required { margin: 0 0 20px; background: #fff7e6; border: 1px solid #f3dcae; color: #8a5a10;
+    border-radius: 10px; padding: 11px 14px; font-size: 13.5px; text-align: left; line-height: 1.5; }
+  .wsp-foot-note { margin-top: 16px; font-size: 12.5px; color: var(--muted,#6b7488); }
 </style>
 {% endblock %}
 
@@ -32,7 +35,14 @@
     <div class="wsp-card">
       <div class="wsp-lock"><i class="bi bi-shield-lock-fill"></i></div>
       <h1>Pay your certificate fee</h1>
+      {% if reg.certificate_required_at_signup %}
+      <p>A certificate of participation is part of this workshop, so the one-time fee applies to every participant.</p>
+      <p class="wsp-required"><i class="bi bi-exclamation-triangle-fill"></i>
+        Your details are saved and your place is held, but your registration is
+        <strong>only complete once this fee is paid</strong>.</p>
+      {% else %}
       <p>A one-time fee applies for your certificate of participation. Your registration is already saved.</p>
+      {% endif %}
 
       <div class="wsp-summary">
         <div class="wsp-row"><span>Workshop</span><strong>{{ ws.title }}</strong></div>
@@ -43,7 +53,12 @@
       {% csrf_token %}
       <div class="wsp-error" id="wspError"></div>
       <button type="button" class="wsp-btn" id="wspPayBtn"><i class="bi bi-lock-fill"></i> Pay {{ reg.currency }} {{ reg.amount }}</button>
-      <a href="{% url 'workshop:thanks' %}?r={{ reg.pk }}" class="wsp-skip">I'll pay later</a>
+      {% if reg.certificate_required_at_signup %}
+        <p class="wsp-foot-note">Payment is handled securely by Paystack. If you close this page, use the link
+          we've emailed you to finish paying.</p>
+      {% else %}
+        <a href="{% url 'workshop:thanks' %}?r={{ reg.pk }}" class="wsp-skip">I'll pay later</a>
+      {% endif %}
     </div>
   </div>
 </main>

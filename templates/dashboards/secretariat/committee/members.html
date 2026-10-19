@@ -7,6 +7,7 @@
 <link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
 <link href="{% static 'dashboard/css/committee.css' %}" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'dashboard/css/secretariat.css' %}">
+<link href="{% static 'assets/css/searchable-select.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block nav_content %}
@@ -167,7 +168,7 @@
               </div>
               <div class="acct-form-row">
                 <label class="span-2 cmt-full">Institution / organization (optional)
-                  <select name="institution" data-cmt-inst-select>
+                  <select name="institution" data-cmt-inst-select data-other-input="cmMemberAddInstitutionOther" data-searchable-select data-search-placeholder="Search institutions…">
                     <option value="">None</option>
                     <option value="__other__">Other (not listed)...</option>
                     {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
@@ -175,7 +176,7 @@
                 </label>
               </div>
               <div class="acct-form-row" data-cmt-inst-other-row hidden>
-                <label class="span-2 cmt-full">Please specify the institution / organization<input type="text" name="institution_other" data-cmt-inst-other maxlength="200" placeholder="e.g. University of Ghana"></label>
+                <label class="span-2 cmt-full">Please specify the institution / organization<input type="text" id="cmMemberAddInstitutionOther" name="institution_other" data-cmt-inst-other maxlength="200" placeholder="e.g. University of Ghana"></label>
               </div>
               <div class="acct-form-row">
                 <label>Tag / discipline (optional)
@@ -239,7 +240,7 @@
               </div>
               <div class="acct-form-row">
                 <label class="span-2 cmt-full">Institution / organization (optional)
-                  <select name="institution" id="cmMemberEditInstitution" data-cmt-inst-select>
+                  <select name="institution" id="cmMemberEditInstitution" data-cmt-inst-select data-other-input="cmMemberEditInstitutionOther" data-searchable-select data-search-placeholder="Search institutions…">
                     <option value="">None</option>
                     <option value="__other__">Other (not listed)...</option>
                     {% for inst in institutions %}<option value="{{ inst.name }}">{{ inst.name }}</option>{% endfor %}
@@ -284,24 +285,33 @@
 
 {% block extra_js %}
 <script src="{% static 'assets/js/institutions.js' %}"></script>
+<script src="{% static 'assets/js/searchable-select.js' %}"></script>
 <script src="{% static 'dashboard/js/committee.js' %}"></script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
   // Wires a <select> (Tag / discipline, or Institution) to its "Please
   // specify" row -- shared shape with board-committee-admin.js, scoped to
   // this template's own data-cmt-* attributes.
-  function wireOther(form, selectSel, rowSel) {
+  function wireOther(form, selectSel, rowSel, requireOther) {
     const select = form.querySelector(selectSel);
     const row = form.querySelector(rowSel);
     if (!select || !row) return;
-    const sync = () => { row.hidden = select.value !== "__other__"; };
+    const input = row.querySelector("input");
+    const sync = () => {
+      const isOther = select.value === "__other__";
+      row.hidden = !isOther;
+      // Picking "Other" is itself the answer that the value has to be
+      // typed, so the box is compulsory from that moment -- even where the
+      // dropdown above it is optional.
+      if (requireOther && input) input.required = isOther;
+    };
     select.addEventListener("change", sync);
     sync();
   }
   const instSelects = document.querySelectorAll("[data-cmt-inst-select]");
   document.querySelectorAll("#cmMemberAddOverlay form, #cmMemberEditOverlay form").forEach((form) => {
     wireOther(form, "[data-cmt-tag-select]", "[data-cmt-tag-other-row]");
-    wireOther(form, "[data-cmt-inst-select]", "[data-cmt-inst-other-row]");
+    wireOther(form, "[data-cmt-inst-select]", "[data-cmt-inst-other-row]", true);
     // An institution typed into the "Please specify" box is Title-Cased and
     // added to the Institution dropdown of both modals, then selected --
     // see assets/js/institutions.js. The server (pages.institutions) adds
@@ -316,8 +326,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Picks `value` in a dropdown with an "Other..." escape hatch, dropping an
-  // unlisted value into the companion free-text input.
-  function fillSelectWithOther(select, other, row, value) {
+  // unlisted value into the companion free-text input. The select's own
+  // change handler then shows or hides that input's row.
+  function fillSelectWithOther(select, other, value) {
     const v = value || "";
     const known = Array.from(select.options).some((opt) => opt.value === v && opt.value !== "__other__");
     if (v && !known) {
@@ -327,7 +338,9 @@ document.addEventListener("DOMContentLoaded", () => {
       select.value = v;
       if (other) other.value = "";
     }
-    if (row) row.hidden = select.value !== "__other__";
+    // Let the select's own handler re-apply everything that hangs off it:
+    // the companion row's visibility and the box's required-ness.
+    select.dispatchEvent(new Event("change", { bubbles: true }));
   }
 
   document.querySelectorAll("[data-cm-member-edit]").forEach((btn) => {
@@ -345,13 +358,11 @@ document.addEventListener("DOMContentLoaded", () => {
       fillSelectWithOther(
         document.getElementById("cmMemberEditInstitution"),
         document.getElementById("cmMemberEditInstitutionOther"),
-        document.getElementById("cmMemberEditInstOtherRow"),
         row.dataset.institution,
       );
       fillSelectWithOther(
         document.getElementById("cmMemberEditTag"),
         document.getElementById("cmMemberEditTagOther"),
-        document.getElementById("cmMemberEditTagOtherRow"),
         row.dataset.tag,
       );
     });

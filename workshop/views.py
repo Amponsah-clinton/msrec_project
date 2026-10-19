@@ -35,7 +35,10 @@ def _notify_admin_of_registration(reg, ws):
             "workshop_admin:manage", kwargs={"pk": ws.pk}
         )
         contact = f"Email: {reg.email}" + (f" · Phone: {reg.phone}" if reg.phone else "")
-        extra = "Wants certificate: " + ("Yes" if reg.wants_certificate else "No")
+        if reg.certificate_required_at_signup:
+            extra = "Certificate: compulsory for this workshop"
+        else:
+            extra = "Wants certificate: " + ("Yes" if reg.wants_certificate else "No")
         if reg.comments:
             extra += f" · Comments: {reg.comments}"
         send_branded_email(
@@ -88,11 +91,22 @@ def _send_received_sms(reg, ws):
         parts = [f"MSREC: You're registered for {ws.title}."]
         if reg.wants_certificate and reg.is_paid:
             parts.append("Certificate fee received.")
+        elif reg.wants_certificate:
+            parts.append("Your certificate is included.")
         if ws.meeting_link:
             parts.append(f"Join: {ws.meeting_link}")
         sms.send_sms([reg.phone], " ".join(parts))
     except Exception:
         logger.exception("Workshop registration SMS failed for %s", reg.phone)
+
+
+def _send_payment_link(reg, ws):
+    """Best-effort: never blocks the redirect to checkout."""
+    try:
+        from . import emails
+        emails.send_payment_required_email(reg, ws)
+    except Exception:
+        logger.exception("Workshop payment-link email failed for %s", reg.email)
 
 
 def _register_institution(name):
@@ -115,7 +129,10 @@ def register(request, slug):
         )
         email = request.POST.get("email", "").strip().lower()
         phone = request.POST.get("phone", "").strip()
-        wants_certificate = request.POST.get("wants_certificate") == "yes"
+        # Compulsory certificates: the form never asked, so nothing the
+        # registrant posted can opt them out.
+        cert_required = ws.certificate_required
+        wants_certificate = cert_required or request.POST.get("wants_certificate") == "yes"
         comments = request.POST.get("comments", "").strip()
 
         errors = []
@@ -127,7 +144,7 @@ def register(request, slug):
             errors.append("Your email is required.")
         if not phone:
             errors.append("Your phone number is required.")
-        if "wants_certificate" not in request.POST:
+        if not cert_required and "wants_certificate" not in request.POST:
             errors.append("Please tell us whether you want a certificate.")
         if errors:
             for e in errors:
@@ -139,22 +156,31 @@ def register(request, slug):
 
         reg = WorkshopRegistration.objects.create(
             workshop=ws, name=name[:200], institution=institution[:200], email=email,
-            phone=phone[:40], wants_certificate=wants_certificate, comments=comments,
+            phone=phone[:40], wants_certificate=wants_certificate,
+            certificate_required_at_signup=cert_required, comments=comments,
         )
         _register_institution(institution)
         # Notify the organiser of every registration (paid or not).
         _notify_admin_of_registration(reg, ws)
 
-        if wants_certificate:
+        if wants_certificate and ws.certificate_fee_payable:
             reg.payment_status = WorkshopRegistration.PaymentStatus.PENDING
             reg.amount = ws.certificate_fee
             reg.currency = ws.fee_currency
             reg.payment_reference = f"MSREC-WS-{uuid.uuid4().hex[:18]}"
             reg.save(update_fields=["payment_status", "amount", "currency", "payment_reference"])
+            if cert_required:
+                # The fee isn't optional, so they need a way back to it if
+                # they close the checkout page -- email and text the link now
+                # rather than leaving them with nothing.
+                _send_payment_link(reg, ws)
             return redirect("workshop:pay", pk=reg.pk)
 
+        # Either no certificate, or one that costs nothing -- there is
+        # nothing to pay, so the registration is already complete.
         reg.payment_status = WorkshopRegistration.PaymentStatus.NOT_REQUIRED
-        reg.save(update_fields=["payment_status"])
+        reg.currency = ws.fee_currency
+        reg.save(update_fields=["payment_status", "currency"])
         _notify_registration_success(reg, ws)
         return redirect(f"{reverse('workshop:thanks')}?r={reg.pk}")
 
@@ -167,7 +193,7 @@ def _register_context(ws, prefill):
 
 def pay(request, pk):
     reg = get_object_or_404(WorkshopRegistration, pk=pk)
-    if not reg.wants_certificate or reg.is_paid:
+    if not reg.payment_outstanding:
         return redirect(f"{reverse('workshop:thanks')}?r={reg.pk}")
     return render(request, "workshop/pay.html", {
         "reg": reg,
@@ -266,7 +292,7 @@ def download_document(request, token, kind):
         pdf = render_confirmation_letter_pdf(reg, reg.workshop)
         filename = f"{slug}_Confirmation_of_Participation.pdf"
     elif kind == "certificate":
-        if not reg.is_paid:
+        if not reg.certificate_ready:
             raise Http404("No certificate for this participant.")
         from .certificate import render_workshop_certificate_pdf
         pdf = render_workshop_certificate_pdf(reg, workshop=reg.workshop)

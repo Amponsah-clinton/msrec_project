@@ -40,7 +40,7 @@ def render_confirmation_letter_pdf(reg, workshop=None):
                  f"This confirms the above-named's attendance and engagement in the workshop. "
                  f"This letter is issued at their request as evidence of participation and carries "
                  f"the reference {reg.participation_ref}."))
-    if reg.is_paid:
+    if reg.certificate_ready:
         body.append(("text",
                      "A certificate of participation has been issued separately and accompanies this letter."))
 

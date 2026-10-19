@@ -1,6 +1,6 @@
 """Approving a participant after the workshop: issue their documents (the
-Confirmation of Participation letter, and the Certificate for paid
-participants), email them as attachments, and text a unique download link.
+Confirmation of Participation letter, and the Certificate for participants
+entitled to one), email them as attachments, and text a unique download link.
 """
 import logging
 
@@ -20,7 +20,8 @@ def _slug(name):
 
 def _documents_for(reg, ws):
     """[(filename, bytes, mimetype), ...] -- the letter always, plus the
-    certificate when the participant paid for one."""
+    certificate when the participant has earned one (fee paid, or a
+    certificate that costs nothing)."""
     from .letter import render_confirmation_letter_pdf
 
     docs = [(
@@ -28,7 +29,7 @@ def _documents_for(reg, ws):
         render_confirmation_letter_pdf(reg, ws),
         "application/pdf",
     )]
-    if reg.is_paid:
+    if reg.certificate_ready:
         from .certificate import render_workshop_certificate_pdf
         cert = render_workshop_certificate_pdf(reg, workshop=ws)
         reg.save(update_fields=["certificate_ref"])  # ref assigned during render
@@ -47,7 +48,7 @@ def approve_and_send(reg, workshop=None):
     (ok, message). Best-effort on delivery; never raises."""
     ws = workshop or reg.workshop
 
-    if reg.is_paid:
+    if reg.certificate_ready:
         reg.ensure_certificate_ref()
     reg.ensure_download_token()
     if reg.approved_at is None:
@@ -63,7 +64,7 @@ def approve_and_send(reg, workshop=None):
     url = download_url(reg)
     what = (
         "your Certificate and your Confirmation of Participation letter"
-        if reg.is_paid else "your Confirmation of Participation letter"
+        if reg.certificate_ready else "your Confirmation of Participation letter"
     )
 
     emailed = False
@@ -95,11 +96,13 @@ def approve_and_send(reg, workshop=None):
     now = timezone.now()
     reg.documents_sent_at = now
     fields = ["documents_sent_at"]
-    if reg.is_paid and not reg.certificate_sent_at:
+    if reg.certificate_ready and not reg.certificate_sent_at:
         reg.certificate_sent_at = now
         fields.append("certificate_sent_at")
     reg.save(update_fields=fields)
 
     if emailed:
+        if reg.payment_outstanding:
+            return True, "Letter sent (certificate fee still unpaid)."
         return True, "Documents sent."
     return False, "Documents prepared, but the email couldn't be sent — check email settings."

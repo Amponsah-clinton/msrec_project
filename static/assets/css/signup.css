@@ -162,6 +162,23 @@ body.signup-page { margin: 0; font-family: var(--default-font); }
 .toggle-password i { line-height: 1; }
 .toggle-password:hover { color: var(--accent-color); background: #f2f9f9; }
 
+/* The "Other (not listed)" box that opens under an Institution dropdown.
+   It is a question of its own, not part of the dropdown, so it gets a gap,
+   its own small label and a rule up its left side to tie it back to the
+   field it belongs to. */
+.institution-other-block {
+  margin-top: 14px;
+  padding-left: 12px;
+  border-left: 2px solid color-mix(in srgb, var(--accent-color), transparent 70%);
+}
+.field .institution-other-label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #6c7a76;
+  margin-bottom: 6px;
+}
+
 .field-hint { color: #8a9492; font-size: 12.5px; margin: 6px 0 0; }
 .field-error {
   color: #c0392b;

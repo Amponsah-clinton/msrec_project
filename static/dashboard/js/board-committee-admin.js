@@ -2,18 +2,26 @@
 // "Please specify" row so picking "Other..." reveals a free-text input
 // instead of submitting the literal "__other__" value. Shared by the Add
 // and Edit modals.
-function bcWireOther(form, selectSel, rowSel) {
+function bcWireOther(form, selectSel, rowSel, requireOther) {
   const select = form.querySelector(selectSel);
   const row = form.querySelector(rowSel);
   if (!select || !row) return;
-  const sync = () => { row.hidden = select.value !== "__other__"; };
+  const input = row.querySelector("input");
+  const sync = () => {
+    const isOther = select.value === "__other__";
+    row.hidden = !isOther;
+    // Picking "Other" is itself the answer that the value has to be typed,
+    // so the box is compulsory from that moment -- even where the dropdown
+    // above it is optional.
+    if (requireOther && input) input.required = isOther;
+  };
   select.addEventListener("change", sync);
   sync();
 }
 
 function bcWireTagOther(form) {
   bcWireOther(form, "[data-bc-tag-select]", "[data-bc-tag-other-row]");
-  bcWireOther(form, "[data-bc-inst-select]", "[data-bc-inst-other-row]");
+  bcWireOther(form, "[data-bc-inst-select]", "[data-bc-inst-other-row]", true);
   bcWireInstitutionOther(form);
 }
 
@@ -32,8 +40,9 @@ function bcWireInstitutionOther(form) {
 
 // Selects `value` in a dropdown that has an "Other..." escape hatch: an
 // exact match is picked directly; anything else selects "Other" and drops
-// the value into the companion free-text input, then shows/hides its row.
-function bcFillSelectWithOther(select, other, row, value) {
+// the value into the companion free-text input. The select's own change
+// handler then shows or hides that input's row.
+function bcFillSelectWithOther(select, other, value) {
   const v = value || "";
   const known = Array.from(select.options).some((opt) => opt.value === v && opt.value !== "__other__");
   if (v && !known) {
@@ -43,7 +52,9 @@ function bcFillSelectWithOther(select, other, row, value) {
     select.value = v;
     if (other) other.value = "";
   }
-  if (row) row.hidden = select.value !== "__other__";
+  // Let the select's own handler re-apply everything that hangs off it:
+  // the companion row's visibility and the box's required-ness.
+  select.dispatchEvent(new Event("change", { bubbles: true }));
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -90,13 +101,11 @@ document.addEventListener("DOMContentLoaded", () => {
         bcFillSelectWithOther(
           document.getElementById("bcEditInstitution"),
           document.getElementById("bcEditInstitutionOther"),
-          document.getElementById("bcEditInstOtherRow"),
           row.dataset.institution,
         );
         bcFillSelectWithOther(
           document.getElementById("bcEditTag"),
           document.getElementById("bcEditTagOther"),
-          document.getElementById("bcEditTagOtherRow"),
           row.dataset.tag,
         );
 

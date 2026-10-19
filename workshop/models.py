@@ -160,6 +160,13 @@ class Workshop(models.Model):
     certificate_fee = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("100.00"))
     fee_currency = models.CharField(max_length=10, default="GHS")
 
+    # Compulsory certificates. Off (the default) the public form asks each
+    # registrant whether they want a certificate and only those who say yes
+    # are charged -- everyone else pays nothing. On, the certificate and its
+    # fee apply to everyone: the form stops asking, every registration is
+    # booked as wanting one and goes straight to checkout.
+    certificate_required = models.BooleanField(default=False)
+
     # Delivered to registrants from the admin page.
     meeting_link = models.URLField(blank=True)
     materials_file_path = models.CharField(max_length=255, blank=True)
@@ -237,6 +244,13 @@ class Workshop(models.Model):
         return True
 
     @property
+    def certificate_fee_payable(self):
+        """Whether a certificate here actually costs anything. A zero (or
+        blank) fee means certificates are free, so nobody is sent to
+        checkout even when certificates are compulsory."""
+        return bool(self.certificate_fee and self.certificate_fee > 0)
+
+    @property
     def status_label(self):
         if self.is_past:
             return "Past"
@@ -281,7 +295,7 @@ class WorkshopRegistration(models.Model):
     """One person who registered for a workshop (/workshop/<slug>/)."""
 
     class PaymentStatus(models.TextChoices):
-        NOT_REQUIRED = "not_required", "No certificate"
+        NOT_REQUIRED = "not_required", "Nothing to pay"
         PENDING = "pending", "Payment pending"
         SUCCESS = "success", "Paid"
         FAILED = "failed", "Payment failed"
@@ -296,6 +310,11 @@ class WorkshopRegistration(models.Model):
     email = models.EmailField()
     phone = models.CharField(max_length=40, blank=True)
     wants_certificate = models.BooleanField(default=False)
+    # True when the workshop had compulsory certificates at the moment this
+    # person registered -- kept on the row so that an admin later flipping
+    # the workshop setting doesn't rewrite why someone was (or wasn't)
+    # charged.
+    certificate_required_at_signup = models.BooleanField(default=False)
     comments = models.TextField(blank=True)
 
     # Certificate-fee payment (only when wants_certificate is True).
@@ -342,6 +361,31 @@ class WorkshopRegistration(models.Model):
     @property
     def is_paid(self):
         return self.payment_status == self.PaymentStatus.SUCCESS
+
+    @property
+    def certificate_ready(self):
+        """Whether this participant has earned a certificate: they are down
+        for one and there is nothing outstanding -- either the fee is paid,
+        or there was no fee to pay (a free certificate). This, not is_paid,
+        is what gates issuing, emailing and downloading a certificate."""
+        if not self.wants_certificate:
+            return False
+        return self.is_paid or self.payment_status == self.PaymentStatus.NOT_REQUIRED
+
+    @property
+    def payment_outstanding(self):
+        """Down for a certificate, but the fee has not been settled -- either
+        never completed or the attempt failed."""
+        return self.wants_certificate and self.payment_status in {
+            self.PaymentStatus.PENDING,
+            self.PaymentStatus.FAILED,
+        }
+
+    @property
+    def registration_complete(self):
+        """A compulsory-certificate registration isn't finished until the fee
+        is paid; every other registration is complete on submission."""
+        return not (self.certificate_required_at_signup and self.payment_outstanding)
 
     def ensure_certificate_ref(self):
         if not self.certificate_ref:

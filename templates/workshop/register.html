@@ -6,6 +6,7 @@
 {% block body_class %}workshop-page{% endblock %}
 
 {% block extra_css %}
+<link href="{% static 'assets/css/searchable-select.css' %}" rel="stylesheet">
 <style>
   .ws-wrap { max-width: 920px; margin: 0 auto; padding: 130px 16px 72px; }
   @media (max-width: 640px) { .ws-wrap { padding-top: 110px; } }
@@ -43,6 +44,10 @@
   .ws-field.ws-wide { grid-column: 1 / -1; }
   .ws-field label { font-weight: 600; font-size: 13.5px; }
   .ws-field .req { color: #c0392b; }
+  /* The "Other (not listed)" box that opens under the Institution
+     dropdown -- a question of its own, so it is set apart from it. */
+  .ws-inst-other { margin-top: 8px; padding-left: 12px; border-left: 2px solid var(--border, #cdd5e0); }
+  .ws-inst-other label { display: block; font-size: 12.5px; font-weight: 600; color: var(--muted, #56607a); margin-bottom: 6px; }
   .ws-field input, .ws-field select, .ws-field textarea {
     width: 100%; max-width: 100%; box-sizing: border-box;
     border: 1px solid var(--border, #cdd5e0); border-radius: 9px; padding: 10px 12px;
@@ -62,6 +67,18 @@
   .ws-fee-note { margin-top: 12px; font-size: 13.5px; color: #0f6b67; background: rgba(15,138,134,.1);
     border-radius: 9px; padding: 10px 12px; display: none; }
   .ws-fee-note.show { display: block; }
+
+  /* Compulsory certificate: there is nothing to choose, so the question is
+     replaced by a statement of what is included and what it costs. */
+  .ws-cert-included { grid-column: 1 / -1; min-width: 0; border: 1px solid #bfe3e1; border-radius: 12px;
+    padding: 16px 18px; background: rgba(15,138,134,.06); display: flex; gap: 14px; align-items: flex-start; }
+  .ws-cert-included .ico { flex: none; width: 38px; height: 38px; border-radius: 50%; background: rgba(15,138,134,.14);
+    color: #0f8a86; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .ws-cert-included h3 { margin: 0 0 4px; font-size: 15px; }
+  .ws-cert-included p { margin: 0; font-size: 13.5px; color: var(--muted, #56607a); line-height: 1.55; }
+  .ws-cert-included .fee { display: inline-block; margin-top: 9px; background: #0f8a86; color: #fff;
+    border-radius: 999px; padding: 5px 13px; font-size: 13px; font-weight: 700; }
+  .ws-cert-included .free { background: #1c7a46; }
 
   .ws-actions { margin-top: 24px; display: flex; justify-content: flex-end; gap: 12px; flex-wrap: wrap; }
   .ws-btn { background: #0f8a86; color: #fff; border: none; border-radius: 10px; padding: 13px 26px;
@@ -139,12 +156,15 @@
 
           <div class="ws-field">
             <label for="wsInstitution">Institution <span class="req">*</span></label>
-            <select id="wsInstitution" name="institution" required>
+            <select id="wsInstitution" name="institution" required data-other-input="wsInstitutionOther" data-searchable-select data-search-placeholder="Search institutions…">
               <option value="">Select institution</option>
               <option value="__other__">Other (not listed)</option>
               {% for inst in institutions %}<option value="{{ inst.name }}" {% if prefill.institution == inst.name %}selected{% endif %}>{{ inst.name }}</option>{% endfor %}
             </select>
-            <input type="text" id="wsInstitutionOther" name="institution_other" maxlength="200" placeholder="Enter your institution" hidden>
+            <div class="ws-inst-other" id="wsInstitutionOtherBlock" hidden>
+              <label for="wsInstitutionOther">Enter your institution <span class="req">*</span></label>
+              <input type="text" id="wsInstitutionOther" name="institution_other" maxlength="200" placeholder="e.g. University of Ghana">
+            </div>
           </div>
 
           <div class="ws-field">
@@ -158,6 +178,23 @@
             <span class="ws-hint">We'll text you a confirmation — use a Ghana number (02… or 05…).</span>
           </div>
 
+          {% if ws.certificate_required %}
+          <!-- Certificates are compulsory for this workshop: everyone gets
+               one, so there is nothing to opt out of. -->
+          <div class="ws-cert-included">
+            <span class="ico"><i class="bi bi-award-fill"></i></span>
+            <div>
+              <h3>A certificate of participation is included</h3>
+              {% if ws.certificate_fee_payable %}
+                <p>Every participant in this workshop receives a certificate, and the fee below applies to all registrations. You'll pay securely on the next step — your registration is complete once the fee is paid.</p>
+                <span class="fee"><i class="bi bi-lock-fill"></i> {{ ws.fee_currency }} {{ ws.certificate_fee }}</span>
+              {% else %}
+                <p>Every participant in this workshop receives a certificate. There is nothing to pay — it will be emailed to you after the workshop.</p>
+                <span class="fee free"><i class="bi bi-check-lg"></i> No fee</span>
+              {% endif %}
+            </div>
+          </div>
+          {% else %}
           <fieldset class="ws-cert-choice">
             <legend>Do you want a certificate after the workshop? <span class="req">*</span></legend>
             <div class="ws-radio-row">
@@ -165,10 +202,15 @@
               <label class="ws-radio"><input type="radio" name="wants_certificate" value="no" required> No, thank you</label>
             </div>
             <div class="ws-fee-note" id="wsFeeNote">
-              A certificate fee of <strong>{{ ws.fee_currency }} {{ ws.certificate_fee }}</strong> applies.
-              You'll pay securely on the next step after registering.
+              {% if ws.certificate_fee_payable %}
+                A certificate fee of <strong>{{ ws.fee_currency }} {{ ws.certificate_fee }}</strong> applies.
+                You'll pay securely on the next step after registering.
+              {% else %}
+                There is no fee for a certificate on this workshop — it will be emailed to you afterwards.
+              {% endif %}
             </div>
           </fieldset>
+          {% endif %}
 
           <div class="ws-field ws-wide">
             <label for="wsComments">Any comments <span class="ws-hint">(optional)</span></label>
@@ -177,8 +219,8 @@
         </div>
 
         <div class="ws-actions">
-          <button type="button" class="ws-btn-outline" id="wsPreviewCertBtn" hidden><i class="bi bi-eye"></i> Preview certificate</button>
-          <button type="submit" class="ws-btn" id="wsSubmit">Register</button>
+          <button type="button" class="ws-btn-outline" id="wsPreviewCertBtn" {% if not ws.certificate_required %}hidden{% endif %}><i class="bi bi-eye"></i> Preview certificate</button>
+          <button type="submit" class="ws-btn" id="wsSubmit">{% if ws.certificate_required and ws.certificate_fee_payable %}Register &amp; pay{% else %}Register{% endif %}</button>
         </div>
       </form>
       {% endif %}
@@ -194,7 +236,7 @@
         <h3>Certificate preview</h3>
         <button type="button" class="ws-modal-close" data-close aria-label="Close">&times;</button>
       </div>
-      <p class="ws-modal-note"><i class="bi bi-shield-exclamation"></i> This is a watermarked sample only. The real, unmarked certificate is emailed to you after the workshop once you've paid.</p>
+      <p class="ws-modal-note"><i class="bi bi-shield-exclamation"></i> This is a watermarked sample only. The real, unmarked certificate is emailed to you after the workshop{% if ws.certificate_fee_payable %} once you've paid{% endif %}.</p>
       <div class="ws-cert-frame-wrap" oncontextmenu="return false;">
         <iframe id="wsCertSampleFrame" title="Sample certificate preview"></iframe>
       </div>
@@ -205,13 +247,17 @@
 
 {% block extra_js %}
 <script src="{% static 'assets/js/institutions.js' %}"></script>
+<script src="{% static 'assets/js/searchable-select.js' %}"></script>
 <script>
   (function () {
     var instSelect = document.getElementById("wsInstitution");
     var instOther = document.getElementById("wsInstitutionOther");
+    var instOtherBlock = document.getElementById("wsInstitutionOtherBlock");
     function syncOther() {
       var isOther = instSelect.value === "__other__";
-      instOther.hidden = !isOther;
+      // Picking "Other" is itself the answer that the institution has to be
+      // typed, so the box is compulsory from that moment.
+      instOtherBlock.hidden = !isOther;
       instOther.required = isOther;
       if (!isOther) instOther.value = "";
     }
@@ -226,16 +272,14 @@
       }
     }
 
+    // Only present when the certificate is optional -- when it is
+    // compulsory the question isn't asked and the fee is stated outright.
     var feeNote = document.getElementById("wsFeeNote");
     var previewBtn = document.getElementById("wsPreviewCertBtn");
-    function wantsCert() {
-      var yes = document.querySelector('input[name="wants_certificate"][value="yes"]');
-      return yes && yes.checked;
-    }
     document.querySelectorAll('input[name="wants_certificate"]').forEach(function (r) {
       r.addEventListener("change", function () {
-        var yes = wantsCert();
-        feeNote.classList.toggle("show", yes);
+        var yes = r.value === "yes" && r.checked;
+        if (feeNote) feeNote.classList.toggle("show", yes);
         if (previewBtn) previewBtn.hidden = !yes;
       });
     });

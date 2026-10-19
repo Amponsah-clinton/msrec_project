@@ -3,6 +3,7 @@ manage each one's registrations, settings, schedule and certificate design,
 and approve participants to issue their documents.
 """
 import logging
+import uuid
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
@@ -84,6 +85,14 @@ def _recipients(request, ws):
         return qs.filter(wants_certificate=True)
     if scope == "paid":
         return qs.filter(payment_status=WorkshopRegistration.PaymentStatus.SUCCESS)
+    if scope == "unpaid":
+        return qs.filter(
+            wants_certificate=True,
+            payment_status__in=[
+                WorkshopRegistration.PaymentStatus.PENDING,
+                WorkshopRegistration.PaymentStatus.FAILED,
+            ],
+        )
     if scope == "no_cert":
         return qs.filter(wants_certificate=False)
     return qs
@@ -120,6 +129,8 @@ def _save_settings(request, ws):
     ws.fee_currency = request.POST.get("fee_currency", "").strip()[:10] or "GHS"
     ws.is_published = request.POST.get("is_published") == "on"
     ws.registration_closed = request.POST.get("registration_closed") == "on"
+    was_required = ws.certificate_required
+    ws.certificate_required = request.POST.get("certificate_required") == "on"
     ws.starts_at = _parse_dt(request.POST.get("starts_at"))
     ws.ends_at = _parse_dt(request.POST.get("ends_at"))
     ws.registration_closes_at = _parse_dt(request.POST.get("registration_closes_at"))
@@ -162,6 +173,90 @@ def _save_settings(request, ws):
 
     ws.save()
     messages.success(request, "Workshop settings saved.")
+
+    if ws.certificate_required:
+        if ws.certificate_fee_payable:
+            messages.info(
+                request,
+                f"Certificates are now compulsory — everyone who registers is charged "
+                f"{ws.fee_currency} {ws.certificate_fee} and the form no longer asks.",
+            )
+        else:
+            messages.warning(
+                request,
+                "Certificates are compulsory but the fee is 0, so nobody will be charged. "
+                "Set a certificate fee if payment should be compulsory too.",
+            )
+        if not was_required:
+            stragglers = ws.registrations.filter(wants_certificate=False).count()
+            if stragglers:
+                messages.warning(
+                    request,
+                    f"{stragglers} earlier registrant(s) opted out of a certificate. They keep "
+                    "that choice unless you require it for them from the Registrations tab.",
+                )
+    elif was_required:
+        messages.info(
+            request,
+            "Certificates are optional again — new registrants choose, and those who opt out pay nothing. "
+            "People who already paid keep their certificate.",
+        )
+
+
+def _require_certificates_for_existing(request, ws):
+    """Bring registrants who opted out into a now-compulsory certificate:
+    book them for one, raise the fee against them and email + text a payment
+    link. Anyone who already paid, or already owes the fee, is left alone."""
+    if not ws.certificate_required:
+        messages.error(
+            request,
+            "Turn on “Certificate compulsory for everyone” in Settings first.",
+        )
+        return
+
+    targets = list(_recipients(request, ws).filter(wants_certificate=False))
+    if not targets:
+        messages.error(request, "Everyone registered is already down for a certificate.")
+        return
+
+    free = not ws.certificate_fee_payable
+    charged = emailed = 0
+    for reg in targets:
+        reg.wants_certificate = True
+        reg.certificate_required_at_signup = True
+        reg.currency = ws.fee_currency
+        if free:
+            # Nothing to pay -- they simply get a certificate.
+            reg.payment_status = WorkshopRegistration.PaymentStatus.NOT_REQUIRED
+            reg.amount = Decimal("0.00")
+        else:
+            reg.payment_status = WorkshopRegistration.PaymentStatus.PENDING
+            reg.amount = ws.certificate_fee
+            if not reg.payment_reference:
+                reg.payment_reference = f"MSREC-WS-{uuid.uuid4().hex[:18]}"
+            charged += 1
+        reg.save(update_fields=[
+            "wants_certificate", "certificate_required_at_signup", "currency",
+            "payment_status", "amount", "payment_reference",
+        ])
+        if not free:
+            ok, _ = emails.send_payment_required_email(reg, ws)
+            if ok:
+                emailed += 1
+
+    if free:
+        messages.success(
+            request,
+            f"{len(targets)} registrant(s) are now down for a certificate. The fee is 0, so there is "
+            "nothing for them to pay.",
+        )
+    else:
+        messages.success(
+            request,
+            f"{charged} registrant(s) now owe {ws.fee_currency} {ws.certificate_fee} for a certificate. "
+            f"Payment link sent to {emailed}."
+            + (" Check email settings for the rest." if emailed < charged else ""),
+        )
 
 
 def _save_cert(request, ws):
@@ -214,6 +309,10 @@ def workshop_manage(request, pk):
             _bulk(request, ws, emails.send_materials_email, label="Materials")
         elif action == "send_certificate":
             _bulk(request, ws, emails.send_certificate_email, label="Certificate")
+        elif action == "send_payment_link":
+            _bulk(request, ws, emails.send_payment_required_email, label="Payment link")
+        elif action == "require_certificates":
+            _require_certificates_for_existing(request, ws)
         elif action == "approve_send":
             from . import approval
             _bulk(request, ws, approval.approve_and_send, label="Documents (certificate + letter)")
@@ -234,12 +333,15 @@ def workshop_manage(request, pk):
     regs = list(ws.registrations.all())
     paid = [r for r in regs if r.is_paid]
     wants_cert = [r for r in regs if r.wants_certificate]
+    unpaid = [r for r in regs if r.payment_outstanding]
     return render(request, "dashboards/admin/workshop_manage.html", {
         "ws": ws,
         "regs": regs,
         "counts": {
             "all": len(regs), "wants_cert": len(wants_cert),
             "no_cert": len(regs) - len(wants_cert), "paid": len(paid),
+            "unpaid": len(unpaid),
+            "outstanding": sum((r.amount for r in unpaid), Decimal("0.00")),
         },
         "dashboard": _dashboard(request),
     })

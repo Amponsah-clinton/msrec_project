@@ -29,6 +29,11 @@ def send_registration_received_email(reg, workshop=None):
             f"Your certificate fee of {reg.currency} {reg.amount} has been received — your certificate "
             "will be emailed to you after the workshop."
         )
+    elif reg.wants_certificate:
+        paragraphs.append(
+            "A certificate of participation is included for this workshop — it will be emailed "
+            "to you once the workshop is complete."
+        )
     if ws.meeting_link:
         paragraphs.append("Use the button below to join the workshop when it begins. Please join a few minutes early.")
     else:
@@ -78,8 +83,10 @@ def send_meeting_link_email(reg, workshop=None):
 
 def send_certificate_email(reg, workshop=None):
     ws = _ws(reg, workshop)
-    if not reg.is_paid:
-        return False, "This person hasn't paid for a certificate."
+    if not reg.certificate_ready:
+        if reg.payment_outstanding:
+            return False, "This person's certificate fee hasn't been paid yet."
+        return False, "This person isn't down for a certificate."
     from .certificate import render_workshop_certificate_pdf
 
     try:
@@ -107,6 +114,54 @@ def send_certificate_email(reg, workshop=None):
         reg.certificate_sent_at = timezone.now()
         reg.save(update_fields=["certificate_sent_at"])
     return ok, "Certificate sent." if ok else "The email couldn't be sent — check email settings."
+
+
+def send_payment_required_email(reg, workshop=None):
+    """Sends someone a link to settle an outstanding certificate fee. Used
+    when a workshop's certificate is made compulsory after people have
+    already registered, and to chase anyone who never finished checkout."""
+    ws = _ws(reg, workshop)
+    if not reg.payment_outstanding:
+        return False, "This person has nothing outstanding to pay."
+
+    from django.conf import settings
+    from django.urls import reverse
+
+    pay_url = settings.SITE_URL.rstrip("/") + reverse("workshop:pay", kwargs={"pk": reg.pk})
+    compulsory = reg.certificate_required_at_signup or ws.certificate_required
+    paragraphs = [f"Hi {reg.name},"]
+    if compulsory:
+        paragraphs.append(
+            f"A certificate of participation is part of {ws.title}, and a one-time fee of "
+            f"{reg.currency} {reg.amount} applies to every participant."
+        )
+        paragraphs.append("Your place is held, but your registration is only complete once the fee is paid.")
+    else:
+        paragraphs.append(
+            f"You asked for a certificate for {ws.title}. The one-time fee of "
+            f"{reg.currency} {reg.amount} is still outstanding."
+        )
+    paragraphs.append("Use the button below to pay securely and we'll do the rest.")
+
+    ok = send_branded_email(
+        subject=f"Certificate fee outstanding — {ws.title}",
+        to=reg.email,
+        heading="Complete your certificate payment",
+        paragraphs=paragraphs,
+        cta_text="Pay certificate fee",
+        cta_url=pay_url,
+        preheader=f"{reg.currency} {reg.amount} outstanding for {ws.title}.",
+    )
+    if ok:
+        try:
+            from notifications import sms
+            sms.send_sms(
+                [reg.phone],
+                f"MSREC: {ws.title} certificate fee of {reg.currency} {reg.amount} is outstanding. Pay: {pay_url}",
+            )
+        except Exception:
+            logger.exception("Workshop payment-link SMS failed for %s", reg.phone)
+    return ok, "Payment link sent." if ok else "The email couldn't be sent — check email settings."
 
 
 def send_materials_email(reg, workshop=None):
