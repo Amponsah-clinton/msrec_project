@@ -6,23 +6,171 @@
 {% block extra_css %}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
 <style>
-  .wsl { padding: 4px 2px 40px; }
-  .wsl-create { background: var(--card-bg,#fff); border: 1px solid var(--border,#e5e9f0); border-radius: 12px;
-    padding: 16px 18px; margin-bottom: 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-  .wsl-create input { flex: 1; min-width: 220px; padding: 10px 12px; border: 1px solid var(--border,#cdd5e0); border-radius: 8px; font-size: 14px; }
-  .wsl-btn { border: none; border-radius: 8px; padding: 10px 16px; font-size: 14px; font-weight: 700; cursor: pointer; background: #0f8a86; color: #fff; text-decoration: none; display: inline-block; }
-  .wsl-btn:hover { background: #0c726e; }
-  .wsl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px,1fr)); gap: 16px; }
-  .wsl-card { background: var(--card-bg,#fff); border: 1px solid var(--border,#e5e9f0); border-radius: 12px; padding: 16px 18px; }
-  .wsl-card h3 { margin: 0 0 6px; font-size: 16px; }
-  .wsl-card .meta { font-size: 12.5px; color: var(--muted,#64748b); margin-bottom: 12px; display:flex; flex-direction:column; gap:3px; }
-  .wsl-pill { display:inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; }
-  .wsl-pill.open { background:#e9f7ef; color:#1c7a46; } .wsl-pill.past { background:#eef2f7; color:#64748b; }
-  .wsl-pill.draft { background:#fff4e5; color:#b4731f; }
-  .wsl-card-foot { display:flex; gap:8px; align-items:center; }
-  .wsl-link { font-size: 13px; color:#0f8a86; text-decoration:none; font-weight:600; }
-  .wsl-del { margin-left:auto; border:1px solid #f1cccc; background:var(--card-bg,#fff); color:#b4261f; border-radius:7px; width:32px; height:32px; cursor:pointer; font-size:13px; }
-  .wsl-del:hover { background:#fdeaea; }
+  /* Built on the dashboard's theme tokens (--white, --border, --text-main,
+     --teal ... from dashboard/css/style.css), like the manage page, so it
+     reads correctly in both the light and the dark theme. The only fixed
+     colours are the generated card covers, which carry white text in both. */
+  .wsl { padding: 4px 2px 48px; color: var(--text-main); }
+
+  /* ---- totals across every workshop ---- */
+  .wsl-totals { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .wsl-total { background: var(--white); border: 1px solid var(--border); border-radius: 14px; padding: 15px 16px; display: flex; gap: 13px; align-items: center; min-width: 0; }
+  .wsl-total-ico { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; font-size: 15px; flex: none; }
+  .wsl-total-ico.teal { background: var(--teal-light); color: var(--teal); }
+  .wsl-total-ico.blue { background: var(--blue-light); color: var(--blue); }
+  .wsl-total-ico.green { background: var(--green-light); color: var(--green); }
+  .wsl-total-ico.orange { background: var(--orange-light); color: var(--orange); }
+  .wsl-total b { display: block; font-size: 21px; line-height: 1.15; font-weight: 750; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wsl-total b small { font-size: 12px; font-weight: 650; color: var(--text-sub); margin-right: 3px; }
+  .wsl-total span { font-size: 12.3px; color: var(--text-sub); }
+
+  /* ---- toolbar: filter + search ---- */
+  .wsl-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .wsl-seg { display: inline-flex; gap: 3px; padding: 4px; background: var(--white); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+  .wsl-seg::-webkit-scrollbar { display: none; }
+  .wsl-seg button { border: 0; background: none; font: inherit; font-size: 13px; font-weight: 600; color: var(--text-sub); padding: 7px 12px; border-radius: 9px; cursor: pointer; white-space: nowrap; display: inline-flex; gap: 6px; align-items: center; }
+  .wsl-seg button:hover { color: var(--text-main); }
+  .wsl-seg button.active { background: var(--teal-light); color: var(--teal); }
+  .wsl-seg button em { font-style: normal; font-size: 11.5px; opacity: .75; }
+  .wsl-bar-right { display: flex; gap: 8px; align-items: center; flex: 0 1 auto; flex-wrap: wrap; }
+  .wsl-contacts { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; text-decoration: none; font-size: 13px; font-weight: 650; color: var(--text-main);
+    background: var(--white); border: 1px solid var(--border); border-radius: 11px; padding: 10px 13px; }
+  .wsl-contacts:hover { border-color: var(--teal); color: var(--teal); }
+  .wsl-contacts i { color: var(--teal); }
+  .wsl-search { position: relative; flex: 0 1 280px; min-width: 200px; }
+  .wsl-search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-faint); font-size: 13px; }
+  .wsl-search input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); background: var(--white); color: var(--text-main); border-radius: 11px; padding: 10px 12px 10px 34px; font: inherit; font-size: 13.5px; }
+  .wsl-search input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-light); }
+
+  /* ---- grid ---- */
+  .wsl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+
+  /* ---- a workshop card ---- */
+  .wsl-card { position: relative; display: flex; flex-direction: column; background: var(--white); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+    box-shadow: var(--shadow); transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+  .wsl-card[hidden], .wsl-empty[hidden] { display: none; }
+  .wsl-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: color-mix(in srgb, var(--teal) 30%, var(--border)); }
+  .wsl-card:focus-within { border-color: color-mix(in srgb, var(--teal) 45%, var(--border)); }
+
+  /* Cover: the uploaded banner, or a generated gradient when there isn't one. */
+  .wsl-cover { position: relative; display: block; height: 138px; overflow: hidden; color: #fff; text-decoration: none; isolation: isolate; }
+  .wsl-cover.c1 { background: linear-gradient(135deg, #0f8a86 0%, #1b4f72 100%); }
+  .wsl-cover.c2 { background: linear-gradient(135deg, #3b5bdb 0%, #1b2a4a 100%); }
+  .wsl-cover.c3 { background: linear-gradient(135deg, #7c5cf0 0%, #2b2f6b 100%); }
+  .wsl-cover.c4 { background: linear-gradient(135deg, #d9480f 0%, #7a2b46 100%); }
+  .wsl-cover.c5 { background: linear-gradient(135deg, #1fa971 0%, #0b5563 100%); }
+  /* Soft rings so a bannerless cover still has some texture. */
+  .wsl-cover::before { content: ""; position: absolute; inset: 0; z-index: -1;
+    background:
+      radial-gradient(circle at 88% 18%, rgba(255,255,255,.20) 0 34px, transparent 35px),
+      radial-gradient(circle at 88% 18%, transparent 0 58px, rgba(255,255,255,.10) 59px 60px, transparent 61px),
+      radial-gradient(circle at 12% 120%, rgba(255,255,255,.14) 0 70px, transparent 71px); }
+  .wsl-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; transition: transform .45s ease; }
+  .wsl-card:hover .wsl-cover img { transform: scale(1.045); }
+  .wsl-cover.has-img::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(10,16,28,.35) 0%, rgba(10,16,28,0) 45%, rgba(10,16,28,.55) 100%); }
+  .wsl-cover-mark { position: absolute; right: 18px; bottom: 14px; font-size: 40px; opacity: .16; }
+  .wsl-cover.has-img .wsl-cover-mark { display: none; }
+
+  .wsl-tags { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+  .wsl-state { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; padding: 5px 10px; border-radius: 999px;
+    background: rgba(255,255,255,.94); color: #1f2733; box-shadow: 0 2px 8px rgba(0,0,0,.12); }
+  .wsl-state .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .wsl-state.open { color: #13795b; }
+  .wsl-state.open .dot { animation: wsl-pulse 1.8s ease-out infinite; }
+  .wsl-state.closed { color: #b4570f; }
+  .wsl-state.past { color: #556070; }
+  .wsl-state.draft { color: #6b4fd8; }
+  @keyframes wsl-pulse { 0% { box-shadow: 0 0 0 0 rgba(19,121,91,.55); } 100% { box-shadow: 0 0 0 7px rgba(19,121,91,0); } }
+  .wsl-when { font-size: 11.5px; font-weight: 650; padding: 5px 10px; border-radius: 999px; background: rgba(10,16,28,.38); color: #fff; backdrop-filter: blur(6px); white-space: nowrap; }
+
+  /* Date tile, sitting across the cover's bottom edge. */
+  .wsl-date { position: absolute; left: 16px; top: 108px; z-index: 2; width: 56px; border-radius: 12px; overflow: hidden; text-align: center;
+    background: var(--white); border: 1px solid var(--border); box-shadow: 0 6px 18px -6px rgba(16,24,40,.28); }
+  .wsl-date small { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 4px 0 3px; background: var(--teal); color: #fff; }
+  .wsl-date b { display: block; font-size: 21px; line-height: 1; padding: 6px 0 7px; color: var(--text-main); font-weight: 800; }
+  .wsl-date.none b { font-size: 15px; color: var(--text-faint); padding: 9px 0 10px; }
+  .wsl-date.none small { background: var(--gray); }
+
+  .wsl-body { padding: 14px 18px 4px; flex: 1; display: flex; flex-direction: column; }
+  .wsl-head { padding-left: 76px; min-height: 38px; margin-bottom: 10px; }
+  .wsl-title { margin: 0; font-size: 16px; line-height: 1.35; font-weight: 700; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .wsl-title a { color: var(--text-main); text-decoration: none; }
+  .wsl-title a:hover { color: var(--teal); }
+  .wsl-tagline { margin: 3px 0 0; font-size: 12.5px; color: var(--text-sub); line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+
+  .wsl-meta { display: flex; flex-direction: column; gap: 6px; margin: 2px 0 14px; font-size: 12.8px; color: var(--text-sub); }
+  .wsl-meta span { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .wsl-meta span > i { width: 14px; text-align: center; color: var(--text-faint); flex: none; }
+  .wsl-meta .trunc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wsl-meta b { color: var(--text-main); font-weight: 650; }
+  .wsl-lock { font-size: 10.5px; font-weight: 700; color: var(--purple); background: var(--purple-light); padding: 2px 7px; border-radius: 999px; margin-left: 2px; }
+
+  .wsl-stats { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--border); border-radius: 12px; background: var(--bg); margin-bottom: 12px; }
+  .wsl-stat { padding: 9px 6px; text-align: center; }
+  .wsl-stat + .wsl-stat { border-left: 1px solid var(--border); }
+  .wsl-stat b { display: block; font-size: 17px; font-weight: 750; line-height: 1.2; }
+  .wsl-stat span { font-size: 11px; color: var(--text-sub); text-transform: uppercase; letter-spacing: .05em; font-weight: 650; }
+  .wsl-stat.paid b { color: var(--green); }
+  .wsl-stat.owed b { color: var(--orange); }
+  .wsl-stat.zero b { color: var(--text-faint); }
+
+  .wsl-progress { margin-bottom: 12px; }
+  .wsl-progress-top { display: flex; justify-content: space-between; gap: 8px; font-size: 11.8px; color: var(--text-sub); margin-bottom: 6px; }
+  .wsl-progress-top b { color: var(--text-main); font-weight: 650; }
+  .wsl-track { height: 7px; border-radius: 999px; background: var(--gray-light); overflow: hidden; }
+  .wsl-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), var(--green)); }
+
+  .wsl-ready { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+  .wsl-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.3px; font-weight: 650; padding: 4px 9px; border-radius: 999px; }
+  .wsl-chip.ok { background: var(--green-light); color: var(--green); }
+  .wsl-chip.miss { background: var(--orange-light); color: var(--orange); }
+
+  .wsl-foot { display: flex; align-items: center; gap: 8px; padding: 12px 18px 16px; border-top: 1px solid var(--border); }
+  .wsl-manage { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--teal); color: #fff; text-decoration: none;
+    font-weight: 700; font-size: 13.5px; border-radius: 10px; padding: 10px 14px; transition: filter .15s; }
+  .wsl-manage:hover { filter: brightness(1.08); color: #fff; }
+  .wsl-manage i { transition: transform .15s; }
+  .wsl-manage:hover i { transform: translateX(3px); }
+  .wsl-foot form { display: contents; }
+  .wsl-icon { width: 38px; height: 38px; flex: none; display: inline-grid; place-items: center; border-radius: 10px; border: 1px solid var(--border); background: var(--bg);
+    color: var(--text-sub); cursor: pointer; font-size: 13.5px; text-decoration: none; transition: color .15s, border-color .15s, background .15s; }
+  .wsl-icon:hover { color: var(--teal); border-color: color-mix(in srgb, var(--teal) 45%, var(--border)); }
+  .wsl-icon.copied { color: var(--green); border-color: var(--green); }
+  .wsl-icon.danger:hover { color: var(--red); border-color: var(--red-border); background: var(--red-light); }
+  .wsl-icon:disabled { opacity: .45; cursor: not-allowed; }
+
+  /* ---- the "new workshop" card, always first in the grid ---- */
+  .wsl-new { border: 1.5px dashed color-mix(in srgb, var(--teal) 45%, var(--border)); background: color-mix(in srgb, var(--teal) 4%, var(--white)); border-radius: 16px;
+    padding: 24px 20px; display: flex; flex-direction: column; justify-content: center; gap: 12px; min-height: 300px; }
+  .wsl-new-ico { width: 54px; height: 54px; border-radius: 16px; display: grid; place-items: center; background: var(--teal-light); color: var(--teal); font-size: 21px; }
+  .wsl-new h3 { margin: 0; font-size: 16.5px; }
+  .wsl-new p { margin: 0; font-size: 12.8px; color: var(--text-sub); line-height: 1.55; }
+  .wsl-new input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); background: var(--white); color: var(--text-main); border-radius: 10px; padding: 11px 12px; font: inherit; font-size: 14px; }
+  .wsl-new input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px var(--teal-light); }
+  .wsl-new button { border: 0; border-radius: 10px; padding: 11px 14px; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer; background: var(--teal); color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+  .wsl-new button:hover { filter: brightness(1.08); }
+
+  .wsl-empty { grid-column: 1 / -1; text-align: center; color: var(--text-sub); padding: 36px 16px; font-size: 13.5px; }
+  .wsl-empty i { display: block; font-size: 26px; color: var(--text-faint); margin-bottom: 10px; }
+
+  .wsl-card a:focus-visible, .wsl-card button:focus-visible, .wsl-seg button:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .wsl-card, .wsl-cover img, .wsl-manage i { transition: none; }
+    .wsl-card:hover { transform: none; }
+    .wsl-state.open .dot { animation: none; }
+  }
+  @media (max-width: 900px) { .wsl-totals { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 560px) {
+    .wsl-totals { gap: 9px; }
+    .wsl-total { padding: 12px; gap: 10px; }
+    .wsl-total-ico { width: 34px; height: 34px; font-size: 13px; }
+    .wsl-total b { font-size: 18px; }
+    .wsl-bar-right { flex: 1 1 100%; }
+    .wsl-search { flex: 1 1 160px; }
+    .wsl-grid { grid-template-columns: 1fr; }
+    .wsl-new { min-height: 0; }
+  }
 </style>
 {% endblock %}
 
@@ -37,43 +185,181 @@
 {% block main_content %}
 <div class="wsl sc-scope ad-scope">
 
-  <form method="post" class="wsl-create">
-    {% csrf_token %}
-    <input type="hidden" name="action" value="create">
-    <input type="text" name="title" placeholder="New workshop title…" required>
-    <button class="wsl-btn" type="submit"><i class="fa-solid fa-plus"></i> Create workshop</button>
-  </form>
+  <div class="wsl-totals">
+    <div class="wsl-total"><div class="wsl-total-ico teal"><i class="fa-solid fa-chalkboard-user"></i></div>
+      <div><b>{{ totals.all }}</b><span>Workshop{{ totals.all|pluralize }} · {{ totals.open }} open now</span></div></div>
+    <div class="wsl-total"><div class="wsl-total-ico blue"><i class="fa-solid fa-users"></i></div>
+      <div><b>{{ totals.registrations }}</b><span>Registration{{ totals.registrations|pluralize }} in total</span></div></div>
+    <div class="wsl-total"><div class="wsl-total-ico green"><i class="fa-solid fa-sack-dollar"></i></div>
+      <div><b><small>{{ totals.currency }}</small>{{ totals.collected|floatformat:"2g" }}</b><span>Certificate fees collected</span></div></div>
+    <div class="wsl-total"><div class="wsl-total-ico orange"><i class="fa-solid fa-hourglass-half"></i></div>
+      <div><b>{{ totals.owed }}</b><span>{{ totals.owed|pluralize:"Person,People" }} yet to pay</span></div></div>
+  </div>
 
-  {% if workshops %}
+  <div class="wsl-bar">
+    <div class="wsl-seg" role="tablist" aria-label="Show workshops">
+      <button type="button" class="active" data-show="all">All <em>{{ totals.all }}</em></button>
+      <button type="button" data-show="open">Open <em>{{ totals.open }}</em></button>
+      <button type="button" data-show="upcoming">Upcoming <em>{{ totals.upcoming }}</em></button>
+      <button type="button" data-show="past">Past <em>{{ totals.past }}</em></button>
+      <button type="button" data-show="draft">Drafts <em>{{ totals.draft }}</em></button>
+    </div>
+    <div class="wsl-bar-right">
+      <a class="wsl-contacts" href="{% url 'workshop_admin:contacts' %}"><i class="fa-solid fa-address-book"></i> All contacts</a>
+      <label class="wsl-search"><i class="fa-solid fa-magnifying-glass"></i>
+        <input type="search" id="wslSearch" placeholder="Search workshops…" aria-label="Search workshops"></label>
+    </div>
+  </div>
+
   <div class="wsl-grid">
+    <form method="post" class="wsl-new">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="create">
+      <div class="wsl-new-ico"><i class="fa-solid fa-plus"></i></div>
+      <h3>New workshop</h3>
+      <p>Give it a title. You'll set the date, fee, meeting link and certificate on the next screen.</p>
+      <input type="text" name="title" placeholder="e.g. Research Ethics Masterclass 2027" maxlength="200" required>
+      <button type="submit"><i class="fa-solid fa-wand-magic-sparkles"></i> Create workshop</button>
+    </form>
+
     {% for w in workshops %}
-    <div class="wsl-card">
-      <h3>{{ w.title }}</h3>
-      <div class="meta">
-        {% if w.starts_at %}<span><i class="fa-regular fa-clock"></i> {{ w.starts_at|date:"j M Y, g:i A" }}</span>{% endif %}
-        <span><i class="fa-solid fa-users"></i> {{ w.reg_count }} registration{{ w.reg_count|pluralize }}</span>
+    <article class="wsl-card" data-state="{{ w.state }}" data-past="{{ w.is_past|yesno:'1,0' }}" data-title="{{ w.title|lower }} {{ w.location|lower }} {{ w.tagline|lower }}">
+      <a class="wsl-cover {% cycle 'c1' 'c2' 'c3' 'c4' 'c5' %}{% if w.banner_url %} has-img{% endif %}" href="{% url 'workshop_admin:manage' w.pk %}" tabindex="-1" aria-hidden="true">
+        {% if w.banner_url %}<img src="{{ w.banner_url }}" alt="" loading="lazy" onerror="this.parentNode.classList.remove('has-img');this.remove();">{% endif %}
+        <i class="fa-solid fa-graduation-cap wsl-cover-mark"></i>
+        <span class="wsl-tags">
+          <span class="wsl-state {{ w.state }}"><span class="dot"></span>
+            {% if w.state == 'open' %}Registration open{% elif w.state == 'closed' %}Registration closed{% elif w.state == 'past' %}Completed{% else %}Draft — not public{% endif %}</span>
+          <span class="wsl-when">{{ w.when_label }}</span>
+        </span>
+      </a>
+
+      {% if w.starts_at %}
+      <div class="wsl-date" title="{{ w.starts_at|date:'l j F Y' }}"><small>{{ w.starts_at|date:"M" }}</small><b>{{ w.starts_at|date:"j" }}</b></div>
+      {% else %}
+      <div class="wsl-date none" title="No date set yet"><small>Date</small><b>—</b></div>
+      {% endif %}
+
+      <div class="wsl-body">
+        <div class="wsl-head">
+          <h3 class="wsl-title"><a href="{% url 'workshop_admin:manage' w.pk %}">{{ w.title }}</a></h3>
+          {% if w.tagline %}<p class="wsl-tagline">{{ w.tagline }}</p>{% endif %}
+        </div>
+
+        <div class="wsl-meta">
+          <span><i class="fa-regular fa-clock"></i>
+            {% if w.starts_at %}<span class="trunc"><b>{{ w.starts_at|date:"D j M Y" }}</b> · {{ w.starts_at|date:"g:i A" }}{% if w.ends_at %} – {% if w.ends_at|date:"Ymd" != w.starts_at|date:"Ymd" %}{{ w.ends_at|date:"j M, g:i A" }}{% else %}{{ w.ends_at|date:"g:i A" }}{% endif %}{% endif %}</span>
+            {% else %}<span class="trunc">Date not set</span>{% endif %}</span>
+          <span><i class="fa-solid fa-location-dot"></i><span class="trunc">{{ w.location|default:"Location not set" }}</span></span>
+          <span><i class="fa-solid fa-award"></i><span class="trunc">
+            {% if w.certificate_fee_payable %}<b>{{ w.fee_currency }} {{ w.certificate_fee }}</b> certificate{% else %}<b>Free</b> certificate{% endif %}</span>
+            {% if w.certificate_required %}<span class="wsl-lock" title="Every registrant gets (and pays for) a certificate"><i class="fa-solid fa-lock"></i> Compulsory</span>{% endif %}</span>
+        </div>
+
+        <div class="wsl-stats">
+          <div class="wsl-stat{% if not w.reg_count %} zero{% endif %}"><b>{{ w.reg_count }}</b><span>Registered</span></div>
+          <div class="wsl-stat paid{% if not w.paid_count %} zero{% endif %}"><b>{{ w.paid_count }}</b><span>Paid</span></div>
+          <div class="wsl-stat owed{% if not w.owed_count %} zero{% endif %}"><b>{{ w.owed_count }}</b><span>Owe fee</span></div>
+        </div>
+
+        {% if w.certificate_fee_payable and w.paid_count|add:w.owed_count %}
+        <div class="wsl-progress" title="{{ w.paid_count }} of {{ w.paid_count|add:w.owed_count }} certificate fees paid">
+          <div class="wsl-progress-top"><span><b>{{ w.paid_pct }}%</b> of fees paid</span><span><b>{{ w.fee_currency }} {{ w.collected|floatformat:"2g" }}</b> collected</span></div>
+          <div class="wsl-track"><div class="wsl-fill" style="width: {{ w.paid_pct }}%;"></div></div>
+        </div>
+        {% endif %}
+
+        {% if not w.is_past %}
+        <div class="wsl-ready">
+          {% if w.meeting_link %}<span class="wsl-chip ok"><i class="fa-solid fa-link"></i> Meeting link</span>
+          {% else %}<span class="wsl-chip miss"><i class="fa-solid fa-link-slash"></i> No meeting link</span>{% endif %}
+          {% if w.materials_file_path or w.materials_link %}<span class="wsl-chip ok"><i class="fa-solid fa-folder-open"></i> Materials</span>
+          {% else %}<span class="wsl-chip miss"><i class="fa-solid fa-folder"></i> No materials</span>{% endif %}
+        </div>
+        {% endif %}
       </div>
-      <div style="margin-bottom:12px;">
-        {% if not w.is_published %}<span class="wsl-pill draft">Unpublished</span>
-        {% elif w.is_past %}<span class="wsl-pill past">Past</span>
-        {% elif w.registration_open %}<span class="wsl-pill open">Registration open</span>
-        {% else %}<span class="wsl-pill past">Closed</span>{% endif %}
-      </div>
-      <div class="wsl-card-foot">
-        <a class="wsl-btn" href="{% url 'workshop_admin:manage' w.pk %}">Manage</a>
-        {% if w.is_published %}<a class="wsl-link" href="{% url 'workshop:register' w.slug %}" target="_blank" rel="noopener">View public page ↗</a>{% endif %}
+
+      <div class="wsl-foot">
+        <a class="wsl-manage" href="{% url 'workshop_admin:manage' w.pk %}">Manage <i class="fa-solid fa-arrow-right"></i></a>
+        {% if w.is_published %}
+          <a class="wsl-icon" href="{% url 'workshop:register' w.slug %}" target="_blank" rel="noopener" title="Open the public page" aria-label="Open the public page"><i class="fa-solid fa-arrow-up-right-from-square"></i></a>
+          <button type="button" class="wsl-icon wsl-copy" data-url="{{ request.scheme }}://{{ request.get_host }}{% url 'workshop:register' w.slug %}" title="Copy the registration link" aria-label="Copy the registration link"><i class="fa-regular fa-copy"></i></button>
+        {% else %}
+          <button type="button" class="wsl-icon" disabled title="Draft — publish it in Settings to get a public page" aria-label="No public page while a draft"><i class="fa-solid fa-eye-slash"></i></button>
+        {% endif %}
         <form method="post" action="{% url 'workshop_admin:manage' w.pk %}" data-confirm="Delete &quot;{{ w.title|escapejs }}&quot; and ALL its {{ w.reg_count }} registration{{ w.reg_count|pluralize }}? This can't be undone." data-confirm-variant="danger">
           {% csrf_token %}
           <input type="hidden" name="action" value="delete_workshop">
-          <button type="submit" class="wsl-del" title="Delete workshop"><i class="fa-solid fa-trash"></i></button>
+          <button type="submit" class="wsl-icon danger" title="Delete workshop" aria-label="Delete workshop"><i class="fa-solid fa-trash"></i></button>
         </form>
       </div>
-    </div>
+    </article>
     {% endfor %}
+
+    <div class="wsl-empty" id="wslEmpty" {% if workshops %}hidden{% endif %}>
+      <i class="fa-regular fa-calendar-xmark"></i>
+      <span id="wslEmptyText">{% if workshops %}No workshops match.{% else %}No workshops yet — create your first one.{% endif %}</span>
+    </div>
   </div>
-  {% else %}
-  <p style="text-align:center;color:#94a3b8;padding:40px;">No workshops yet. Create your first one above.</p>
-  {% endif %}
 
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    var cards = Array.prototype.slice.call(document.querySelectorAll(".wsl-card"));
+    var segs = document.querySelectorAll(".wsl-seg button");
+    var search = document.getElementById("wslSearch");
+    var empty = document.getElementById("wslEmpty");
+    var show = "all";
+
+    function fits(card) {
+      var s = card.dataset.state, past = card.dataset.past === "1";
+      if (show === "open") return s === "open";
+      if (show === "upcoming") return !past && s !== "draft";
+      if (show === "past") return past;
+      if (show === "draft") return s === "draft";
+      return true;
+    }
+    function apply() {
+      var q = (search && search.value || "").trim().toLowerCase(), shown = 0;
+      cards.forEach(function (card) {
+        var ok = fits(card) && (!q || card.dataset.title.indexOf(q) !== -1);
+        card.hidden = !ok;
+        if (ok) shown++;
+      });
+      if (empty && cards.length) empty.hidden = shown !== 0;
+    }
+    segs.forEach(function (b) {
+      b.addEventListener("click", function () {
+        segs.forEach(function (x) { x.classList.toggle("active", x === b); });
+        show = b.dataset.show;
+        apply();
+      });
+    });
+    if (search) search.addEventListener("input", apply);
+
+    // Copy a workshop's public registration link, with a tick as feedback.
+    document.querySelectorAll(".wsl-copy").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var done = function () {
+          btn.classList.add("copied");
+          btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+          btn.title = "Link copied";
+          setTimeout(function () {
+            btn.classList.remove("copied");
+            btn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+            btn.title = "Copy the registration link";
+          }, 1800);
+        };
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(btn.dataset.url).then(done, function () { window.prompt("Copy this link:", btn.dataset.url); });
+        } else {
+          window.prompt("Copy this link:", btn.dataset.url);
+        }
+      });
+    });
+  })();
+</script>
 {% endblock %}

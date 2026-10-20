@@ -405,3 +405,58 @@ class WorkshopRegistration(models.Model):
     def participation_ref(self):
         year = (self.approved_at or self.paid_at or self.created_at or timezone.now()).year
         return f"MSREC/WS/PART/{year}/{self.pk:04d}"
+
+
+class WorkshopContact(models.Model):
+    """Everyone who has ever registered for an MSREC workshop, one row per
+    person (keyed by email), across every workshop and certificate type.
+
+    Kept up to date from WorkshopRegistration's post_save (see
+    workshop/contacts.py), and deliberately NOT tied to a workshop by a
+    foreign key: deleting a workshop deletes its registrations, but the
+    people stay on this list with their history intact."""
+
+    email = models.EmailField(unique=True)  # stored lower-cased
+    name = models.CharField(max_length=200)
+    phone = models.CharField(max_length=40, blank=True)
+    institution = models.CharField(max_length=200, blank=True)
+
+    # One entry per registration: {"reg": pk, "workshop_id", "title",
+    # "date" (ISO workshop start, or ""), "registered" (ISO), "paid": bool}.
+    history = models.JSONField(default=list, blank=True)
+    registration_count = models.PositiveIntegerField(default=0)
+    has_paid = models.BooleanField(default=False)  # ever paid a certificate fee
+
+    first_registered_at = models.DateTimeField(null=True, blank=True)
+    last_registered_at = models.DateTimeField(null=True, blank=True)
+    last_messaged_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = "workshop_contacts"
+        ordering = ["-last_registered_at", "name"]
+
+    def __str__(self):
+        return f"{self.name} <{self.email}>"
+
+    @property
+    def first_name(self):
+        return (self.name.split() or [self.name])[0]
+
+    @property
+    def workshop_titles(self):
+        """Distinct workshop titles, most recent registration first."""
+        seen, out = set(), []
+        for entry in sorted(self.history, key=lambda e: e.get("registered", ""), reverse=True):
+            title = entry.get("title") or "Workshop"
+            if title not in seen:
+                seen.add(title)
+                out.append(title)
+        return out
+
+    @property
+    def latest_workshop(self):
+        titles = self.workshop_titles
+        return titles[0] if titles else ""

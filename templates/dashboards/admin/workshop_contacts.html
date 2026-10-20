@@ -1,0 +1,462 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Workshop Contacts | MSREC{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" rel="stylesheet">
+<style>
+  /* Same theme tokens and visual language as the workshop manage page, so
+     the two read as one tool in both the light and the dark theme. */
+  .wsc { padding: 4px 2px 40px; color: var(--text-main); }
+  .wsc-back { font-size: 13px; color: var(--text-sub); text-decoration: none; display: inline-flex; gap: 6px; align-items: center; margin-bottom: 12px; }
+  .wsc-back:hover { color: var(--text-main); }
+
+  .wsc-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .wsc-stat { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius, 12px); padding: 12px 14px; }
+  .wsc-stat b { display: block; font-size: 21px; line-height: 1.15; font-weight: 700; }
+  .wsc-stat span { font-size: 12px; color: var(--text-sub); }
+
+  .wsc-card { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius, 12px); padding: 16px 18px; margin-bottom: 14px; }
+  .wsc-card > h3 { margin: 0 0 3px; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+  .wsc-card > h3 i { color: var(--teal); font-size: 13.5px; }
+  .wsc-note { color: var(--text-sub); font-size: 12.8px; line-height: 1.55; margin: 0 0 12px; }
+
+  /* ---- filters ---- */
+  .wsc-filters { display: grid; grid-template-columns: minmax(200px, 2fr) repeat(4, minmax(130px, 1fr)); gap: 10px; align-items: end; }
+  .wsc-f { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+  .wsc-f label { font-size: 11.5px; font-weight: 650; color: var(--text-sub); text-transform: uppercase; letter-spacing: .04em; }
+  .wsc-f input, .wsc-f select, .wsc-f textarea { border: 1px solid var(--border); border-radius: var(--radius-sm, 8px); padding: 9px 11px; font: inherit; font-size: 13.5px;
+    background: var(--bg); color: var(--text-main); width: 100%; box-sizing: border-box; }
+  .wsc-f input:focus, .wsc-f select:focus, .wsc-f textarea:focus { outline: none; border-color: var(--teal); background: var(--white); }
+  .wsc-filter-foot { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin-top: 11px; font-size: 13px; color: var(--text-sub); }
+  .wsc-check { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; color: var(--text-main); font-weight: 600; }
+  .wsc-check input { accent-color: var(--teal); }
+  .wsc-reset { color: var(--teal); text-decoration: none; font-weight: 650; }
+  .wsc-reset:hover { text-decoration: underline; }
+
+  /* ---- toolbar above the table ---- */
+  .wsc-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between; margin-bottom: 12px; }
+  .wsc-count { font-size: 13px; color: var(--text-sub); }
+  .wsc-count b { color: var(--text-main); }
+  .wsc-count .picked { color: var(--teal); font-weight: 650; }
+  .wsc-btns { display: flex; flex-wrap: wrap; gap: 8px; }
+  .wsc-btn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid transparent; border-radius: var(--radius-sm, 8px); padding: 9px 13px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; }
+  .wsc-btn.primary { background: var(--teal); color: #fff; }
+  .wsc-btn.ghost { background: var(--bg); border-color: var(--border); color: var(--text-main); }
+  .wsc-btn:hover { filter: brightness(1.06); }
+  .wsc-btn-sub { opacity: .7; font-weight: 500; }
+  .wsc-linkbtn { background: none; border: 0; padding: 0; font: inherit; font-size: 13px; font-weight: 650; color: var(--teal); cursor: pointer; }
+  .wsc-linkbtn:hover { text-decoration: underline; }
+
+  /* ---- table ---- */
+  .wsc-table-wrap { overflow-x: auto; }
+  table.wsc-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  table.wsc-table th, table.wsc-table td { text-align: left; padding: 11px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  table.wsc-table tr:last-child td { border-bottom: 0; }
+  table.wsc-table th { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-faint); font-weight: 700; white-space: nowrap; }
+  table.wsc-table td:last-child { white-space: nowrap; }
+  tr.wsc-row.picked td { background: color-mix(in srgb, var(--teal) 7%, transparent); }
+  .wsc-pick { display: inline-flex; align-items: flex-start; gap: 9px; cursor: pointer; }
+  .wsc-pick input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--teal); cursor: pointer; flex: none; }
+  .wsc-who { font-weight: 650; }
+  .wsc-sub { font-size: 12px; color: var(--text-sub); }
+  .wsc-faint { font-size: 11.5px; color: var(--text-faint); }
+  .wsc-dim { color: var(--text-sub); }
+  .wsc-nophone { font-size: 11px; color: var(--orange); }
+  .wsc-badge { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 650; white-space: nowrap; }
+  .wsc-badge.paid { background: var(--blue-light); color: var(--blue); }
+  .wsc-badge.no { background: var(--gray-light); color: var(--gray); }
+  .wsc-badge.count { background: var(--teal-light); color: var(--teal); }
+  .wsc-ws { display: flex; gap: 7px; align-items: flex-start; }
+  .wsc-ws-title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 260px; }
+  .wsc-empty { text-align: center; color: var(--text-sub); padding: 34px 12px; }
+  .wsc-actions { display: flex; gap: 5px; }
+  .wsc-actions form { display: inline; }
+  .wsc-icon { border: 1px solid var(--border); background: var(--bg); border-radius: var(--radius-sm, 7px); width: 32px; height: 32px; cursor: pointer; font-size: 13px; color: var(--text-sub); }
+  .wsc-icon:hover { color: var(--text-main); border-color: var(--text-faint); }
+  .wsc-icon.go { color: var(--teal); border-color: color-mix(in srgb, var(--teal) 40%, transparent); }
+  .wsc-icon.danger { color: var(--red); border-color: var(--red-border); }
+
+  /* ---- composer ---- */
+  .wsc-compose { border-color: color-mix(in srgb, var(--teal) 40%, var(--border)); }
+  .wsc-compose[hidden] { display: none; }
+  .wsc-compose-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 12px; }
+  .wsc-compose-head h3 { margin: 0; font-size: 15px; display: flex; gap: 8px; align-items: center; }
+  .wsc-compose-head h3 i { color: var(--teal); }
+  .wsc-to { font-size: 13px; color: var(--text-sub); margin-top: 4px; }
+  .wsc-to b { color: var(--text-main); }
+  .wsc-close { background: none; border: 0; font-size: 22px; line-height: 1; color: var(--text-faint); cursor: pointer; }
+  .wsc-close:hover { color: var(--text-main); }
+  .wsc-channels { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .wsc-channel { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--bg); border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .wsc-channel input { accent-color: var(--teal); margin: 0; }
+  .wsc-channel:has(input:checked) { border-color: var(--teal); background: var(--teal-light); color: var(--teal); }
+  .wsc-channel:has(input:disabled) { opacity: .55; cursor: not-allowed; }
+  .wsc-part { border: 1px solid var(--border); border-radius: var(--radius, 12px); padding: 14px 15px; margin-bottom: 12px; display: grid; gap: 12px; }
+  .wsc-part[hidden] { display: none; }
+  .wsc-part h4 { margin: 0; font-size: 13.5px; display: flex; gap: 8px; align-items: center; }
+  .wsc-part h4 i { color: var(--teal); }
+  .wsc-hint { font-size: 11.8px; color: var(--text-sub); line-height: 1.5; }
+  .wsc-counter { font-size: 11.8px; color: var(--text-sub); }
+  .wsc-counter.over { color: var(--orange); }
+  .wsc-tags { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12.5px; color: var(--text-sub); }
+  .wsc-tag { border: 1px dashed var(--border); background: var(--bg); color: var(--text-main); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+  .wsc-tag:hover { border-color: var(--teal); color: var(--teal); }
+  .wsc-send-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 14px; }
+
+  @media (max-width: 1000px) { .wsc-filters { grid-template-columns: 1fr 1fr; } .wsc-filters .wsc-f:first-child { grid-column: 1 / -1; } }
+  @media (max-width: 760px) {
+    .wsc-stats { grid-template-columns: 1fr 1fr; }
+    .wsc-card { padding: 14px; }
+    .wsc-btns { width: 100%; }
+    .wsc-btns .wsc-btn { flex: 1 1 150px; justify-content: center; }
+    table.wsc-table, table.wsc-table tbody, table.wsc-table tr, table.wsc-table td { display: block; width: 100%; box-sizing: border-box; }
+    table.wsc-table thead { display: none; }
+    table.wsc-table tr { border: 1px solid var(--border); border-radius: var(--radius, 12px); margin-bottom: 10px; padding: 4px 0; }
+    table.wsc-table td { border: 0; padding: 7px 13px; display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; }
+    table.wsc-table td::before { content: attr(data-label); font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); font-weight: 700; padding-top: 2px; }
+    table.wsc-table td.wsc-td-name { display: block; border-bottom: 1px solid var(--border); padding-bottom: 9px; margin-bottom: 4px; }
+    table.wsc-table td.wsc-td-name::before, table.wsc-table td.wsc-empty::before { display: none; }
+    table.wsc-table td.wsc-empty { display: block; }
+    table.wsc-table td:last-child { white-space: normal; }
+    .wsc-icon { width: 38px; height: 38px; }
+  }
+</style>
+{% endblock %}
+
+{% block nav_content %}
+{% if dashboard == 'secretariat' %}{% include "dashboards/_secretariat_nav.html" %}{% else %}{% include "dashboards/admin/_nav.html" with active="workshop_contacts" %}{% endif %}
+{% endblock %}
+
+{% block topbar %}
+{% include "dashboards/_staff_topbar.html" with page_title="Workshop Contacts" page_subtitle="Everyone who has registered for an MSREC workshop — saved automatically the moment they sign up" %}
+{% endblock %}
+
+{% block main_content %}
+<div class="wsc sc-scope ad-scope">
+
+  <a class="wsc-back" href="{% url 'workshop_admin:list' %}"><i class="fa-solid fa-arrow-left"></i> All workshops</a>
+
+  <div class="wsc-stats">
+    <div class="wsc-stat"><b>{{ stats.all }}</b><span>{{ stats.all|pluralize:"Person,People" }} on the list</span></div>
+    <div class="wsc-stat"><b>{{ stats.sms }}</b><span>Reachable by SMS</span></div>
+    <div class="wsc-stat"><b>{{ stats.paid }}</b><span>Paid a certificate fee</span></div>
+    <div class="wsc-stat"><b>{{ stats.repeat }}</b><span>Came to 2+ workshops</span></div>
+  </div>
+
+  <form method="get" class="wsc-card" id="wscFilters">
+    <div class="wsc-filters">
+      <div class="wsc-f"><label for="wscQ">Search</label><input id="wscQ" type="search" name="q" value="{{ f.q }}" placeholder="Name, email, phone or institution"></div>
+      <div class="wsc-f"><label for="wscWs">Workshop</label>
+        <select id="wscWs" name="workshop">
+          <option value="">Any workshop</option>
+          {% for w in workshops %}<option value="{{ w.pk }}" {% if f.workshop == w.pk|stringformat:"s" %}selected{% endif %}>{{ w.title|truncatechars:48 }}{% if w.starts_at %} · {{ w.starts_at|date:"M Y" }}{% endif %}</option>{% endfor %}
+        </select></div>
+      <div class="wsc-f"><label for="wscPaid">Payment</label>
+        <select id="wscPaid" name="paid">
+          <option value="">Paid or not</option>
+          <option value="yes" {% if f.paid == 'yes' %}selected{% endif %}>Has paid a fee</option>
+          <option value="no" {% if f.paid == 'no' %}selected{% endif %}>Never paid</option>
+        </select></div>
+      <div class="wsc-f"><label for="wscPhone">Phone</label>
+        <select id="wscPhone" name="phone">
+          <option value="">Any</option>
+          <option value="yes" {% if f.phone == 'yes' %}selected{% endif %}>Can get SMS</option>
+          <option value="no" {% if f.phone == 'no' %}selected{% endif %}>Email only</option>
+        </select></div>
+      <div class="wsc-f"><label for="wscSort">Sort</label>
+        <select id="wscSort" name="sort">
+          <option value="recent" {% if f.sort == 'recent' %}selected{% endif %}>Most recent</option>
+          <option value="oldest" {% if f.sort == 'oldest' %}selected{% endif %}>First registered</option>
+          <option value="name" {% if f.sort == 'name' %}selected{% endif %}>Name A–Z</option>
+          <option value="most" {% if f.sort == 'most' %}selected{% endif %}>Most workshops</option>
+        </select></div>
+    </div>
+    <div class="wsc-filter-foot">
+      <label class="wsc-check"><input type="checkbox" name="repeat" value="yes" {% if f.repeat == 'yes' %}checked{% endif %}> Only people who came back (2+ workshops)</label>
+      <noscript><button class="wsc-btn ghost" type="submit">Apply</button></noscript>
+      {% if filtered or f.sort != 'recent' %}<a class="wsc-reset" href="{% url 'workshop_admin:contacts' %}">Clear filters</a>{% endif %}
+    </div>
+  </form>
+
+  {% comment %} Composer: goes to the ticked rows, or else everyone the filters above
+     match -- the same people the table shows. {% endcomment %}
+  <div class="wsc-card wsc-compose" id="wscCompose" hidden>
+    <div class="wsc-compose-head">
+      <div>
+        <h3><i class="fa-solid fa-envelope-open-text"></i> Write a message</h3>
+        <div class="wsc-to">To: <b id="wscTo">everyone listed</b> <span id="wscReach"></span></div>
+      </div>
+      <button type="button" class="wsc-close" id="wscClose" aria-label="Close">&times;</button>
+    </div>
+    <form method="post" id="wscComposeForm" data-confirm="Send this message?" data-confirm-label="Send">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="send_message">
+      <input type="hidden" name="return_query" value="{{ query }}">
+      <input type="hidden" name="q" value="{{ f.q }}"><input type="hidden" name="workshop" value="{{ f.workshop }}">
+      <input type="hidden" name="paid" value="{{ f.paid }}"><input type="hidden" name="phone" value="{{ f.phone }}">
+      <input type="hidden" name="repeat" value="{{ f.repeat }}">
+      <input type="hidden" name="ids" class="wsc-ids" value="">
+
+      <div class="wsc-channels">
+        <label class="wsc-channel"><input type="checkbox" name="send_email" id="wscUseEmail" checked> <i class="fa-regular fa-envelope"></i> Email</label>
+        <label class="wsc-channel" {% if not sms_configured %}title="SMS isn't set up — BMS_API_KEY is missing"{% endif %}><input type="checkbox" name="send_sms" id="wscUseSms" {% if not sms_configured %}disabled{% endif %}> <i class="fa-solid fa-comment-sms"></i> SMS</label>
+      </div>
+      {% if not sms_configured %}<p class="wsc-note"><i class="fa-solid fa-triangle-exclamation" style="color:var(--orange);"></i> SMS isn't set up on this server (no <code>BMS_API_KEY</code>), so only email can be sent. You can still export the SMS list.</p>{% endif %}
+
+      <div class="wsc-part" id="wscEmailPart">
+        <h4><i class="fa-regular fa-envelope"></i> Email</h4>
+        <div class="wsc-f"><label for="wscSubject">Subject</label><input id="wscSubject" type="text" name="subject" maxlength="200" placeholder="e.g. Our next workshop is open for registration"></div>
+        <div class="wsc-f"><label for="wscBody">Message</label><textarea id="wscBody" name="body" rows="7" placeholder="Hi {first_name},&#10;&#10;…"></textarea>
+          <span class="wsc-hint">Each line becomes its own paragraph, in the MSREC email layout — one email per person, so nobody sees anyone else's address.</span></div>
+      </div>
+
+      <div class="wsc-part" id="wscSmsPart" hidden>
+        <h4><i class="fa-solid fa-comment-sms"></i> SMS</h4>
+        <div class="wsc-f"><label for="wscSmsBody">Text message</label><textarea id="wscSmsBody" name="sms_body" rows="3" maxlength="640" placeholder="MSREC: …"></textarea>
+          <span class="wsc-counter" id="wscSmsCount">0 characters</span>
+          <span class="wsc-hint">Sent from <strong>MSREC</strong> to Ghana mobile numbers only. <button type="button" class="wsc-linkbtn" id="wscCopyToSms">Copy the email message here</button></span></div>
+      </div>
+
+      <div class="wsc-tags">
+        <span>Personalise:</span>
+        <button type="button" class="wsc-tag" data-ph="{first_name}"><code>{first_name}</code></button>
+        <button type="button" class="wsc-tag" data-ph="{name}"><code>{name}</code></button>
+      </div>
+
+      <div class="wsc-send-row">
+        <button class="wsc-btn primary" type="submit"><i class="fa-solid fa-paper-plane"></i> Send</button>
+        <span class="wsc-hint" id="wscSendHint"></span>
+      </div>
+    </form>
+  </div>
+
+  <div class="wsc-card">
+    <div class="wsc-toolbar">
+      <span class="wsc-count">
+        {% if filtered %}<b>{{ people|length }}</b> of {{ stats.all }} match{% else %}<b>{{ people|length }}</b> {{ people|length|pluralize:"person,people" }}{% endif %}
+        <span id="wscPickedNote" hidden> · <span class="picked"><span id="wscPickedCount">0</span> ticked</span> — actions below use just them · <button type="button" class="wsc-linkbtn" id="wscClear">Clear</button></span>
+      </span>
+      <div class="wsc-btns">
+        <button type="button" class="wsc-btn primary" id="wscOpen" {% if not people %}disabled{% endif %}><i class="fa-solid fa-envelope"></i> Write a message</button>
+        <a class="wsc-btn ghost wsc-export" data-base="{% url 'workshop_admin:contacts_export' %}?{{ query }}{% if query %}&amp;{% endif %}kind=full" href="{% url 'workshop_admin:contacts_export' %}?{{ query }}{% if query %}&amp;{% endif %}kind=full"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
+        <a class="wsc-btn ghost wsc-export" data-base="{% url 'workshop_admin:contacts_export' %}?{{ query }}{% if query %}&amp;{% endif %}kind=sms" href="{% url 'workshop_admin:contacts_export' %}?{{ query }}{% if query %}&amp;{% endif %}kind=sms" title="Phone, Name, First Name — Ghana mobile numbers only, ready to import into a bulk-SMS tool"><i class="fa-solid fa-mobile-screen"></i> Export SMS list</a>
+      </div>
+    </div>
+
+    <div class="wsc-table-wrap">
+      <table class="wsc-table">
+        <thead><tr>
+          <th><label class="wsc-pick"><input type="checkbox" id="wscPickAll" aria-label="Tick everyone listed"> Name</label></th>
+          <th>Contact</th><th>Workshops</th><th>Fee</th><th>Last registered</th><th></th>
+        </tr></thead>
+        <tbody>
+          {% for c in people %}
+          <tr class="wsc-row" data-id="{{ c.pk }}" data-name="{{ c.name }}" data-sms="{{ c.sms_ok|yesno:'1,0' }}">
+            <td class="wsc-td-name"><label class="wsc-pick"><input type="checkbox" class="wsc-pick-row" aria-label="Tick {{ c.name }}">
+              <span><span class="wsc-who">{{ c.name }}</span>{% if c.institution %}<br><span class="wsc-sub">{{ c.institution }}</span>{% endif %}</span></label></td>
+            <td data-label="Contact"><span class="wsc-dim">{{ c.email }}{% if c.phone %}<br>{{ c.phone }}{% endif %}</span>{% if not c.phone %}<br><span class="wsc-nophone">No phone — email only</span>{% endif %}</td>
+            <td data-label="Workshops">
+              <span class="wsc-ws" title="{{ c.workshop_titles|join:' · ' }}">
+                <span class="wsc-badge count">{{ c.registration_count }}</span>
+                <span class="wsc-ws-title">{{ c.latest_workshop }}{% with more=c.workshop_titles|length|add:"-1" %}{% if more > 0 %} <span class="wsc-faint">+{{ more }} more</span>{% endif %}{% endwith %}</span>
+              </span>
+            </td>
+            <td data-label="Fee">{% if c.has_paid %}<span class="wsc-badge paid">Paid before</span>{% else %}<span class="wsc-badge no">Never paid</span>{% endif %}</td>
+            <td data-label="Last registered">{{ c.last_registered_at|date:"j M Y" }}<br><span class="wsc-faint">since {{ c.first_registered_at|date:"M Y" }}</span>
+              {% if c.last_messaged_at %}<br><span class="wsc-faint" title="Last messaged {{ c.last_messaged_at|date:'j M Y, H:i' }}"><i class="fa-solid fa-check" style="color:var(--green);"></i> messaged {{ c.last_messaged_at|date:"j M" }}</span>{% endif %}</td>
+            <td data-label="Actions">
+              <div class="wsc-actions">
+                <button type="button" class="wsc-icon go wsc-msg-one" data-id="{{ c.pk }}" title="Write {{ c.name }} an email / SMS"><i class="fa-solid fa-envelope"></i></button>
+                <form method="post" data-confirm="Remove {{ c.name }} from the contact list? Their workshop registrations are kept; they'll be added back if they register again." data-confirm-variant="danger">
+                  {% csrf_token %}<input type="hidden" name="action" value="delete_contact"><input type="hidden" name="contact_id" value="{{ c.pk }}"><input type="hidden" name="return_query" value="{{ query }}">
+                  <button class="wsc-icon danger" title="Remove from the list"><i class="fa-solid fa-trash"></i></button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td class="wsc-empty" colspan="6">
+            {% if filtered %}Nobody matches these filters. <a class="wsc-reset" href="{% url 'workshop_admin:contacts' %}">Clear filters</a>
+            {% else %}Nobody has registered for a workshop yet. People appear here the moment they register.{% endif %}
+          </td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    // Filters apply as soon as they change; the search waits for a pause.
+    var filters = document.getElementById("wscFilters");
+    if (filters) {
+      var timer = null;
+      filters.querySelectorAll("select, input[type=checkbox]").forEach(function (el) {
+        el.addEventListener("change", function () { filters.submit(); });
+      });
+      var q = document.getElementById("wscQ");
+      if (q) q.addEventListener("input", function () {
+        clearTimeout(timer);
+        timer = setTimeout(function () { filters.submit(); }, 600);
+      });
+      if (q && q.value) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); }
+    }
+
+    var rows = Array.prototype.slice.call(document.querySelectorAll(".wsc-row"));
+    var pickAll = document.getElementById("wscPickAll");
+    var pickedNote = document.getElementById("wscPickedNote");
+    var pickedCount = document.getElementById("wscPickedCount");
+    var idsInputs = document.querySelectorAll(".wsc-ids");
+    var exports = document.querySelectorAll(".wsc-export");
+
+    function box(r) { return r.querySelector(".wsc-pick-row"); }
+    function picked() { return rows.filter(function (r) { return box(r).checked; }); }
+    function targets() { var p = picked(); return p.length ? p : rows; }
+    function plural(n, one, many) { return n + " " + (n === 1 ? one : (many || one + "s")); }
+
+    function refresh() {
+      var p = picked();
+      var ids = p.map(function (r) { return r.dataset.id; }).join(",");
+      rows.forEach(function (r) { r.classList.toggle("picked", box(r).checked); });
+      idsInputs.forEach(function (i) { i.value = ids; });
+      // Exports follow the ticks too: tick five people, export five people.
+      exports.forEach(function (a) { a.href = a.dataset.base + (ids ? "&ids=" + ids : ""); });
+      if (pickedNote) pickedNote.hidden = !p.length;
+      if (pickedCount) pickedCount.textContent = p.length;
+      if (pickAll) {
+        pickAll.checked = rows.length > 0 && p.length === rows.length;
+        pickAll.indeterminate = p.length > 0 && p.length < rows.length;
+      }
+      refreshCompose();
+    }
+    rows.forEach(function (r) { box(r).addEventListener("change", refresh); });
+    if (pickAll) pickAll.addEventListener("change", function () {
+      rows.forEach(function (r) { box(r).checked = pickAll.checked; });
+      refresh();
+    });
+    var clear = document.getElementById("wscClear");
+    if (clear) clear.addEventListener("click", function () { rows.forEach(function (r) { box(r).checked = false; }); refresh(); });
+
+    // ---- composer ----
+    var compose = document.getElementById("wscCompose");
+    var form = document.getElementById("wscComposeForm");
+    var useEmail = document.getElementById("wscUseEmail");
+    var useSms = document.getElementById("wscUseSms");
+    var emailPart = document.getElementById("wscEmailPart");
+    var smsPart = document.getElementById("wscSmsPart");
+    var subject = document.getElementById("wscSubject");
+    var body = document.getElementById("wscBody");
+    var smsBody = document.getElementById("wscSmsBody");
+    var smsCount = document.getElementById("wscSmsCount");
+    var to = document.getElementById("wscTo");
+    var reach = document.getElementById("wscReach");
+    var hint = document.getElementById("wscSendHint");
+    var lastField = body;
+
+    var GSM = /^[A-Za-z0-9 \r\n@£$¥èéùìòÇØøÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ!"#¤%&'()*+,\-.\/:;<=>?¡ÄÖÑÜ§¿äöñüà^{}\\\[~\]|€]*$/;
+    function segments(text) {
+      if (!text) return 0;
+      var gsm = GSM.test(text), single = gsm ? 160 : 70, multi = gsm ? 153 : 67;
+      return text.length <= single ? 1 : Math.ceil(text.length / multi);
+    }
+
+    function refreshCompose() {
+      var t = targets(), p = picked();
+      var smsable = t.filter(function (r) { return r.dataset.sms === "1"; }).length;
+      if (to) to.textContent = p.length === 1 ? p[0].dataset.name
+        : p.length ? plural(p.length, "ticked person", "ticked people")
+        : "everyone listed — " + plural(t.length, "person", "people");
+      if (reach) reach.textContent = useSms && useSms.checked && smsable < t.length
+        ? "· SMS reaches " + smsable + " of " + t.length : "";
+      if (smsCount && smsBody) {
+        var n = segments(smsBody.value);
+        smsCount.textContent = smsBody.value.length + " characters · " + plural(n, "SMS", "SMS") + " each" +
+          (n && smsable ? " · about " + (n * smsable) + " credits" : "");
+        smsCount.classList.toggle("over", n > 1);
+      }
+      if (form) {
+        var via = [];
+        if (useEmail && useEmail.checked) via.push("email");
+        if (useSms && useSms.checked) via.push("SMS");
+        form.dataset.confirm = "Send this " + (via.join(" + ") || "message") + " to " +
+          (p.length === 1 ? p[0].dataset.name : plural(t.length, "person", "people")) + "?";
+      }
+    }
+    function syncChannels() {
+      if (emailPart) emailPart.hidden = !(useEmail && useEmail.checked);
+      if (smsPart) smsPart.hidden = !(useSms && useSms.checked);
+      refreshCompose();
+    }
+    function open() {
+      compose.hidden = false;
+      refreshCompose();
+      compose.scrollIntoView({ behavior: "smooth", block: "start" });
+      var first = useEmail && useEmail.checked ? subject : smsBody;
+      setTimeout(function () { first.focus({ preventScroll: true }); }, 250);
+    }
+    var openBtn = document.getElementById("wscOpen");
+    if (openBtn) openBtn.addEventListener("click", open);
+    var closeBtn = document.getElementById("wscClose");
+    if (closeBtn) closeBtn.addEventListener("click", function () { compose.hidden = true; });
+    document.querySelectorAll(".wsc-msg-one").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        rows.forEach(function (r) { box(r).checked = r.dataset.id === btn.dataset.id; });
+        refresh();
+        open();
+      });
+    });
+    [useEmail, useSms].forEach(function (el) { if (el) el.addEventListener("change", syncChannels); });
+    [subject, body, smsBody].forEach(function (el) {
+      el.addEventListener("focus", function () { lastField = el; });
+      el.addEventListener("input", refreshCompose);
+    });
+    document.querySelectorAll(".wsc-tag[data-ph]").forEach(function (tag) {
+      tag.addEventListener("click", function () {
+        var el = lastField || body;
+        if (el.closest("[hidden]")) el = (emailPart && !emailPart.hidden) ? body : smsBody;
+        var s = el.selectionStart, e = el.selectionEnd;
+        el.value = el.value.slice(0, s) + tag.dataset.ph + el.value.slice(e);
+        el.focus();
+        el.selectionStart = el.selectionEnd = s + tag.dataset.ph.length;
+        refreshCompose();
+      });
+    });
+    var copy = document.getElementById("wscCopyToSms");
+    if (copy) copy.addEventListener("click", function () {
+      smsBody.value = ("MSREC: " + body.value.split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean).join(" ")).slice(0, 640);
+      refreshCompose();
+      smsBody.focus();
+    });
+
+    // Checked before the shared confirm dialog (script.js) ever opens.
+    if (form) form.addEventListener("submit", function (e) {
+      var problem = "", focusEl = null, t = targets();
+      var mail = useEmail && useEmail.checked, text = useSms && useSms.checked;
+      if (!t.length) problem = "Nobody is listed.";
+      else if (!mail && !text) problem = "Choose email, SMS or both.";
+      else if (mail && !subject.value.trim()) { problem = "Add a subject for the email."; focusEl = subject; }
+      else if (mail && !body.value.trim()) { problem = "Write the email message."; focusEl = body; }
+      else if (text && !smsBody.value.trim()) { problem = "Write the SMS text."; focusEl = smsBody; }
+      else if (text && !mail && !t.some(function (r) { return r.dataset.sms === "1"; })) problem = "None of these people has a Ghana mobile number to text.";
+      if (problem) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        hint.textContent = problem;
+        hint.style.color = "var(--red)";
+        if (focusEl) focusEl.focus();
+        return;
+      }
+      hint.textContent = "";
+      refreshCompose();
+    });
+
+    syncChannels();
+    refresh();
+  })();
+</script>
+{% endblock %}

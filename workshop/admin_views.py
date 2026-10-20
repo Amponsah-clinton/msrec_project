@@ -62,11 +62,63 @@ def workshop_list(request):
         messages.success(request, f'"{ws.title}" created. Set its details below.')
         return redirect("workshop_admin:manage", pk=ws.pk)
 
-    workshops = list(Workshop.objects.all())
+    from django.db.models import Count, Q, Sum
+
+    PS = WorkshopRegistration.PaymentStatus
+    paid_q = Q(registrations__payment_status=PS.SUCCESS)
+    owed_q = Q(registrations__wants_certificate=True,
+               registrations__payment_status__in=[PS.PENDING, PS.FAILED])
+    workshops = list(Workshop.objects.annotate(
+        reg_count=Count("registrations"),
+        paid_count=Count("registrations", filter=paid_q),
+        owed_count=Count("registrations", filter=owed_q),
+        collected=Sum("registrations__amount", filter=paid_q),
+    ))
+
+    # Soonest upcoming first, then undated drafts, then the most recent past.
+    now = timezone.now()
+    far = now + timezone.timedelta(days=36500)
+    upcoming = sorted((w for w in workshops if not w.is_past), key=lambda w: w.starts_at or far)
+    past = sorted((w for w in workshops if w.is_past), key=lambda w: w.starts_at or now, reverse=True)
+    workshops = upcoming + past
+    from django.utils.timesince import timesince, timeuntil
+
     for w in workshops:
-        w.reg_count = w.registrations.count()
+        w.collected = w.collected or Decimal("0.00")
+        # A short "when" for the card's corner: In 5 days / Live now / Ended 3 weeks ago.
+        if not w.starts_at:
+            w.when_label = "No date yet"
+        elif w.is_past:
+            w.when_label = f"Ended {timesince(w.ends_at or w.starts_at, now, depth=1)} ago"
+        elif w.starts_at <= now:
+            w.when_label = "Happening now"
+        else:
+            w.when_label = f"In {timeuntil(w.starts_at, now, depth=1)}"
+        # How far along the fee-paying group is, for the card's bar.
+        payers = w.paid_count + w.owed_count
+        w.paid_pct = round(100 * w.paid_count / payers) if payers else 0
+        if not w.is_published:
+            w.state = "draft"
+        elif w.is_past:
+            w.state = "past"
+        elif w.registration_open:
+            w.state = "open"
+        else:
+            w.state = "closed"
+
     return render(request, "dashboards/admin/workshop_list.html", {
         "workshops": workshops,
+        "totals": {
+            "all": len(workshops),
+            "open": sum(1 for w in workshops if w.state == "open"),
+            "upcoming": len(upcoming),
+            "past": len(past),
+            "draft": sum(1 for w in workshops if w.state == "draft"),
+            "registrations": sum(w.reg_count for w in workshops),
+            "collected": sum((w.collected for w in workshops), Decimal("0.00")),
+            "owed": sum(w.owed_count for w in workshops),
+            "currency": workshops[0].fee_currency if workshops else "GHS",
+        },
         "dashboard": _dashboard(request),
     })
 
@@ -486,3 +538,226 @@ def cert_preview(request, pk):
     resp["Content-Disposition"] = 'inline; filename="certificate-preview.pdf"'
     resp["X-Frame-Options"] = "SAMEORIGIN"
     return resp
+
+
+# ---------------------------------------------------------------------
+# Contacts: everyone who has ever registered for a workshop
+# ---------------------------------------------------------------------
+
+def _contact_filters(params):
+    return {
+        "q": (params.get("q") or "").strip(),
+        "workshop": (params.get("workshop") or "").strip(),
+        "paid": params.get("paid") or "",
+        "phone": params.get("phone") or "",
+        "repeat": params.get("repeat") or "",
+        "sort": params.get("sort") or "recent",
+    }
+
+
+def _filtered_contacts(f, ids=None):
+    """The contacts matching the page's filters -- the same list the table
+    shows, the composer sends to and the exports write out. Filtered in
+    Python because `history` is JSON (no portable JSON lookups on SQLite),
+    and the list is small enough for that to be instant."""
+    from notifications import sms
+    from .models import WorkshopContact
+
+    qs = WorkshopContact.objects.all()
+    if ids:
+        qs = qs.filter(pk__in=ids)
+    out = []
+    q = f["q"].lower()
+    for c in qs:
+        c.sms_ok = bool(sms.clean_phone(c.phone))
+        if q and q not in f"{c.name} {c.email} {c.phone} {c.institution}".lower():
+            continue
+        if f["workshop"] and not any(str(e.get("workshop_id")) == f["workshop"] for e in c.history):
+            continue
+        if f["paid"] == "yes" and not c.has_paid:
+            continue
+        if f["paid"] == "no" and c.has_paid:
+            continue
+        if f["phone"] == "yes" and not c.sms_ok:
+            continue
+        if f["phone"] == "no" and c.sms_ok:
+            continue
+        if f["repeat"] == "yes" and c.registration_count < 2:
+            continue
+        out.append(c)
+    if f["sort"] == "name":
+        out.sort(key=lambda c: c.name.lower())
+    elif f["sort"] == "most":
+        out.sort(key=lambda c: (-c.registration_count, c.name.lower()))
+    elif f["sort"] == "oldest":
+        out.sort(key=lambda c: c.first_registered_at or timezone.now())
+    return out
+
+
+def _picked_ids(params):
+    return [p for p in (params.get("ids") or "").split(",") if p.strip().isdigit()]
+
+
+def _send_contact_message(request, people):
+    from notifications import sms
+    from . import contacts as contact_list
+    from .models import WorkshopContact
+
+    use_email = request.POST.get("send_email") == "on"
+    use_sms = request.POST.get("send_sms") == "on"
+    subject = request.POST.get("subject", "").strip()[:200]
+    body = request.POST.get("body", "").strip()
+    sms_body = request.POST.get("sms_body", "").strip()
+
+    if not (use_email or use_sms):
+        messages.error(request, "Choose email, SMS or both.")
+        return
+    if use_email and not (subject and body):
+        messages.error(request, "The email needs a subject and a message.")
+        return
+    if use_sms and not sms_body:
+        messages.error(request, "Write the SMS text, or untick SMS.")
+        return
+    if use_sms and not sms.is_configured():
+        messages.error(request, "SMS isn't set up (BMS_API_KEY is missing), so nothing was sent.")
+        return
+    if not people:
+        messages.error(request, "Nobody matched.")
+        return
+
+    reached = set()
+    emailed = email_failed = 0
+    if use_email:
+        for c in people:
+            if contact_list.send_email(c, subject=subject, body=body):
+                emailed += 1
+                reached.add(c.pk)
+            else:
+                email_failed += 1
+
+    texted = no_phone = sms_failed = 0
+    sms_error = ""
+    if use_sms:
+        batches = {}
+        for c in people:
+            phone = sms.clean_phone(c.phone)
+            if not phone:
+                no_phone += 1
+                continue
+            batches.setdefault(contact_list.fill(sms_body, c), []).append((phone, c.pk))
+        for text, group in batches.items():
+            result = sms.send_sms([p for p, _ in group], text)
+            if result.get("ok"):
+                texted += len(group)
+                reached.update(pk for _, pk in group)
+            else:
+                sms_failed += len(group)
+                sms_error = result.get("error") or ""
+
+    if reached:
+        WorkshopContact.objects.filter(pk__in=reached).update(last_messaged_at=timezone.now())
+
+    parts = []
+    if use_email:
+        parts.append(f"email to {emailed}" + (f" ({email_failed} failed — check email settings)" if email_failed else ""))
+    if use_sms:
+        extra = []
+        if no_phone:
+            extra.append(f"{no_phone} without a valid Ghana number")
+        if sms_failed:
+            extra.append(f"{sms_failed} failed{': ' + sms_error if sms_error else ''}")
+        parts.append(f"SMS to {texted}" + (f" ({'; '.join(extra)})" if extra else ""))
+    summary = ", ".join(parts) + "."
+    if reached:
+        messages.success(request, "Message sent: " + summary)
+    else:
+        messages.error(request, "Nothing sent: " + summary)
+
+
+@login_required
+@staff_required
+def contacts(request):
+    from notifications import sms
+    from .models import WorkshopContact
+
+    if request.method == "POST":
+        f = _contact_filters(request.POST)
+        action = request.POST.get("action")
+        if action == "send_message":
+            _send_contact_message(request, _filtered_contacts(f, _picked_ids(request.POST)))
+        elif action == "delete_contact":
+            c = get_object_or_404(WorkshopContact, pk=request.POST.get("contact_id"))
+            messages.success(request, f"Removed {c.name} from the contact list.")
+            c.delete()
+        else:
+            messages.error(request, "That request could not be processed.")
+        back = request.POST.get("return_query", "")
+        return redirect(reverse("workshop_admin:contacts") + (f"?{back}" if back else ""))
+
+    f = _contact_filters(request.GET)
+    people = _filtered_contacts(f)
+    everyone = list(WorkshopContact.objects.only("phone", "has_paid", "registration_count"))
+    return render(request, "dashboards/admin/workshop_contacts.html", {
+        "people": people,
+        "f": f,
+        "query": request.GET.urlencode(),
+        "workshops": Workshop.objects.order_by("-starts_at", "-created_at").only("pk", "title", "starts_at"),
+        "stats": {
+            "all": len(everyone),
+            "sms": sum(1 for c in everyone if sms.clean_phone(c.phone)),
+            "paid": sum(1 for c in everyone if c.has_paid),
+            "repeat": sum(1 for c in everyone if c.registration_count > 1),
+        },
+        "filtered": any(f[k] for k in ("q", "workshop", "paid", "phone", "repeat")),
+        "sms_configured": sms.is_configured(),
+        "dashboard": _dashboard(request),
+    })
+
+
+@login_required
+@staff_required
+def contacts_export(request):
+    """CSV of the contacts on screen (or just the ticked ones).
+    ?kind=full -- every detail, for a spreadsheet.
+    ?kind=sms  -- one row per reachable Ghana mobile number, in the
+                  0XXXXXXXXX form bulk-SMS tools (mNotify/BMS) import."""
+    import csv
+
+    from notifications import sms
+
+    f = _contact_filters(request.GET)
+    people = _filtered_contacts(f, _picked_ids(request.GET))
+    today = timezone.localdate().isoformat()
+
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    # A BOM so Excel opens names with accents (é, ɛ, ɔ ...) correctly.
+    response.write("﻿")
+    writer = csv.writer(response)
+
+    def day(dt):
+        return timezone.localtime(dt).strftime("%d %b %Y") if dt else ""
+
+    if request.GET.get("kind") == "sms":
+        response["Content-Disposition"] = f'attachment; filename="msrec-workshop-sms-list-{today}.csv"'
+        writer.writerow(["Phone", "Name", "First Name"])
+        seen = set()
+        for c in people:
+            phone = sms.clean_phone(c.phone)
+            if phone and phone not in seen:
+                seen.add(phone)
+                writer.writerow([phone, c.name, c.first_name])
+        return response
+
+    response["Content-Disposition"] = f'attachment; filename="msrec-workshop-contacts-{today}.csv"'
+    writer.writerow([
+        "Name", "Email", "Phone", "SMS Number", "Institution",
+        "Workshops Registered", "Workshops", "Paid a Certificate Fee",
+        "First Registered", "Last Registered", "Last Messaged",
+    ])
+    for c in people:
+        writer.writerow([
+            c.name, c.email, c.phone, sms.clean_phone(c.phone), c.institution,
+            c.registration_count, "; ".join(c.workshop_titles), "Yes" if c.has_paid else "No",
+            day(c.first_registered_at), day(c.last_registered_at), day(c.last_messaged_at),
+        ])
+    return response
