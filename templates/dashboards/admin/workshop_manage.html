@@ -329,11 +329,6 @@
         </form>
       </div>
 
-      {% if counts.unpaid %}
-      <p class="wsa-note" style="margin:13px 0 0; color: var(--orange);"><i class="fa-solid fa-triangle-exclamation"></i>
-        {{ counts.unpaid }} registrant(s) owe <strong>{{ ws.fee_currency }} {{ counts.outstanding }}</strong> in certificate fees — send them the payment link.
-        They still get the letter, but no certificate until they pay.</p>
-      {% endif %}
       {% if counts.all == 0 %}
       <p class="wsa-note" style="margin:13px 0 0;"><i class="fa-solid fa-circle-info"></i>
         Nobody has registered yet — share <code>/workshop/{{ ws.slug }}/</code> to collect registrations.</p>
