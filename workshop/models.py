@@ -332,6 +332,8 @@ class WorkshopRegistration(models.Model):
     meeting_link_sent_at = models.DateTimeField(null=True, blank=True)
     certificate_sent_at = models.DateTimeField(null=True, blank=True)
     materials_sent_at = models.DateTimeField(null=True, blank=True)
+    # Last custom email/SMS from the Registrations tab's "Message" composer.
+    message_sent_at = models.DateTimeField(null=True, blank=True)
 
     certificate_ref = models.CharField(max_length=60, blank=True)
 

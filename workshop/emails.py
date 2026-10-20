@@ -164,6 +164,65 @@ def send_payment_required_email(reg, workshop=None):
     return ok, "Payment link sent." if ok else "The email couldn't be sent — check email settings."
 
 
+MESSAGE_PLACEHOLDERS = ("{name}", "{first_name}", "{workshop}", "{amount}", "{pay_link}")
+
+
+def pay_url_for(reg):
+    """The public checkout link for this registrant, or "" when they owe
+    nothing (so a {pay_link} in a message to a paid person stays empty)."""
+    if not reg.payment_outstanding:
+        return ""
+    from django.conf import settings
+    from django.urls import reverse
+
+    return settings.SITE_URL.rstrip("/") + reverse("workshop:pay", kwargs={"pk": reg.pk})
+
+
+def fill_placeholders(text, reg, workshop=None):
+    """Swaps the {name}-style placeholders the composer offers for this
+    registrant's details. Plain replace, not str.format, so a stray brace
+    in a staff message can't raise."""
+    ws = _ws(reg, workshop)
+    owed = f"{reg.currency} {reg.amount}" if reg.payment_outstanding else ""
+    values = {
+        "{name}": reg.name,
+        "{first_name}": (reg.name.split() or [reg.name])[0],
+        "{workshop}": ws.title,
+        "{amount}": owed,
+        "{pay_link}": pay_url_for(reg),
+    }
+    for key, value in values.items():
+        text = text.replace(key, value)
+    return text
+
+
+def send_custom_email(reg, workshop=None, *, subject, body, button=""):
+    """A message staff write themselves in the Registrations tab's composer.
+    Each line of `body` becomes a paragraph; `button` optionally adds the
+    workshop's meeting link, materials or (for those who owe) the payment
+    link as a button under it."""
+    ws = _ws(reg, workshop)
+    paragraphs = [line.strip() for line in fill_placeholders(body, reg, ws).splitlines() if line.strip()]
+    cta_text = cta_url = None
+    if button == "meeting" and ws.meeting_link:
+        cta_text, cta_url = "Join the workshop", ws.meeting_link
+    elif button == "materials" and ws.materials_download_url:
+        cta_text, cta_url = "Open materials", ws.materials_download_url
+    elif button == "pay" and reg.payment_outstanding:
+        cta_text, cta_url = "Pay certificate fee", pay_url_for(reg)
+
+    subject = fill_placeholders(subject, reg, ws)
+    return send_branded_email(
+        subject=subject,
+        to=reg.email,
+        heading=subject,
+        paragraphs=paragraphs,
+        cta_text=cta_text,
+        cta_url=cta_url,
+        preheader=f"A message about {ws.title}.",
+    )
+
+
 def send_materials_email(reg, workshop=None):
     ws = _ws(reg, workshop)
     from . import storage

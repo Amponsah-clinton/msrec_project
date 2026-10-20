@@ -118,6 +118,40 @@
   .wsa-icon-btn.go { color: var(--teal); border-color: color-mix(in srgb, var(--teal) 40%, transparent); }
   .wsa-icon-btn.danger { color: var(--red); border-color: var(--red-border); }
 
+  /* ---- picking rows ---- */
+  .wsa-pick { display: inline-flex; align-items: flex-start; gap: 9px; cursor: pointer; }
+  .wsa-pick input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--teal); cursor: pointer; flex: none; }
+  tr.wsa-reg-row.picked td { background: color-mix(in srgb, var(--teal) 7%, transparent); }
+  .wsa-selbar { display: none; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.8px; color: var(--text-sub); margin: -4px 0 12px; }
+  .wsa-selbar.on { display: flex; }
+  .wsa-selbar b { color: var(--teal); }
+  .wsa-linkbtn { background: none; border: 0; padding: 0; font: inherit; font-size: 12.8px; font-weight: 650; color: var(--teal); cursor: pointer; }
+  .wsa-linkbtn:hover { text-decoration: underline; }
+  .wsa-nosms { font-size: 11px; color: var(--orange); }
+
+  /* ---- message composer ---- */
+  .wsa-compose { border-color: color-mix(in srgb, var(--teal) 40%, var(--border)); }
+  .wsa-compose[hidden] { display: none; }
+  .wsa-compose-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+  .wsa-compose-head h3 { margin: 0; font-size: 15.5px; display: flex; align-items: center; gap: 8px; }
+  .wsa-compose-head h3 i { color: var(--teal); font-size: 14px; }
+  .wsa-to { font-size: 13px; color: var(--text-sub); margin-top: 4px; line-height: 1.5; }
+  .wsa-to b { color: var(--text-main); }
+  .wsa-close { background: none; border: 0; font-size: 22px; line-height: 1; color: var(--text-faint); cursor: pointer; padding: 0 2px; }
+  .wsa-close:hover { color: var(--text-main); }
+  .wsa-channels { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .wsa-channel { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border); background: var(--bg); border-radius: 999px; padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer; color: var(--text-main); }
+  .wsa-channel input { accent-color: var(--teal); margin: 0; }
+  .wsa-channel:has(input:checked) { border-color: var(--teal); background: var(--teal-light); color: var(--teal); }
+  .wsa-channel:has(input:disabled) { opacity: .55; cursor: not-allowed; }
+  .wsa-starters { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; font-size: 12.5px; color: var(--text-sub); }
+  .wsa-tag { border: 1px dashed var(--border); background: var(--bg); color: var(--text-main); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12px; cursor: pointer; }
+  .wsa-tag:hover { border-color: var(--teal); color: var(--teal); }
+  .wsa-tag code { font-size: 11.5px; }
+  .wsa-counter { font-size: 11.8px; color: var(--text-sub); }
+  .wsa-counter.over { color: var(--orange); }
+  .wsa-compose .wsa-section[hidden] { display: none; }
+
   /* ---- forms ---- */
   .wsa-section { border: 1px solid var(--border); border-radius: var(--radius, 12px); padding: 15px 16px; margin-bottom: 14px; }
   .wsa-section > h4 { margin: 0 0 12px; font-size: 13.5px; color: var(--text-main); display: flex; align-items: center; gap: 8px; }
@@ -287,31 +321,32 @@
       <button type="button" class="wsa-chip active" data-filter="all" data-label="Everyone"><b>{{ counts.all }}</b><span>Registered</span></button>
       <button type="button" class="wsa-chip" data-filter="wants_cert" data-label="Wants a certificate"><b>{{ counts.wants_cert }}</b><span>Want certificate</span></button>
       <button type="button" class="wsa-chip" data-filter="paid" data-label="Paid"><b>{{ counts.paid }}</b><span>Paid</span></button>
-      <button type="button" class="wsa-chip" data-filter="unpaid" data-label="Fee unpaid"><b>{{ counts.unpaid }}</b><span>Fee unpaid</span></button>
+      <button type="button" class="wsa-chip" data-filter="unpaid" data-label="Not paid (fee owed)"><b>{{ counts.unpaid }}</b><span>Not paid</span></button>
       <button type="button" class="wsa-chip" data-filter="no_cert" data-label="No certificate"><b>{{ counts.no_cert }}</b><span>No certificate</span></button>
     </div>
 
     <div class="wsa-actions">
       <div class="wsa-actions-head">
         <h3>Send to</h3>
-        <span class="wsa-scope-tag">the group picked above — <b id="wsaScopeLabel">Everyone ({{ counts.all }})</b>. Only this workshop's participants are touched.</span>
+        <span class="wsa-scope-tag"><span id="wsaScopeHow">the group picked above</span> — <b id="wsaScopeLabel">Everyone ({{ counts.all }})</b>. Only this workshop's participants are touched.</span>
       </div>
 
       <div class="wsa-btn-row">
+        <button type="button" class="wsa-btn primary" id="wsaOpenCompose"><i class="fa-solid fa-envelope"></i> Write a message <span class="wsa-btn-sub">(email / SMS)</span></button>
         <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}">
-          {% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="scope" class="wsa-scope-input" value="all">
-          <button class="wsa-btn primary" name="action" value="send_meeting_link"><i class="fa-solid fa-link"></i> Meeting link</button>
+          {% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="scope" class="wsa-scope-input" value="all"><input type="hidden" name="reg_ids" class="wsa-ids-input" value="">
+          <button class="wsa-btn ghost" name="action" value="send_meeting_link"><i class="fa-solid fa-link"></i> Meeting link</button>
         </form>
         <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}">
-          {% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="scope" class="wsa-scope-input" value="all">
+          {% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="scope" class="wsa-scope-input" value="all"><input type="hidden" name="reg_ids" class="wsa-ids-input" value="">
           <button class="wsa-btn ghost" name="action" value="send_materials"><i class="fa-solid fa-folder-open"></i> Materials</button>
         </form>
         <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}">
-          {% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="scope" class="wsa-scope-input" value="all">
+          {% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="scope" class="wsa-scope-input" value="all"><input type="hidden" name="reg_ids" class="wsa-ids-input" value="">
           <button class="wsa-btn ghost" name="action" value="send_certificate"><i class="fa-solid fa-award"></i> Certificate <span class="wsa-btn-sub">(paid only)</span></button>
         </form>
         <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}">
-          {% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="scope" class="wsa-scope-input" value="all">
+          {% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="scope" class="wsa-scope-input" value="all"><input type="hidden" name="reg_ids" class="wsa-ids-input" value="">
           <button class="wsa-btn ghost" name="action" value="send_payment_link"><i class="fa-solid fa-credit-card"></i> Payment link <span class="wsa-btn-sub">(unpaid only)</span></button>
         </form>
       </div>
@@ -324,7 +359,7 @@
       </div>
       <div class="wsa-btn-row">
         <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}" data-confirm="Approve the selected group for this workshop and email + SMS their documents now?">
-          {% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="scope" class="wsa-scope-input" value="all">
+          {% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="scope" class="wsa-scope-input" value="all"><input type="hidden" name="reg_ids" class="wsa-ids-input" value="">
           <button class="wsa-btn primary" name="action" value="approve_send"><i class="fa-solid fa-paper-plane"></i> Approve &amp; send documents</button>
         </form>
       </div>
@@ -335,17 +370,93 @@
       {% endif %}
     </div>
 
+    {% comment %} The composer: staff write their own email and/or SMS. It goes to the
+       same people the send buttons above would reach -- the rows ticked in
+       the table, or else the group chip -- and the "To" line says who. {% endcomment %}
+    <div class="wsa-card wsa-compose" id="wsaCompose" hidden>
+      <div class="wsa-compose-head">
+        <div>
+          <h3><i class="fa-solid fa-envelope-open-text"></i> Write a message</h3>
+          <div class="wsa-to">To: <b id="wsaComposeTo">Everyone</b> <span id="wsaComposeReach"></span></div>
+        </div>
+        <button type="button" class="wsa-close" id="wsaCloseCompose" aria-label="Close">&times;</button>
+      </div>
+
+      <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}" id="wsaComposeForm" data-confirm="Send this message?" data-confirm-label="Send">
+        {% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="send_message">
+        <input type="hidden" name="scope" class="wsa-scope-input" value="all"><input type="hidden" name="reg_ids" class="wsa-ids-input" value="">
+
+        <div class="wsa-channels">
+          <label class="wsa-channel"><input type="checkbox" name="send_email" id="wsaUseEmail" checked> <i class="fa-regular fa-envelope"></i> Email</label>
+          <label class="wsa-channel" {% if not sms_configured %}title="SMS isn't set up — BMS_API_KEY is missing"{% endif %}><input type="checkbox" name="send_sms" id="wsaUseSms" {% if not sms_configured %}disabled{% endif %}> <i class="fa-solid fa-comment-sms"></i> SMS</label>
+        </div>
+        {% if not sms_configured %}<p class="wsa-note"><i class="fa-solid fa-triangle-exclamation" style="color:var(--orange);"></i> SMS isn't set up on this server (no <code>BMS_API_KEY</code>), so only email can be sent.</p>{% endif %}
+
+        <div class="wsa-starters">
+          <span>Start from:</span>
+          <button type="button" class="wsa-tag" data-starter="reminder">Workshop reminder</button>
+          <button type="button" class="wsa-tag" data-starter="payment">Payment reminder</button>
+          <button type="button" class="wsa-tag" data-starter="update">Update / change</button>
+          <button type="button" class="wsa-tag" data-starter="blank">Blank</button>
+        </div>
+
+        <div class="wsa-section" id="wsaEmailPart">
+          <h4><i class="fa-regular fa-envelope"></i> Email</h4>
+          <div class="wsa-form-grid">
+            <div class="wsa-f wide"><label for="wsaSubject">Subject</label><input id="wsaSubject" type="text" name="subject" maxlength="200" placeholder="e.g. Reminder: {workshop} starts tomorrow"></div>
+            <div class="wsa-f wide"><label for="wsaBody">Message</label><textarea id="wsaBody" name="body" rows="7" placeholder="Hi {first_name},&#10;&#10;…"></textarea>
+              <span class="hint">Each line becomes its own paragraph. It's sent in the MSREC email layout, one email per person.</span></div>
+            <div class="wsa-f"><label for="wsaButton">Add a button</label>
+              <select id="wsaButton" name="button">
+                <option value="">No button</option>
+                <option value="meeting" {% if not ws.meeting_link %}disabled{% endif %}>Join the workshop (meeting link){% if not ws.meeting_link %} — not set{% endif %}</option>
+                <option value="materials" {% if not ws.materials_download_url %}disabled{% endif %}>Open materials{% if not ws.materials_download_url %} — not set{% endif %}</option>
+                <option value="pay">Pay certificate fee (only people who owe)</option>
+              </select></div>
+          </div>
+        </div>
+
+        <div class="wsa-section" id="wsaSmsPart" hidden>
+          <h4><i class="fa-solid fa-comment-sms"></i> SMS</h4>
+          <div class="wsa-form-grid">
+            <div class="wsa-f wide"><label for="wsaSmsBody">Text message</label><textarea id="wsaSmsBody" name="sms_body" rows="3" maxlength="640" placeholder="MSREC: …"></textarea>
+              <span class="wsa-counter" id="wsaSmsCount">0 characters</span>
+              <span class="hint">Sent from <strong>MSREC</strong> to Ghana mobile numbers only. Placeholders are counted before names are filled in. <button type="button" class="wsa-linkbtn" id="wsaCopyToSms">Copy the email message here</button></span></div>
+          </div>
+        </div>
+
+        <div class="wsa-starters" style="margin-bottom:0;">
+          <span>Personalise:</span>
+          <button type="button" class="wsa-tag" data-ph="{first_name}"><code>{first_name}</code></button>
+          <button type="button" class="wsa-tag" data-ph="{name}"><code>{name}</code></button>
+          <button type="button" class="wsa-tag" data-ph="{workshop}"><code>{workshop}</code></button>
+          <button type="button" class="wsa-tag" data-ph="{amount}" title="Fee owed — blank for anyone who owes nothing"><code>{amount}</code></button>
+          <button type="button" class="wsa-tag" data-ph="{pay_link}" title="Their checkout link — blank for anyone who owes nothing"><code>{pay_link}</code></button>
+        </div>
+
+        <div class="wsa-save-row">
+          <button class="wsa-btn primary" type="submit" id="wsaSendBtn"><i class="fa-solid fa-paper-plane"></i> Send</button>
+          <span class="wsa-hint" id="wsaSendHint"></span>
+        </div>
+      </form>
+    </div>
+
     <div class="wsa-card">
       <h3>Registrations <span class="wsa-scope-tag" id="wsaShownCount"></span></h3>
+      <div class="wsa-selbar" id="wsaSelBar">
+        <span><b id="wsaSelCount">0</b> ticked — the buttons above and the message now go to just them.</span>
+        <button type="button" class="wsa-linkbtn" id="wsaSelMessage"><i class="fa-solid fa-envelope"></i> Message them</button>
+        <button type="button" class="wsa-linkbtn" id="wsaSelClear">Clear</button>
+      </div>
       <div class="wsa-table-wrap">
         <table class="wsa-table">
-          <thead><tr><th>Name</th><th>Institution</th><th>Contact</th><th>Certificate</th><th>Sent</th><th>Actions</th></tr></thead>
+          <thead><tr><th><label class="wsa-pick" title="Tick everyone shown"><input type="checkbox" id="wsaPickAll" aria-label="Tick everyone shown"> Name</label></th><th>Institution</th><th>Contact</th><th>Certificate</th><th>Sent</th><th>Actions</th></tr></thead>
           <tbody>
             {% for r in regs %}
-            <tr class="wsa-reg-row" data-wants="{{ r.wants_certificate|yesno:'1,0' }}" data-paid="{{ r.is_paid|yesno:'1,0' }}" data-unpaid="{{ r.payment_outstanding|yesno:'1,0' }}">
-              <td class="wsa-td-name"><span class="wsa-who">{{ r.name }}</span><br><span class="wsa-when">Registered {{ r.created_at|date:"j M Y" }}</span></td>
+            <tr class="wsa-reg-row" data-id="{{ r.pk }}" data-name="{{ r.name }}" data-sms="{{ r.sms_ok|yesno:'1,0' }}" data-wants="{{ r.wants_certificate|yesno:'1,0' }}" data-paid="{{ r.is_paid|yesno:'1,0' }}" data-unpaid="{{ r.payment_outstanding|yesno:'1,0' }}">
+              <td class="wsa-td-name"><label class="wsa-pick"><input type="checkbox" class="wsa-pick-row" value="{{ r.pk }}" aria-label="Tick {{ r.name }}"><span><span class="wsa-who">{{ r.name }}</span><br><span class="wsa-when">Registered {{ r.created_at|date:"j M Y" }}</span></span></label></td>
               <td data-label="Institution"><span class="wsa-dim">{{ r.institution }}</span></td>
-              <td data-label="Contact"><span class="wsa-dim">{{ r.email }}{% if r.phone %}<br>{{ r.phone }}{% endif %}</span></td>
+              <td data-label="Contact"><span class="wsa-dim">{{ r.email }}{% if r.phone %}<br>{{ r.phone }}{% endif %}</span>{% if not r.phone %}<br><span class="wsa-nosms">No phone — email only</span>{% endif %}</td>
               <td data-label="Certificate">
                 <span class="wsa-stack">
                 {% if r.wants_certificate %}
@@ -364,11 +475,13 @@
                   {% if r.materials_sent_at %}<span class="wsa-sent"><i class="fa-solid fa-check"></i> materials</span>{% endif %}
                   {% if r.approved_at %}<span class="wsa-badge paid">Approved</span>{% endif %}
                   {% if r.documents_sent_at %}<span class="wsa-sent"><i class="fa-solid fa-check"></i> documents</span>{% endif %}
-                  {% if not r.meeting_link_sent_at and not r.materials_sent_at and not r.approved_at and not r.documents_sent_at %}<span class="wsa-when">Nothing sent yet</span>{% endif %}
+                  {% if r.message_sent_at %}<span class="wsa-sent" title="Last messaged {{ r.message_sent_at|date:'j M Y, H:i' }}"><i class="fa-solid fa-check"></i> message {{ r.message_sent_at|date:"j M" }}</span>{% endif %}
+                  {% if not r.meeting_link_sent_at and not r.materials_sent_at and not r.approved_at and not r.documents_sent_at and not r.message_sent_at %}<span class="wsa-when">Nothing sent yet</span>{% endif %}
                 </span>
               </td>
               <td data-label="Actions">
                 <div class="wsa-row-actions">
+                  <button type="button" class="wsa-icon-btn go wsa-msg-one" data-id="{{ r.pk }}" title="Write {{ r.name }} an email / SMS"><i class="fa-solid fa-envelope"></i></button>
                   <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="send_meeting_link"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn" title="Send meeting link"><i class="fa-solid fa-link"></i></button></form>
                   <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="send_materials"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn" title="Send materials"><i class="fa-solid fa-folder-open"></i></button></form>
                   {% if r.payment_outstanding %}<form method="post" action="{% url 'workshop_admin:manage' ws.pk %}" data-confirm="Email + SMS {{ r.name }} a link to pay {{ r.currency }} {{ r.amount }}?">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="send_payment_link"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn pay" title="Send payment link"><i class="fa-solid fa-credit-card"></i></button></form>{% endif %}
@@ -648,28 +761,266 @@
       if (f === "unpaid") return row.dataset.unpaid === "1";
       return true;
     }
+    // Ticked rows narrow every send on the tab to just those people; with
+    // nothing ticked, the chip's whole group is the target.
+    var idsInputs = document.querySelectorAll(".wsa-ids-input");
+    var scopeHow = document.getElementById("wsaScopeHow");
+    var pickAll = document.getElementById("wsaPickAll");
+    var selBar = document.getElementById("wsaSelBar");
+    var selCount = document.getElementById("wsaSelCount");
+    var activeChip = null;
+
+    function box(row) { return row.querySelector(".wsa-pick-row"); }
+    function visible(row) { return row.style.display !== "none"; }
+    function picked() { return rows.filter(function (r) { return box(r).checked; }); }
+    function targets() {
+      var p = picked();
+      return p.length ? p : rows.filter(visible);
+    }
+
+    function refresh() {
+      var p = picked(), shownRows = rows.filter(visible);
+      rows.forEach(function (r) { r.classList.toggle("picked", box(r).checked); });
+      idsInputs.forEach(function (input) { input.value = p.map(function (r) { return r.dataset.id; }).join(","); });
+      if (scopeHow) scopeHow.textContent = p.length ? "the people ticked in the table" : "the group picked above";
+      if (scopeLabel) scopeLabel.textContent = p.length ? p.length + " ticked" : (activeChip ? activeChip.dataset.label : "") + " (" + shownRows.length + ")";
+      if (selBar) selBar.classList.toggle("on", p.length > 0);
+      if (selCount) selCount.textContent = p.length;
+      if (pickAll) {
+        var shownPicked = shownRows.filter(function (r) { return box(r).checked; }).length;
+        pickAll.checked = shownRows.length > 0 && shownPicked === shownRows.length;
+        pickAll.indeterminate = shownPicked > 0 && shownPicked < shownRows.length;
+      }
+      refreshCompose();
+    }
+
     function applyFilter(chip) {
+      activeChip = chip;
       var f = chip.dataset.filter;
       var shown = 0;
       rows.forEach(function (row) {
         var ok = matches(row, f);
         row.style.display = ok ? "" : "none";
+        // A hidden row can't stay ticked -- it would be messaged unseen.
+        if (!ok) box(row).checked = false;
         if (ok) shown++;
       });
       if (noMatch) noMatch.hidden = shown !== 0 || rows.length === 0;
       scopeInputs.forEach(function (input) { input.value = f; });
-      if (scopeLabel) scopeLabel.textContent = chip.dataset.label + " (" + shown + ")";
       if (shownCount) shownCount.textContent = rows.length ? "— showing " + shown + " of " + rows.length : "";
+      refresh();
+    }
+    function pickChip(chip) {
+      chips.forEach(function (c) { c.classList.remove("active"); });
+      chip.classList.add("active");
+      applyFilter(chip);
     }
     chips.forEach(function (chip) {
-      chip.addEventListener("click", function () {
-        chips.forEach(function (c) { c.classList.remove("active"); });
-        chip.classList.add("active");
-        applyFilter(chip);
+      chip.addEventListener("click", function () { pickChip(chip); });
+    });
+    rows.forEach(function (r) { box(r).addEventListener("change", refresh); });
+    if (pickAll) pickAll.addEventListener("change", function () {
+      rows.filter(visible).forEach(function (r) { box(r).checked = pickAll.checked; });
+      refresh();
+    });
+    var selClear = document.getElementById("wsaSelClear");
+    if (selClear) selClear.addEventListener("click", function () {
+      rows.forEach(function (r) { box(r).checked = false; });
+      refresh();
+    });
+
+    // ---- the message composer ----
+    var compose = document.getElementById("wsaCompose");
+    var form = document.getElementById("wsaComposeForm");
+    var useEmail = document.getElementById("wsaUseEmail");
+    var useSms = document.getElementById("wsaUseSms");
+    var emailPart = document.getElementById("wsaEmailPart");
+    var smsPart = document.getElementById("wsaSmsPart");
+    var subject = document.getElementById("wsaSubject");
+    var body = document.getElementById("wsaBody");
+    var smsBody = document.getElementById("wsaSmsBody");
+    var buttonSel = document.getElementById("wsaButton");
+    var smsCount = document.getElementById("wsaSmsCount");
+    var composeTo = document.getElementById("wsaComposeTo");
+    var composeReach = document.getElementById("wsaComposeReach");
+    var sendHint = document.getElementById("wsaSendHint");
+    var lastField = body;
+
+    function plural(n, one, many) { return n + " " + (n === 1 ? one : (many || one + "s")); }
+
+    // Mirrors notifications/sms.py's segment maths closely enough for a
+    // "this will cost about N credits" preview.
+    var GSM = /^[A-Za-z0-9 \r\n@£$¥èéùìòÇØøÅåΔ_ΦΓΛΩΠΨΣΘΞÆæßÉ!"#¤%&'()*+,\-.\/:;<=>?¡ÄÖÑÜ§¿äöñüà^{}\\\[~\]|€]*$/;
+    function segments(text) {
+      if (!text) return 0;
+      var gsm = GSM.test(text), single = gsm ? 160 : 70, multi = gsm ? 153 : 67;
+      return text.length <= single ? 1 : Math.ceil(text.length / multi);
+    }
+
+    function refreshCompose() {
+      if (!compose) return;
+      var t = targets();
+      var smsable = t.filter(function (r) { return r.dataset.sms === "1"; }).length;
+      var p = picked();
+      if (composeTo) {
+        if (p.length === 1) composeTo.textContent = p[0].dataset.name;
+        else if (p.length) composeTo.textContent = plural(p.length, "ticked person", "ticked people");
+        else composeTo.textContent = (activeChip ? activeChip.dataset.label : "Everyone") + " — " + plural(t.length, "person", "people");
+      }
+      if (composeReach) {
+        composeReach.textContent = useSms && useSms.checked && smsable < t.length
+          ? "· SMS reaches " + smsable + " of " + t.length + " (the rest have no Ghana mobile number)"
+          : "";
+      }
+      if (smsCount && smsBody) {
+        var n = segments(smsBody.value), len = smsBody.value.length;
+        smsCount.textContent = len + " characters · " + plural(n, "SMS", "SMS") + " each" +
+          (n && smsable ? " · about " + (n * smsable) + " credits for " + plural(smsable, "number") : "");
+        smsCount.classList.toggle("over", n > 1);
+      }
+      if (form) {
+        var via = [];
+        if (useEmail && useEmail.checked) via.push("email");
+        if (useSms && useSms.checked) via.push("SMS");
+        var who = p.length === 1 ? p[0].dataset.name : plural(t.length, "person", "people");
+        form.dataset.confirm = "Send this " + (via.join(" + ") || "message") + " to " + who + "?";
+      }
+    }
+
+    function syncChannels() {
+      if (emailPart) emailPart.hidden = !(useEmail && useEmail.checked);
+      if (smsPart) smsPart.hidden = !(useSms && useSms.checked);
+      refreshCompose();
+    }
+
+    function openCompose(focus) {
+      if (!compose) return;
+      compose.hidden = false;
+      refreshCompose();
+      compose.scrollIntoView({ behavior: "smooth", block: "start" });
+      var first = focus || (useEmail && useEmail.checked ? subject : smsBody);
+      if (first) setTimeout(function () { first.focus({ preventScroll: true }); }, 250);
+    }
+
+    var openBtn = document.getElementById("wsaOpenCompose");
+    if (openBtn) openBtn.addEventListener("click", function () { openCompose(); });
+    var selMessage = document.getElementById("wsaSelMessage");
+    if (selMessage) selMessage.addEventListener("click", function () { openCompose(); });
+    var closeBtn = document.getElementById("wsaCloseCompose");
+    if (closeBtn) closeBtn.addEventListener("click", function () { compose.hidden = true; });
+
+    // The envelope on a row: message just that one person.
+    document.querySelectorAll(".wsa-msg-one").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        rows.forEach(function (r) { box(r).checked = r.dataset.id === btn.dataset.id; });
+        refresh();
+        openCompose();
       });
     });
+
+    [useEmail, useSms].forEach(function (el) { if (el) el.addEventListener("change", syncChannels); });
+    [subject, body, smsBody].forEach(function (el) {
+      if (!el) return;
+      el.addEventListener("focus", function () { lastField = el; });
+      el.addEventListener("input", refreshCompose);
+    });
+
+    // Placeholder chips drop {name} etc. in at the cursor of the last field used.
+    document.querySelectorAll(".wsa-tag[data-ph]").forEach(function (tag) {
+      tag.addEventListener("click", function () {
+        var el = lastField || body;
+        if (el === smsBody && smsPart && smsPart.hidden) el = body;
+        if (el === body && emailPart && emailPart.hidden) el = smsBody;
+        var s = el.selectionStart != null ? el.selectionStart : el.value.length;
+        var e = el.selectionEnd != null ? el.selectionEnd : el.value.length;
+        el.value = el.value.slice(0, s) + tag.dataset.ph + el.value.slice(e);
+        el.focus();
+        el.selectionStart = el.selectionEnd = s + tag.dataset.ph.length;
+        refreshCompose();
+      });
+    });
+
+    var copyToSms = document.getElementById("wsaCopyToSms");
+    if (copyToSms) copyToSms.addEventListener("click", function () {
+      smsBody.value = ("MSREC: " + body.value.split(/\n+/).map(function (l) { return l.trim(); }).filter(Boolean).join(" ")).slice(0, 640);
+      refreshCompose();
+      smsBody.focus();
+    });
+
+    // Ready-made starting points, so the common messages are one click.
+    var WS_DATE = "{% if ws.starts_at %}{{ ws.starts_at|date:'l j F Y, g:i A'|escapejs }}{% endif %}";
+    var HAS_MEETING = {{ ws.meeting_link|yesno:"true,false" }};
+    var STARTERS = {
+      reminder: {
+        subject: "Reminder: {workshop}" + (WS_DATE ? " — " + WS_DATE : ""),
+        body: "Hi {first_name},\nThis is a friendly reminder that {workshop} " + (WS_DATE ? "takes place on " + WS_DATE + "." : "is coming up soon.") +
+          "\n" + (HAS_MEETING ? "Use the button below to join, and please log in a few minutes early." : "We'll share the joining details shortly.") +
+          "\nWe look forward to seeing you.",
+        sms: "MSREC: Reminder - {workshop}" + (WS_DATE ? " is on " + WS_DATE : " is coming up soon") + ". Check your email for the joining link.",
+        button: HAS_MEETING ? "meeting" : ""
+      },
+      payment: {
+        subject: "Certificate fee outstanding — {workshop}",
+        body: "Hi {first_name},\nYour certificate fee of {amount} for {workshop} is still outstanding.\nUse the button below to pay securely. Your certificate is issued once the payment is received.",
+        sms: "MSREC: Your {workshop} certificate fee of {amount} is outstanding. Pay here: {pay_link}",
+        button: "pay", chip: "unpaid"
+      },
+      update: {
+        subject: "Update: {workshop}",
+        body: "Hi {first_name},\nWe have an update about {workshop}.\n",
+        sms: "MSREC: Update on {workshop} - ",
+        button: ""
+      },
+      blank: { subject: "", body: "", sms: "", button: "" }
+    };
+    document.querySelectorAll(".wsa-tag[data-starter]").forEach(function (tag) {
+      tag.addEventListener("click", function () {
+        var s = STARTERS[tag.dataset.starter];
+        if (!s) return;
+        var typed = subject.value || body.value || smsBody.value;
+        if (typed && !window.confirm("Replace what you've written?")) return;
+        subject.value = s.subject; body.value = s.body; smsBody.value = s.sms;
+        if (buttonSel) {
+          var opt = buttonSel.querySelector('option[value="' + s.button + '"]');
+          buttonSel.value = opt && !opt.disabled ? s.button : "";
+        }
+        // A payment reminder is for the people who owe -- point it at them
+        // unless specific people are already ticked.
+        if (s.chip && !picked().length) {
+          var c = document.querySelector('.wsa-chip[data-filter="' + s.chip + '"]');
+          if (c) pickChip(c);
+        }
+        refreshCompose();
+        (useEmail && useEmail.checked ? body : smsBody).focus();
+      });
+    });
+
+    // Checked here, before the shared confirm dialog (script.js, which
+    // registers its listener later) ever opens for a message that can't go.
+    if (form) form.addEventListener("submit", function (e) {
+      var problem = "", focusEl = null;
+      var t = targets();
+      if (!t.length) problem = "Nobody is in this group — pick another chip or tick some people.";
+      else if (!(useEmail && useEmail.checked) && !(useSms && useSms.checked)) problem = "Choose email, SMS or both.";
+      else if (useEmail && useEmail.checked && !subject.value.trim()) { problem = "Add a subject for the email."; focusEl = subject; }
+      else if (useEmail && useEmail.checked && !body.value.trim()) { problem = "Write the email message."; focusEl = body; }
+      else if (useSms && useSms.checked && !smsBody.value.trim()) { problem = "Write the SMS text."; focusEl = smsBody; }
+      else if (useSms && useSms.checked && !(useEmail && useEmail.checked) &&
+               !t.some(function (r) { return r.dataset.sms === "1"; })) problem = "None of these people has a Ghana mobile number to text.";
+      if (problem) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        if (sendHint) { sendHint.textContent = problem; sendHint.style.color = "var(--red)"; }
+        if (focusEl) focusEl.focus();
+        return;
+      }
+      if (sendHint) { sendHint.textContent = ""; }
+      refreshCompose();
+    });
+
     var startChip = document.querySelector(".wsa-chip.active") || chips[0];
     if (startChip) applyFilter(startChip);
+    syncChannels();
   })();
 </script>
 {% endblock %}

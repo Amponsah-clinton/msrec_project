@@ -80,6 +80,11 @@ def _recipients(request, ws):
     qs = ws.registrations.all()
     if reg_id:
         return qs.filter(pk=reg_id)
+    # Rows ticked in the table win over the group chip -- always narrowed to
+    # this workshop, so a tampered id can't reach another workshop's people.
+    picked = [p for p in (request.POST.get("reg_ids") or "").split(",") if p.strip().isdigit()]
+    if picked:
+        return qs.filter(pk__in=picked)
     scope = request.POST.get("scope", "")
     if scope == "wants_cert":
         return qs.filter(wants_certificate=True)
@@ -116,6 +121,89 @@ def _bulk(request, ws, fn, *, label):
         messages.success(request, f"{label}: sent to {sent} registrant(s)." + (f" {skipped} skipped." if skipped else ""))
     else:
         messages.error(request, f"{label}: nothing sent. {last_reason}")
+
+
+def _send_message(request, ws):
+    """The composer: a message staff write themselves, by email, SMS or both,
+    to one person, the rows ticked in the table, or the group chip picked."""
+    from notifications import sms
+
+    use_email = request.POST.get("send_email") == "on"
+    use_sms = request.POST.get("send_sms") == "on"
+    subject = request.POST.get("subject", "").strip()[:200]
+    body = request.POST.get("body", "").strip()
+    sms_body = request.POST.get("sms_body", "").strip()
+    button = request.POST.get("button", "")
+
+    if not (use_email or use_sms):
+        messages.error(request, "Choose email, SMS or both.")
+        return
+    if use_email and not (subject and body):
+        messages.error(request, "The email needs a subject and a message.")
+        return
+    if use_sms and not sms_body:
+        messages.error(request, "Write the SMS text, or untick SMS.")
+        return
+    if use_sms and not sms.is_configured():
+        messages.error(request, "SMS isn't set up (BMS_API_KEY is missing), so nothing was sent.")
+        return
+
+    recipients = list(_recipients(request, ws))
+    if not recipients:
+        messages.error(request, "No registrations matched.")
+        return
+
+    reached = set()
+    emailed = email_failed = 0
+    if use_email:
+        for reg in recipients:
+            if emails.send_custom_email(reg, ws, subject=subject, body=body, button=button):
+                emailed += 1
+                reached.add(reg.pk)
+            else:
+                email_failed += 1
+
+    texted = no_phone = sms_failed = 0
+    sms_error = ""
+    if use_sms:
+        # One API call per distinct text: a message without placeholders goes
+        # to everyone in a single bulk send; a personalised one per person.
+        batches = {}
+        for reg in recipients:
+            phone = sms.clean_phone(reg.phone)
+            if not phone:
+                no_phone += 1
+                continue
+            text = emails.fill_placeholders(sms_body, reg, ws)
+            batches.setdefault(text, []).append((phone, reg.pk))
+        for text, people in batches.items():
+            result = sms.send_sms([phone for phone, _ in people], text)
+            if result.get("ok"):
+                texted += len(people)
+                reached.update(pk for _, pk in people)
+            else:
+                sms_failed += len(people)
+                sms_error = result.get("error") or ""
+
+    if reached:
+        ws.registrations.filter(pk__in=reached).update(message_sent_at=timezone.now())
+
+    parts = []
+    if use_email:
+        parts.append(f"email to {emailed}" + (f" ({email_failed} failed — check email settings)" if email_failed else ""))
+    if use_sms:
+        line = f"SMS to {texted}"
+        extra = []
+        if no_phone:
+            extra.append(f"{no_phone} without a valid Ghana number")
+        if sms_failed:
+            extra.append(f"{sms_failed} failed{': ' + sms_error if sms_error else ''}")
+        parts.append(line + (f" ({'; '.join(extra)})" if extra else ""))
+    summary = "Message sent: " + ", ".join(parts) + "."
+    if reached:
+        messages.success(request, summary)
+    else:
+        messages.error(request, summary.replace("Message sent", "Nothing sent"))
 
 
 def _save_settings(request, ws):
@@ -311,6 +399,8 @@ def workshop_manage(request, pk):
             _bulk(request, ws, emails.send_certificate_email, label="Certificate")
         elif action == "send_payment_link":
             _bulk(request, ws, emails.send_payment_required_email, label="Payment link")
+        elif action == "send_message":
+            _send_message(request, ws)
         elif action == "require_certificates":
             _require_certificates_for_existing(request, ws)
         elif action == "approve_send":
@@ -330,7 +420,11 @@ def workshop_manage(request, pk):
             messages.error(request, "That request could not be processed.")
         return redirect(f"{reverse('workshop_admin:manage', kwargs={'pk': ws.pk})}#{request.POST.get('tab', 'registrations')}")
 
+    from notifications import sms
+
     regs = list(ws.registrations.all())
+    for r in regs:
+        r.sms_ok = bool(sms.clean_phone(r.phone))
     paid = [r for r in regs if r.is_paid]
     wants_cert = [r for r in regs if r.wants_certificate]
     unpaid = [r for r in regs if r.payment_outstanding]
@@ -343,6 +437,7 @@ def workshop_manage(request, pk):
             "unpaid": len(unpaid),
             "outstanding": sum((r.amount for r in unpaid), Decimal("0.00")),
         },
+        "sms_configured": sms.is_configured(),
         "dashboard": _dashboard(request),
     })
 
