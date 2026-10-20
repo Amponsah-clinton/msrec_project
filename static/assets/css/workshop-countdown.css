@@ -1,0 +1,101 @@
+/* ==========================================================
+   Workshop countdown (templates/workshop/_countdown.html)
+   Used on the homepage's Upcoming Workshop band and on /workshop/.
+   Flat, solid colours only -- the brand teal from main.css
+   (--accent-color), with tabular figures so the digits don't
+   jiggle as they change.
+========================================================== */
+.wcd {
+  --wcd-accent: var(--accent-color, #2a4747);
+  --wcd-ink: var(--heading-color, #172a28);
+  --wcd-muted: color-mix(in srgb, var(--default-color, #222), transparent 38%);
+  --wcd-line: color-mix(in srgb, var(--wcd-accent), transparent 86%);
+  --wcd-warn: #a8541a;
+  --wcd-warn-bg: #fdf1e6;
+  --wcd-live: #13795b;
+  --wcd-live-bg: #e6f5ee;
+  font-variant-numeric: tabular-nums;
+}
+.wcd [hidden] { display: none !important; }
+.wcd .visually-hidden {
+  position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* ---- large: four tiles ---- */
+.wcd--lg { display: flex; flex-direction: column; gap: 12px; }
+.wcd-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 14px; }
+.wcd-eyebrow {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--wcd-accent);
+}
+.wcd-when { font-size: 13px; font-weight: 600; color: var(--wcd-muted); }
+
+.wcd-units { display: flex; align-items: stretch; gap: 8px; }
+.wcd-unit {
+  flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  padding: 14px 6px 12px;
+  border-radius: 14px;
+  background: var(--wcd-accent);
+  color: #fff;
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, .14);
+}
+.wcd-num {
+  font-size: clamp(28px, 4.4vw, 40px); line-height: 1; font-weight: 700; letter-spacing: -.02em;
+  font-feature-settings: "tnum" 1;
+}
+.wcd-cap { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; opacity: .78; }
+.wcd-sep {
+  align-self: center; margin-top: -16px;
+  font-size: 24px; font-weight: 700; color: color-mix(in srgb, var(--wcd-accent), transparent 55%);
+}
+/* The seconds tile is a touch lighter, so the eye reads days first. */
+.wcd-unit:last-child { background: color-mix(in srgb, var(--wcd-accent), #fff 18%); }
+.wcd-num.tick { animation: wcd-tick .35s ease-out; }
+@keyframes wcd-tick { from { opacity: .45; transform: translateY(-3px); } to { opacity: 1; transform: none; } }
+
+.wcd-note {
+  margin: 0; display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 12px; border-radius: 10px; font-size: 13px; line-height: 1.45;
+  background: var(--wcd-warn-bg); color: var(--wcd-warn);
+}
+.wcd-note i { margin-top: 1px; }
+
+.wcd-live {
+  margin: 0; display: inline-flex; align-items: center; gap: 9px; align-self: flex-start;
+  padding: 9px 15px; border-radius: 999px; font-size: 14px; font-weight: 700;
+  background: var(--wcd-live-bg); color: var(--wcd-live);
+}
+.wcd-live-until { font-weight: 500; opacity: .85; }
+.wcd-dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; animation: wcd-pulse 1.8s ease-out infinite; }
+@keyframes wcd-pulse { 0% { box-shadow: 0 0 0 0 rgba(19, 121, 91, .5); } 100% { box-shadow: 0 0 0 9px rgba(19, 121, 91, 0); } }
+
+/* ---- small: four mini tiles for a card ---- */
+.wcd--sm { margin: 2px 0 16px; }
+.wcd-mini { display: flex; flex-direction: column; gap: 8px; }
+.wcd-mini-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--wcd-accent);
+}
+.wcd-mini-units { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.wcd-mini-unit {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 2px 7px; border-radius: 10px;
+  background: var(--wcd-accent); color: #fff;
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, .14);
+}
+.wcd-mini-unit.sec { background: color-mix(in srgb, var(--wcd-accent), #fff 18%); }
+.wcd--sm .wcd-num { font-size: 19px; line-height: 1; font-weight: 700; letter-spacing: -.01em; }
+.wcd-mini-unit small { font-size: 9.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; opacity: .8; }
+.wcd--sm .wcd-live { padding: 6px 12px; font-size: 13px; }
+
+@media (max-width: 480px) {
+  .wcd-units { gap: 5px; }
+  .wcd-unit { padding: 12px 2px 10px; border-radius: 11px; }
+  .wcd-sep { display: none; }
+  .wcd-cap { font-size: 10px; letter-spacing: .06em; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wcd-num.tick, .wcd-dot { animation: none; }
+}

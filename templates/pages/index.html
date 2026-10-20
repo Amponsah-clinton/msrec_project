@@ -13,6 +13,7 @@
 
 {% block extra_css %}
 <link href="{% static 'assets/css/index.css' %}" rel="stylesheet">
+<link href="{% static 'assets/css/workshop-countdown.css' %}" rel="stylesheet">
 <!-- Reuses the /applicants/ page's Fees band design (.ap-fees-band /
      .ap-fee-card) for this page's own Review Fees section, so the two
      pages tell one consistent fee story instead of two differently
@@ -113,6 +114,8 @@
               <li><i class="bi bi-hourglass-split"></i><span>Register by<small>{{ featured_workshop.registration_deadline|date:"j F Y, g:i A" }}</small></span></li>
               {% endif %}
             </ul>
+
+            {% include "workshop/_countdown.html" with ws=featured_workshop size="lg" %}
 
             <div class="uw-actions">
               <a href="{% url 'workshop:register' slug=featured_workshop.slug %}" class="uw-btn-primary">Register Now <i class="bi bi-arrow-right"></i></a>
@@ -665,4 +668,8 @@
 <script src="{% static 'assets/vendor/glightbox/js/glightbox.min.js' %}"></script>
 <script src="{% static 'assets/vendor/swiper/swiper-bundle.min.js' %}"></script>
 <script src="{% static 'assets/vendor/purecounter/purecounter_vanilla.js' %}"></script>
+{% endblock %}
+
+{% block extra_js %}
+{% if featured_workshop %}<script src="{% static 'assets/js/workshop-countdown.js' %}" defer></script>{% endif %}
 {% endblock %}

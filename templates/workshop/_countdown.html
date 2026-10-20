@@ -1,0 +1,54 @@
+{% comment %}
+Countdown to a workshop's start. Include with:
+  {% include "workshop/_countdown.html" with ws=<workshop> size="lg" %}   (big tiles)
+  {% include "workshop/_countdown.html" with ws=<workshop> size="sm" %}   (one compact line, for cards)
+Needs assets/css/workshop-countdown.css and assets/js/workshop-countdown.js
+on the page. The server fills in the numbers (Workshop.countdown) so they're
+right without JavaScript; the script keeps them ticking, corrects for a
+visitor's wrong clock using data-now, and switches to "Happening now" at
+the start and hides itself once the workshop is over.
+{% endcomment %}
+{% with cd=ws.countdown %}{% if cd.state == "upcoming" or cd.state == "live" %}
+<div class="wcd wcd--{{ size|default:'lg' }}" data-wcd
+     data-start="{{ ws.starts_at|date:'U' }}" data-end="{% if ws.ends_at %}{{ ws.ends_at|date:'U' }}{% endif %}"
+     data-deadline="{% if cd.deadline_soon %}{{ ws.registration_deadline|date:'U' }}{% endif %}" data-now="{% now 'U' %}"
+     data-state="{{ cd.state }}">
+
+  {% if size == "sm" %}
+  <div class="wcd-mini" data-wcd-counting {% if cd.state != "upcoming" %}hidden{% endif %}>
+    <span class="wcd-mini-label"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Starts in</span>
+    <div class="wcd-mini-units" aria-hidden="true">
+      <span class="wcd-mini-unit"><b class="wcd-num" data-u="days">{{ cd.days|stringformat:"02d" }}</b><small data-c="days">{{ cd.days|pluralize:"Day,Days" }}</small></span>
+      <span class="wcd-mini-unit"><b class="wcd-num" data-u="hours">{{ cd.hours|stringformat:"02d" }}</b><small data-c="hours">{{ cd.hours|pluralize:"Hr,Hrs" }}</small></span>
+      <span class="wcd-mini-unit"><b class="wcd-num" data-u="minutes">{{ cd.minutes|stringformat:"02d" }}</b><small data-c="minutes">Min</small></span>
+      <span class="wcd-mini-unit sec"><b class="wcd-num" data-u="seconds">{{ cd.seconds|stringformat:"02d" }}</b><small data-c="seconds">Sec</small></span>
+    </div>
+  </div>
+  {% else %}
+  <div class="wcd-head" data-wcd-counting {% if cd.state != "upcoming" %}hidden{% endif %}>
+    <span class="wcd-eyebrow"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Starts in</span>
+    <span class="wcd-when">{{ ws.starts_at|date:"D j M Y · g:i A" }}</span>
+  </div>
+  <div class="wcd-units" data-wcd-counting aria-hidden="true" {% if cd.state != "upcoming" %}hidden{% endif %}>
+    <div class="wcd-unit"><span class="wcd-num" data-u="days">{{ cd.days|stringformat:"02d" }}</span><span class="wcd-cap" data-c="days">{{ cd.days|pluralize:"Day,Days" }}</span></div>
+    <span class="wcd-sep">:</span>
+    <div class="wcd-unit"><span class="wcd-num" data-u="hours">{{ cd.hours|stringformat:"02d" }}</span><span class="wcd-cap" data-c="hours">{{ cd.hours|pluralize:"Hour,Hours" }}</span></div>
+    <span class="wcd-sep">:</span>
+    <div class="wcd-unit"><span class="wcd-num" data-u="minutes">{{ cd.minutes|stringformat:"02d" }}</span><span class="wcd-cap" data-c="minutes">{{ cd.minutes|pluralize:"Minute,Minutes" }}</span></div>
+    <span class="wcd-sep">:</span>
+    <div class="wcd-unit"><span class="wcd-num" data-u="seconds">{{ cd.seconds|stringformat:"02d" }}</span><span class="wcd-cap" data-c="seconds">{{ cd.seconds|pluralize:"Second,Seconds" }}</span></div>
+  </div>
+  {% if cd.deadline_soon %}
+  <p class="wcd-note" data-wcd-deadline><i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+    Registration closes <b>{{ ws.registration_deadline|date:"D j M, g:i A" }}</b> — <span data-wcd-deadline-left>{{ ws.registration_deadline|timeuntil }}</span> left</p>
+  {% endif %}
+  {% endif %}
+
+  <p class="wcd-live" data-wcd-live {% if cd.state != "live" %}hidden{% endif %}>
+    <span class="wcd-dot" aria-hidden="true"></span> Happening now{% if ws.ends_at %} <span class="wcd-live-until">· until {{ ws.ends_at|date:"g:i A" }}</span>{% endif %}
+  </p>
+
+  {# Read out once, not every second. #}
+  <span class="visually-hidden" role="timer" data-wcd-sr>{% if cd.state == "upcoming" %}Starts in {{ ws.starts_at|timeuntil }}{% else %}Happening now{% endif %}</span>
+</div>
+{% endif %}{% endwith %}

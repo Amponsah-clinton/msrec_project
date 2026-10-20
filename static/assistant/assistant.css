@@ -43,7 +43,7 @@
 .msa-mascot .msa-dot:nth-of-type(3) { animation-delay: .36s; }
 .msa-launcher-close {
   position: absolute; inset: 8px 12px 8px 12px; border-radius: 50%; display: none; align-items: center; justify-content: center;
-  background: linear-gradient(145deg, var(--msa-teal), var(--msa-teal-deep)); color: #fff;
+  background: var(--msa-teal-deep); color: #fff;
   width: 56px; height: 56px; margin: auto;
 }
 .msa-launcher-close svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
@@ -120,7 +120,7 @@
   box-shadow: 0 1px 2px rgba(16, 32, 56, .04);
 }
 .is-user .msa-bubble {
-  background: linear-gradient(135deg, var(--msa-teal), var(--msa-teal-deep)); color: #fff; border-bottom-right-radius: 5px;
+  background: var(--msa-teal-deep); color: #fff; border-bottom-right-radius: 5px;
   white-space: pre-wrap;
 }
 .msa-bubble p { margin: 0 0 7px; }
@@ -160,7 +160,7 @@
 .msa-compose textarea:focus { border-color: var(--msa-teal); background: var(--msa-bg); box-shadow: 0 0 0 3px rgba(21, 154, 150, .14); }
 .msa-send {
   width: 42px; height: 42px; flex-shrink: 0; border: 0; border-radius: 13px; cursor: pointer; color: #fff;
-  background: linear-gradient(145deg, var(--msa-teal), var(--msa-teal-deep));
+  background: var(--msa-teal-deep);
   display: flex; align-items: center; justify-content: center; transition: transform .15s, opacity .15s, box-shadow .15s;
   box-shadow: 0 6px 14px -6px rgba(15, 122, 118, .7);
 }

@@ -244,6 +244,30 @@ class Workshop(models.Model):
         return True
 
     @property
+    def countdown(self):
+        """Where this workshop stands right now, for the public countdown:
+        {"state": "upcoming" | "live" | "over" | "none", "days", "hours",
+        "minutes", "seconds", "deadline_soon": bool}. Rendered by the server
+        so the numbers are right before any JavaScript runs; the script in
+        assets/js/workshop-countdown.js then keeps them ticking."""
+        now = timezone.now()
+        parts = {"state": "none", "days": 0, "hours": 0, "minutes": 0, "seconds": 0, "deadline_soon": False}
+        if not self.starts_at:
+            return parts
+        if now < self.starts_at:
+            left = int((self.starts_at - now).total_seconds())
+            parts.update(state="upcoming", days=left // 86400, hours=left % 86400 // 3600,
+                         minutes=left % 3600 // 60, seconds=left % 60)
+            deadline = self.registration_deadline
+            # Only worth flagging when registration shuts before the start.
+            parts["deadline_soon"] = bool(deadline and now < deadline < self.starts_at)
+        elif self.ends_at and now < self.ends_at:
+            parts["state"] = "live"
+        else:
+            parts["state"] = "over"
+        return parts
+
+    @property
     def certificate_fee_payable(self):
         """Whether a certificate here actually costs anything. A zero (or
         blank) fee means certificates are free, so nobody is sent to
