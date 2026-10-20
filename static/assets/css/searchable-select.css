@@ -216,14 +216,12 @@
   background: rgba(31, 138, 112, .12);
 }
 /* "Other (not listed)" is the way out of a search that found nothing, so it
-   stays at the top of the list and reads as the action it is. */
+   comes first in the list and reads as the action it is -- but it scrolls
+   away with the rest rather than staying pinned over the names below it.
+   (searchable-select.js still keeps it in the list during a search.) */
 .ss-option-other {
-  position: sticky;
-  top: 0;
-  z-index: 1;
   margin-bottom: 4px;
   font-weight: 600;
-  background-color: inherit;
   box-shadow: 0 1px 0 rgba(127, 127, 127, .25);
 }
 

@@ -525,3 +525,140 @@ body.bc-page {
   .bc-main { padding-top: 150px; }
   .bc-wrap { padding: 0 14px; }
 }
+
+/* ==========================================================
+   Member photo viewer
+   A photo on a member card is a button; clicking it opens the
+   photo full size with the person's name, role and institution,
+   an X to close, and arrows to step through everyone shown.
+   Flat colours only.
+========================================================== */
+.bc-photo-btn {
+  position: relative;
+  padding: 0; border: 0; cursor: zoom-in;
+  font: inherit;
+  transition: box-shadow .2s ease, transform .2s ease;
+}
+.bc-photo-btn img { transition: transform .35s ease; }
+.bc-photo-btn:hover img { transform: scale(1.05); }
+.bc-photo-btn:hover,
+.bc-photo-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px var(--accent-color);
+}
+.bc-photo-zoom {
+  position: absolute; right: 12px; bottom: 12px;
+  width: 32px; height: 32px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #fff; color: var(--accent-color);
+  font-size: 13px;
+  box-shadow: 0 4px 12px rgba(23, 42, 40, 0.18);
+  opacity: 0; transform: scale(.85);
+  transition: opacity .2s ease, transform .2s ease;
+}
+.bc-photo-btn:hover .bc-photo-zoom,
+.bc-photo-btn:focus-visible .bc-photo-zoom { opacity: 1; transform: none; }
+
+.bc-lightbox {
+  position: fixed; inset: 0; z-index: 10050;
+  display: flex; align-items: center; justify-content: center;
+  padding: 24px;
+  visibility: hidden;
+  transition: visibility 0s linear .25s;
+}
+.bc-lightbox.is-open { visibility: visible; transition-delay: 0s; }
+.bc-lightbox-bd {
+  position: absolute; inset: 0;
+  background: rgba(12, 22, 21, 0.82);
+  opacity: 0; transition: opacity .25s ease;
+}
+.bc-lightbox.is-open .bc-lightbox-bd { opacity: 1; }
+
+.bc-lightbox-panel {
+  position: relative; margin: 0;
+  width: min(440px, 100%);
+  background: #fff;
+  border-radius: 20px;
+  padding: 14px 14px 18px;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35);
+  opacity: 0; transform: translateY(16px) scale(.97);
+  transition: opacity .25s ease, transform .3s cubic-bezier(.2, .8, .2, 1);
+}
+.bc-lightbox.is-open .bc-lightbox-panel { opacity: 1; transform: none; }
+
+.bc-lightbox-frame {
+  border-radius: 14px; overflow: hidden;
+  background: #eef3f1;
+  aspect-ratio: 4 / 5;
+  max-height: calc(100vh - 210px);
+  display: flex; align-items: center; justify-content: center;
+}
+.bc-lightbox-frame img {
+  width: 100%; height: 100%;
+  object-fit: cover; object-position: center top;
+  display: block;
+}
+.bc-lightbox-frame img.is-swapping { opacity: 0; }
+.bc-lightbox-frame img { transition: opacity .18s ease; }
+
+.bc-lightbox-cap {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  text-align: center; padding: 14px 8px 0;
+}
+.bc-lightbox-cap strong {
+  font-family: var(--bc-heading-font, inherit);
+  font-size: 18px; font-weight: 700; color: var(--heading-color); line-height: 1.3;
+}
+.bc-lightbox-cap span { font-size: 13px; font-weight: 600; color: var(--accent-color); }
+.bc-lightbox-cap small { font-size: 12.5px; color: #6b7775; display: inline-flex; gap: 6px; align-items: center; margin-top: 2px; }
+.bc-lightbox-cap small[hidden] { display: none; }
+
+/* The X: a solid white disc on the photo's corner, always visible. */
+.bc-lightbox-x {
+  position: absolute; top: -14px; right: -14px; z-index: 2;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 0; cursor: pointer;
+  display: grid; place-items: center;
+  background: #fff; color: #172a28;
+  font-size: 17px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
+  transition: transform .15s ease, background .15s ease, color .15s ease;
+}
+.bc-lightbox-x:hover { transform: rotate(90deg); background: var(--accent-color); color: #fff; }
+.bc-lightbox-x:focus-visible { outline: 3px solid var(--accent-color); outline-offset: 3px; }
+
+.bc-lightbox-nav {
+  position: absolute; top: calc(50% - 40px);
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 0; cursor: pointer;
+  display: grid; place-items: center;
+  background: #fff; color: #172a28; font-size: 17px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+  transition: background .15s ease, color .15s ease, transform .15s ease;
+}
+.bc-lightbox-nav.prev { left: -64px; }
+.bc-lightbox-nav.next { right: -64px; }
+.bc-lightbox-nav:hover { background: var(--accent-color); color: #fff; }
+.bc-lightbox-nav:focus-visible { outline: 3px solid #fff; outline-offset: 3px; }
+.bc-lightbox-nav[hidden] { display: none; }
+
+.bc-lightbox-count {
+  position: absolute; left: 50%; bottom: -36px; transform: translateX(-50%);
+  font-size: 12.5px; font-weight: 600; color: rgba(255, 255, 255, 0.85);
+  letter-spacing: .04em; white-space: nowrap;
+}
+
+body.bc-lightbox-lock { overflow: hidden; }
+
+@media (max-width: 600px) {
+  .bc-lightbox { padding: 16px; }
+  .bc-lightbox-x { top: 10px; right: 10px; width: 40px; height: 40px; }
+  /* Arrows move inside the photo on a phone, where there's no room beside it. */
+  .bc-lightbox-nav { top: calc(50% - 60px); width: 40px; height: 40px; }
+  .bc-lightbox-nav.prev { left: 22px; }
+  .bc-lightbox-nav.next { right: 22px; }
+  .bc-lightbox-frame { max-height: calc(100vh - 230px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bc-lightbox-bd, .bc-lightbox-panel, .bc-lightbox-frame img, .bc-photo-btn img, .bc-lightbox-x { transition: none; }
+}

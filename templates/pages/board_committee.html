@@ -108,7 +108,7 @@
           {% for member in members %}
           <div class="bc-person" data-group="{{ member.group }}">
             {% if member.photo_url %}
-            <span class="bc-avatar bc-avatar-photo"><img src="{{ member.photo_url }}" alt="{{ member.display_name }}" loading="lazy"></span>
+            <button type="button" class="bc-avatar bc-avatar-photo bc-photo-btn" data-photo="{{ member.photo_url }}" data-name="{{ member.display_name }}" data-role="{{ member.role_title }}" data-inst="{{ member.institution }}" aria-label="View {{ member.display_name }}'s photo" aria-haspopup="dialog"><img src="{{ member.photo_url }}" alt="{{ member.display_name }}" loading="lazy"><span class="bc-photo-zoom" aria-hidden="true"><i class="bi bi-arrows-angle-expand"></i></span></button>
             {% else %}
             <span class="bc-avatar" style="--av-bg:{{ member.avatar_color }};">{{ member.initials }}</span>
             {% endif %}
@@ -121,7 +121,7 @@
           {% for member in reviewers %}
           <div class="bc-person" data-group="reviewer"{% if member.also_member %} data-also-member{% endif %}>
             {% if member.photo_url %}
-            <span class="bc-avatar bc-avatar-photo"><img src="{{ member.photo_url }}" alt="{{ member.display_name }}" loading="lazy"></span>
+            <button type="button" class="bc-avatar bc-avatar-photo bc-photo-btn" data-photo="{{ member.photo_url }}" data-name="{{ member.display_name }}" data-role="{{ member.role_title }}" data-inst="{{ member.institution }}" aria-label="View {{ member.display_name }}'s photo" aria-haspopup="dialog"><img src="{{ member.photo_url }}" alt="{{ member.display_name }}" loading="lazy"><span class="bc-photo-zoom" aria-hidden="true"><i class="bi bi-arrows-angle-expand"></i></span></button>
             {% else %}
             <span class="bc-avatar" style="--av-bg:{{ member.avatar_color }};">{{ member.initials }}</span>
             {% endif %}
@@ -356,6 +356,25 @@
     </div>
   
   </main>
+
+<!-- Photo viewer: filled in by board-committee.js from the clicked photo's data-* attributes. -->
+<div class="bc-lightbox" id="bcLightbox" aria-hidden="true">
+  <div class="bc-lightbox-bd" data-lb-close></div>
+  <figure class="bc-lightbox-panel" role="dialog" aria-modal="true" aria-labelledby="bcLbName">
+    <button type="button" class="bc-lightbox-x" data-lb-close aria-label="Close photo"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+    <div class="bc-lightbox-frame">
+      <img id="bcLbImg" src="" alt="">
+    </div>
+    <figcaption class="bc-lightbox-cap">
+      <strong id="bcLbName"></strong>
+      <span id="bcLbRole"></span>
+      <small id="bcLbInst"><i class="bi bi-building" aria-hidden="true"></i> <span></span></small>
+    </figcaption>
+    <button type="button" class="bc-lightbox-nav prev" id="bcLbPrev" aria-label="Previous photo"><i class="bi bi-chevron-left" aria-hidden="true"></i></button>
+    <button type="button" class="bc-lightbox-nav next" id="bcLbNext" aria-label="Next photo"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
+    <span class="bc-lightbox-count" id="bcLbCount" aria-live="polite"></span>
+  </figure>
+</div>
 {% endblock %}
 
 {% block extra_js %}
