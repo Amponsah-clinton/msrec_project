@@ -413,7 +413,7 @@
 
 .upcoming-workshop .uw-media {
   position: relative;
-  min-height: 220px;
+  min-height: 190px;
   background: color-mix(in srgb, var(--accent-color), transparent 90%);
 }
 .upcoming-workshop .uw-media img {
@@ -426,10 +426,10 @@
 }
 
 .upcoming-workshop .uw-body {
-  padding: 34px 36px;
+  padding: 24px 30px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
 }
 
 .upcoming-workshop .uw-eyebrow {
@@ -449,26 +449,30 @@
 
 .upcoming-workshop .uw-title {
   margin: 0;
-  font-size: clamp(22px, 2.6vw, 30px);
+  font-size: clamp(20px, 2.2vw, 26px);
   font-weight: 700;
   color: var(--heading-color);
-  line-height: 1.22;
+  line-height: 1.25;
 }
 
 .upcoming-workshop .uw-tagline {
   margin: 0;
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 14.5px;
+  line-height: 1.55;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
   color: color-mix(in srgb, var(--default-color), transparent 20%);
 }
 
 .upcoming-workshop .uw-meta {
   list-style: none;
-  margin: 4px 0 0;
-  padding: 16px 0;
+  margin: 2px 0 0;
+  padding: 11px 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 18px 28px;
+  gap: 10px 26px;
   border-top: 1px solid color-mix(in srgb, var(--accent-color), transparent 88%);
   border-bottom: 1px solid color-mix(in srgb, var(--accent-color), transparent 88%);
 }
@@ -530,11 +534,22 @@
   color: color-mix(in srgb, var(--accent-color), var(--heading-color) 40%);
 }
 
+/* The countdown, sized for this card: compact tiles, and no second date
+   line -- the date is already in .uw-meta just above it. */
+.upcoming-workshop .wcd--lg { gap: 8px; }
+.upcoming-workshop .wcd-when { display: none; }
+.upcoming-workshop .wcd-units { gap: 6px; }
+.upcoming-workshop .wcd-unit { padding: 9px 4px 8px; gap: 4px; border-radius: 11px; }
+.upcoming-workshop .wcd-num { font-size: clamp(22px, 2.4vw, 28px); }
+.upcoming-workshop .wcd-cap { font-size: 10px; }
+.upcoming-workshop .wcd-sep { font-size: 18px; margin-top: -12px; }
+.upcoming-workshop .wcd-note { padding: 7px 11px; font-size: 12.5px; }
+
 @media (max-width: 767.98px) {
   .upcoming-workshop .uw-card,
   .upcoming-workshop .uw-card:has(.uw-media) {
     grid-template-columns: 1fr;
   }
-  .upcoming-workshop .uw-media { min-height: 180px; }
-  .upcoming-workshop .uw-body { padding: 26px 22px; }
+  .upcoming-workshop .uw-media { min-height: 160px; }
+  .upcoming-workshop .uw-body { padding: 20px 18px; }
 }
