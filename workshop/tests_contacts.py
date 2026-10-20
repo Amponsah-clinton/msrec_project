@@ -49,6 +49,61 @@ class ContactSyncTests(PinnedRateMixin, TestCase):
         self.assertTrue(c.has_paid)
 
 
+class DuplicateTests(PinnedRateMixin, TestCase):
+    """One person, one row -- however they registered."""
+
+    def setUp(self):
+        super().setUp()
+        self.ws = _workshop(title="AI Ethics")
+
+    def _reg(self, name, email, phone="", ws=None, **kw):
+        return WorkshopRegistration.objects.create(
+            workshop=ws or self.ws, name=name, institution="UG", email=email, phone=phone, **kw)
+
+    def test_registering_twice_for_one_workshop_counts_once(self):
+        for _ in range(3):
+            self._reg("Emmanuel Kofi Obah", "obah@example.com", "0545254190")
+        c = WorkshopContact.objects.get()
+        self.assertEqual(c.registration_count, 1)
+        self.assertEqual(c.workshop_titles, ["AI Ethics"])
+
+    def test_same_name_in_another_order_is_the_same_person(self):
+        self._reg("Atianashie Miracle", "miracle81@gmail.com", "+233593464021")
+        self._reg("Miracle Atianashie", "miracle@cug.edu.gh", "0598299648")
+        c = WorkshopContact.objects.get()
+        self.assertEqual(c.email, "miracle@cug.edu.gh")  # newest details lead
+        self.assertEqual(c.other_emails, ["miracle81@gmail.com"])
+        self.assertEqual(c.other_phones, ["+233593464021"])
+
+    def test_same_phone_in_any_format_is_the_same_person(self):
+        self._reg("Ama Mensah", "ama@one.com", "0241234567")
+        self._reg("A. Mensah", "ama@two.com", "+233 24 123 4567")
+        self.assertEqual(WorkshopContact.objects.count(), 1)
+
+    def test_honorifics_dont_split_a_person(self):
+        self._reg("Patrick Twumasi", "pt@one.com")
+        self._reg("Dr. Patrick Twumasi", "pt@two.com")
+        self.assertEqual(WorkshopContact.objects.count(), 1)
+
+    def test_a_registration_that_links_two_contacts_merges_them(self):
+        self._reg("Kwame Asante", "kwame@one.com", "0201111111")
+        self._reg("Yaa Owusu", "yaa@two.com", "0202222222")
+        self.assertEqual(WorkshopContact.objects.count(), 2)
+        other = _workshop(title="Thesis to Journal")
+        # Kwame's email with Yaa's phone: these turn out to be one person.
+        self._reg("Kwame Asante", "kwame@one.com", "0202222222", ws=other)
+        c = WorkshopContact.objects.get()
+        self.assertEqual(c.registration_count, 2)
+        self.assertEqual(sorted(c.workshop_titles), ["AI Ethics", "Thesis to Journal"])
+
+    def test_different_people_stay_apart(self):
+        self._reg("Ama Mensah", "ama@one.com", "0241234567")
+        self._reg("Kofi Mensah", "kofi@two.com", "0247654321")
+        self._reg("Mohammed Mahmud", "mm@three.com", "+2348062622277")
+        self._reg("Mohammed Yussif Mahmud", "myh@four.com", "0241800335")
+        self.assertEqual(WorkshopContact.objects.count(), 4)
+
+
 class ContactPageTests(PinnedRateMixin, TestCase):
     def setUp(self):
         super().setUp()
@@ -61,7 +116,7 @@ class ContactPageTests(PinnedRateMixin, TestCase):
             ("Kofi Paid", "kofi@example.com", "0241111111", PS.SUCCESS),
             ("Ama Owes", "ama@example.com", "+233 24 222 2222", PS.PENDING),
             ("Esi Abroad", "esi@example.com", "+44 7700 900123", PS.NOT_REQUIRED),
-            ("Yaw Twin", "yaw@example.com", "0241111111", PS.NOT_REQUIRED),  # shares Kofi's number
+            ("Yaw Boateng", "yaw@example.com", "0553333333", PS.NOT_REQUIRED),
         ):
             WorkshopRegistration.objects.create(workshop=self.ws, name=name, institution="UG",
                                                 email=email, phone=phone, payment_status=status)
@@ -87,7 +142,7 @@ class ContactPageTests(PinnedRateMixin, TestCase):
         lines = text.lstrip("﻿").splitlines()
         self.assertTrue(lines[0].startswith("Name,Email,Phone,SMS Number,Institution"))
         self.assertEqual(len(lines), 5)
-        self.assertIn("Ama Owes,ama@example.com,+233 24 222 2222,0242222222,UG,1,Ethics 101,No", text)
+        self.assertIn("Ama Owes,ama@example.com,+233 24 222 2222,0242222222,UG,,,1,Ethics 101,No", text)
         self.assertIn("msrec-workshop-contacts-", resp["Content-Disposition"])
 
     def test_sms_export_is_clean_unique_ghana_numbers(self):
@@ -95,7 +150,7 @@ class ContactPageTests(PinnedRateMixin, TestCase):
         lines = resp.content.decode("utf-8").lstrip("﻿").splitlines()
         self.assertEqual(lines[0], "Phone,Name,First Name")
         phones = sorted(line.split(",")[0] for line in lines[1:])
-        self.assertEqual(phones, ["0241111111", "0242222222"])  # no UK number, no duplicate
+        self.assertEqual(phones, ["0241111111", "0242222222", "0553333333"])  # no UK number
 
     def test_export_of_ticked_people_only(self):
         ama = WorkshopContact.objects.get(email="ama@example.com")
@@ -113,7 +168,7 @@ class ContactPageTests(PinnedRateMixin, TestCase):
             }, follow=True)
         self.assertEqual(sorted(c.kwargs["to"] for c in send.call_args_list),
                          ["ama@example.com", "esi@example.com", "yaw@example.com"])
-        self.assertEqual(sorted(send_sms.call_args.args[0]), ["0241111111", "0242222222"])
+        self.assertEqual(sorted(send_sms.call_args.args[0]), ["0242222222", "0553333333"])
         self.assertContains(resp, "1 without a valid Ghana number")
         self.assertIsNotNone(WorkshopContact.objects.get(email="ama@example.com").last_messaged_at)
         self.assertIsNone(WorkshopContact.objects.get(email="kofi@example.com").last_messaged_at)

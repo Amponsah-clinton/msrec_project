@@ -249,21 +249,20 @@
       <table class="wsc-table">
         <thead><tr>
           <th><label class="wsc-pick"><input type="checkbox" id="wscPickAll" aria-label="Tick everyone listed"> Name</label></th>
-          <th>Contact</th><th>Workshops</th><th>Fee</th><th>Last registered</th><th></th>
+          <th>Contact</th><th>Workshops</th><th>Last registered</th><th></th>
         </tr></thead>
         <tbody>
           {% for c in people %}
           <tr class="wsc-row" data-id="{{ c.pk }}" data-name="{{ c.name }}" data-sms="{{ c.sms_ok|yesno:'1,0' }}">
             <td class="wsc-td-name"><label class="wsc-pick"><input type="checkbox" class="wsc-pick-row" aria-label="Tick {{ c.name }}">
               <span><span class="wsc-who">{{ c.name }}</span>{% if c.institution %}<br><span class="wsc-sub">{{ c.institution }}</span>{% endif %}</span></label></td>
-            <td data-label="Contact"><span class="wsc-dim">{{ c.email }}{% if c.phone %}<br>{{ c.phone }}{% endif %}</span>{% if not c.phone %}<br><span class="wsc-nophone">No phone — email only</span>{% endif %}</td>
+            <td data-label="Contact"><span class="wsc-dim">{{ c.email }}{% if c.phone %}<br>{{ c.phone }}{% endif %}</span>{% with oe=c.other_emails op=c.other_phones %}{% if oe or op %}<br><span class="wsc-faint" title="Also registered with these details">also {{ oe|join:", " }}{% if oe and op %}, {% endif %}{{ op|join:", " }}</span>{% endif %}{% endwith %}{% if not c.phone %}<br><span class="wsc-nophone">No phone — email only</span>{% endif %}</td>
             <td data-label="Workshops">
               <span class="wsc-ws" title="{{ c.workshop_titles|join:' · ' }}">
                 <span class="wsc-badge count">{{ c.registration_count }}</span>
                 <span class="wsc-ws-title">{{ c.latest_workshop }}{% with more=c.workshop_titles|length|add:"-1" %}{% if more > 0 %} <span class="wsc-faint">+{{ more }} more</span>{% endif %}{% endwith %}</span>
               </span>
             </td>
-            <td data-label="Fee">{% if c.has_paid %}<span class="wsc-badge paid">Paid before</span>{% else %}<span class="wsc-badge no">Never paid</span>{% endif %}</td>
             <td data-label="Last registered">{{ c.last_registered_at|date:"j M Y" }}<br><span class="wsc-faint">since {{ c.first_registered_at|date:"M Y" }}</span>
               {% if c.last_messaged_at %}<br><span class="wsc-faint" title="Last messaged {{ c.last_messaged_at|date:'j M Y, H:i' }}"><i class="fa-solid fa-check" style="color:var(--green);"></i> messaged {{ c.last_messaged_at|date:"j M" }}</span>{% endif %}</td>
             <td data-label="Actions">
@@ -277,7 +276,7 @@
             </td>
           </tr>
           {% empty %}
-          <tr><td class="wsc-empty" colspan="6">
+          <tr><td class="wsc-empty" colspan="5">
             {% if filtered %}Nobody matches these filters. <a class="wsc-reset" href="{% url 'workshop_admin:contacts' %}">Clear filters</a>
             {% else %}Nobody has registered for a workshop yet. People appear here the moment they register.{% endif %}
           </td></tr>

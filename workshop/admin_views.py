@@ -570,7 +570,7 @@ def _filtered_contacts(f, ids=None):
     q = f["q"].lower()
     for c in qs:
         c.sms_ok = bool(sms.clean_phone(c.phone))
-        if q and q not in f"{c.name} {c.email} {c.phone} {c.institution}".lower():
+        if q and q not in " ".join([c.name, c.email, c.phone, c.institution, *c.other_emails, *c.other_phones]).lower():
             continue
         if f["workshop"] and not any(str(e.get("workshop_id")) == f["workshop"] for e in c.history):
             continue
@@ -750,13 +750,14 @@ def contacts_export(request):
 
     response["Content-Disposition"] = f'attachment; filename="msrec-workshop-contacts-{today}.csv"'
     writer.writerow([
-        "Name", "Email", "Phone", "SMS Number", "Institution",
+        "Name", "Email", "Phone", "SMS Number", "Institution", "Other Emails", "Other Phones",
         "Workshops Registered", "Workshops", "Paid a Certificate Fee",
         "First Registered", "Last Registered", "Last Messaged",
     ])
     for c in people:
         writer.writerow([
             c.name, c.email, c.phone, sms.clean_phone(c.phone), c.institution,
+            "; ".join(c.other_emails), "; ".join(c.other_phones),
             c.registration_count, "; ".join(c.workshop_titles), "Yes" if c.has_paid else "No",
             day(c.first_registered_at), day(c.last_registered_at), day(c.last_messaged_at),
         ])

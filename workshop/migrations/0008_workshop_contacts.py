@@ -4,21 +4,8 @@ from django.db import migrations, models
 
 
 def backfill(apps, schema_editor):
-    """Everyone who registered before the contact list existed."""
-    from workshop.contacts import apply_registration
-
-    Registration = apps.get_model("workshop", "WorkshopRegistration")
-    Contact = apps.get_model("workshop", "WorkshopContact")
-    contacts = {}
-    for reg in Registration.objects.select_related("workshop").order_by("created_at"):
-        email = (reg.email or "").strip().lower()
-        if not email:
-            continue
-        contact = contacts.get(email) or Contact(email=email, name=(reg.name or "")[:200] or email)
-        ws = reg.workshop
-        apply_registration(contact, reg, ws.title if ws else "Workshop", ws.starts_at if ws else None)
-        contacts[email] = contact
-    Contact.objects.bulk_create(contacts.values(), batch_size=500)
+    """Superseded: 0009_rebuild_workshop_contacts builds the list (with
+    duplicate people merged), so there is nothing to do here."""
 
 
 class Migration(migrations.Migration):

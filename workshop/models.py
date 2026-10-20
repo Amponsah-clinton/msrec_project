@@ -456,6 +456,59 @@ class WorkshopContact(models.Model):
                 out.append(title)
         return out
 
+    def _distinct_from_history(self, field, primary):
+        seen, out = {primary.lower()} if primary else set(), []
+        for entry in reversed(self.history or []):
+            value = (entry.get(field) or "").strip()
+            if value and value.lower() not in seen:
+                seen.add(value.lower())
+                out.append(value)
+        return out
+
+    @property
+    def other_emails(self):
+        """Emails this person registered with besides the main one."""
+        return self._distinct_from_history("email", self.email)
+
+    @property
+    def other_phones(self):
+        from .contacts import phone_key
+        seen = {phone_key(self.phone)} if phone_key(self.phone) else set()
+        out = []
+        for entry in reversed(self.history or []):
+            value = (entry.get("phone") or "").strip()
+            key = phone_key(value) or value
+            if value and key not in seen:
+                seen.add(key)
+                out.append(value)
+        return out
+
+    @property
+    def workshop_groups(self):
+        """One entry per workshop (repeat registrations folded together),
+        newest first: {"workshop_id", "title", "date", "first", "last",
+        "times", "paid"} -- dates as datetimes, or None."""
+        from django.utils.dateparse import parse_datetime
+
+        groups = {}
+        for entry in self.history or []:
+            key = entry.get("workshop_id") or entry.get("title")
+            when = parse_datetime(entry["registered"]) if entry.get("registered") else None
+            g = groups.setdefault(key, {
+                "workshop_id": entry.get("workshop_id"),
+                "title": entry.get("title") or "Workshop",
+                "date": parse_datetime(entry["date"]) if entry.get("date") else None,
+                "first": when, "last": when, "times": 0, "paid": False,
+            })
+            g["times"] += 1
+            g["paid"] = g["paid"] or bool(entry.get("paid"))
+            if when and (not g["first"] or when < g["first"]):
+                g["first"] = when
+            if when and (not g["last"] or when > g["last"]):
+                g["last"] = when
+        far_past = timezone.now() - timezone.timedelta(days=36500)
+        return sorted(groups.values(), key=lambda g: g["last"] or far_past, reverse=True)
+
     @property
     def latest_workshop(self):
         titles = self.workshop_titles
