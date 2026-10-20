@@ -135,6 +135,20 @@ class ContactPageTests(PinnedRateMixin, TestCase):
         resp = self.client.get(self.url, {"q": "owes"})
         self.assertEqual([c.name for c in resp.context["people"]], ["Ama Owes"])
 
+    def test_workshop_modal_data(self):
+        kofi = WorkshopContact.objects.get(email="kofi@example.com")
+        WorkshopRegistration.objects.create(workshop=self.ws, name="Kofi Paid", institution="UG",
+                                            email="kofi@example.com", phone="0241111111")
+        resp = self.client.get(self.url)
+        self.assertContains(resp, 'id="wscModalData"')
+        self.assertContains(resp, 'class="wsc-ws-btn"')
+        d = resp.context["modal"][kofi.pk]
+        self.assertEqual(d["registrations"], 2)
+        self.assertEqual(len(d["workshops"]), 1)
+        w = d["workshops"][0]
+        self.assertEqual((w["title"], w["times"], w["paid"], w["past"]), ("Ethics 101", 2, True, False))
+        self.assertEqual(w["url"], reverse("workshop_admin:manage", args=[self.ws.pk]))
+
     def test_full_csv_export(self):
         resp = self.client.get(reverse("workshop_admin:contacts_export"), {"kind": "full", "sort": "name"})
         text = resp.content.decode("utf-8")

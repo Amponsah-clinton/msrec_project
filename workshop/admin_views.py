@@ -696,9 +696,46 @@ def contacts(request):
 
     f = _contact_filters(request.GET)
     people = _filtered_contacts(f)
+
+    # Everything the per-person workshop modal shows, handed to the page as
+    # JSON so opening it needs no extra request.
+    live = {w.pk: w for w in Workshop.objects.only("pk", "ends_at", "starts_at")}
+    now = timezone.now()
+
+    def fmt(dt, pattern):
+        return timezone.localtime(dt).strftime(pattern).replace(" 0", " ").lstrip("0") if dt else ""
+
+    modal = {}
+    for c in people:
+        groups = []
+        for g in c.workshop_groups:
+            ws = live.get(g["workshop_id"])
+            end = (ws.ends_at or ws.starts_at) if ws else g["date"]
+            groups.append({
+                "title": g["title"],
+                "date": fmt(g["date"], "%a %d %b %Y"),
+                "time": fmt(g["date"], "%I:%M %p").lstrip("0"),
+                "registered": fmt(g["first"], "%d %b %Y"),
+                "times": g["times"],
+                "paid": g["paid"],
+                "past": bool(end and end < now),
+                "url": reverse("workshop_admin:manage", kwargs={"pk": ws.pk}) if ws else "",
+            })
+        modal[c.pk] = {
+            "name": c.name, "institution": c.institution,
+            "email": c.email, "phone": c.phone,
+            "other_emails": c.other_emails, "other_phones": c.other_phones,
+            "first": fmt(c.first_registered_at, "%d %b %Y"),
+            "messaged": fmt(c.last_messaged_at, "%d %b %Y"),
+            "sms_ok": c.sms_ok,
+            "registrations": len(c.history or []),
+            "workshops": groups,
+        }
+
     everyone = list(WorkshopContact.objects.only("phone", "has_paid", "registration_count"))
     return render(request, "dashboards/admin/workshop_contacts.html", {
         "people": people,
+        "modal": modal,
         "f": f,
         "query": request.GET.urlencode(),
         "workshops": Workshop.objects.order_by("-starts_at", "-created_at").only("pk", "title", "starts_at"),
