@@ -52,22 +52,17 @@
   .wsl-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); border-color: color-mix(in srgb, var(--teal) 30%, var(--border)); }
   .wsl-card:focus-within { border-color: color-mix(in srgb, var(--teal) 45%, var(--border)); }
 
-  /* Cover: the uploaded banner, or a generated gradient when there isn't one. */
+  /* Cover: the uploaded banner, or a flat brand colour when there isn't one. */
   .wsl-cover { position: relative; display: block; height: 138px; overflow: hidden; color: #fff; text-decoration: none; isolation: isolate; }
-  .wsl-cover.c1 { background: linear-gradient(135deg, #0f8a86 0%, #1b4f72 100%); }
-  .wsl-cover.c2 { background: linear-gradient(135deg, #3b5bdb 0%, #1b2a4a 100%); }
-  .wsl-cover.c3 { background: linear-gradient(135deg, #7c5cf0 0%, #2b2f6b 100%); }
-  .wsl-cover.c4 { background: linear-gradient(135deg, #d9480f 0%, #7a2b46 100%); }
-  .wsl-cover.c5 { background: linear-gradient(135deg, #1fa971 0%, #0b5563 100%); }
-  /* Soft rings so a bannerless cover still has some texture. */
-  .wsl-cover::before { content: ""; position: absolute; inset: 0; z-index: -1;
-    background:
-      radial-gradient(circle at 88% 18%, rgba(255,255,255,.20) 0 34px, transparent 35px),
-      radial-gradient(circle at 88% 18%, transparent 0 58px, rgba(255,255,255,.10) 59px 60px, transparent 61px),
-      radial-gradient(circle at 12% 120%, rgba(255,255,255,.14) 0 70px, transparent 71px); }
+  .wsl-cover.c1 { background: #127a76; }
+  .wsl-cover.c2 { background: #2f55c4; }
+  .wsl-cover.c3 { background: #5b45c9; }
+  .wsl-cover.c4 { background: #b5410f; }
+  .wsl-cover.c5 { background: #157a52; }
   .wsl-cover img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; transition: transform .45s ease; }
   .wsl-card:hover .wsl-cover img { transform: scale(1.045); }
-  .wsl-cover.has-img::after { content: ""; position: absolute; inset: 0; z-index: -1; background: linear-gradient(180deg, rgba(10,16,28,.35) 0%, rgba(10,16,28,0) 45%, rgba(10,16,28,.55) 100%); }
+  /* A flat tint keeps the white badges readable on any photo. */
+  .wsl-cover.has-img::after { content: ""; position: absolute; inset: 0; z-index: -1; background: rgba(10,16,28,.28); }
   .wsl-cover-mark { position: absolute; right: 18px; bottom: 14px; font-size: 40px; opacity: .16; }
   .wsl-cover.has-img .wsl-cover-mark { display: none; }
 
@@ -118,7 +113,7 @@
   .wsl-progress-top { display: flex; justify-content: space-between; gap: 8px; font-size: 11.8px; color: var(--text-sub); margin-bottom: 6px; }
   .wsl-progress-top b { color: var(--text-main); font-weight: 650; }
   .wsl-track { height: 7px; border-radius: 999px; background: var(--gray-light); overflow: hidden; }
-  .wsl-fill { height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--teal), var(--green)); }
+  .wsl-fill { height: 100%; border-radius: inherit; background: var(--teal); }
 
   .wsl-ready { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
   .wsl-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11.3px; font-weight: 650; padding: 4px 9px; border-radius: 999px; }
