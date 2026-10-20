@@ -67,7 +67,7 @@
 
         <div class="res-doc-grid">
           {% for doc in resources_by_category.application_forms %}
-          <a class="res-doc-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" {% if doc.download_url_ %}download{% endif %} target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+          <a class="res-doc-card" href="{% if doc.download_url_ %}{{ doc.download_url_ }}?download=1{% else %}{{ doc.external_url|default:'#' }}{% endif %}" {% if doc.download_url_ %}download{% else %}target="_blank" rel="noopener"{% endif %} data-search="{{ doc.title|lower }}">
             <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
             <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
             <span class="res-doc-title">{{ doc.title }}</span>
@@ -79,24 +79,6 @@
             <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
             <span class="res-doc-title">Universal Research Ethics Application Form</span>
             <span class="res-doc-meta">Fillable online &middot; All disciplines</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="amendment modification request form">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Amendment / Modification Request Form</span>
-            <span class="res-doc-meta">PDF &middot; 180 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="expedited review eligibility checklist">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Expedited Review Eligibility Checklist</span>
-            <span class="res-doc-meta">PDF &middot; 96 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="ethics determination exemption request form">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Ethics Determination / Exemption Request Form</span>
-            <span class="res-doc-meta">PDF &middot; 142 KB</span>
           </a>
         </div>
       </section>
@@ -113,37 +95,13 @@
 
         <div class="res-doc-grid">
           {% for doc in resources_by_category.protocol_templates %}
-          <a class="res-doc-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" {% if doc.download_url_ %}download{% endif %} target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+          <a class="res-doc-card" href="{% if doc.download_url_ %}{{ doc.download_url_ }}?download=1{% else %}{{ doc.external_url|default:'#' }}{% endif %}" {% if doc.download_url_ %}download{% else %}target="_blank" rel="noopener"{% endif %} data-search="{{ doc.title|lower }}">
             <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
             <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
             <span class="res-doc-title">{{ doc.title }}</span>
             <span class="res-doc-meta">{{ doc.description|default:"Uploaded document" }}</span>
           </a>
           {% endfor %}
-          <a class="res-doc-card" href="#" data-search="full research protocol template">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Full Research Protocol Template</span>
-            <span class="res-doc-meta">PDF &middot; 310 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="systematic review evidence synthesis protocol template">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Systematic Review / Evidence Synthesis Protocol Template</span>
-            <span class="res-doc-meta">PDF &middot; 205 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="data management plan template">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Data Management Plan Template</span>
-            <span class="res-doc-meta">PDF &middot; 168 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="study synopsis summary template">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Study Synopsis / Summary Template</span>
-            <span class="res-doc-meta">PDF &middot; 88 KB</span>
-          </a>
         </div>
       </section>
 
@@ -159,37 +117,13 @@
 
         <div class="res-doc-grid">
           {% for doc in resources_by_category.consent_templates %}
-          <a class="res-doc-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" {% if doc.download_url_ %}download{% endif %} target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+          <a class="res-doc-card" href="{% if doc.download_url_ %}{{ doc.download_url_ }}?download=1{% else %}{{ doc.external_url|default:'#' }}{% endif %}" {% if doc.download_url_ %}download{% else %}target="_blank" rel="noopener"{% endif %} data-search="{{ doc.title|lower }}">
             <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
             <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
             <span class="res-doc-title">{{ doc.title }}</span>
             <span class="res-doc-meta">{{ doc.description|default:"Uploaded document" }}</span>
           </a>
           {% endfor %}
-          <a class="res-doc-card" href="#" data-search="informed consent form template adult participants">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Informed Consent Form Template (Adult Participants)</span>
-            <span class="res-doc-meta">PDF &middot; 152 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="parental guardian consent form template">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Parental / Guardian Consent Form Template</span>
-            <span class="res-doc-meta">PDF &middot; 146 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="participant assent form template minors">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Participant Assent Form Template (Minors)</span>
-            <span class="res-doc-meta">PDF &middot; 112 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="participant information sheet template">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Participant Information Sheet Template</span>
-            <span class="res-doc-meta">PDF &middot; 134 KB</span>
-          </a>
         </div>
       </section>
 
@@ -205,37 +139,13 @@
 
         <div class="res-doc-grid">
           {% for doc in resources_by_category.reporting_forms %}
-          <a class="res-doc-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" {% if doc.download_url_ %}download{% endif %} target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+          <a class="res-doc-card" href="{% if doc.download_url_ %}{{ doc.download_url_ }}?download=1{% else %}{{ doc.external_url|default:'#' }}{% endif %}" {% if doc.download_url_ %}download{% else %}target="_blank" rel="noopener"{% endif %} data-search="{{ doc.title|lower }}">
             <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
             <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
             <span class="res-doc-title">{{ doc.title }}</span>
             <span class="res-doc-meta">{{ doc.description|default:"Uploaded document" }}</span>
           </a>
           {% endfor %}
-          <a class="res-doc-card" href="#" data-search="adverse event serious adverse event report form">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Adverse Event / Serious Adverse Event Report Form</span>
-            <span class="res-doc-meta">PDF &middot; 128 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="protocol deviation non-compliance report form">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Protocol Deviation / Non-Compliance Report Form</span>
-            <span class="res-doc-meta">PDF &middot; 118 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="continuing review annual progress report form">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Continuing Review / Annual Progress Report Form</span>
-            <span class="res-doc-meta">PDF &middot; 138 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="study closure completion report form">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Study Closure / Completion Report Form</span>
-            <span class="res-doc-meta">PDF &middot; 104 KB</span>
-          </a>
         </div>
       </section>
 
@@ -251,49 +161,13 @@
 
         <div class="res-doc-grid">
           {% for doc in resources_by_category.guidelines %}
-          <a class="res-doc-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" {% if doc.download_url_ %}download{% endif %} target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+          <a class="res-doc-card" href="{% if doc.download_url_ %}{{ doc.download_url_ }}?download=1{% else %}{{ doc.external_url|default:'#' }}{% endif %}" {% if doc.download_url_ %}download{% else %}target="_blank" rel="noopener"{% endif %} data-search="{{ doc.title|lower }}">
             <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
             <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
             <span class="res-doc-title">{{ doc.title }}</span>
             <span class="res-doc-meta">{{ doc.description|default:"Uploaded document" }}</span>
           </a>
           {% endfor %}
-          <a class="res-doc-card" href="#" data-search="guidance artificial intelligence machine learning research">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Guidance on Artificial Intelligence &amp; Machine Learning Research</span>
-            <span class="res-doc-meta">PDF &middot; 224 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="guidance vulnerable populations research">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Guidance for Research Involving Vulnerable Populations</span>
-            <span class="res-doc-meta">PDF &middot; 176 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="data protection privacy confidentiality guidance">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Data Protection, Privacy &amp; Confidentiality Guidance</span>
-            <span class="res-doc-meta">PDF &middot; 198 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="conflict of interest policy disclosure guidance">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Conflict of Interest Policy &amp; Disclosure Guidance</span>
-            <span class="res-doc-meta">PDF &middot; 132 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="risk classification sample size guidance">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">Risk Classification &amp; Sample Size Guidance</span>
-            <span class="res-doc-meta">PDF &middot; 156 KB</span>
-          </a>
-          <a class="res-doc-card" href="#" data-search="international collaboration cross-border data transfer guidance">
-            <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
-            <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
-            <span class="res-doc-title">International Collaboration &amp; Cross-Border Data Transfer Guidance</span>
-            <span class="res-doc-meta">PDF &middot; 210 KB</span>
-          </a>
         </div>
       </section>
 
@@ -309,7 +183,7 @@
 
         <div class="res-doc-grid">
           {% for doc in resources_by_category.regulatory_authorizations %}
-          <a class="res-doc-card" href="{{ doc.download_url_|default:doc.external_url|default:'#' }}" {% if doc.download_url_ %}download{% endif %} target="_blank" rel="noopener" data-search="{{ doc.title|lower }}">
+          <a class="res-doc-card" href="{% if doc.download_url_ %}{{ doc.download_url_ }}?download=1{% else %}{{ doc.external_url|default:'#' }}{% endif %}" {% if doc.download_url_ %}download{% else %}target="_blank" rel="noopener"{% endif %} data-search="{{ doc.title|lower }}">
             <span class="res-doc-download" aria-hidden="true"><i class="bi bi-download"></i></span>
             <span class="res-doc-icon"><i class="bi bi-filetype-pdf"></i></span>
             <span class="res-doc-title">{{ doc.title }}</span>
@@ -422,7 +296,7 @@
         <div class="res-training-grid">
           {% for doc in resources_by_category.training %}
           {% with link=doc.download_url_|default:doc.external_url %}
-          <{% if link %}a href="{{ link }}" target="_blank" rel="noopener"{% else %}div{% endif %} class="res-training-card{% if not link %} is-unavailable{% endif %}" data-search="{{ doc.title|lower }} {{ doc.description|lower }} training">
+          <{% if doc.download_url_ %}a href="{{ doc.download_url_ }}?download=1" download{% elif link %}a href="{{ link }}" target="_blank" rel="noopener"{% else %}div{% endif %} class="res-training-card{% if not link %} is-unavailable{% endif %}" data-search="{{ doc.title|lower }} {{ doc.description|lower }} training">
             <span class="res-training-icon"><i class="bi {{ doc.icon|default:'bi-mortarboard-fill' }}"></i></span>
             <div class="res-training-body">
               <span class="badge rounded-pill res-training-tag text-bg-success">{% if doc.badge_label %}{{ doc.badge_label }}{% elif doc.download_url_ %}Download{% else %}Online resource{% endif %}</span>

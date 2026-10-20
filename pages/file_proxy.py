@@ -125,7 +125,11 @@ def serve(request, token):
     # the raw Supabase URL behaved before. The browser's own "Save As"
     # still works from either; this only affects the default click
     # behavior, not whether it can be saved.
-    response["Content-Disposition"] = f'inline; filename="{filename}"'
+    # ?download=1 (the Resource Centre's download buttons) asks for a real
+    # download instead -- a .docx or PDF saved straight to the device.
+    disposition = "attachment" if request.GET.get("download") else "inline"
+    quoted = urllib.parse.quote(filename)
+    response["Content-Disposition"] = f"{disposition}; filename=\"{filename}\"; filename*=UTF-8''{quoted}"
     # Never cached by a shared/public cache -- an expiring link (a
     # private CV, a revision document) must not end up stored in a
     # proxy or CDN in front of this app; the browser's own cache for

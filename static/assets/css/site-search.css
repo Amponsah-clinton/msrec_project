@@ -183,12 +183,20 @@ body.site-search-open { overflow: hidden; }
 .site-search-hintkeys kbd {
   font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
   font-size: 10.5px;
+  color: #000000; /* Bootstrap's kbd defaults to white text */
   background: #eef3f2;
   border: 1px solid rgba(23, 42, 40, 0.12);
   border-radius: 4px;
   padding: 1px 5px;
   margin-right: 3px;
+  display: inline-flex;
+  align-items: center;
 }
+/* The arrow keys are Bootstrap Icons (a font that follows `color`), not
+   Unicode arrows -- those fall back to a Windows symbol font that ignores
+   the text colour. */
+.site-search-hintkeys kbd i,
+.site-search-hintkeys kbd i::before { color: #000000; font-size: 10px; line-height: 1; }
 
 .site-search-cancel {
   flex-shrink: 0;
