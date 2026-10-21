@@ -127,17 +127,21 @@ def workshop_list(request):
 # Manage one workshop
 # ---------------------------------------------------------------------
 
-def _recipients(request, ws):
-    reg_id = request.POST.get("reg_id")
+def _recipients(request, ws, params=None):
+    """Who an action (or an export) is about: one row, the rows ticked or
+    found by a search (reg_ids), or else the group chip (scope). `params`
+    defaults to the POST; exports pass request.GET."""
+    params = request.POST if params is None else params
+    reg_id = params.get("reg_id")
     qs = ws.registrations.all()
     if reg_id:
         return qs.filter(pk=reg_id)
     # Rows ticked in the table win over the group chip -- always narrowed to
     # this workshop, so a tampered id can't reach another workshop's people.
-    picked = [p for p in (request.POST.get("reg_ids") or "").split(",") if p.strip().isdigit()]
+    picked = [p for p in (params.get("reg_ids") or "").split(",") if p.strip().isdigit()]
     if picked:
         return qs.filter(pk__in=picked)
-    scope = request.POST.get("scope", "")
+    scope = params.get("scope", "")
     if scope == "wants_cert":
         return qs.filter(wants_certificate=True)
     if scope == "paid":
@@ -492,6 +496,23 @@ def workshop_manage(request, pk):
         "sms_configured": sms.is_configured(),
         "dashboard": _dashboard(request),
     })
+
+
+@login_required
+@staff_required
+def registrations_export(request, pk):
+    """CSV or PDF of the registrations the Registrations tab is showing:
+    the same chip, search and ticks the send buttons use (see _recipients),
+    so what's exported is exactly what was on screen."""
+    from . import exports
+
+    ws = get_object_or_404(Workshop, pk=pk)
+    regs = _recipients(request, ws, request.GET).order_by("-created_at")
+    label = (request.GET.get("label") or "").strip()[:160]
+    if request.GET.get("format") == "pdf":
+        who = request.user.get_full_name() or request.user.email
+        return exports.pdf_response(ws, regs, label, prepared_by=who)
+    return exports.csv_response(ws, regs)
 
 
 @login_required

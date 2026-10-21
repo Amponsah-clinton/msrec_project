@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% comment %}
+Terms of Service and Privacy Policy (pages.views.legal_page). Every word on
+this page comes from the LegalPage row, edited in Site Settings > Legal
+Pages; section bodies arrive already rendered (and escaped) by
+pages/legal_markup.py.
+{% endcomment %}
+
+{% block title %}{{ page.nav_label }} | Metascholar Research Ethics Committee{% endblock %}
+{% block description %}{{ page.headline }}{% endblock %}
+{% block body_class %}legal-page{% endblock %}
+{% block fonts %}{% endblock %}
+{% block extra_css %}
+<link href="{% static 'assets/css/legal.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+  <div class="legal-progress" id="legalProgress"></div>
+
+  <main class="main legal-main">
+    <div class="legal-wrap">
+
+      <!-- ============ DOCUMENT SWITCHER ============ -->
+      <nav class="legal-switch" aria-label="Help &amp; Legal documents">
+        <a href="{% url 'pages:terms' %}" class="{% if page.slug == 'terms' %}is-current{% endif %}" {% if page.slug == 'terms' %}aria-current="page"{% endif %}><i class="bi bi-file-earmark-text" aria-hidden="true"></i> {% if page.slug == 'terms' %}{{ page.nav_label }}{% else %}{{ other.nav_label }}{% endif %}</a>
+        <a href="{% url 'pages:privacy' %}" class="{% if page.slug == 'privacy' %}is-current{% endif %}" {% if page.slug == 'privacy' %}aria-current="page"{% endif %}><i class="bi bi-shield-lock" aria-hidden="true"></i> {% if page.slug == 'privacy' %}{{ page.nav_label }}{% else %}{{ other.nav_label }}{% endif %}</a>
+      </nav>
+
+      <!-- ============ HERO ============ -->
+      <section class="legal-hero">
+        <div class="legal-hero-copy">
+          <span class="legal-hero-icon"><i class="bi {% if page.slug == 'privacy' %}bi-shield-lock{% else %}bi-file-earmark-text{% endif %}" aria-hidden="true"></i></span>
+          {% if page.eyebrow %}<span class="legal-eyebrow">{{ page.eyebrow }}</span>{% endif %}
+          <h1>{{ page.headline }}</h1>
+          {% if page.intro %}<p>{{ page.intro }}</p>{% endif %}
+          <div class="legal-meta-row">
+            {% if page.last_updated %}<span class="legal-meta-chip"><i class="bi bi-calendar3" aria-hidden="true"></i> Last updated {{ page.last_updated|date:"j F Y" }}</span>{% endif %}
+            {% if page.version %}<span class="legal-meta-chip"><i class="bi bi-tag" aria-hidden="true"></i> Version {{ page.version }}</span>{% endif %}
+            <span class="legal-meta-chip"><i class="bi bi-clock-history" aria-hidden="true"></i> About {{ read_minutes }} min read</span>
+            {% if page.meta_note %}<span class="legal-meta-chip"><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ page.meta_note }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="legal-hero-side">
+          {% if page.side_note %}<p>{{ page.side_note }}</p>{% endif %}
+          <a href="{% if page.slug == 'terms' %}{% url 'pages:privacy' %}{% else %}{% url 'pages:terms' %}{% endif %}" class="legal-side-btn"><span><i class="bi {% if page.slug == 'terms' %}bi-shield-lock{% else %}bi-file-earmark-text{% endif %}" aria-hidden="true"></i>&nbsp; Read the {{ other.nav_label }}</span><i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+          <a href="{% url 'pages:governance' %}#gov-policies" class="legal-side-btn"><span><i class="bi bi-journal-bookmark" aria-hidden="true"></i>&nbsp; See governing policies</span><i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+          <a href="#" class="legal-side-btn legal-side-btn-primary" data-legal-print><span><i class="bi bi-printer" aria-hidden="true"></i>&nbsp; Save or print this page</span><i class="bi bi-download" aria-hidden="true"></i></a>
+        </div>
+      </section>
+
+      {% if sections %}
+      <!-- ============ MOBILE TOC ============ -->
+      <nav class="legal-toolbar" id="legalToolbarMobile" aria-label="{{ page.nav_label }} sections">
+        {% for s in sections %}<a href="#{{ s.anchor }}">{{ s.heading }}</a>{% endfor %}
+      </nav>
+
+      <div class="legal-layout">
+
+        <!-- ============ SIDEBAR TOC ============ -->
+        <nav class="legal-toc" aria-label="{{ page.nav_label }} sections">
+          <span class="legal-toc-label">On this page</span>
+          <ul class="legal-toc-list">
+            {% for s in sections %}<li><a href="#{{ s.anchor }}"><span class="legal-toc-num">{{ s.number }}</span> {{ s.heading }}</a></li>{% endfor %}
+          </ul>
+          <div class="legal-toc-foot">
+            <a href="{% if page.slug == 'terms' %}{% url 'pages:privacy' %}{% else %}{% url 'pages:terms' %}{% endif %}"><i class="bi {% if page.slug == 'terms' %}bi-shield-lock{% else %}bi-file-earmark-text{% endif %}" aria-hidden="true"></i> {{ other.nav_label }}</a>
+            <a href="{% url 'pages:contact' %}"><i class="bi bi-headset" aria-hidden="true"></i> Talk to the Secretariat</a>
+          </div>
+          <div class="legal-toc-help">
+            <strong>Questions?</strong>
+            <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
+          </div>
+        </nav>
+
+        <!-- ============ ARTICLE ============ -->
+        <article class="legal-article">
+          {% for s in sections %}
+          <section class="legal-section" id="{{ s.anchor }}">
+            <div class="legal-section-head">
+              <span class="legal-section-num">{{ s.number }}</span>
+              <h2>{{ s.heading }} <a href="#{{ s.anchor }}" class="legal-anchor-btn" data-section="{{ s.anchor }}" aria-label="Copy a link to this section"><i class="bi bi-link-45deg" aria-hidden="true"></i></a></h2>
+            </div>
+            {% if s.summary %}<div class="legal-tldr"><i class="bi bi-chat-square-text" aria-hidden="true"></i><p>{{ s.summary }}</p></div>{% endif %}
+            <div class="legal-body">{{ s.body }}</div>
+            {% if s.note %}<div class="legal-note legal-note-section"><i class="bi bi-info-circle" aria-hidden="true"></i><p>{{ s.note }}</p></div>{% endif %}
+          </section>
+          {% endfor %}
+        </article>
+      </div>
+      {% endif %}
+
+      <!-- ============ CLOSING CTA ============ -->
+      {% if page.cta_heading or page.cta_text %}
+      <section class="legal-cta">
+        <div>
+          {% if page.cta_heading %}<h4>{{ page.cta_heading }}</h4>{% endif %}
+          {% if page.cta_text %}<p>{{ page.cta_text }}</p>{% endif %}
+        </div>
+        <div class="legal-cta-actions">
+          {% if page.slug == 'privacy' %}
+          <a href="{% url 'pages:governance' %}" class="legal-cta-btn legal-cta-btn-primary">Visit Governance <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+          {% else %}
+          <a href="{% url 'pages:privacy' %}" class="legal-cta-btn legal-cta-btn-primary">Read the {{ other.nav_label }} <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+          {% endif %}
+          <a href="{% url 'pages:contact' %}" class="legal-cta-btn legal-cta-btn-ghost">Contact the Secretariat</a>
+        </div>
+      </section>
+      {% endif %}
+
+    </div>
+  </main>
+
+  <div class="legal-toast" id="legalToast" role="status"><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Link copied</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'assets/js/legal.js' %}"></script>
+{% endblock %}

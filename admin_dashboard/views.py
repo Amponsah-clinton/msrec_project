@@ -2449,6 +2449,85 @@ def _handle_settings_footer(request, site):
     messages.success(request, "Footer updated.")
 
 
+LEGAL_TEXT_LIMITS = {
+    "nav_label": 80, "eyebrow": 80, "headline": 240, "version": 20,
+    "meta_note": 120, "cta_heading": 160, "cta_text": 300,
+}
+
+
+def _legal_page_from_post(request):
+    from pages.models import LegalPage
+
+    slug = request.POST.get("slug")
+    if slug not in LegalPage.Slug.values:
+        messages.error(request, "That page could not be found.")
+        return None
+    return LegalPage.get(slug)
+
+
+def _handle_settings_legal_page(request, site):
+    """Site Settings > Legal Pages: every heading and line of the Terms of
+    Service or the Privacy Policy, including its ordered sections."""
+    from django.utils.dateparse import parse_date
+
+    page = _legal_page_from_post(request)
+    if page is None:
+        return
+    post = request.POST
+    for field, limit in LEGAL_TEXT_LIMITS.items():
+        setattr(page, field, post.get(field, "").strip()[:limit])
+    page.intro = post.get("intro", "").strip()
+    page.side_note = post.get("side_note", "").strip()
+    if not page.nav_label or not page.headline:
+        messages.error(request, "The page needs a name and a headline.")
+        return
+
+    if post.get("bump_date") == "on":
+        page.last_updated = timezone.localdate()
+    else:
+        page.last_updated = parse_date(post.get("last_updated", "").strip()) or page.last_updated
+
+    # The section editor posts one value per section for each field, in
+    # the order the sections are arranged on screen.
+    headings, summaries = post.getlist("sec_heading"), post.getlist("sec_summary")
+    bodies, notes = post.getlist("sec_body"), post.getlist("sec_note")
+    sections = []
+    for i, heading in enumerate(headings):
+        entry = {
+            "heading": heading.strip()[:160],
+            "summary": (summaries[i] if i < len(summaries) else "").strip(),
+            "body": (bodies[i] if i < len(bodies) else "").strip(),
+            "note": (notes[i] if i < len(notes) else "").strip(),
+        }
+        if not any(entry.values()):
+            continue  # an empty card someone added and never filled in
+        if not entry["heading"]:
+            messages.error(request, f"Section {len(sections) + 1} needs a heading.")
+            return
+        sections.append(entry)
+    page.sections = sections
+    page.updated_by = request.user
+    page.save()
+    messages.success(request, f"{page.nav_label} saved: {len(sections)} section{'s' if len(sections) != 1 else ''}.")
+
+
+def _handle_settings_legal_page_reset(request, site):
+    page = _legal_page_from_post(request)
+    if page is None:
+        return
+    page.reset_to_default()
+    page.updated_by = request.user
+    page.save()
+    messages.success(request, f"{page.nav_label} restored to the original wording.")
+
+
+def _handle_settings_legal_footer(request, site):
+    site.footer_legal_heading = request.POST.get("footer_legal_heading", "").strip()[:60] or "Help & Legal"
+    site.updated_by = request.user
+    site.save()
+    messages.success(request, "Footer column heading saved.")
+
+
 def _handle_settings_contact(request, site):
     email_fields = {
         "contact_secretariat_email": "Secretariat",
@@ -3459,6 +3538,9 @@ def site_settings(request):
             "update_member_letter_image": _handle_settings_member_letter_image,
             "update_member_letter_signatory": _handle_settings_member_letter_signatory,
             "update_footer": _handle_settings_footer,
+            "update_legal_page": _handle_settings_legal_page,
+            "reset_legal_page": _handle_settings_legal_page_reset,
+            "update_legal_footer": _handle_settings_legal_footer,
             "update_contact": _handle_settings_contact,
             "update_paystack": _handle_settings_paystack,
             "add_meeting": _handle_settings_add_meeting,
@@ -3534,8 +3616,11 @@ def site_settings(request):
     if edit_institution_id:
         editing_institution = get_object_or_404(Institution, pk=edit_institution_id)
 
+    from pages.models import LegalPage
+
     return render(request, "dashboards/admin/settings.html", {
         "site": site,
+        "legal_pages": [LegalPage.get(LegalPage.Slug.TERMS), LegalPage.get(LegalPage.Slug.PRIVACY)],
         "faqs": faqs,
         "editing_faq": editing_faq,
         "institutions": institutions,

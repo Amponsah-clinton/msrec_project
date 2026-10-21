@@ -76,6 +76,8 @@ class SiteSettings(models.Model):
     social_facebook_url = models.URLField(blank=True)
     social_instagram_url = models.URLField(blank=True)
     social_linkedin_url = models.URLField(blank=True)
+    # Heading over the footer's Terms of Service / Privacy Policy column.
+    footer_legal_heading = models.CharField(max_length=60, blank=True, default="Help & Legal")
 
     # ---- Contact page (templates/pages/contact.html) ----------------------
     # One routing address per Inquiry.Reason -- these are what a submitter
@@ -1158,3 +1160,70 @@ class ReviewerActivityReportTemplate(MemberLetterTemplate):
 
     def __str__(self):
         return "Reviewer activity report template"
+
+
+class LegalPage(models.Model):
+    """The public Terms of Service and Privacy Policy (templates/pages/legal.html).
+
+    One row per document, keyed by `slug`, with every word on the page
+    editable from Site Settings > Legal Pages: the hero, the meta chips, the
+    closing banner, and an ordered list of numbered sections. A section's
+    body is plain text in the small markup pages/legal_markup.py renders
+    (paragraphs, "- " bullets, "### " sub-headings, "|" tables, **bold**,
+    [links](page:contact)) -- never raw HTML, so nothing an editor types can
+    break the page or inject script.
+
+    Rows are created on first use from pages/legal_content.py's defaults
+    (LegalPage.get), which is also what "Reset to default" restores.
+    """
+
+    class Slug(models.TextChoices):
+        TERMS = "terms", "Terms of Service"
+        PRIVACY = "privacy", "Privacy Policy"
+
+    slug = models.CharField(max_length=20, choices=Slug.choices, unique=True)
+    nav_label = models.CharField(max_length=80)  # footer link + browser title
+    eyebrow = models.CharField(max_length=80, blank=True)
+    headline = models.CharField(max_length=240)
+    intro = models.TextField(blank=True)
+    side_note = models.TextField(blank=True)
+    version = models.CharField(max_length=20, blank=True)
+    meta_note = models.CharField(max_length=120, blank=True)  # e.g. "Governed by the laws of Ghana"
+    last_updated = models.DateField(null=True, blank=True)
+    # [{"heading", "summary", "body", "note"}, ...] in display order.
+    sections = models.JSONField(default=list, blank=True)
+    cta_heading = models.CharField(max_length=160, blank=True)
+    cta_text = models.CharField(max_length=300, blank=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="legal_page_edits",
+    )
+
+    class Meta:
+        db_table = "legal_pages"
+
+    def __str__(self):
+        return self.nav_label or self.get_slug_display()
+
+    @classmethod
+    def get(cls, slug):
+        from .legal_content import defaults_for
+
+        page = cls.objects.filter(slug=slug).first()
+        if page is None:
+            page = cls(slug=slug, **defaults_for(slug))
+            page.save()
+        return page
+
+    def reset_to_default(self):
+        from .legal_content import defaults_for
+
+        for field, value in defaults_for(self.slug).items():
+            setattr(self, field, value)
+
+    @property
+    def other(self):
+        """The companion document -- Terms links to Privacy and back."""
+        return LegalPage.Slug.PRIVACY if self.slug == LegalPage.Slug.TERMS else LegalPage.Slug.TERMS

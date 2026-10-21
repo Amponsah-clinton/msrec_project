@@ -139,3 +139,21 @@ class ComposerTests(PinnedRateMixin, TestCase):
         self.assertContains(resp, 'id="wsaComposeForm"')
         self.assertContains(resp, 'value="send_message"')
         self.assertContains(resp, "No phone — email only")
+
+
+class SearchAndPagesTests(ComposerTests):
+    """The Registrations tab's search box and 25-per-page list (client-side);
+    what the server must honour is the id list the page sends for a search."""
+
+    def test_page_has_search_box_and_searchable_rows(self):
+        resp = self.client.get(self.url)
+        self.assertContains(resp, 'id="wsaSearch"')
+        self.assertContains(resp, 'id="wsaPager"')
+        self.assertContains(resp, 'data-search="ama owes ama@example.com')
+
+    def test_a_search_that_found_nobody_sends_to_nobody(self):
+        # The page posts reg_ids=0 when a search matched no one.
+        with mock.patch("workshop.emails.send_branded_email", return_value=True) as send:
+            resp = self._post(reg_ids="0")
+        send.assert_not_called()
+        self.assertContains(resp, "No registrations matched")

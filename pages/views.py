@@ -365,3 +365,61 @@ def resources(request):
         by_category[doc.category].append(doc)
 
     return render(request, "pages/resources.html", {"resources_by_category": by_category})
+
+
+def legal_values(site=None):
+    """What {email} and {site_name} stand for in the legal pages' text."""
+    site = site or SiteSettings.get_solo()
+    return {
+        "email": site.contact_secretariat_email or site.footer_email or "secretariat@msrec.org",
+        "site_name": site.site_name or "MSREC",
+    }
+
+
+def legal_sections(page, values):
+    """The page's sections, numbered and rendered, each with a stable
+    anchor made from its heading (so #data-retention keeps working when
+    sections are reordered)."""
+    from django.utils.text import slugify
+
+    from . import legal_markup
+
+    out, used = [], set()
+    for entry in page.sections or []:
+        heading = (entry.get("heading") or "").strip()
+        body = entry.get("body") or ""
+        if not heading and not body.strip():
+            continue
+        anchor = base = slugify(heading) or "section"
+        n = 2
+        while anchor in used:
+            anchor, n = f"{base}-{n}", n + 1
+        used.add(anchor)
+        out.append({
+            "number": f"{len(out) + 1:02d}",
+            "anchor": anchor,
+            "heading": heading,
+            "summary": legal_markup.render_inline(entry.get("summary"), values) if (entry.get("summary") or "").strip() else "",
+            "body": legal_markup.render(body, values),
+            "note": legal_markup.render_inline(entry.get("note"), values) if (entry.get("note") or "").strip() else "",
+            "words": legal_markup.word_count(" ".join([heading, entry.get("summary") or "", body])),
+        })
+    return out
+
+
+def legal_page(request, slug):
+    """Terms of Service / Privacy Policy -- every word comes from the
+    LegalPage row, edited in Site Settings > Legal Pages."""
+    from .models import LegalPage
+
+    page = LegalPage.get(slug)
+    values = legal_values()
+    sections = legal_sections(page, values)
+    words = sum(s["words"] for s in sections)
+    return render(request, "pages/legal.html", {
+        "page": page,
+        "other": LegalPage.get(page.other),
+        "sections": sections,
+        "read_minutes": max(1, round(words / 220)),
+        "contact_email": values["email"],
+    })

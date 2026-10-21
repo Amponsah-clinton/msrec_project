@@ -129,6 +129,36 @@
   .wsa-linkbtn:hover { text-decoration: underline; }
   .wsa-nosms { font-size: 11px; color: var(--orange); }
 
+  /* ---- search + pages ---- */
+  .wsa-list-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-bottom: 12px; }
+  .wsa-list-head h3 { margin: 0; font-size: 15.5px; color: var(--text-main); }
+  .wsa-list-head h3 { margin-right: auto; }
+  .wsa-export { display: flex; gap: 6px; }
+  .wsa-export .wsa-btn { text-decoration: none; padding: 8px 12px; }
+  .wsa-export .wsa-btn.is-empty { opacity: .5; pointer-events: none; }
+  .wsa-search { position: relative; flex: 0 1 300px; min-width: 200px; }
+  .wsa-search i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-faint); font-size: 12.5px; pointer-events: none; }
+  .wsa-search input { width: 100%; box-sizing: border-box; border: 1px solid var(--border); border-radius: var(--radius-sm, 8px); background: var(--bg); color: var(--text-main);
+    padding: 9px 32px 9px 33px; font: inherit; font-size: 13.5px; }
+  .wsa-search input:focus { outline: none; border-color: var(--teal); background: var(--white); }
+  .wsa-search input::-webkit-search-cancel-button { display: none; }
+  .wsa-search-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); width: 24px; height: 24px; border: 0; border-radius: 6px; background: none;
+    color: var(--text-faint); font-size: 17px; line-height: 1; cursor: pointer; }
+  .wsa-search-clear:hover { color: var(--text-main); background: var(--hover-bg); }
+  mark.wsa-hit { background: color-mix(in srgb, var(--orange) 26%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+  .wsa-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .wsa-pager[hidden] { display: none; }
+  .wsa-pager-info { font-size: 12.5px; color: var(--text-sub); }
+  .wsa-pager-info b { color: var(--text-main); }
+  .wsa-pages { display: flex; gap: 4px; flex-wrap: wrap; }
+  .wsa-page { min-width: 34px; height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius-sm, 8px); background: var(--bg); color: var(--text-main);
+    font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .wsa-page:hover:not(:disabled) { border-color: var(--teal); color: var(--teal); }
+  .wsa-page.current { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .wsa-page:disabled { opacity: .45; cursor: default; }
+  .wsa-page-gap { align-self: center; padding: 0 4px; color: var(--text-faint); }
+  @media (max-width: 760px) { .wsa-search { flex: 1 1 100%; } .wsa-pager { justify-content: center; } .wsa-pager-info { width: 100%; text-align: center; } }
+
   /* ---- message composer ---- */
   .wsa-compose { border-color: color-mix(in srgb, var(--teal) 40%, var(--border)); }
   .wsa-compose[hidden] { display: none; }
@@ -442,18 +472,31 @@
     </div>
 
     <div class="wsa-card">
-      <h3>Registrations <span class="wsa-scope-tag" id="wsaShownCount"></span></h3>
+      <div class="wsa-list-head">
+        <h3>Registrations <span class="wsa-scope-tag" id="wsaShownCount"></span></h3>
+        <label class="wsa-search">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+          <input type="search" id="wsaSearch" placeholder="Search name, email or phone…" aria-label="Search registrations by name, email, phone or institution" autocomplete="off">
+          <button type="button" class="wsa-search-clear" id="wsaSearchClear" aria-label="Clear search" hidden>&times;</button>
+        </label>
+        {# Hrefs kept in step with the chip, search and ticks by the script below. #}
+        <div class="wsa-export" role="group" aria-label="Export">
+          <a class="wsa-btn ghost wsa-export-link" data-format="csv" data-base="{% url 'workshop_admin:registrations_export' ws.pk %}" href="{% url 'workshop_admin:registrations_export' ws.pk %}?format=csv"><i class="fa-solid fa-file-csv"></i> CSV</a>
+          <a class="wsa-btn ghost wsa-export-link" data-format="pdf" data-base="{% url 'workshop_admin:registrations_export' ws.pk %}" href="{% url 'workshop_admin:registrations_export' ws.pk %}?format=pdf"><i class="fa-solid fa-file-pdf"></i> PDF</a>
+        </div>
+      </div>
       <div class="wsa-selbar" id="wsaSelBar">
         <span><b id="wsaSelCount">0</b> ticked — the buttons above and the message now go to just them.</span>
+        <button type="button" class="wsa-linkbtn" id="wsaSelAll" hidden></button>
         <button type="button" class="wsa-linkbtn" id="wsaSelMessage"><i class="fa-solid fa-envelope"></i> Message them</button>
         <button type="button" class="wsa-linkbtn" id="wsaSelClear">Clear</button>
       </div>
       <div class="wsa-table-wrap">
         <table class="wsa-table">
-          <thead><tr><th><label class="wsa-pick" title="Tick everyone shown"><input type="checkbox" id="wsaPickAll" aria-label="Tick everyone shown"> Name</label></th><th>Institution</th><th>Contact</th><th>Certificate</th><th>Sent</th><th>Actions</th></tr></thead>
+          <thead><tr><th><label class="wsa-pick" title="Tick everyone on this page"><input type="checkbox" id="wsaPickAll" aria-label="Tick everyone on this page"> Name</label></th><th>Institution</th><th>Contact</th><th>Certificate</th><th>Sent</th><th>Actions</th></tr></thead>
           <tbody>
             {% for r in regs %}
-            <tr class="wsa-reg-row" data-id="{{ r.pk }}" data-name="{{ r.name }}" data-sms="{{ r.sms_ok|yesno:'1,0' }}" data-wants="{{ r.wants_certificate|yesno:'1,0' }}" data-paid="{{ r.is_paid|yesno:'1,0' }}" data-unpaid="{{ r.payment_outstanding|yesno:'1,0' }}">
+            <tr class="wsa-reg-row" data-search="{{ r.name|lower }} {{ r.email|lower }} {{ r.phone }} {{ r.institution|lower }}" data-id="{{ r.pk }}" data-name="{{ r.name }}" data-sms="{{ r.sms_ok|yesno:'1,0' }}" data-wants="{{ r.wants_certificate|yesno:'1,0' }}" data-paid="{{ r.is_paid|yesno:'1,0' }}" data-unpaid="{{ r.payment_outstanding|yesno:'1,0' }}">
               <td class="wsa-td-name"><label class="wsa-pick"><input type="checkbox" class="wsa-pick-row" value="{{ r.pk }}" aria-label="Tick {{ r.name }}"><span><span class="wsa-who">{{ r.name }}</span><br><span class="wsa-when">Registered {{ r.created_at|date:"j M Y" }}</span></span></label></td>
               <td data-label="Institution"><span class="wsa-dim">{{ r.institution }}</span></td>
               <td data-label="Contact"><span class="wsa-dim">{{ r.email }}{% if r.phone %}<br>{{ r.phone }}{% endif %}</span>{% if not r.phone %}<br><span class="wsa-nosms">No phone — email only</span>{% endif %}</td>
@@ -493,10 +536,11 @@
             {% empty %}
             <tr><td class="wsa-empty-cell" colspan="6">No registrations yet. Share <code>/workshop/{{ ws.slug }}/</code>.</td></tr>
             {% endfor %}
-            <tr id="wsaNoMatch" hidden><td class="wsa-empty-cell" colspan="6">Nobody is in this group.</td></tr>
+            <tr id="wsaNoMatch" hidden><td class="wsa-empty-cell" colspan="6"><span id="wsaNoMatchText">Nobody is in this group.</span></td></tr>
           </tbody>
         </table>
       </div>
+      <nav class="wsa-pager" id="wsaPager" aria-label="Registration pages" hidden></nav>
     </div>
   </section>
 
@@ -749,9 +793,15 @@
     var chips = document.querySelectorAll(".wsa-chip[data-filter]");
     var rows = Array.prototype.slice.call(document.querySelectorAll(".wsa-reg-row"));
     var noMatch = document.getElementById("wsaNoMatch");
+    var noMatchText = document.getElementById("wsaNoMatchText");
     var scopeInputs = document.querySelectorAll(".wsa-scope-input");
     var scopeLabel = document.getElementById("wsaScopeLabel");
     var shownCount = document.getElementById("wsaShownCount");
+    var searchBox = document.getElementById("wsaSearch");
+    var searchClear = document.getElementById("wsaSearchClear");
+    var pager = document.getElementById("wsaPager");
+    var exportLinks = Array.prototype.slice.call(document.querySelectorAll(".wsa-export-link"));
+    var PER_PAGE = 25;
 
     function matches(row, f) {
       if (f === "all") return true;
@@ -762,53 +812,188 @@
       return true;
     }
     // Ticked rows narrow every send on the tab to just those people; with
-    // nothing ticked, the chip's whole group is the target.
+    // nothing ticked, everyone the chip AND the search match is the target.
     var idsInputs = document.querySelectorAll(".wsa-ids-input");
     var scopeHow = document.getElementById("wsaScopeHow");
     var pickAll = document.getElementById("wsaPickAll");
     var selBar = document.getElementById("wsaSelBar");
     var selCount = document.getElementById("wsaSelCount");
+    var selAll = document.getElementById("wsaSelAll");
     var activeChip = null;
+    var query = "";
+    var page = 1;
+    var matched = rows.slice();   // chip + search, in table order
+    var onPage = [];              // the slice of `matched` on screen
 
     function box(row) { return row.querySelector(".wsa-pick-row"); }
-    function visible(row) { return row.style.display !== "none"; }
     function picked() { return rows.filter(function (r) { return box(r).checked; }); }
     function targets() {
       var p = picked();
-      return p.length ? p : rows.filter(visible);
+      return p.length ? p : matched;
+    }
+    // "Everyone", or "Paid matching “ama”" -- the group as the admin sees it.
+    function groupLabel() {
+      var label = activeChip ? activeChip.dataset.label : "Everyone";
+      return query ? label + " matching “" + query + "”" : label;
+    }
+
+    // Combining accent marks (U+0300-U+036F), built from codes so the file stays plain ASCII.
+    var ACCENTS = new RegExp("[" + String.fromCharCode(0x300) + "-" + String.fromCharCode(0x36f) + "]", "g");
+    // Case- and accent-blind, so "jose" finds "José".
+    function fold(text) {
+      text = (text || "").toLowerCase();
+      return text.normalize ? text.normalize("NFD").replace(ACCENTS, "") : text;
+    }
+    rows.forEach(function (r) {
+      r.dataset.searchNorm = fold(r.dataset.search);
+      var who = r.querySelector(".wsa-who");
+      if (who) who.dataset.plain = who.textContent;
+    });
+
+    // Marks the part of the name the search matched.
+    function highlight(row) {
+      var who = row.querySelector(".wsa-who");
+      if (!who) return;
+      var name = who.dataset.plain;
+      who.textContent = name;
+      if (!query) return;
+      var i = fold(name).indexOf(fold(query));
+      if (i < 0) return;
+      who.textContent = "";
+      who.appendChild(document.createTextNode(name.slice(0, i)));
+      var mark = document.createElement("mark");
+      mark.className = "wsa-hit";
+      mark.textContent = name.slice(i, i + query.length);
+      who.appendChild(mark);
+      who.appendChild(document.createTextNode(name.slice(i + query.length)));
     }
 
     function refresh() {
-      var p = picked(), shownRows = rows.filter(visible);
+      var p = picked();
       rows.forEach(function (r) { r.classList.toggle("picked", box(r).checked); });
-      idsInputs.forEach(function (input) { input.value = p.map(function (r) { return r.dataset.id; }).join(","); });
-      if (scopeHow) scopeHow.textContent = p.length ? "the people ticked in the table" : "the group picked above";
-      if (scopeLabel) scopeLabel.textContent = p.length ? p.length + " ticked" : (activeChip ? activeChip.dataset.label : "") + " (" + shownRows.length + ")";
+      // With a search on and nothing ticked, the server can't know who the
+      // search found -- so send their ids. "0" when it found nobody, so a
+      // send reaches no one rather than falling back to the whole group.
+      var ids = p.length ? p : (query ? matched : []);
+      var idValue = ids.map(function (r) { return r.dataset.id; }).join(",");
+      if (!p.length && query && !matched.length) idValue = "0";
+      idsInputs.forEach(function (input) { input.value = idValue; });
+
+      // Exports follow the same rule: ticks, else the search, else the chip.
+      var exportCount = p.length || matched.length;
+      var exportLabel = p.length ? p.length + " ticked" : groupLabel() + " (" + matched.length + ")";
+      exportLinks.forEach(function (a) {
+        var q = "?format=" + a.dataset.format +
+          "&scope=" + encodeURIComponent(activeChip ? activeChip.dataset.filter : "all") +
+          (idValue ? "&reg_ids=" + encodeURIComponent(idValue) : "") +
+          "&label=" + encodeURIComponent(exportLabel);
+        a.href = a.dataset.base + q;
+        a.classList.toggle("is-empty", !exportCount);
+        a.setAttribute("aria-disabled", exportCount ? "false" : "true");
+        a.title = exportCount
+          ? "Download " + exportCount + (exportCount === 1 ? " person" : " people") + " as " + a.dataset.format.toUpperCase()
+          : "Nobody to export";
+      });
+
+      if (scopeHow) scopeHow.textContent = p.length ? "the people ticked in the table" : (query ? "the people your search found" : "the group picked above");
+      if (scopeLabel) scopeLabel.textContent = p.length ? p.length + " ticked" : groupLabel() + " (" + matched.length + ")";
       if (selBar) selBar.classList.toggle("on", p.length > 0);
       if (selCount) selCount.textContent = p.length;
+      if (selAll) {
+        var unticked = matched.filter(function (r) { return !box(r).checked; }).length;
+        selAll.hidden = !p.length || unticked === 0 || matched.length <= onPage.length;
+        selAll.textContent = "Tick all " + matched.length + " matching";
+      }
       if (pickAll) {
-        var shownPicked = shownRows.filter(function (r) { return box(r).checked; }).length;
-        pickAll.checked = shownRows.length > 0 && shownPicked === shownRows.length;
-        pickAll.indeterminate = shownPicked > 0 && shownPicked < shownRows.length;
+        var pagePicked = onPage.filter(function (r) { return box(r).checked; }).length;
+        pickAll.checked = onPage.length > 0 && pagePicked === onPage.length;
+        pickAll.indeterminate = pagePicked > 0 && pagePicked < onPage.length;
       }
       refreshCompose();
     }
 
-    function applyFilter(chip) {
-      activeChip = chip;
-      var f = chip.dataset.filter;
-      var shown = 0;
-      rows.forEach(function (row) {
-        var ok = matches(row, f);
-        row.style.display = ok ? "" : "none";
-        // A hidden row can't stay ticked -- it would be messaged unseen.
-        if (!ok) box(row).checked = false;
-        if (ok) shown++;
+    function pageButton(label, target, opts) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "wsa-page" + (opts.current ? " current" : "");
+      b.textContent = label;
+      if (opts.aria) b.setAttribute("aria-label", opts.aria);
+      if (opts.current) b.setAttribute("aria-current", "page");
+      b.disabled = !!opts.disabled;
+      b.addEventListener("click", function () {
+        page = target;
+        renderPage();
+        var card = pager.closest(".wsa-card");
+        if (card) card.scrollIntoView({ behavior: "smooth", block: "start" });
       });
-      if (noMatch) noMatch.hidden = shown !== 0 || rows.length === 0;
-      scopeInputs.forEach(function (input) { input.value = f; });
-      if (shownCount) shownCount.textContent = rows.length ? "— showing " + shown + " of " + rows.length : "";
+      return b;
+    }
+
+    function renderPage() {
+      var pages = Math.max(1, Math.ceil(matched.length / PER_PAGE));
+      if (page > pages) page = pages;
+      var from = (page - 1) * PER_PAGE;
+      onPage = matched.slice(from, from + PER_PAGE);
+      rows.forEach(function (r) { r.style.display = "none"; });
+      onPage.forEach(function (r) { r.style.display = ""; highlight(r); });
+
+      if (noMatch) {
+        noMatch.hidden = matched.length !== 0 || rows.length === 0;
+        if (noMatchText) noMatchText.textContent = query
+          ? "Nobody " + (activeChip && activeChip.dataset.filter !== "all" ? "in this group " : "") + "matches “" + query + "”."
+          : "Nobody is in this group.";
+      }
+      if (shownCount) {
+        shownCount.textContent = !rows.length ? "" : matched.length
+          ? "— showing " + (from + 1) + "–" + (from + onPage.length) + " of " + matched.length + (matched.length !== rows.length ? " (" + rows.length + " in total)" : "")
+          : "— 0 of " + rows.length;
+      }
+
+      if (pager) {
+        pager.textContent = "";
+        pager.hidden = pages <= 1;
+        if (pages > 1) {
+          var info = document.createElement("span");
+          info.className = "wsa-pager-info";
+          info.innerHTML = "Page <b>" + page + "</b> of <b>" + pages + "</b> · " + PER_PAGE + " per page";
+          var list = document.createElement("div");
+          list.className = "wsa-pages";
+          list.appendChild(pageButton("‹ Prev", page - 1, { disabled: page === 1, aria: "Previous page" }));
+          // First, last, and two either side of the current page.
+          var last = 0;
+          for (var n = 1; n <= pages; n++) {
+            if (n === 1 || n === pages || Math.abs(n - page) <= 2) {
+              if (last && n - last > 1) {
+                var gap = document.createElement("span");
+                gap.className = "wsa-page-gap";
+                gap.textContent = "…";
+                list.appendChild(gap);
+              }
+              list.appendChild(pageButton(String(n), n, { current: n === page, aria: "Page " + n }));
+              last = n;
+            }
+          }
+          list.appendChild(pageButton("Next ›", page + 1, { disabled: page === pages, aria: "Next page" }));
+          pager.appendChild(info);
+          pager.appendChild(list);
+        }
+      }
       refresh();
+    }
+
+    function applyFilter(chip) {
+      if (chip) activeChip = chip;
+      var f = activeChip ? activeChip.dataset.filter : "all";
+      var q = fold(query);
+      matched = rows.filter(function (row) {
+        var ok = matches(row, f) && (!q || row.dataset.searchNorm.indexOf(q) !== -1);
+        // Someone filtered out can't stay ticked -- they'd be messaged unseen.
+        if (!ok) box(row).checked = false;
+        return ok;
+      });
+      scopeInputs.forEach(function (input) { input.value = f; });
+      page = 1;
+      renderPage();
     }
     function pickChip(chip) {
       chips.forEach(function (c) { c.classList.remove("active"); });
@@ -818,9 +1003,38 @@
     chips.forEach(function (chip) {
       chip.addEventListener("click", function () { pickChip(chip); });
     });
+
+    // Search as you type, after a short pause so a name isn't re-drawn on every key.
+    var searchTimer = null;
+    function runSearch() {
+      query = (searchBox.value || "").trim();
+      if (searchClear) searchClear.hidden = !searchBox.value;
+      applyFilter();
+    }
+    if (searchBox) {
+      searchBox.addEventListener("input", function () {
+        if (searchClear) searchClear.hidden = !searchBox.value;
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(runSearch, 150);
+      });
+      searchBox.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); clearTimeout(searchTimer); runSearch(); }
+        if (e.key === "Escape" && searchBox.value) { e.preventDefault(); searchBox.value = ""; runSearch(); }
+      });
+    }
+    if (searchClear) searchClear.addEventListener("click", function () {
+      searchBox.value = "";
+      runSearch();
+      searchBox.focus();
+    });
+
     rows.forEach(function (r) { box(r).addEventListener("change", refresh); });
     if (pickAll) pickAll.addEventListener("change", function () {
-      rows.filter(visible).forEach(function (r) { box(r).checked = pickAll.checked; });
+      onPage.forEach(function (r) { box(r).checked = pickAll.checked; });
+      refresh();
+    });
+    if (selAll) selAll.addEventListener("click", function () {
+      matched.forEach(function (r) { box(r).checked = true; });
       refresh();
     });
     var selClear = document.getElementById("wsaSelClear");
@@ -865,7 +1079,7 @@
       if (composeTo) {
         if (p.length === 1) composeTo.textContent = p[0].dataset.name;
         else if (p.length) composeTo.textContent = plural(p.length, "ticked person", "ticked people");
-        else composeTo.textContent = (activeChip ? activeChip.dataset.label : "Everyone") + " — " + plural(t.length, "person", "people");
+        else composeTo.textContent = groupLabel() + " — " + plural(t.length, "person", "people");
       }
       if (composeReach) {
         composeReach.textContent = useSms && useSms.checked && smsable < t.length

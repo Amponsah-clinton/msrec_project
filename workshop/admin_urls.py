@@ -10,4 +10,5 @@ urlpatterns = [
     path("contacts/export/", admin_views.contacts_export, name="contacts_export"),
     path("<int:pk>/", admin_views.workshop_manage, name="manage"),
     path("<int:pk>/certificate-preview/", admin_views.cert_preview, name="cert_preview"),
+    path("<int:pk>/registrations/export/", admin_views.registrations_export, name="registrations_export"),
 ]

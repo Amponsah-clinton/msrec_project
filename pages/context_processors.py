@@ -1,3 +1,5 @@
+from django.utils.functional import SimpleLazyObject
+
 from .models import SiteSettings
 
 
@@ -9,7 +11,19 @@ def site_settings(request):
     it down, the same idea as accounts.context_processors.profile_avatar
     just above this in TEMPLATES' context_processors list.
     """
-    return {"site_settings": SiteSettings.get_solo()}
+    return {"site_settings": SiteSettings.get_solo(), "legal_labels": SimpleLazyObject(_legal_labels)}
+
+
+def _legal_labels():
+    """{"terms": "Terms of Service", "privacy": "Privacy Policy"} as edited in
+    Site Settings > Legal Pages -- the footer's Help & Legal column reads
+    its link text from here. Lazy (see above), so pages that never render
+    the footer never query for it."""
+    from .models import LegalPage
+
+    labels = {"terms": "Terms of Service", "privacy": "Privacy Policy"}
+    labels.update({p.slug: p.nav_label for p in LegalPage.objects.only("slug", "nav_label") if p.nav_label})
+    return labels
 
 
 def maintenance(request):

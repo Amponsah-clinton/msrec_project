@@ -1336,10 +1336,17 @@ section,
    size image an admin uploads from the Settings page -- reads at the
    same size in the carousel, regardless of its own dimensions. */
 .clients .swiper-slide img {
-  width: 160px;
-  height: 70px;
+  width: 100%;
+  max-width: 220px;
+  height: 110px;
   object-fit: contain;
   transition: 0.3s;
+}
+@media (max-width: 991.98px) {
+  .clients .swiper-slide img { height: 96px; }
+}
+@media (max-width: 575.98px) {
+  .clients .swiper-slide img { height: 80px; }
 }
 
 .clients .swiper-slide img:hover {

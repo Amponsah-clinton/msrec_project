@@ -1,5 +1,5 @@
 from django.urls import path
-from django.views.generic import TemplateView
+from django.views.generic import RedirectView, TemplateView
 
 from accounts import views as account_views
 
@@ -23,8 +23,12 @@ urlpatterns = [
     path("reviewers/", views.reviewers, name="reviewers"),
     path("verify/", views.verify, name="verify"),
     path("verify/lookup/", views.verify_lookup, name="verify_lookup"),
-    path("terms-of-use/", TemplateView.as_view(template_name="pages/terms_of_use.html"), name="terms"),
-    path("privacy-notice/", TemplateView.as_view(template_name="pages/privacy_notice.html"), name="privacy"),
+    # Both editable from Site Settings > Legal Pages (pages.models.LegalPage).
+    path("terms-of-service/", views.legal_page, {"slug": "terms"}, name="terms"),
+    path("privacy-policy/", views.legal_page, {"slug": "privacy"}, name="privacy"),
+    # The pages' old addresses, kept working for links already shared.
+    path("terms-of-use/", RedirectView.as_view(pattern_name="pages:terms", permanent=True)),
+    path("privacy-notice/", RedirectView.as_view(pattern_name="pages:privacy", permanent=True)),
     path("contact/", views.contact, name="contact"),
     path("apply/", TemplateView.as_view(template_name="pages/apply.html"), name="apply"),
     path("fees/", views.fees_schedule, name="fees"),

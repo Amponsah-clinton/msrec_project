@@ -26,6 +26,7 @@
           <button type="button" class="settings-tab active" data-target="identity" role="tab" aria-selected="true">Site Identity</button>
           <button type="button" class="settings-tab" data-target="payment" role="tab" aria-selected="false">Payment Gateway</button>
           <button type="button" class="settings-tab" data-target="footer" role="tab" aria-selected="false">Footer</button>
+          <button type="button" class="settings-tab" data-target="legal-pages" role="tab" aria-selected="false">Legal Pages</button>
           <button type="button" class="settings-tab" data-target="contact" role="tab" aria-selected="false">Contact Page</button>
           <button type="button" class="settings-tab" data-target="policy-library" role="tab" aria-selected="false">Policy Library</button>
           <button type="button" class="settings-tab" data-target="client-logos" role="tab" aria-selected="false">Client Logos</button>
@@ -230,6 +231,175 @@
                   <button type="submit" class="btn-primary">Save Footer</button>
                 </div>
               </form>
+            </div>
+          </div>
+        </section>
+
+        <!-- Legal pages: Terms of Service + Privacy Policy (pages.models.LegalPage) -->
+        <section class="settings-panel-section" id="legal-pages">
+          <div class="panel settings-panel">
+            <div class="form-section">
+              <h3 class="form-section-title"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg> Legal Pages</h3>
+              <p class="section-note">Every heading and line of the public Terms of Service and Privacy Policy. Both are linked from the footer's column below, from sign-up, and from the dashboard footer.</p>
+
+              <form method="post" class="lp-footer-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="update_legal_footer"><input type="hidden" name="tab" value="legal-pages">
+                <div class="field">
+                  <label for="lpFooterHeading">Footer column heading</label>
+                  <div class="lp-inline">
+                    <input type="text" id="lpFooterHeading" name="footer_legal_heading" value="{{ site.footer_legal_heading }}" maxlength="60" placeholder="Help &amp; Legal">
+                    <button type="submit" class="btn-secondary">Save heading</button>
+                  </div>
+                </div>
+              </form>
+
+              <div class="lp-switch" role="tablist" aria-label="Which page">
+                {% for lp in legal_pages %}<button type="button" class="lp-switch-btn{% if forloop.first %} is-active{% endif %}" data-lp="{{ lp.slug }}" role="tab" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">{{ lp.nav_label }}</button>{% endfor %}
+              </div>
+
+              {% for lp in legal_pages %}
+              <div class="lp-page" data-lp-page="{{ lp.slug }}" {% if not forloop.first %}hidden{% endif %}>
+                <form method="post" class="settings-form lp-form">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="update_legal_page"><input type="hidden" name="tab" value="legal-pages">
+                  <input type="hidden" name="slug" value="{{ lp.slug }}">
+
+                  <div class="lp-card">
+                    <h4 class="lp-card-title">Page header</h4>
+                    <div class="field-grid">
+                      <div class="field">
+                        <label for="lpNav{{ lp.slug }}">Page name <span class="lp-hint">footer link &amp; browser tab</span></label>
+                        <input type="text" id="lpNav{{ lp.slug }}" name="nav_label" value="{{ lp.nav_label }}" maxlength="80" required>
+                      </div>
+                      <div class="field">
+                        <label for="lpEyebrow{{ lp.slug }}">Small label above the headline</label>
+                        <input type="text" id="lpEyebrow{{ lp.slug }}" name="eyebrow" value="{{ lp.eyebrow }}" maxlength="80">
+                      </div>
+                      <div class="field field-wide">
+                        <label for="lpHeadline{{ lp.slug }}">Headline</label>
+                        <input type="text" id="lpHeadline{{ lp.slug }}" name="headline" value="{{ lp.headline }}" maxlength="240" required>
+                      </div>
+                      <div class="field field-wide">
+                        <label for="lpIntro{{ lp.slug }}">Introduction</label>
+                        <textarea id="lpIntro{{ lp.slug }}" name="intro" rows="3">{{ lp.intro }}</textarea>
+                      </div>
+                      <div class="field field-wide">
+                        <label for="lpSide{{ lp.slug }}">Side panel text <span class="lp-hint">beside the headline, above the buttons</span></label>
+                        <textarea id="lpSide{{ lp.slug }}" name="side_note" rows="2">{{ lp.side_note }}</textarea>
+                      </div>
+                      <div class="field">
+                        <label for="lpUpdated{{ lp.slug }}">Last updated</label>
+                        <input type="date" id="lpUpdated{{ lp.slug }}" name="last_updated" value="{{ lp.last_updated|date:'Y-m-d' }}">
+                        <label class="lp-check"><input type="checkbox" name="bump_date"> Set to today when I save</label>
+                      </div>
+                      <div class="field">
+                        <label for="lpVersion{{ lp.slug }}">Version</label>
+                        <input type="text" id="lpVersion{{ lp.slug }}" name="version" value="{{ lp.version }}" maxlength="20" placeholder="e.g. 2.0">
+                      </div>
+                      <div class="field field-wide">
+                        <label for="lpMeta{{ lp.slug }}">Extra detail chip <span class="lp-hint">e.g. "Governed by the laws of Ghana"</span></label>
+                        <input type="text" id="lpMeta{{ lp.slug }}" name="meta_note" value="{{ lp.meta_note }}" maxlength="120">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="lp-card">
+                    <div class="lp-card-head">
+                      <h4 class="lp-card-title">Sections <span class="lp-count" data-lp-count>{{ lp.sections|length }}</span></h4>
+                      <details class="lp-help">
+                        <summary>Formatting guide</summary>
+                        <div class="lp-help-body">
+                          <p>Type plain text. A blank line starts a new paragraph. At the start of a line:</p>
+                          <ul>
+                            <li><code>- </code> a bullet point &nbsp; <code>1. </code> a numbered point</li>
+                            <li><code>### </code> a small sub-heading &nbsp; <code>&gt; </code> a highlighted note</li>
+                            <li><code>| Name | What it does |</code> one table row per line; the first row is the header</li>
+                          </ul>
+                          <p>Anywhere: <code>**bold**</code>, <code>*italic*</code>, <code>[link text](https://…)</code>, <code>[Contact page](page:contact)</code> for a site page (<code>page:privacy</code>, <code>page:fees</code>, <code>page:governance#gov-policies</code>…), <code>[see below](#data-retention)</code> for another section. Email addresses link themselves. <code>{email}</code> becomes the Secretariat email and <code>{site_name}</code> the site name, from these Settings.</p>
+                        </div>
+                      </details>
+                    </div>
+                    <p class="lp-note">Numbers are added automatically, in the order shown. The summary is the short "plain English" line under each heading.</p>
+
+                    <div class="lp-sections" data-lp-sections>
+                      {% for sec in lp.sections %}
+                      <div class="lp-sec" data-lp-sec>
+                        <div class="lp-sec-bar">
+                          <span class="lp-sec-num" data-lp-num>{{ forloop.counter|stringformat:"02d" }}</span>
+                          <span class="lp-sec-title" data-lp-title>{{ sec.heading }}</span>
+                          <span class="lp-sec-tools">
+                            <button type="button" class="lp-tool" data-lp-up title="Move up" aria-label="Move up">&#8593;</button>
+                            <button type="button" class="lp-tool" data-lp-down title="Move down" aria-label="Move down">&#8595;</button>
+                            <button type="button" class="lp-tool" data-lp-toggle title="Show / hide" aria-label="Show or hide this section" aria-expanded="false">&#9662;</button>
+                            <button type="button" class="lp-tool danger" data-lp-remove title="Remove" aria-label="Remove section">&times;</button>
+                          </span>
+                        </div>
+                        <div class="lp-sec-fields" hidden>
+                          <div class="field"><label>Heading</label><input type="text" name="sec_heading" value="{{ sec.heading }}" maxlength="160" data-lp-heading></div>
+                          <div class="field"><label>Summary <span class="lp-hint">optional, one line</span></label><input type="text" name="sec_summary" value="{{ sec.summary }}"></div>
+                          <div class="field"><label>Text</label><textarea name="sec_body" rows="9">{{ sec.body }}</textarea></div>
+                          <div class="field"><label>Note box <span class="lp-hint">optional, shown under the text</span></label><input type="text" name="sec_note" value="{{ sec.note }}"></div>
+                        </div>
+                      </div>
+                      {% endfor %}
+                    </div>
+                    <div class="lp-sec-actions">
+                      <button type="button" class="btn-secondary" data-lp-add>+ Add a section</button>
+                      <button type="button" class="lp-linkbtn" data-lp-expand>Expand all</button>
+                    </div>
+                  </div>
+
+                  <div class="lp-card">
+                    <h4 class="lp-card-title">Closing banner</h4>
+                    <div class="field-grid">
+                      <div class="field field-wide">
+                        <label for="lpCtaH{{ lp.slug }}">Heading</label>
+                        <input type="text" id="lpCtaH{{ lp.slug }}" name="cta_heading" value="{{ lp.cta_heading }}" maxlength="160">
+                      </div>
+                      <div class="field field-wide">
+                        <label for="lpCtaT{{ lp.slug }}">Text</label>
+                        <input type="text" id="lpCtaT{{ lp.slug }}" name="cta_text" value="{{ lp.cta_text }}" maxlength="300">
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="settings-form-actions lp-actions">
+                    <span class="lp-saved">{% if lp.updated_at %}Last saved {{ lp.updated_at|date:"j M Y, H:i" }}{% if lp.updated_by %} by {{ lp.updated_by.get_full_name|default:lp.updated_by.email }}{% endif %}{% endif %}</span>
+                    <a href="{% if lp.slug == 'terms' %}{% url 'pages:terms' %}{% else %}{% url 'pages:privacy' %}{% endif %}" target="_blank" rel="noopener" class="btn-secondary">View page &#8599;</a>
+                    <button type="submit" class="btn-primary">Save {{ lp.nav_label }}</button>
+                  </div>
+                </form>
+
+                <form method="post" class="lp-reset" data-confirm="Replace everything on the {{ lp.nav_label }} with the original wording? Your edits will be lost." data-confirm-variant="danger">
+                  {% csrf_token %}
+                  <input type="hidden" name="action" value="reset_legal_page"><input type="hidden" name="tab" value="legal-pages">
+                  <input type="hidden" name="slug" value="{{ lp.slug }}">
+                  <button type="submit" class="lp-linkbtn danger">Reset {{ lp.nav_label }} to the original wording</button>
+                </form>
+              </div>
+              {% endfor %}
+
+              <template id="lpSectionTemplate">
+                <div class="lp-sec is-new" data-lp-sec>
+                  <div class="lp-sec-bar">
+                    <span class="lp-sec-num" data-lp-num></span>
+                    <span class="lp-sec-title" data-lp-title>New section</span>
+                    <span class="lp-sec-tools">
+                      <button type="button" class="lp-tool" data-lp-up title="Move up" aria-label="Move up">&#8593;</button>
+                      <button type="button" class="lp-tool" data-lp-down title="Move down" aria-label="Move down">&#8595;</button>
+                      <button type="button" class="lp-tool" data-lp-toggle title="Show / hide" aria-label="Show or hide this section" aria-expanded="true">&#9662;</button>
+                      <button type="button" class="lp-tool danger" data-lp-remove title="Remove" aria-label="Remove section">&times;</button>
+                    </span>
+                  </div>
+                  <div class="lp-sec-fields">
+                    <div class="field"><label>Heading</label><input type="text" name="sec_heading" maxlength="160" data-lp-heading></div>
+                    <div class="field"><label>Summary <span class="lp-hint">optional, one line</span></label><input type="text" name="sec_summary"></div>
+                    <div class="field"><label>Text</label><textarea name="sec_body" rows="9"></textarea></div>
+                    <div class="field"><label>Note box <span class="lp-hint">optional, shown under the text</span></label><input type="text" name="sec_note"></div>
+                  </div>
+                </div>
+              </template>
             </div>
           </div>
         </section>
@@ -1196,6 +1366,7 @@
 <script src="{% static 'dashboard/js/signature-pad.js' %}"></script>
 <script src="{% static 'dashboard/js/approval-templates.js' %}"></script>
 <script src="{% static 'dashboard/js/maintenance-settings.js' %}"></script>
+<script src="{% static 'dashboard/js/legal-pages-settings.js' %}"></script>
 <script>
 (function () {
   var tabs = document.querySelectorAll('.settings-tab');
