@@ -36,6 +36,7 @@ from applicant_dashboard.views import (
 )
 from messaging.access import is_staff_side
 from notifications.emails import send_branded_email, send_password_changed_email
+from payments import ledger
 from pages import committee_services
 from pages import documents_storage
 from pages import hero_storage
@@ -1160,42 +1161,50 @@ def finance(request):
     date_to_raw = request.GET.get("date_to", "")
     date_from = payment_services.parse_filter_date(date_from_raw)
     date_to = payment_services.parse_filter_date(date_to_raw)
+    # Two streams, never mixed in one list: ethics application review fees
+    # and workshop certificate fees -- each grouped by review type / by
+    # workshop, and optionally narrowed to one group.
+    source = request.GET.get("source", "applications")
+    if source not in ledger.SOURCES:
+        source = "applications"
+    group = request.GET.get("group", "").strip()
 
-    scoped_qs = payment_services.filter_payments(
-        payment_services.all_payments(), query=query, date_from=date_from, date_to=date_to,
-    )
-    counts = payment_services.status_counts(scoped_qs)
-    total_collected = payment_services.total_collected(scoped_qs)
-
-    filtered_qs = scoped_qs if active_tab == "all" else scoped_qs.filter(status=active_tab)
+    summary = ledger.breakdown(query=query, date_from=date_from, date_to=date_to)
+    book = ledger.Ledger(source=source, group=group, query=query, date_from=date_from, date_to=date_to)
+    counts = book.counts()
+    rows = book.rows(active_tab)
 
     if request.GET.get("export") == "csv":
-        return payment_services.export_payments_csv(filtered_qs)
+        return ledger.export_csv(source, rows)
 
-    # Tabs, search and the date range are all applied server-side, so the
-    # paginator below always pages through exactly the rows they select.
-    paginator = Paginator(filtered_qs, FINANCE_PAGE_SIZE)
+    # Tabs, stream, group, search and the date range are all applied
+    # server-side, so the paginator pages through exactly the rows they select.
+    paginator = Paginator(rows, FINANCE_PAGE_SIZE)
     page = paginator.get_page(request.GET.get("page"))
     page_range = paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1)
-    # Query-string tail (search + dates) that every tab/page link carries
-    # along, so switching tab or page never drops the active filters.
-    filter_qs = urlencode({
-        key: value for key, value in
-        (("q", query), ("date_from", date_from_raw), ("date_to", date_to_raw)) if value
-    })
+    # The search + dates every link carries; the stream and group ride on top.
+    base_params = [("q", query), ("date_from", date_from_raw), ("date_to", date_to_raw)]
+    base_qs = urlencode([(k, v) for k, v in base_params if v])
+    filter_qs = urlencode([(k, v) for k, v in [("source", source), ("group", group)] + base_params if v])
 
+    group_label = dict(book.group_options()).get(group, "")
     return render(request, "dashboards/admin/finance.html", {
         "page": page,
         "page_range": page_range,
         "filter_qs": f"&{filter_qs}" if filter_qs else "",
+        "base_qs": f"&{base_qs}" if base_qs else "",
         "counts": counts,
         "active_tab": active_tab,
-        "total_collected": total_collected,
+        "source": source,
+        "group": group,
+        "group_label": group_label,
+        "group_options": book.group_options(),
+        "summary": summary,
         "fee_schedule": payment_services.fee_schedule_rows(),
         "query": query,
         "date_from": date_from_raw,
         "date_to": date_to_raw,
-        "has_active_filters": bool(query or date_from_raw or date_to_raw),
+        "has_active_filters": bool(query or date_from_raw or date_to_raw or group),
     })
 
 
@@ -1285,7 +1294,10 @@ def reports_analytics(request):
 
     payments_qs = payment_services.all_payments()
     payment_counts = payment_services.status_counts(payments_qs)
-    total_collected = payment_services.total_collected(payments_qs)
+    # Application review fees plus workshop certificate fees (payments.ledger).
+    income = ledger.breakdown()
+    total_collected = dict(income.total.collected).get("GHS", 0)
+    workshop_collected = dict(income.workshops.collected).get("GHS", 0)
 
     role_counts = _role_counts()
     max_role_count = max((c for _, c in role_counts), default=0)
@@ -1300,6 +1312,7 @@ def reports_analytics(request):
         "max_monthly_count": max_monthly_count,
         "payment_counts": payment_counts,
         "total_collected": total_collected,
+        "workshop_collected": workshop_collected,
         "role_counts": role_counts,
         "max_role_count": max_role_count,
         "total_users": User.objects.count(),
@@ -1342,7 +1355,14 @@ def reports_analytics_export(request):
     writer.writerow(["Successful", payment_counts["success"]])
     writer.writerow(["Pending", payment_counts["pending"]])
     writer.writerow(["Failed", payment_counts["failed"]])
-    writer.writerow(["Total Collected (GHS)", payment_services.total_collected(payments_qs)])
+    income = ledger.breakdown()
+    writer.writerow(["Ethics Application Fees Collected (GHS)", dict(income.applications.collected).get("GHS", 0)])
+    for g in income.application_groups:
+        writer.writerow([f"  {g.label} (GHS)", dict(g.collected).get("GHS", 0)])
+    writer.writerow(["Workshop Fees Collected (GHS)", dict(income.workshops.collected).get("GHS", 0)])
+    for g in income.workshop_groups:
+        writer.writerow([f"  {g.label} (GHS)", dict(g.collected).get("GHS", 0)])
+    writer.writerow(["Total Collected (GHS)", dict(income.total.collected).get("GHS", 0)])
 
     return response
 

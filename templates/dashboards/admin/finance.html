@@ -1,10 +1,69 @@
 {% extends "dashboards/base.html" %}
-{% load static %}
+{% load static money_tags %}
 
 {% block title %}Finance | MSREC Admin{% endblock %}
 
 {% block extra_css %}
 <link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+<style>
+  /* Income is grouped, never mixed: ethics application fees by review type,
+     workshop certificate fees by workshop (payments/ledger.py). */
+  .fin-split { display: flex; flex-direction: column; gap: 2px; margin: 6px 0 0; font-size: 12px; color: var(--text-sub); }
+  a.fin-link-card { text-decoration: none; color: inherit; transition: border-color .15s, box-shadow .15s; }
+  a.fin-link-card:hover { border-color: color-mix(in srgb, var(--teal) 45%, var(--border)); box-shadow: var(--shadow); }
+
+  /* ---- Income by source ---- */
+  .fin-breakdown-wrap { overflow-x: auto; }
+  table.fin-breakdown { width: 100%; border-collapse: collapse; font-size: 13.5px; color: var(--text-main); }
+  .fin-breakdown th { text-align: right; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); font-weight: 700; padding: 0 12px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .fin-breakdown th:first-child { text-align: left; padding-left: 0; }
+  .fin-breakdown td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .fin-breakdown td:first-child { text-align: left; padding-left: 0; white-space: normal; }
+  .fin-breakdown .fin-stream td { background: var(--bg); font-weight: 700; border-top: 1px solid var(--border); }
+  .fin-breakdown .fin-stream td:first-child { padding-left: 12px; }
+  .fin-breakdown .fin-sub td:first-child { padding-left: 34px; }
+  .fin-breakdown .fin-sub td { color: var(--text-sub); }
+  .fin-breakdown .fin-sub td.fin-money { color: var(--text-main); }
+  .fin-breakdown tfoot td { border-bottom: 0; border-top: 2px solid var(--text-main); font-weight: 800; padding-top: 12px; }
+  .fin-breakdown tfoot td:first-child { padding-left: 12px; }
+  .fin-name { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .fin-name a.fin-open { color: var(--text-main); text-decoration: none; font-weight: 600; }
+  .fin-name a.fin-open:hover { color: var(--teal); text-decoration: underline; }
+  .fin-name small { font-size: 11.5px; color: var(--text-faint); font-weight: 500; }
+  .fin-stream-tag { display: inline-flex; align-items: center; gap: 7px; }
+  .fin-dot { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+  .fin-dot.apps { background: var(--blue); }
+  .fin-dot.shops { background: var(--purple); }
+  .fin-zero { color: var(--text-faint); }
+  .fin-owed { color: var(--orange); }
+  .fin-empty-row td { color: var(--text-faint); font-style: italic; }
+  .fin-manage { font-size: 11.5px; font-weight: 600; color: var(--teal); text-decoration: none; }
+  .fin-manage:hover { text-decoration: underline; }
+
+  /* ---- the list: one stream at a time ---- */
+  .fin-streams { display: flex; gap: 8px; flex-wrap: wrap; padding: 4px 0 14px; }
+  .fin-stream-btn { display: inline-flex; align-items: center; gap: 9px; padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg);
+    color: var(--text-sub); font-weight: 650; font-size: 13.5px; text-decoration: none; }
+  .fin-stream-btn:hover { color: var(--text-main); border-color: var(--text-faint); }
+  .fin-stream-btn.active { background: var(--white); color: var(--text-main); border-color: var(--teal); box-shadow: inset 0 0 0 1px var(--teal); }
+  .fin-stream-btn .count { font-size: 11.5px; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--gray-light); color: var(--text-sub); }
+  .fin-scope { font-size: 12.5px; color: var(--text-sub); margin: -4px 0 10px; }
+  .fin-scope b { color: var(--text-main); }
+  .fin-scope a { color: var(--teal); text-decoration: none; font-weight: 600; margin-left: 6px; }
+  .finance-filter-field select { border: 1px solid var(--border); border-radius: var(--radius-sm, 8px); background: var(--white); color: var(--text-main); padding: 7px 10px; font: inherit; font-size: 13px; max-width: 320px; }
+
+  tr.fin-group-row td { background: var(--bg); border-top: 1px solid var(--border); padding: 10px 14px !important; }
+  .fin-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 6px 18px; flex-wrap: wrap; }
+  .fin-group-title { font-weight: 700; color: var(--text-main); font-size: 13.5px; }
+  .fin-group-title small { font-weight: 500; color: var(--text-faint); margin-left: 6px; font-size: 12px; }
+  .fin-group-sums { font-size: 12px; color: var(--text-sub); }
+  .fin-group-sums b { color: var(--text-main); }
+  .fin-sub-link { font-size: 11.5px; color: var(--text-faint); }
+  @media (max-width: 760px) {
+    tr.fin-group-row td { display: block; }
+    tr.fin-group-row td::before { display: none !important; }
+  }
+</style>
 {% endblock %}
 
 {% block nav_content %}
@@ -12,43 +71,113 @@
 {% endblock %}
 
 {% block topbar %}
-      {% include "dashboards/admin/_topbar.html" with page_title="Finance" page_subtitle="Every application review-fee payment across the platform, verified server-side with Paystack" search_id="financeSearch" search_placeholder="Search by reference, applicant, ref no..." search_value=query %}
+      {% include "dashboards/admin/_topbar.html" with page_title="Finance" page_subtitle="Ethics application review fees and workshop certificate fees, kept apart and verified server-side with Paystack" search_id="financeSearch" search_placeholder="Search name, email, reference, ref no or workshop..." search_value=query %}
 {% endblock %}
 
 {% block main_content %}
 
-      <!-- SUMMARY STRIP -->
+      <!-- SUMMARY STRIP: every stream, for the search + date range -->
       <section class="stats-grid compact">
-        <div class="stat-card">
-          <div class="stat-icon blue">
-            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
-          </div>
-          <p class="stat-label">Total Payments</p>
-          <p class="stat-value">{{ counts.all }}</p>
-        </div>
-
         <div class="stat-card">
           <div class="stat-icon teal">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1.4 1.3-2.5 3-2.5s3 1 3 2.5-1.3 2-3 2.5-3 1.1-3 2.5 1.3 2.5 3 2.5 3-1.1 3-2.5"/></svg>
           </div>
           <p class="stat-label">Total Collected</p>
-          <p class="stat-value">GHS {{ total_collected|floatformat:"2g" }}</p>
+          <p class="stat-value">{{ summary.total.collected|money }}</p>
+          <p class="fin-split"><span>{{ summary.total.paid }} payment{{ summary.total.paid|pluralize }} received</span></p>
         </div>
+
+        <a class="stat-card fin-link-card" href="?source=applications{{ base_qs }}#ledger">
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+          </div>
+          <p class="stat-label">Ethics Application Fees</p>
+          <p class="stat-value">{{ summary.applications.collected|money }}</p>
+          <p class="fin-split"><span>{{ summary.applications.paid }} paid · {{ summary.applications.pending }} pending · {{ summary.applications.failed }} failed</span></p>
+        </a>
+
+        <a class="stat-card fin-link-card" href="?source=workshops{{ base_qs }}#ledger">
+          <div class="stat-icon purple">
+            <svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c0 1 2 3 6 3s6-2 6-3v-5"/></svg>
+          </div>
+          <p class="stat-label">Workshop Fees</p>
+          <p class="stat-value">{{ summary.workshops.collected|money }}</p>
+          <p class="fin-split"><span>{{ summary.workshops.paid }} paid across {{ summary.workshop_groups|length }} workshop{{ summary.workshop_groups|length|pluralize }}</span></p>
+        </a>
 
         <div class="stat-card">
           <div class="stat-icon orange">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>
           </div>
-          <p class="stat-label">Pending</p>
-          <p class="stat-value">{{ counts.pending }}</p>
+          <p class="stat-label">Outstanding</p>
+          <p class="stat-value">{{ summary.total.outstanding|money }}</p>
+          <p class="fin-split"><span>{{ summary.total.pending|add:summary.total.failed }} unpaid (pending or failed)</span></p>
         </div>
+      </section>
 
-        <div class="stat-card">
-          <div class="stat-icon red">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5 14.5 14.5M14.5 9.5 9.5 14.5"/></svg>
-          </div>
-          <p class="stat-label">Failed</p>
-          <p class="stat-value">{{ counts.failed }}</p>
+      <!-- INCOME BY SOURCE -->
+      <section class="panel acct-panel">
+        <div class="panel-head">
+          <h2>Income by Source</h2>
+          <p class="panel-sub">Ethics application fees by fee category (as in the Fee Schedule), and workshop certificate fees by workshop.{% if has_active_filters %} Reflects the search and dates you've applied.{% endif %} Select a row to see its payments.</p>
+        </div>
+        <div class="fin-breakdown-wrap">
+          <table class="fin-breakdown">
+            <thead>
+              <tr><th>Source</th><th>Paid</th><th>Pending</th><th>Failed</th><th>Collected</th><th>Outstanding</th></tr>
+            </thead>
+
+            <tbody>
+              <tr class="fin-stream">
+                <td><span class="fin-name"><span class="fin-stream-tag"><span class="fin-dot apps"></span><a class="fin-open" href="?source=applications{{ base_qs }}#ledger">Ethics applications</a></span></span></td>
+                <td>{{ summary.applications.paid }}</td><td>{{ summary.applications.pending }}</td><td>{{ summary.applications.failed }}</td>
+                <td class="fin-money">{{ summary.applications.collected|money }}</td>
+                <td class="fin-money {% if summary.applications.outstanding %}fin-owed{% else %}fin-zero{% endif %}">{{ summary.applications.outstanding|money }}</td>
+              </tr>
+              {% for g in summary.application_groups %}
+              <tr class="fin-sub">
+                <td><span class="fin-name"><a class="fin-open" href="?source=applications&amp;group={{ g.fee_key|default:'-' }}{{ base_qs }}#ledger">{{ g.label }}</a></span></td>
+                <td>{{ g.paid }}</td><td>{{ g.pending }}</td><td>{{ g.failed }}</td>
+                <td class="fin-money">{{ g.collected|money }}</td>
+                <td class="fin-money {% if g.outstanding %}fin-owed{% else %}fin-zero{% endif %}">{{ g.outstanding|money }}</td>
+              </tr>
+              {% empty %}
+              <tr class="fin-sub fin-empty-row"><td colspan="6">No ethics application payments{% if has_active_filters %} for these filters{% endif %}.</td></tr>
+              {% endfor %}
+            </tbody>
+
+            <tbody>
+              <tr class="fin-stream">
+                <td><span class="fin-name"><span class="fin-stream-tag"><span class="fin-dot shops"></span><a class="fin-open" href="?source=workshops{{ base_qs }}#ledger">Workshops</a></span></span></td>
+                <td>{{ summary.workshops.paid }}</td><td>{{ summary.workshops.pending }}</td><td>{{ summary.workshops.failed }}</td>
+                <td class="fin-money">{{ summary.workshops.collected|money }}</td>
+                <td class="fin-money {% if summary.workshops.outstanding %}fin-owed{% else %}fin-zero{% endif %}">{{ summary.workshops.outstanding|money }}</td>
+              </tr>
+              {% for g in summary.workshop_groups %}
+              <tr class="fin-sub">
+                <td><span class="fin-name">
+                  <a class="fin-open" href="?source=workshops&amp;group={{ g.workshop_id }}{{ base_qs }}#ledger">{{ g.label }}</a>
+                  {% if g.starts_at %}<small>{{ g.starts_at|date:"j M Y" }}</small>{% endif %}
+                  {% if g.manage_url %}<a class="fin-manage" href="{{ g.manage_url }}" title="Open this workshop">Manage ↗</a>{% endif %}
+                </span></td>
+                <td>{{ g.paid }}</td><td>{{ g.pending }}</td><td>{{ g.failed }}</td>
+                <td class="fin-money">{{ g.collected|money }}</td>
+                <td class="fin-money {% if g.outstanding %}fin-owed{% else %}fin-zero{% endif %}">{{ g.outstanding|money }}</td>
+              </tr>
+              {% empty %}
+              <tr class="fin-sub fin-empty-row"><td colspan="6">No workshop fees{% if has_active_filters %} for these filters{% endif %}.</td></tr>
+              {% endfor %}
+            </tbody>
+
+            <tfoot>
+              <tr>
+                <td>All income</td>
+                <td>{{ summary.total.paid }}</td><td>{{ summary.total.pending }}</td><td>{{ summary.total.failed }}</td>
+                <td>{{ summary.total.collected|money }}</td>
+                <td>{{ summary.total.outstanding|money }}</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
       </section>
 
@@ -56,7 +185,7 @@
       <section class="panel acct-panel fee-schedule-panel">
         <div class="panel-head">
           <h2>Fee Schedule</h2>
-          <p class="panel-sub">Set the review fee for each application type. Changes apply immediately — to new checkouts and to the amount applicants see while filling out the form.</p>
+          <p class="panel-sub">Set the review fee for each application type. Changes apply immediately — to new checkouts and to the amount applicants see while filling out the form. Workshop certificate fees are set on each workshop.</p>
         </div>
         <div class="fee-schedule-grid">
           {% for fee in fee_schedule %}
@@ -86,17 +215,34 @@
         </div>
       </section>
 
-      <!-- TABS + LIST -->
-      <section class="panel acct-panel">
-        <div class="filter-tabs acct-tabs">
-          <a href="?tab=all{{ filter_qs }}" class="filter-tab{% if active_tab == 'all' %} active{% endif %}">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></a>
-          <a href="?tab=success{{ filter_qs }}" class="filter-tab{% if active_tab == 'success' %} active{% endif %}">Successful <span class="count badge rounded-pill text-bg-secondary">{{ counts.success }}</span></a>
-          <a href="?tab=pending{{ filter_qs }}" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}">Pending <span class="count badge rounded-pill text-bg-secondary">{{ counts.pending }}</span></a>
-          <a href="?tab=failed{{ filter_qs }}" class="filter-tab{% if active_tab == 'failed' %} active{% endif %}">Failed <span class="count badge rounded-pill text-bg-secondary">{{ counts.failed }}</span></a>
+      <!-- PAYMENTS: one stream at a time, grouped -->
+      <section class="panel acct-panel" id="ledger">
+        <div class="fin-streams" role="tablist" aria-label="Which payments">
+          <a href="?source=applications{{ base_qs }}#ledger" class="fin-stream-btn{% if source == 'applications' %} active{% endif %}" role="tab" aria-selected="{% if source == 'applications' %}true{% else %}false{% endif %}">
+            <span class="fin-dot apps"></span> Ethics applications <span class="count">{{ summary.applications.count }}</span>
+          </a>
+          <a href="?source=workshops{{ base_qs }}#ledger" class="fin-stream-btn{% if source == 'workshops' %} active{% endif %}" role="tab" aria-selected="{% if source == 'workshops' %}true{% else %}false{% endif %}">
+            <span class="fin-dot shops"></span> Workshops <span class="count">{{ summary.workshops.count }}</span>
+          </a>
         </div>
 
-        <form method="get" class="finance-filter-bar" id="financeFilterForm">
+        <div class="filter-tabs acct-tabs">
+          <a href="?tab=all{{ filter_qs }}#ledger" class="filter-tab{% if active_tab == 'all' %} active{% endif %}">All <span class="count badge rounded-pill text-bg-secondary">{{ counts.all }}</span></a>
+          <a href="?tab=success{{ filter_qs }}#ledger" class="filter-tab{% if active_tab == 'success' %} active{% endif %}">Successful <span class="count badge rounded-pill text-bg-secondary">{{ counts.success }}</span></a>
+          <a href="?tab=pending{{ filter_qs }}#ledger" class="filter-tab{% if active_tab == 'pending' %} active{% endif %}">Pending <span class="count badge rounded-pill text-bg-secondary">{{ counts.pending }}</span></a>
+          <a href="?tab=failed{{ filter_qs }}#ledger" class="filter-tab{% if active_tab == 'failed' %} active{% endif %}">Failed <span class="count badge rounded-pill text-bg-secondary">{{ counts.failed }}</span></a>
+        </div>
+
+        <form method="get" class="finance-filter-bar" id="financeFilterForm" action="#ledger">
           <input type="hidden" name="tab" value="{{ active_tab }}">
+          <input type="hidden" name="source" value="{{ source }}">
+          <label class="finance-filter-field">
+            <span>{% if source == 'workshops' %}Workshop{% else %}Fee category{% endif %}</span>
+            <select name="group" onchange="this.form.requestSubmit ? this.form.requestSubmit() : this.form.submit()">
+              <option value="">{% if source == 'workshops' %}All workshops{% else %}All fee categories{% endif %}</option>
+              {% for value, label in group_options %}<option value="{{ value }}" {% if value == group %}selected{% endif %}>{{ label|truncatechars:70 }}</option>{% endfor %}
+            </select>
+          </label>
           <label class="finance-filter-field">
             <span>From</span>
             <input type="date" name="date_from" value="{{ date_from }}">
@@ -107,44 +253,60 @@
           </label>
           <input type="hidden" name="q" id="financeFilterQ" value="{{ query }}">
           <button type="submit" class="acct-btn acct-btn-cancel">Apply</button>
-          {% if has_active_filters %}<a href="{% url 'admin_dashboard:finance' %}" class="finance-filter-clear">Clear filters</a>{% endif %}
+          {% if has_active_filters %}<a href="{% url 'admin_dashboard:finance' %}?source={{ source }}#ledger" class="finance-filter-clear">Clear filters</a>{% endif %}
           <button type="submit" name="export" value="csv" class="acct-btn acct-btn-approve finance-export-btn">
             <svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
             Export CSV
           </button>
         </form>
 
+        {% if group_label %}
+        <p class="fin-scope">Showing <b>{{ group_label }}</b> only. <a href="?source={{ source }}{{ base_qs }}#ledger">Show all {% if source == 'workshops' %}workshops{% else %}fee categories{% endif %}</a></p>
+        {% endif %}
+
         <div class="table-wrap">
           <table class="reviews-table" id="financeList">
             <thead>
               <tr>
                 <th>Reference</th>
-                <th>Applicant</th>
-                <th>Purpose</th>
+                {% if source == 'workshops' %}<th>Participant</th><th>Institution</th>{% else %}<th>Applicant</th><th>Purpose</th>{% endif %}
                 <th>Amount</th>
                 <th>Status</th>
-                <th>Date</th>
+                <th>{% if source == 'workshops' %}Registered{% else %}Date{% endif %}</th>
               </tr>
             </thead>
             <tbody>
               {% for payment in page %}
-              <tr>
-                <td data-label="Reference" class="ref-cell">{{ payment.reference }}</td>
-                <td data-label="Applicant">
-                  {{ payment.applicant.full_name }}
-                  {% if payment.application %}<br><a href="{% url 'admin_dashboard:application_detail' payment.application.pk %}" style="font-size:11.5px;color:var(--text-faint);">{{ payment.application.reference_no }}</a>{% endif %}
+              {% ifchanged payment.group.key %}
+              {% if payment.group %}
+              <tr class="fin-group-row">
+                <td colspan="6">
+                  <div class="fin-group-head">
+                    <span class="fin-group-title">{{ payment.group.label }}{% if payment.group.starts_at %}<small>{{ payment.group.starts_at|date:"j M Y" }}</small>{% endif %}</span>
+                    <span class="fin-group-sums">{{ payment.group.count }} payment{{ payment.group.count|pluralize }} · collected <b>{{ payment.group.collected|money }}</b>{% if payment.group.outstanding %} · outstanding <b>{{ payment.group.outstanding|money }}</b>{% endif %}</span>
+                  </div>
                 </td>
-                <td data-label="Purpose">{{ payment.purpose }}</td>
+              </tr>
+              {% endif %}
+              {% endifchanged %}
+              <tr>
+                <td data-label="Reference" class="ref-cell">{{ payment.reference|default:"—" }}</td>
+                <td data-label="{% if source == 'workshops' %}Participant{% else %}Applicant{% endif %}">
+                  {{ payment.payer }}
+                  {% if source == 'workshops' %}<br><span class="fin-sub-link">{{ payment.email }}</span>
+                  {% elif payment.link_url %}<br><a href="{{ payment.link_url }}" class="fin-sub-link">{{ payment.link_label }}</a>{% endif %}
+                </td>
+                <td data-label="{% if source == 'workshops' %}Institution{% else %}Purpose{% endif %}">{% if source == 'workshops' %}{{ payment.link_label|default:"—" }}{% else %}{{ payment.detail }}{% endif %}</td>
                 <td data-label="Amount" class="ref-cell">{{ payment.currency }} {{ payment.amount|floatformat:"2g" }}</td>
                 <td data-label="Status">
                   {% if payment.status == 'success' %}<span class="badge text-bg-success">Successful</span>
                   {% elif payment.status == 'pending' %}<span class="badge text-bg-warning">Pending</span>
                   {% else %}<span class="badge text-bg-danger">Failed</span>{% endif %}
                 </td>
-                <td data-label="Date"><span class="due-main">{{ payment.created_at|date:"d M Y, g:i A" }}</span></td>
+                <td data-label="{% if source == 'workshops' %}Registered{% else %}Date{% endif %}"><span class="due-main">{{ payment.created_at|date:"d M Y, g:i A" }}</span></td>
               </tr>
               {% empty %}
-              <tr><td colspan="6" style="text-align:center; color:var(--text-faint); padding:32px 0;">{% if has_active_filters or active_tab != 'all' %}No payments match the current filters.{% else %}No payments recorded yet. They'll appear here the moment an applicant pays a review fee.{% endif %}</td></tr>
+              <tr><td colspan="6" style="text-align:center; color:var(--text-faint); padding:32px 0;">{% if has_active_filters or active_tab != 'all' %}No payments match the current filters.{% elif source == 'workshops' %}No workshop certificate fees yet. They'll appear here as participants pay.{% else %}No ethics application payments yet. They'll appear here the moment an applicant pays a review fee.{% endif %}</td></tr>
               {% endfor %}
             </tbody>
           </table>
@@ -153,7 +315,7 @@
         <div class="acct-pagination">
           <div class="acct-page-bar">
             {% if page.has_previous %}
-            <a href="?tab={{ active_tab }}{{ filter_qs }}&amp;page={{ page.previous_page_number }}" class="acct-page-nav" aria-label="Previous page">
+            <a href="?tab={{ active_tab }}{{ filter_qs }}&amp;page={{ page.previous_page_number }}#ledger" class="acct-page-nav" aria-label="Previous page">
               <svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg>
             </a>
             {% else %}
@@ -166,12 +328,12 @@
               {% elif num == page.number %}
               <span class="acct-page-num active">{{ num }}</span>
               {% else %}
-              <a href="?tab={{ active_tab }}{{ filter_qs }}&amp;page={{ num }}" class="acct-page-num">{{ num }}</a>
+              <a href="?tab={{ active_tab }}{{ filter_qs }}&amp;page={{ num }}#ledger" class="acct-page-num">{{ num }}</a>
               {% endif %}
             {% endfor %}
 
             {% if page.has_next %}
-            <a href="?tab={{ active_tab }}{{ filter_qs }}&amp;page={{ page.next_page_number }}" class="acct-page-nav" aria-label="Next page">
+            <a href="?tab={{ active_tab }}{{ filter_qs }}&amp;page={{ page.next_page_number }}#ledger" class="acct-page-nav" aria-label="Next page">
               <svg viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
             </a>
             {% else %}
