@@ -7,6 +7,7 @@
 
 {% block extra_css %}
 <link href="{% static 'assets/css/searchable-select.css' %}" rel="stylesheet">
+<link href="{% static 'assets/css/workshop-countdown.css' %}" rel="stylesheet">
 <style>
   /* ------------------------------------------------------------------
      Workshop registration page.
@@ -29,34 +30,95 @@
   .ws-wrap { max-width: 920px; margin: 0 auto; padding: 130px 20px 72px; }
   .ws-wrap *, .ws-wrap *::before, .ws-wrap *::after { box-sizing: border-box; }
 
-  /* ---- Hero -------------------------------------------------------- */
-  .ws-hero {
-    position: relative; border-radius: 18px; overflow: hidden; min-height: 240px;
-    display: flex; align-items: flex-end; margin-bottom: 26px;
-    background: linear-gradient(135deg, #0f8a86 0%, #14233f 85%);
-    box-shadow: 0 18px 40px -22px rgba(20,35,63,.55);
+  /* ---- Flyer ------------------------------------------------------
+     The uploaded banner is usually a designed flyer with its own text, so
+     it's shown whole -- never cropped, never covered -- on a quiet frame,
+     and everything we write about the workshop sits underneath it. */
+  .ws-flyer {
+    margin: 0 0 18px; padding: 12px; border-radius: 20px;
+    background: #f1f5f4; border: 1px solid #e2e9e7;
   }
-  .ws-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-  .ws-hero::after {
-    content: ""; position: absolute; inset: 0;
-    background: linear-gradient(180deg, rgba(10,20,35,.05) 0%, rgba(10,20,35,.78) 100%);
+  .ws-flyer-btn {
+    display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in;
+    border-radius: 12px; overflow: hidden; position: relative;
   }
-  .ws-hero-pattern { position: absolute; inset: 0; opacity: .14; }
-  .ws-hero-inner { position: relative; z-index: 2; padding: 30px 30px 26px; color: #fff; }
-  .ws-hero-badge {
+  .ws-flyer img {
+    display: block; width: 100%; height: auto; max-height: 640px; object-fit: contain;
+    margin: 0 auto; border-radius: 12px; background: #fff;
+  }
+  .ws-flyer-zoom {
+    position: absolute; right: 12px; bottom: 12px; display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 12px; border-radius: 999px; background: #ffffff; color: #17233f;
+    font-size: 12.5px; font-weight: 700; box-shadow: 0 6px 18px -6px rgba(20,35,63,.45);
+    opacity: 0; transform: translateY(4px); transition: opacity .2s, transform .2s;
+  }
+  .ws-flyer-btn:hover .ws-flyer-zoom, .ws-flyer-btn:focus-visible .ws-flyer-zoom { opacity: 1; transform: none; }
+  .ws-flyer-btn:focus-visible { outline: 3px solid #0f8a86; outline-offset: 3px; }
+
+  /* ---- Workshop details, under the flyer ---------------------------- */
+  .ws-info {
+    background: var(--card-bg, #fff); border: 1px solid var(--border, #e5e9f0); border-radius: 20px;
+    padding: 28px 30px 26px; margin-bottom: 26px; box-shadow: 0 14px 34px -26px rgba(20,35,63,.45);
+    position: relative; overflow: hidden;
+  }
+  .ws-info::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 5px; background: #0f8a86; }
+  .ws-info-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; margin-bottom: 14px; }
+  .ws-eyebrow {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 800;
+    letter-spacing: .14em; text-transform: uppercase; color: #0f8a86;
+  }
+  .ws-status {
     display: inline-flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 700;
-    letter-spacing: .14em; text-transform: uppercase; background: rgba(255,255,255,.16);
-    padding: 6px 12px; border-radius: 999px; backdrop-filter: blur(4px); margin-bottom: 12px;
+    padding: 5px 11px; border-radius: 999px;
   }
-  .ws-hero-inner h1 { line-height: 1.22; margin: 0 0 8px; color: #fff; }
-  .ws-hero-inner p { margin: 0; font-size: 16px; max-width: 640px; color: rgba(255,255,255,.92); }
-  /* Facts strip under the title: date, venue, certificate. */
-  .ws-hero-facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-  .ws-hero-fact {
-    display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600;
-    color: #fff; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.2);
-    padding: 6px 12px; border-radius: 9px; backdrop-filter: blur(4px);
+  .ws-status .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .ws-status.open { background: #e6f5ee; color: #13795b; }
+  .ws-status.open .dot { animation: ws-pulse 1.8s ease-out infinite; }
+  .ws-status.closed { background: #f1f2f4; color: #5f6773; }
+  @keyframes ws-pulse { 0% { box-shadow: 0 0 0 0 rgba(19,121,91,.5); } 100% { box-shadow: 0 0 0 7px rgba(19,121,91,0); } }
+
+  .ws-info h1 { margin: 0 0 10px; line-height: 1.22; color: var(--heading-color, #172a28); letter-spacing: -.005em; }
+  .ws-tagline { margin: 0 0 22px; font-size: 16px; line-height: 1.6; color: var(--muted, #56607a); max-width: 70ch; }
+
+  .ws-facts {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 0;
+    border: 1px solid #e6ecea; border-radius: 14px; overflow: hidden; margin: 0 0 20px;
   }
+  .ws-fact { display: flex; gap: 12px; align-items: flex-start; padding: 15px 16px; background: #fbfcfc; box-shadow: 1px 1px 0 #e6ecea; }
+  .ws-fact-ico {
+    flex: none; width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center;
+    background: #e6f4f3; color: #0f8a86; font-size: 16px;
+  }
+  .ws-fact-body { min-width: 0; }
+  .ws-fact-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: #8a93a6; margin-bottom: 3px; }
+  .ws-fact-value { display: block; font-size: 14.5px; font-weight: 650; color: var(--heading-color, #172a28); line-height: 1.4; overflow-wrap: anywhere; }
+  .ws-fact-value small { display: block; font-weight: 500; font-size: 12.8px; color: var(--muted, #6b7488); margin-top: 1px; }
+
+  .ws-info-foot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px 20px; }
+  .ws-info-foot .wcd { margin: 0; --wcd-accent: #0f8a86; }
+  .ws-info-foot .wcd--sm { flex: 1 1 280px; max-width: 380px; }
+  .ws-jump {
+    display: inline-flex; align-items: center; gap: 9px; padding: 13px 22px; border-radius: 12px;
+    background: #0f8a86; color: #fff; font-weight: 700; font-size: 15px; text-decoration: none;
+    transition: background .15s, transform .15s;
+  }
+  .ws-jump:hover { background: #0c726e; color: #fff; transform: translateY(-1px); }
+  .ws-jump i { transition: transform .15s; }
+  .ws-jump:hover i { transform: translateY(2px); }
+  .ws-closed-note { font-size: 14px; font-weight: 600; color: #5f6773; }
+
+  /* Full-screen flyer viewer */
+  .ws-viewer { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .ws-viewer[hidden] { display: none; }
+  .ws-viewer-bd { position: absolute; inset: 0; background: rgba(10,18,30,.86); }
+  .ws-viewer img { position: relative; max-width: min(1100px, 100%); max-height: calc(100vh - 48px); border-radius: 12px; box-shadow: 0 30px 70px rgba(0,0,0,.45); background: #fff; }
+  .ws-viewer-x {
+    position: absolute; top: 18px; right: 18px; z-index: 1; width: 44px; height: 44px; border-radius: 50%; border: 0;
+    background: #fff; color: #17233f; font-size: 18px; display: grid; place-items: center; cursor: pointer;
+    box-shadow: 0 8px 22px rgba(0,0,0,.3);
+  }
+  .ws-viewer-x:hover { background: #0f8a86; color: #fff; }
+  body.ws-viewer-open { overflow: hidden; }
 
   .ws-intro { color: var(--muted, #56607a); font-size: 15.5px; line-height: 1.65; margin: 0 0 24px; }
 
@@ -134,7 +196,7 @@
   /* ---- Certificate: compulsory ------------------------------------- */
   .ws-cert-included {
     grid-column: 1 / -1; min-width: 0; border: 1px solid #bfe3e1; border-radius: 14px;
-    padding: 20px; background: linear-gradient(180deg, rgba(15,138,134,.07), rgba(15,138,134,.03));
+    padding: 20px; background: rgba(15,138,134,.05);
     display: flex; gap: 16px; align-items: flex-start;
   }
   .ws-cert-included .ico {
@@ -230,8 +292,7 @@
 
   /* ---- Responsive -------------------------------------------------- */
   @media (max-width: 860px) {
-    .ws-hero { min-height: 210px; }
-    .ws-hero-inner { padding: 24px 22px 22px; }
+    .ws-info { padding: 24px 22px 22px; }
     .ws-card { padding: 24px; }
   }
   @media (max-width: 720px) {
@@ -240,10 +301,17 @@
   }
   @media (max-width: 640px) {
     .ws-wrap { padding: 104px 16px 56px; }
-    .ws-hero { min-height: 180px; border-radius: 14px; margin-bottom: 20px; }
-    .ws-hero-inner { padding: 20px 18px 18px; }
-    .ws-hero-inner p { font-size: 14.5px; }
-    .ws-hero-fact { font-size: 12px; padding: 5px 10px; }
+    .ws-flyer { padding: 8px; border-radius: 16px; margin-bottom: 14px; }
+    .ws-flyer img { max-height: none; border-radius: 10px; }
+    .ws-flyer-zoom { opacity: 1; transform: none; right: 8px; bottom: 8px; padding: 6px 10px; font-size: 12px; }
+    .ws-info { padding: 20px 18px 20px 22px; border-radius: 16px; margin-bottom: 20px; }
+    .ws-tagline { font-size: 15px; margin-bottom: 18px; }
+    .ws-facts { grid-template-columns: 1fr; }
+    .ws-fact { padding: 13px 14px; }
+    .ws-info-foot { flex-direction: column; align-items: stretch; }
+    .ws-info-foot .wcd--sm { max-width: none; }
+    .ws-jump { justify-content: center; }
+    .ws-viewer { padding: 12px; }
     .ws-card { padding: 20px 17px; border-radius: 14px; }
     .ws-card h2 { font-size: 19px; }
     .ws-cert-included { padding: 17px; gap: 13px; }
@@ -263,6 +331,7 @@
     .ws-price .amt { font-size: 21px; }
   }
   @media (prefers-reduced-motion: reduce) {
+    .ws-status.open .dot { animation: none; }
     .ws-btn, .ws-btn-outline, .ws-radio, .ws-field input, .ws-field select, .ws-field textarea { transition: none; }
     .ws-btn:active { transform: none; }
   }
@@ -273,27 +342,63 @@
 <main class="main">
   <div class="ws-wrap">
 
-    <div class="ws-hero">
-      <img src="{% if ws.banner_url %}{{ ws.banner_url }}{% else %}{% static 'assets/img/about.jpg' %}{% endif %}" alt="{{ ws.title }}">
+    {% if ws.banner_url %}
+    <figure class="ws-flyer">
+      <button type="button" class="ws-flyer-btn" id="wsFlyerOpen" aria-label="View the workshop flyer full size">
+        <img src="{{ ws.banner_url }}" alt="{{ ws.title }} flyer">
+        <span class="ws-flyer-zoom" aria-hidden="true"><i class="bi bi-arrows-angle-expand"></i> View full size</span>
+      </button>
+    </figure>
+    {% endif %}
 
-      <svg class="ws-hero-pattern" width="100%" height="100%" aria-hidden="true">
-        <defs><pattern id="wsdots" width="26" height="26" patternUnits="userSpaceOnUse">
-          <circle cx="2" cy="2" r="2" fill="#ffffff"/></pattern></defs>
-        <rect width="100%" height="100%" fill="url(#wsdots)"/>
-      </svg>
-      <div class="ws-hero-inner">
-        <span class="ws-hero-badge"><i class="bi bi-mortarboard-fill"></i> MSREC Workshop</span>
-        <h1 style="font-size: clamp(18px, 2.6vw, {{ ws.title_font_size|default:30 }}px);">{{ ws.title }}</h1>
-        {% if ws.tagline %}<p>{{ ws.tagline }}</p>{% endif %}
-        {% if ws.starts_at or ws.location or ws.certificate_required %}
-        <div class="ws-hero-facts">
-          {% if ws.starts_at %}<span class="ws-hero-fact"><i class="bi bi-calendar-event"></i> {{ ws.starts_at|date:"D, j M Y · g:i A" }}</span>{% endif %}
-          {% if ws.location %}<span class="ws-hero-fact"><i class="bi bi-geo-alt"></i> {{ ws.location }}</span>{% endif %}
-          {% if ws.certificate_required %}<span class="ws-hero-fact"><i class="bi bi-award"></i> Certificate included</span>{% endif %}
+    <section class="ws-info" aria-labelledby="wsTitle">
+      <div class="ws-info-top">
+        <span class="ws-eyebrow"><i class="bi bi-mortarboard-fill" aria-hidden="true"></i> MSREC Workshop</span>
+        {% if ws.registration_open %}<span class="ws-status open"><span class="dot" aria-hidden="true"></span> Registration open</span>
+        {% else %}<span class="ws-status closed"><span class="dot" aria-hidden="true"></span> Registration closed</span>{% endif %}
+      </div>
+      <h1 id="wsTitle" style="font-size: clamp(22px, 3vw, {{ ws.title_font_size|default:30 }}px);">{{ ws.title }}</h1>
+      {% if ws.tagline %}<p class="ws-tagline">{{ ws.tagline }}</p>{% endif %}
+
+      <div class="ws-facts">
+        {% if ws.starts_at %}
+        <div class="ws-fact">
+          <span class="ws-fact-ico"><i class="bi bi-calendar-event" aria-hidden="true"></i></span>
+          <span class="ws-fact-body"><span class="ws-fact-label">Date</span>
+            <span class="ws-fact-value">{{ ws.starts_at|date:"l, j F Y" }}
+              <small>{{ ws.starts_at|date:"g:i A" }}{% if ws.ends_at %} – {% if ws.ends_at|date:"Ymd" == ws.starts_at|date:"Ymd" %}{{ ws.ends_at|date:"g:i A" }}{% else %}{{ ws.ends_at|date:"j M, g:i A" }}{% endif %}{% endif %} (GMT)</small></span></span>
+        </div>
+        {% endif %}
+        {% if ws.location %}
+        <div class="ws-fact">
+          <span class="ws-fact-ico"><i class="bi bi-geo-alt" aria-hidden="true"></i></span>
+          <span class="ws-fact-body"><span class="ws-fact-label">Venue</span><span class="ws-fact-value">{{ ws.location }}</span></span>
+        </div>
+        {% endif %}
+        <div class="ws-fact">
+          <span class="ws-fact-ico"><i class="bi bi-award" aria-hidden="true"></i></span>
+          <span class="ws-fact-body"><span class="ws-fact-label">Certificate</span>
+            <span class="ws-fact-value">{% if ws.certificate_fee_payable %}{{ ws.fee_currency }} {{ ws.certificate_fee }}{% with usd=ws.certificate_fee|usd %}{% if usd %}<small>≈ {{ usd }} outside Ghana</small>{% endif %}{% endwith %}{% else %}Free{% endif %}
+              <small>{% if ws.certificate_required %}Included for every participant{% else %}Optional — you choose below{% endif %}</small></span></span>
+        </div>
+        {% if ws.registration_open and ws.registration_deadline %}
+        <div class="ws-fact">
+          <span class="ws-fact-ico"><i class="bi bi-hourglass-split" aria-hidden="true"></i></span>
+          <span class="ws-fact-body"><span class="ws-fact-label">Register by</span>
+            <span class="ws-fact-value">{{ ws.registration_deadline|date:"j F Y" }}<small>{{ ws.registration_deadline|date:"g:i A" }}</small></span></span>
         </div>
         {% endif %}
       </div>
-    </div>
+
+      <div class="ws-info-foot">
+        {% include "workshop/_countdown.html" with ws=ws size="sm" %}
+        {% if ws.registration_open %}
+        <a href="#wsRegister" class="ws-jump">Register now <i class="bi bi-arrow-down" aria-hidden="true"></i></a>
+        {% else %}
+        <span class="ws-closed-note"><i class="bi bi-lock" aria-hidden="true"></i> Registration for this workshop has closed.</span>
+        {% endif %}
+      </div>
+    </section>
 
     {% if messages %}
       <div class="ws-msgs">
@@ -305,7 +410,7 @@
 
     {% if ws.description %}<p class="ws-intro">{{ ws.description|linebreaksbr }}</p>{% endif %}
 
-    <div class="ws-card">
+    <div class="ws-card" id="wsRegister" style="scroll-margin-top: 110px;">
       <div class="ws-card-head">
         <h2>Register for this workshop</h2>
         <p class="ws-sub">
@@ -453,6 +558,26 @@
 {% endblock %}
 
 {% block extra_js %}
+{% if ws.banner_url %}
+<div class="ws-viewer" id="wsViewer" role="dialog" aria-modal="true" aria-label="Workshop flyer" hidden>
+  <div class="ws-viewer-bd" data-close></div>
+  <button type="button" class="ws-viewer-x" data-close aria-label="Close"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+  <img src="{{ ws.banner_url }}" alt="{{ ws.title }} flyer">
+</div>
+<script>
+  (function () {
+    var open = document.getElementById("wsFlyerOpen");
+    var viewer = document.getElementById("wsViewer");
+    if (!open || !viewer) return;
+    function show() { viewer.hidden = false; document.body.classList.add("ws-viewer-open"); viewer.querySelector(".ws-viewer-x").focus(); }
+    function hide() { viewer.hidden = true; document.body.classList.remove("ws-viewer-open"); open.focus(); }
+    open.addEventListener("click", show);
+    viewer.querySelectorAll("[data-close]").forEach(function (el) { el.addEventListener("click", hide); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !viewer.hidden) hide(); });
+  })();
+</script>
+{% endif %}
+<script src="{% static 'assets/js/workshop-countdown.js' %}" defer></script>
 <script src="{% static 'assets/js/institutions.js' %}"></script>
 <script src="{% static 'assets/js/searchable-select.js' %}"></script>
 <script>
