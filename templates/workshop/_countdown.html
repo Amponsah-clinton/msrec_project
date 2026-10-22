@@ -14,7 +14,13 @@ the start and hides itself once the workshop is over.
      data-deadline="{% if cd.deadline_soon %}{{ ws.registration_deadline|date:'U' }}{% endif %}" data-now="{% now 'U' %}"
      data-state="{{ cd.state }}">
 
-  {% if size == "sm" %}
+  {% if size == "line" %}
+  <p class="wcd-text" data-wcd-counting {% if cd.state != "upcoming" %}hidden{% endif %}>
+    Starts in <b data-u="days">{{ cd.days }}</b> <span data-c="days">{{ cd.days|pluralize:"day,days" }}</span>,
+    <b data-u="hours">{{ cd.hours }}</b> <span data-c="hours">{{ cd.hours|pluralize:"hour,hours" }}</span>
+    and <b data-u="minutes">{{ cd.minutes }}</b> <span data-c="minutes">{{ cd.minutes|pluralize:"minute,minutes" }}</span>
+  </p>
+  {% elif size == "sm" %}
   <div class="wcd-mini" data-wcd-counting {% if cd.state != "upcoming" %}hidden{% endif %}>
     <span class="wcd-mini-label"><i class="bi bi-hourglass-split" aria-hidden="true"></i> Starts in</span>
     <div class="wcd-mini-units" aria-hidden="true">

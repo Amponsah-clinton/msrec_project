@@ -71,6 +71,12 @@
 .wcd-dot { width: 9px; height: 9px; border-radius: 50%; background: currentColor; animation: wcd-pulse 1.8s ease-out infinite; }
 @keyframes wcd-pulse { 0% { box-shadow: 0 0 0 0 rgba(19, 121, 91, .5); } 100% { box-shadow: 0 0 0 9px rgba(19, 121, 91, 0); } }
 
+/* ---- line: one sentence of plain text, no tiles ---- */
+.wcd--line { margin: 0; }
+.wcd-text { margin: 0; font-size: 14px; line-height: 1.5; color: var(--wcd-muted); }
+.wcd-text b { color: var(--wcd-ink); font-weight: 700; }
+.wcd--line .wcd-live { padding: 5px 12px; font-size: 13px; }
+
 /* ---- small: four mini tiles for a card ---- */
 .wcd--sm { margin: 2px 0 16px; }
 .wcd-mini { display: flex; flex-direction: column; gap: 8px; }

@@ -40,6 +40,7 @@
       deadline: el.dataset.deadline ? +el.dataset.deadline * 1000 : 0,
       skew: el.dataset.now ? +el.dataset.now * 1000 - Date.now() : 0,
       small: el.classList.contains("wcd--sm"),
+      line: el.classList.contains("wcd--line"),
       nums: {}, caps: {}, last: {},
       counting: el.querySelectorAll("[data-wcd-counting]"),
       live: el.querySelector("[data-wcd-live]"),
@@ -74,14 +75,18 @@
       Object.keys(parts).forEach(function (u) {
         var node = t.nums[u];
         if (!node || t.last[u] === parts[u]) return;
-        node.textContent = pad(parts[u]);
+        // The plain-text line reads "5 days", not "05 days".
+        node.textContent = t.line ? String(parts[u]) : pad(parts[u]);
         if (t.last[u] !== undefined) {
           node.classList.remove("tick");
           void node.offsetWidth; // restart the animation
           node.classList.add("tick");
         }
         t.last[u] = parts[u];
-        if (t.caps[u]) t.caps[u].textContent = (t.small ? SHORT_CAPS : CAPS)[u][parts[u] === 1 ? 0 : 1];
+        if (t.caps[u]) {
+          var word = (t.small ? SHORT_CAPS : CAPS)[u][parts[u] === 1 ? 0 : 1];
+          t.caps[u].textContent = t.line ? word.toLowerCase() : word;
+        }
       });
 
       if (t.note) {
