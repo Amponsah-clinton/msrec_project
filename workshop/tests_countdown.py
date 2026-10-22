@@ -43,7 +43,7 @@ class CountdownPageTests(PinnedRateMixin, TestCase):
         resp = self.client.get(reverse("workshop:list"))
         self.assertNotContains(resp, "Next up")
         self.assertNotContains(resp, "wcd wcd--lg")
-        self.assertContains(resp, "wcd wcd--sm", count=2)
+        self.assertContains(resp, "wcd wcd--line", count=2)
         self.assertContains(resp, "workshop-countdown.js")
 
     def test_no_countdown_without_a_date(self):
