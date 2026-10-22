@@ -34,12 +34,22 @@
      Editorial, not decorative: the flyer as it was designed, then the
      facts set like a printed programme -- ink, greys and hairline rules.
      No colour blocks, stripes, tiles or gradients. */
-  .ws-flyer { margin: 0 0 28px; }
+  /* Any shape of image: the frame wraps the picture at its own proportions
+     (never stretched, never cropped, never enlarged past its real size) and
+     its height is capped to the screen, so a wide banner, a tall poster, a
+     square and a small logo all sit naturally. Centred on wide screens. */
+  .ws-flyer { margin: 0 0 28px; text-align: center; }
+  .ws-flyer[hidden] { display: none; }
   .ws-flyer-btn {
-    display: block; width: 100%; padding: 0; border: 0; background: #f3f4f6; cursor: zoom-in;
-    border-radius: 14px; overflow: hidden; position: relative; box-shadow: 0 0 0 1px #e4e7eb;
+    display: inline-block; max-width: 100%; padding: 0; border: 0; background: #ffffff; cursor: zoom-in;
+    border-radius: 14px; overflow: hidden; position: relative; vertical-align: top;
+    box-shadow: 0 0 0 1px #e4e7eb, 0 10px 30px -18px rgba(17,24,39,.35);
   }
-  .ws-flyer img { display: block; width: 100%; height: auto; max-height: 680px; object-fit: contain; margin: 0 auto; }
+  .ws-flyer img {
+    display: block; width: auto; height: auto; max-width: 100%;
+    max-height: 680px; max-height: min(680px, 78vh); max-height: min(680px, 78svh);
+    margin: 0 auto;
+  }
   .ws-flyer-zoom {
     position: absolute; right: 14px; bottom: 14px; display: inline-flex; align-items: center; gap: 7px;
     padding: 8px 13px; border-radius: 8px; background: #ffffff; color: #1f2733;
@@ -89,12 +99,26 @@
   .ws-closed-note { font-size: 14px; font-weight: 600; color: #4b5563; }
 
   /* Full-screen flyer viewer */
-  .ws-viewer { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .ws-viewer { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 24px; overflow: auto; overscroll-behavior: contain; }
   .ws-viewer[hidden] { display: none; }
-  .ws-viewer-bd { position: absolute; inset: 0; background: rgba(10,14,22,.88); }
-  .ws-viewer img { position: relative; max-width: min(1100px, 100%); max-height: calc(100vh - 48px); border-radius: 10px; background: #fff; }
+  .ws-viewer-bd { position: fixed; inset: 0; background: rgba(10,14,22,.9); }
+  .ws-viewer img {
+    position: relative; display: block; width: auto; height: auto;
+    max-width: 100%; max-height: calc(100vh - 48px); max-height: calc(100svh - 48px);
+    border-radius: 10px; background: #fff;
+  }
+  /* Bigger than the screen? Tap the picture to see it at its real size and scroll around it. */
+  .ws-viewer.can-zoom img { cursor: zoom-in; }
+  .ws-viewer.is-actual { align-items: flex-start; justify-content: flex-start; }
+  .ws-viewer.is-actual img { max-width: none; max-height: none; margin: auto; cursor: zoom-out; }
+  .ws-viewer-hint {
+    position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 1;
+    padding: 7px 14px; border-radius: 999px; background: rgba(255,255,255,.95); color: #111827;
+    font-size: 12.5px; font-weight: 600; white-space: nowrap; pointer-events: none;
+  }
+  .ws-viewer-hint[hidden] { display: none; }
   .ws-viewer-x {
-    position: absolute; top: 18px; right: 18px; z-index: 1; width: 44px; height: 44px; border-radius: 50%; border: 0;
+    position: fixed; top: 18px; right: 18px; z-index: 1; width: 44px; height: 44px; border-radius: 50%; border: 0;
     background: #fff; color: #111827; font-size: 18px; display: grid; place-items: center; cursor: pointer;
   }
   .ws-viewer-x:hover { background: #e5e7eb; }
@@ -282,7 +306,7 @@
     .ws-wrap { padding: 104px 16px 56px; }
     .ws-flyer { margin-bottom: 24px; }
     .ws-flyer-btn { border-radius: 10px; }
-    .ws-flyer img { max-height: none; }
+    .ws-flyer img { max-height: 82vh; max-height: 82svh; }
     /* On a phone the hint sits under the flyer, not over its text. */
     .ws-flyer-zoom { position: static; opacity: 1; display: flex; justify-content: center; border-radius: 0;
       box-shadow: none; background: #f3f4f6; color: #4b5563; padding: 9px 10px; font-size: 12.5px; }
@@ -328,9 +352,10 @@
   <div class="ws-wrap">
 
     {% if ws.banner_url %}
-    <figure class="ws-flyer">
+    <figure class="ws-flyer" id="wsFlyer">
       <button type="button" class="ws-flyer-btn" id="wsFlyerOpen" aria-label="View the workshop flyer full size">
-        <img src="{{ ws.banner_url }}" alt="{{ ws.title }} flyer">
+        <img src="{{ ws.banner_url }}" alt="{{ ws.title }} flyer" decoding="async"
+             onerror="document.getElementById('wsFlyer').hidden = true;">
         <span class="ws-flyer-zoom" aria-hidden="true"><i class="bi bi-arrows-angle-expand"></i> View full size</span>
       </button>
     </figure>
@@ -542,15 +567,46 @@
 <div class="ws-viewer" id="wsViewer" role="dialog" aria-modal="true" aria-label="Workshop flyer" hidden>
   <div class="ws-viewer-bd" data-close></div>
   <button type="button" class="ws-viewer-x" data-close aria-label="Close"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
-  <img src="{{ ws.banner_url }}" alt="{{ ws.title }} flyer">
+  <img src="{{ ws.banner_url }}" alt="{{ ws.title }} flyer" id="wsViewerImg">
+  <span class="ws-viewer-hint" id="wsViewerHint" hidden>Tap the picture to see it full size</span>
 </div>
 <script>
   (function () {
     var open = document.getElementById("wsFlyerOpen");
     var viewer = document.getElementById("wsViewer");
     if (!open || !viewer) return;
-    function show() { viewer.hidden = false; document.body.classList.add("ws-viewer-open"); viewer.querySelector(".ws-viewer-x").focus(); }
-    function hide() { viewer.hidden = true; document.body.classList.remove("ws-viewer-open"); open.focus(); }
+    var img = document.getElementById("wsViewerImg");
+    var hint = document.getElementById("wsViewerHint");
+    // Only offer zoom when the picture had to be shrunk to fit the screen.
+    function fitCheck() {
+      viewer.classList.remove("is-actual");
+      var shrunk = img.naturalWidth > img.clientWidth + 2 || img.naturalHeight > img.clientHeight + 2;
+      viewer.classList.toggle("can-zoom", shrunk);
+      hint.hidden = !shrunk;
+    }
+    function show() {
+      viewer.hidden = false;
+      document.body.classList.add("ws-viewer-open");
+      if (img.complete) fitCheck(); else img.addEventListener("load", fitCheck, { once: true });
+      viewer.querySelector(".ws-viewer-x").focus();
+    }
+    function hide() { viewer.hidden = true; viewer.classList.remove("is-actual"); document.body.classList.remove("ws-viewer-open"); open.focus(); }
+    img.addEventListener("click", function (e) {
+      e.stopPropagation();
+      if (!viewer.classList.contains("can-zoom")) return;
+      var actual = viewer.classList.toggle("is-actual");
+      hint.textContent = actual ? "Tap the picture to fit the screen" : "Tap the picture to see it full size";
+      if (actual) {
+        // Start the scroll where the person tapped, roughly.
+        var r = img.getBoundingClientRect();
+        var fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+        requestAnimationFrame(function () {
+          viewer.scrollLeft = Math.max(0, img.scrollWidth * fx - viewer.clientWidth / 2);
+          viewer.scrollTop = Math.max(0, img.scrollHeight * fy - viewer.clientHeight / 2);
+        });
+      }
+    });
+    window.addEventListener("resize", function () { if (!viewer.hidden && !viewer.classList.contains("is-actual")) fitCheck(); });
     open.addEventListener("click", show);
     viewer.querySelectorAll("[data-close]").forEach(function (el) { el.addEventListener("click", hide); });
     document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !viewer.hidden) hide(); });

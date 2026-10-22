@@ -33,8 +33,10 @@
   .wsl-item { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 40px; padding: 32px 0; border-bottom: 1px solid #e5e7eb; }
   .wsl-item:last-child { border-bottom: 0; }
 
-  .wsl-flyer { display: block; border-radius: 12px; overflow: hidden; background: #f3f4f6; box-shadow: 0 0 0 1px #e4e7eb; align-self: start; }
-  .wsl-flyer img { display: block; width: 100%; height: auto; max-height: 460px; object-fit: contain; margin: 0 auto; transition: opacity .2s; }
+  /* Any shape of flyer: shown whole at its own proportions, never enlarged
+     past its real size, centred in the column on a light frame. */
+  .wsl-flyer { display: flex; align-items: center; justify-content: center; border-radius: 12px; overflow: hidden; background: #f3f4f6; box-shadow: 0 0 0 1px #e4e7eb; align-self: start; }
+  .wsl-flyer img { display: block; width: auto; height: auto; max-width: 100%; max-height: 460px; transition: opacity .2s; }
   .wsl-flyer:hover img { opacity: .92; }
   .wsl-flyer:focus-visible { outline: 2px solid #1f2733; outline-offset: 4px; }
   /* No flyer uploaded: the date, set large -- a placeholder that still informs. */
@@ -94,7 +96,7 @@
     .wsl-head p { font-size: 15.5px; }
     .wsl-sec { margin-top: 32px; }
     .wsl-item { grid-template-columns: 1fr; gap: 20px; padding: 24px 0 28px; }
-    .wsl-flyer img { max-height: none; }
+    .wsl-flyer img { max-height: 75vh; max-height: 75svh; }
     .wsl-noflyer { aspect-ratio: auto; min-height: 220px; }
     .wsl-noflyer .d { font-size: 72px; }
     .wsl-facts { display: grid; grid-template-columns: 1fr; }
