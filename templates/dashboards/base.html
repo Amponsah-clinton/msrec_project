@@ -21,6 +21,13 @@ dashboard page, not just the three full Messages pages.
 {% endcomment %}
 <link rel="stylesheet" href="{% static 'dashboard/css/messages.css' %}">
 <link rel="stylesheet" href="{% static 'dashboard/css/chat-widget.css' %}">
+{% comment %}
+Shared with the public site -- the flash messages below and the public
+Login/Sign Up pages render the same .ms-alert box out of
+templates/_alerts.html, so the stylesheet lives under assets/, not
+dashboard/.
+{% endcomment %}
+<link rel="stylesheet" href="{% static 'assets/css/alerts.css' %}">
 {% block extra_css %}{% endblock %}
 <script>
   (function () {
@@ -72,16 +79,7 @@ dashboard page, not just the three full Messages pages.
     </header>
 
     <main class="content">
-      {% if messages %}
-        <div class="flash-messages">
-          {% for message in messages %}
-            <div class="flash-message{% if message.tags %} {{ message.tags }}{% endif %}">
-              <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m9 12 2 2 4-4"/></svg>
-              <span>{{ message }}</span>
-            </div>
-          {% endfor %}
-        </div>
-      {% endif %}
+      {% include "_alerts.html" with wrap_class="flash-messages" %}
       {% block main_content %}{% endblock %}
     </main>
 
@@ -94,6 +92,7 @@ dashboard page, not just the three full Messages pages.
 </div>
 
 
+<script src="{% static 'assets/js/alerts.js' %}"></script>
 <script src="{% static 'dashboard/js/script.js' %}"></script>
 <script src="{% static 'dashboard/js/nav-badges.js' %}"></script>
 <script src="{% static 'dashboard/js/live-counts.js' %}"></script>

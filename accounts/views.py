@@ -15,7 +15,7 @@ from django.utils import timezone
 from notifications.emails import send_branded_email, send_password_changed_email
 from notifications.models import Notification
 from notifications.services import notify
-from pages import institutions
+from pages import alerts, institutions
 
 from . import storage
 from .forms import LoginForm, SignupForm
@@ -268,7 +268,12 @@ def forgot_password(request):
 
         # Same message whether or not the account exists -- doesn't
         # confirm/deny a given email is registered with MSREC.
-        messages.success(request, f"If an account exists for {email}, a 6-digit reset code has been sent.")
+        alerts.success(
+            request,
+            f"If an account exists for {email}, a 6-digit reset code has been sent. "
+            "It expires in 15 minutes.",
+            title="Check your inbox",
+        )
         return redirect("pages:reset_password")
 
     return render(request, "pages/forgot-password.html")
@@ -344,7 +349,11 @@ def reset_password(request):
         del request.session[PASSWORD_RESET_SESSION_KEY]
         request.session.pop(PASSWORD_RESET_ATTEMPTS_KEY, None)
 
-        messages.success(request, "Your password has been reset. Please log in with your new password.")
+        alerts.success(
+            request,
+            "Please log in with your new password.",
+            title="Your password has been reset",
+        )
         return redirect("pages:login")
 
     return render(request, "pages/reset-password.html", {"email": email})
@@ -521,19 +530,25 @@ def signup(request):
                     "and we'll notify you as soon as it's reviewed."
                 )
                 if user.wants_applicant:
-                    messages.success(
+                    alerts.success(
                         request,
-                        f"Welcome to MSREC! Your account is ready. Your {roles_text} request is "
-                        f"under review by the Secretariat — {confirmation_note}",
+                        f"Your account is ready. Your {roles_text} request is under review by "
+                        f"the Secretariat — {confirmation_note}",
+                        title=f"Welcome to MSREC, {user.first_name}!",
                     )
                 else:
-                    messages.success(
+                    alerts.success(
                         request,
-                        f"Welcome to MSREC! Your {roles_text} request has been submitted and is under "
-                        f"review by the Secretariat — {confirmation_note}",
+                        f"Your {roles_text} request has been submitted and is under review by "
+                        f"the Secretariat — {confirmation_note}",
+                        title=f"Welcome to MSREC, {user.first_name}!",
                     )
             else:
-                messages.success(request, "Welcome to MSREC! Your account has been created.")
+                alerts.success(
+                    request,
+                    "Your account has been created and you are signed in.",
+                    title=f"Welcome to MSREC, {user.first_name}!",
+                )
             return redirect(user.dashboard_url_name())
 
         for error in form.non_field_errors():
@@ -566,6 +581,42 @@ def _after_login(user, next_url=""):
     return next_url or user.dashboard_url_name()
 
 
+_WORKSPACE_LABELS = {
+    "admin_dashboard:home": "Administrator workspace",
+    "secretariat_dashboard:home": "Secretariat workspace",
+    "chair_dashboard:home": "Chair workspace",
+    "institution_dashboard:home": "Institutional Secretary workspace",
+    "committee_dashboard:home": "Committee Member dashboard",
+    "reviewer_dashboard:home": "Reviewer dashboard",
+    "applicant_dashboard:home": "Applicant dashboard",
+    "pages:role_status": "MSREC account",
+}
+
+
+def _welcome_alert(request, user, previous_login):
+    """The alert that greets someone on the page they land on after
+    signing in.
+
+    `previous_login` has to be read off the user *before* auth_login(),
+    which updates last_login as part of the login signal -- by the time
+    this runs, user.last_login is this very sign-in.
+    """
+    from django.template.defaultfilters import date as date_filter
+
+    first_name = (user.first_name or "").strip()
+    workspace = _WORKSPACE_LABELS.get(user.dashboard_url_name(), "MSREC account")
+
+    if previous_login is None:
+        title = f"Welcome to MSREC, {first_name}!" if first_name else "Welcome to MSREC!"
+        body = f"This is your first sign-in. Here is your {workspace} — take a look around."
+    else:
+        title = f"Welcome back, {first_name}!" if first_name else "Welcome back!"
+        seen = date_filter(timezone.localtime(previous_login), "j M Y, H:i")
+        body = f"You are signed in to your {workspace}. Last sign-in: {seen} GMT."
+
+    alerts.success(request, body, title=title)
+
+
 def login_view(request):
     if request.user.is_authenticated:
         return redirect(_after_login(request.user))
@@ -574,6 +625,7 @@ def login_view(request):
         form = LoginForm(request.POST, request=request)
         if form.is_valid():
             user = form.get_user()
+            previous_login = user.last_login
             auth_login(request, user)
             # Stashed on the session itself (not a DB row) -- Profile &
             # Security's Active Sessions panel (accounts/sessions.py) reads
@@ -582,7 +634,7 @@ def login_view(request):
             request.session["ua"] = request.META.get("HTTP_USER_AGENT", "")[:300]
             request.session["login_ip"] = request.META.get("REMOTE_ADDR", "")
             request.session["login_at"] = timezone.now().isoformat()
-            messages.success(request, f"Welcome back, {user.first_name}.")
+            _welcome_alert(request, user, previous_login)
             next_url = request.POST.get("next") or request.GET.get("next") or ""
             return redirect(_after_login(user, next_url))
         # A time-boxed suspension raises a ValidationError with an
@@ -613,7 +665,11 @@ def login_view(request):
 
 def logout_view(request):
     auth_logout(request)
-    messages.success(request, "You've been signed out.")
+    alerts.success(
+        request,
+        "Your session has ended. Sign in again whenever you are ready.",
+        title="You've been signed out",
+    )
     return redirect(reverse("pages:login"))
 
 

@@ -11,6 +11,7 @@ WorkshopRegistration; an admin manages everything from /admins/workshop/.
 from decimal import Decimal
 
 from django.db import models
+from django.db.models.functions import Lower, Trim
 from django.utils import timezone
 
 
@@ -351,6 +352,14 @@ class WorkshopRegistration(models.Model):
     paid_at = models.DateTimeField(null=True, blank=True)
     paystack_response = models.JSONField(blank=True, default=dict)
 
+    # Set when this row is a repeat registration for the same workshop
+    # rather than the person's real one. Nothing is ever deleted to resolve
+    # a duplicate: the row stays, visible and reversible, and is simply no
+    # longer the active registration. It is excluded from the admin's bulk
+    # sends (so nobody is emailed three times) and from the duplicate
+    # checks, so clearing the flag lets that person register again.
+    is_duplicate = models.BooleanField(default=False)
+
     # Set the moment the admin emails each item, so the list can show what's
     # already gone out and the admin doesn't double-send.
     meeting_link_sent_at = models.DateTimeField(null=True, blank=True)
@@ -376,6 +385,27 @@ class WorkshopRegistration(models.Model):
     class Meta:
         db_table = "workshop_registrations"
         ordering = ["-created_at"]
+        constraints = [
+            # One live registration per email address per workshop -- the
+            # same person may still register for any *other* workshop,
+            # since the constraint includes workshop_id.
+            #
+            # Partial (is_duplicate=False) for a reason: the table already
+            # held repeat registrations when this rule arrived, some of them
+            # paid. A plain unique constraint could only have been added by
+            # deleting real, paid rows. Excluding flagged duplicates makes
+            # the guarantee enforceable immediately while every row is kept.
+            #
+            # Scoped on Lower(Trim(email)) to match workshop.dedupe, so the
+            # friendly check in the view and this backstop can never
+            # disagree about what counts as the same address.
+            models.UniqueConstraint(
+                "workshop",
+                Lower(Trim("email")),
+                condition=models.Q(is_duplicate=False),
+                name="unique_active_email_per_workshop",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.name} <{self.email}>"
@@ -409,9 +439,21 @@ class WorkshopRegistration(models.Model):
 
     @property
     def registration_complete(self):
-        """A compulsory-certificate registration isn't finished until the fee
-        is paid; every other registration is complete on submission."""
-        return not (self.certificate_required_at_signup and self.payment_outstanding)
+        """Whether this is a registration at all yet.
+
+        Asking for a certificate is a commitment to pay for it, so any
+        outstanding fee leaves the registration unfinished -- whether the
+        certificate was compulsory for the workshop or the person chose it
+        themselves. Until it is paid they are a held place, not a
+        participant: no confirmation email, no SMS, and not counted as
+        registered.
+
+        Someone who chose a certificate and changed their mind is a
+        different case from someone who chose one and didn't pay -- they
+        can drop the certificate (workshop.views.decline_certificate),
+        which settles the fee at zero and completes the registration.
+        """
+        return not self.payment_outstanding
 
     def ensure_certificate_ref(self):
         if not self.certificate_ref:

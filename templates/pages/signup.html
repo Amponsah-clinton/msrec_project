@@ -23,13 +23,7 @@
             <p class="required-legend"><span class="req">*</span> indicates a required field</p>
           </div>
 
-          {% if messages %}
-            <div class="signup-messages">
-              {% for message in messages %}
-                <p class="signup-message{% if message.tags %} {{ message.tags }}{% endif %}">{{ message }}</p>
-              {% endfor %}
-            </div>
-          {% endif %}
+          {% include "_alerts.html" %}
 
           <form id="signupForm" method="post" action="{% url 'pages:signup' %}" enctype="multipart/form-data" novalidate>
             {% csrf_token %}
@@ -428,5 +422,4 @@
 <script src="{% static 'assets/js/institutions.js' %}"></script>
 <script src="{% static 'assets/js/searchable-select.js' %}"></script>
 <script src="{% static 'assets/js/signup.js' %}"></script>
-<script src="{% static 'assets/js/auth-alerts.js' %}"></script>
 {% endblock %}

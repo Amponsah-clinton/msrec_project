@@ -9,6 +9,7 @@ urlpatterns = [
     # Fixed paths before the <slug> catch-all.
     path("pay/<int:pk>/", views.pay, name="pay"),
     path("pay/<int:pk>/verify/", views.pay_verify, name="pay_verify"),
+    path("pay/<int:pk>/decline-certificate/", views.decline_certificate, name="decline_certificate"),
     path("thanks/", views.thanks, name="thanks"),
     path("documents/<str:token>/", views.documents, name="documents"),
     path("documents/<str:token>/<str:kind>/", views.download_document, name="download_document"),

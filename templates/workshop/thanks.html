@@ -51,8 +51,11 @@
             Your registration is <strong>not complete</strong> until it is paid.
             {% if usd %}<span class="wst-usd">Approximately {{ usd }} — charged in Ghana Cedis.</span>{% endif %}</div>
         {% else %}
-          <div class="wst-warn">You asked for a certificate, and the fee of
-            <strong>{{ reg.currency }} {{ reg.amount }}</strong> hasn't been paid yet.
+          <div class="wst-warn"><i class="bi bi-exclamation-triangle-fill"></i>
+            You asked for a certificate, so the fee of
+            <strong>{{ reg.currency }} {{ reg.amount }}</strong> applies.
+            <strong>Payment is required</strong> — your registration is
+            <strong>not complete</strong> until it is paid.
             {% if usd %}<span class="wst-usd">Approximately {{ usd }} — charged in Ghana Cedis.</span>{% endif %}</div>
         {% endif %}
         <div><a class="wst-pay" href="{% url 'workshop:pay' reg.pk %}"><i class="bi bi-lock-fill"></i> Pay {{ reg.currency }} {{ reg.amount }} now</a></div>

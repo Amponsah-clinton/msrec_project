@@ -7,6 +7,7 @@ import uuid
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
+from django.db import IntegrityError, transaction
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -135,13 +136,23 @@ def _recipients(request, ws, params=None):
     reg_id = params.get("reg_id")
     qs = ws.registrations.all()
     if reg_id:
+        # An explicit single row is honoured even if flagged -- that is a
+        # deliberate choice by the admin about that one person.
         return qs.filter(pk=reg_id)
+    # Every group below excludes repeat registrations. Without this a bulk
+    # send mails one person once per duplicate row they have: the live data
+    # had someone with three, so they would have had three copies of the
+    # meeting link and three certificates.
+    qs = qs.filter(is_duplicate=False)
     # Rows ticked in the table win over the group chip -- always narrowed to
     # this workshop, so a tampered id can't reach another workshop's people.
     picked = [p for p in (params.get("reg_ids") or "").split(",") if p.strip().isdigit()]
     if picked:
-        return qs.filter(pk__in=picked)
+        # Ticked rows are explicit too, so they bypass the duplicate filter.
+        return ws.registrations.filter(pk__in=picked)
     scope = params.get("scope", "")
+    if scope == "duplicates":
+        return ws.registrations.filter(is_duplicate=True)
     if scope == "wants_cert":
         return qs.filter(wants_certificate=True)
     if scope == "paid":
@@ -403,6 +414,49 @@ def _require_certificates_for_existing(request, ws):
         )
 
 
+def _set_duplicate_flag(request, ws, *, flagged):
+    """Mark a registration as a repeat, or restore it as the real one.
+
+    Both directions are needed because the flag is a judgement: an admin
+    may spot two namesakes that are genuinely different people (restore),
+    or a repeat this rule didn't catch -- someone who registered twice
+    under two addresses (flag).
+
+    Restoring is the direction that can fail: the database allows only one
+    unflagged row per email per workshop, so restoring a second one is
+    refused rather than silently breaking the guarantee.
+    """
+    reg = get_object_or_404(WorkshopRegistration, pk=request.POST.get("reg_id"), workshop=ws)
+    if reg.is_duplicate == flagged:
+        messages.info(request, f"{reg.name} was already {'flagged' if flagged else 'active'}.")
+        return
+
+    reg.is_duplicate = flagged
+    try:
+        # Its own savepoint: without one, the failed INSERT leaves the
+        # request's transaction unusable and the messages/redirect below
+        # blow up with TransactionManagementError instead of explaining
+        # the problem.
+        with transaction.atomic():
+            reg.save(update_fields=["is_duplicate"])
+    except IntegrityError:
+        messages.error(
+            request,
+            f"{reg.name} can't be restored: another active registration on this workshop "
+            f"already uses {reg.email}. Flag that one first if this is the right row.",
+        )
+        return
+
+    if flagged:
+        messages.success(
+            request,
+            f"{reg.name} is now marked as a repeat registration — excluded from counts and "
+            "bulk sends. Nothing was deleted.",
+        )
+    else:
+        messages.success(request, f"{reg.name} is active again and back in all counts and sends.")
+
+
 def _save_cert(request, ws):
     ws.cert_title_tail = request.POST.get("cert_title_tail", "").strip()[:80] or "of Participation"
     ws.cert_intro = request.POST.get("cert_intro", "").strip()[:200] or "This is to certify that"
@@ -453,6 +507,10 @@ def workshop_manage(request, pk):
             _bulk(request, ws, emails.send_materials_email, label="Materials")
         elif action == "send_certificate":
             _bulk(request, ws, emails.send_certificate_email, label="Certificate")
+        elif action == "mark_duplicate":
+            _set_duplicate_flag(request, ws, flagged=True)
+        elif action == "unmark_duplicate":
+            _set_duplicate_flag(request, ws, flagged=False)
         elif action == "send_payment_link":
             _bulk(request, ws, emails.send_payment_required_email, label="Payment link")
         elif action == "send_message":
@@ -481,16 +539,26 @@ def workshop_manage(request, pk):
     regs = list(ws.registrations.all())
     for r in regs:
         r.sms_ok = bool(sms.clean_phone(r.phone))
-    paid = [r for r in regs if r.is_paid]
-    wants_cert = [r for r in regs if r.wants_certificate]
-    unpaid = [r for r in regs if r.payment_outstanding]
+    # Every headline count is of real participants, so a flagged repeat
+    # never inflates "Registered" or the outstanding-fee total.
+    active = [r for r in regs if not r.is_duplicate]
+    duplicates = [r for r in regs if r.is_duplicate]
+    paid = [r for r in active if r.is_paid]
+    wants_cert = [r for r in active if r.wants_certificate]
+    unpaid = [r for r in active if r.payment_outstanding]
     return render(request, "dashboards/admin/workshop_manage.html", {
         "ws": ws,
         "regs": regs,
         "counts": {
-            "all": len(regs), "wants_cert": len(wants_cert),
-            "no_cert": len(regs) - len(wants_cert), "paid": len(paid),
+            "all": len(active), "wants_cert": len(wants_cert),
+            "no_cert": len(active) - len(wants_cert), "paid": len(paid),
             "unpaid": len(unpaid),
+            # Confirmed participants: asking for a certificate is a
+            # commitment to pay, so an outstanding fee is a held place, not
+            # a registration. Kept separate from "all" so the send scopes
+            # can still reach everyone, including those being chased.
+            "confirmed": len(active) - len(unpaid),
+            "duplicates": len(duplicates),
             "outstanding": sum((r.amount for r in unpaid), Decimal("0.00")),
         },
         "sms_configured": sms.is_configured(),

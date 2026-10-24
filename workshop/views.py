@@ -4,8 +4,10 @@ token-gated document downloads.
 """
 import logging
 import uuid
+from decimal import Decimal
 
 from django.contrib import messages
+from django.db import IntegrityError, transaction
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -15,6 +17,7 @@ from django.views.decorators.http import require_POST
 from pages import institutions
 from pages.models import SiteSettings
 
+from . import dedupe
 from .models import Workshop, WorkshopRegistration
 
 logger = logging.getLogger(__name__)
@@ -39,12 +42,25 @@ def _notify_admin_of_registration(reg, ws):
             extra = "Certificate: compulsory for this workshop"
         else:
             extra = "Wants certificate: " + ("Yes" if reg.wants_certificate else "No")
+        # Say plainly when this isn't a registration yet, so the list isn't
+        # read as more confirmed participants than there are.
+        if reg.payment_outstanding:
+            extra += (
+                f" · AWAITING PAYMENT of {reg.currency} {reg.amount} "
+                "— not a confirmed registration until it is paid"
+            )
         if reg.comments:
             extra += f" · Comments: {reg.comments}"
         send_branded_email(
-            subject=f"New workshop registration — {reg.name}",
+            subject=(
+                f"Workshop registration awaiting payment — {reg.name}"
+                if reg.payment_outstanding else f"New workshop registration — {reg.name}"
+            ),
             to=WORKSHOP_NOTIFY_EMAIL,
-            heading="New workshop registration",
+            heading=(
+                "Registration started — payment outstanding"
+                if reg.payment_outstanding else "New workshop registration"
+            ),
             paragraphs=[
                 f"A new person has registered for {ws.title}.",
                 f"Name: {reg.name}",
@@ -154,41 +170,105 @@ def register(request, slug):
                 "phone": phone, "comments": comments,
             }), status=400)
 
-        reg = WorkshopRegistration.objects.create(
-            workshop=ws, name=name[:200], institution=institution[:200], email=email,
-            phone=phone[:40], wants_certificate=wants_certificate,
-            certificate_required_at_signup=cert_required, comments=comments,
-        )
+
+        prefill = {
+            "name": name, "institution": institution, "email": email,
+            "phone": phone, "comments": comments,
+        }
+
+        # One registration per person per workshop. Scoped to this
+        # workshop, so the same person registering for another one is
+        # unaffected.
+        clash, matched_on = dedupe.find_existing(ws, email=email, name=name)
+        if clash is not None:
+            return _already_registered(request, ws, clash, matched_on, prefill)
+
+        # A certificate that costs something has to be paid for before the
+        # registration counts -- whether the workshop compels it or they
+        # chose it. A zero fee means there is nothing to pay either way.
+        needs_payment = wants_certificate and ws.certificate_fee_payable
+
+        # The row is written in its final state in one go, so that anything
+        # reading it afterwards -- notably the organiser's notification --
+        # sees the true payment state rather than a half-built row.
+        try:
+            with transaction.atomic():
+                reg = WorkshopRegistration.objects.create(
+                    workshop=ws, name=name[:200], institution=institution[:200], email=email,
+                    phone=phone[:40], wants_certificate=wants_certificate,
+                    certificate_required_at_signup=cert_required, comments=comments,
+                    payment_status=(
+                        WorkshopRegistration.PaymentStatus.PENDING if needs_payment
+                        else WorkshopRegistration.PaymentStatus.NOT_REQUIRED
+                    ),
+                    amount=ws.certificate_fee if needs_payment else Decimal("0.00"),
+                    currency=ws.fee_currency,
+                    payment_reference=f"MSREC-WS-{uuid.uuid4().hex[:18]}" if needs_payment else "",
+                )
+        except IntegrityError:
+            # Two submissions racing each other -- a double-click, or two
+            # tabs -- can both pass the check above and arrive here
+            # together. The database constraint is what actually guarantees
+            # it; one of them loses, and is shown the row that won.
+            clash, matched_on = dedupe.find_existing(ws, email=email, name=name)
+            if clash is None:
+                raise
+            return _already_registered(request, ws, clash, matched_on, prefill)
+
         _register_institution(institution)
-        # Notify the organiser of every registration (paid or not).
+        # The organiser hears about every entry, flagged as awaiting payment
+        # when it is -- so the list isn't read as more confirmed
+        # participants than there are.
         _notify_admin_of_registration(reg, ws)
 
-        if wants_certificate and ws.certificate_fee_payable:
-            reg.payment_status = WorkshopRegistration.PaymentStatus.PENDING
-            reg.amount = ws.certificate_fee
-            reg.currency = ws.fee_currency
-            reg.payment_reference = f"MSREC-WS-{uuid.uuid4().hex[:18]}"
-            reg.save(update_fields=["payment_status", "amount", "currency", "payment_reference"])
-            if cert_required:
-                # The fee isn't optional, so they need a way back to it if
-                # they close the checkout page -- email and text the link now
-                # rather than leaving them with nothing.
-                _send_payment_link(reg, ws)
+        if needs_payment:
+            # They need a way back to the checkout if they close the page,
+            # emailed and texted before the redirect, not after -- the
+            # redirect is where they leave. No confirmation goes out yet:
+            # they are not registered until this is paid.
+            _send_payment_link(reg, ws)
             return redirect("workshop:pay", pk=reg.pk)
 
-        # Either no certificate, or one that costs nothing -- there is
-        # nothing to pay, so the registration is already complete.
-        reg.payment_status = WorkshopRegistration.PaymentStatus.NOT_REQUIRED
-        reg.currency = ws.fee_currency
-        reg.save(update_fields=["payment_status", "currency"])
         _notify_registration_success(reg, ws)
         return redirect(f"{reverse('workshop:thanks')}?r={reg.pk}")
 
     return render(request, "workshop/register.html", _register_context(ws, {}))
 
 
-def _register_context(ws, prefill):
-    return {"ws": ws, "institutions": _active_institutions(), "prefill": prefill}
+def _already_registered(request, ws, clash, matched_on, prefill):
+    """The "you're already on this list" page.
+
+    Deliberately not a dead end. The live data showed people registering
+    three times in four minutes because an unpaid registration left them
+    with nowhere to go, so an email match offers that registration's
+    checkout.
+
+    A *name* match never does: a namesake is a different person, and
+    handing them a payment link would show them someone else's
+    registration. They get an explanation and the secretariat instead.
+    """
+    by_email = matched_on == dedupe.EMAIL
+    return render(request, "workshop/register.html", _register_context(ws, prefill, duplicate={
+        "matched_on": matched_on,
+        "by_email": by_email,
+        "name": clash.name,
+        "registered_on": clash.created_at,
+        # Only ever populated for an email match.
+        "pay_url": (
+            reverse("workshop:pay", kwargs={"pk": clash.pk})
+            if by_email and clash.payment_outstanding else None
+        ),
+        "amount": clash.amount if by_email else None,
+        "currency": clash.currency if by_email else None,
+        "is_paid": clash.is_paid if by_email else False,
+    }), status=409)
+
+
+def _register_context(ws, prefill, duplicate=None):
+    return {
+        "ws": ws, "institutions": _active_institutions(), "prefill": prefill,
+        "duplicate": duplicate,
+    }
 
 
 def pay(request, pk):
@@ -236,6 +316,47 @@ def pay_verify(request, pk):
     reg.save(update_fields=["payment_status", "paystack_response"])
     reason = data.get("gateway_response") or "Payment was not successful. Please try again."
     return JsonResponse({"ok": False, "error": reason}, status=400)
+
+
+@require_POST
+def decline_certificate(request, pk):
+    """"I don't want a certificate after all" -- settles the fee at zero and
+    completes the registration.
+
+    Choosing a certificate commits you to paying for it, so there has to be
+    a way to change that choice; otherwise the only way out is to register
+    again without one, which is exactly what people did before this existed
+    (the live data had someone registering twice two minutes apart, the
+    second time opting out). Changing your selection is a different thing
+    from selecting one and not paying.
+
+    Only for a certificate the registrant chose. Where the workshop makes it
+    compulsory there is nothing to decline, so that is refused.
+    """
+    reg = get_object_or_404(WorkshopRegistration, pk=pk)
+    ws = reg.workshop
+
+    if reg.certificate_required_at_signup:
+        messages.error(request, "A certificate is part of this workshop and can't be removed.")
+        return redirect("workshop:pay", pk=reg.pk)
+    if reg.is_paid:
+        return redirect(f"{reverse('workshop:thanks')}?r={reg.pk}")
+    if not reg.payment_outstanding:
+        return redirect(f"{reverse('workshop:thanks')}?r={reg.pk}")
+
+    reg.wants_certificate = False
+    reg.payment_status = WorkshopRegistration.PaymentStatus.NOT_REQUIRED
+    reg.amount = Decimal("0.00")
+    # The reference is kept: it was quoted to Paystack, so if a payment for
+    # it ever does land, pay_verify can still find the row it belongs to.
+    reg.save(update_fields=["wants_certificate", "payment_status", "amount"])
+
+    _notify_registration_success(reg, ws)
+    messages.success(
+        request,
+        "Your registration is confirmed without a certificate — there's nothing to pay.",
+    )
+    return redirect(f"{reverse('workshop:thanks')}?r={reg.pk}")
 
 
 def thanks(request):

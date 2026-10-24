@@ -1,0 +1,40 @@
+{% load alert_tags %}
+{% comment %}
+Every django.contrib.messages flash in the project, rendered as the
+shared .ms-alert box (assets/css/alerts.css + assets/js/alerts.js).
+
+    {% include "_alerts.html" %}
+    {% include "_alerts.html" with wrap_class="flash-messages" %}
+
+wrap_class is for callers that already hang behaviour off a container
+class of their own (the dashboards' print rules and the Workshop admin
+page's floating-toast tweak both target .flash-messages).
+
+Messages added with pages.alerts.success(..., title="...") render as the
+two-line alert with a heading; a plain messages.success(...) renders as
+the single-line --slim one.
+{% endcomment %}
+{% if messages %}
+  <div class="ms-alerts{% if wrap_class %} {{ wrap_class }}{% endif %}">
+    {% for message in messages %}
+      {% with variant=message|alert_variant title=message|alert_title %}
+        {% comment %}
+        Success/info disappear on their own; a warning or an error stays
+        until it is closed, because the reader may still need to act.
+        {% endcomment %}
+        <div class="ms-alert ms-alert--{{ variant }}{% if not title %} ms-alert--slim{% endif %}"
+             role="{% if variant == 'danger' %}alert{% else %}status{% endif %}"
+             {% if variant == 'success' or variant == 'info' %}data-ms-auto-dismiss="7000"{% endif %}>
+          {% include "_alert_icon.html" with variant=variant %}
+          <div class="ms-alert__content">
+            {% if title %}<h6 class="ms-alert__title">{{ title }}</h6>{% endif %}
+            <div class="ms-alert__text">{{ message|alert_text }}</div>
+          </div>
+          <button type="button" class="ms-alert__close" data-ms-dismiss aria-label="Dismiss this message">
+            <svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+      {% endwith %}
+    {% endfor %}
+  </div>
+{% endif %}

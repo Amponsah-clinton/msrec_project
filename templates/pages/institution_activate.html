@@ -31,13 +31,7 @@
               <h1>Set your password</h1>
               <p class="login-sub">Welcome, <strong>{{ user.full_name }}</strong>. Choose a password to activate your Institutional Secretary account for <strong>{{ user.institution }}</strong>.</p>
 
-              {% if messages %}
-                <div class="login-messages">
-                  {% for message in messages %}
-                    <p class="login-message{% if message.tags %} {{ message.tags }}{% endif %}">{{ message }}</p>
-                  {% endfor %}
-                </div>
-              {% endif %}
+              {% include "_alerts.html" %}
 
               <form id="resetForm" method="post" novalidate>
                 {% csrf_token %}
@@ -95,5 +89,4 @@
 
 {% block extra_js %}
 <script src="{% static 'assets/js/password-reset.js' %}"></script>
-<script src="{% static 'assets/js/auth-alerts.js' %}"></script>
 {% endblock %}
