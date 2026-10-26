@@ -200,3 +200,46 @@ class ContactPageTests(PinnedRateMixin, TestCase):
         self.client.post(self.url, {"action": "delete_contact", "contact_id": esi.pk})
         self.assertFalse(WorkshopContact.objects.filter(pk=esi.pk).exists())
         self.assertTrue(WorkshopRegistration.objects.filter(email="esi@example.com").exists())
+
+
+class ContactPaginationTests(PinnedRateMixin, TestCase):
+    """20 contacts to a page; filters carry through the page links, and a
+    send or export with nobody ticked still covers every matching contact."""
+
+    def setUp(self):
+        super().setUp()
+        admin = User.objects.create_superuser(
+            email="pageadmin@example.com", password="pw-admin-123", first_name="Ada", last_name="Admin")
+        self.client.force_login(admin)
+        self.url = reverse("workshop_admin:contacts")
+        ws = _workshop(title="Paged Workshop")
+        for i in range(25):
+            WorkshopRegistration.objects.create(
+                workshop=ws, name=f"Person {i:02d} Test", institution="UG",
+                email=f"p{i:02d}@example.com", phone=f"02400000{i:02d}")
+
+    def test_twenty_per_page(self):
+        first = self.client.get(self.url)
+        self.assertEqual(len(first.context["people"]), 20)
+        self.assertEqual(first.context["matching_count"], 25)
+        self.assertContains(first, "showing 1–20")
+        self.assertContains(first, 'data-total="25"')
+        second = self.client.get(self.url, {"page": 2})
+        self.assertEqual(len(second.context["people"]), 5)
+        self.assertContains(second, "showing 21–25")
+
+    def test_page_links_keep_the_filters(self):
+        resp = self.client.get(self.url, {"q": "person", "sort": "name"})
+        self.assertContains(resp, "?q=person&amp;sort=name&amp;page=2")
+        # Exports carry the filters but never the page number.
+        self.assertNotIn("page=", resp.context["query"])
+
+    def test_send_with_nobody_ticked_reaches_every_page(self):
+        with mock.patch("notifications.emails.send_branded_email", return_value=True) as send:
+            self.client.post(self.url, {"action": "send_message", "send_email": "on",
+                                        "subject": "Hi", "body": "Hello {first_name}"})
+        self.assertEqual(send.call_count, 25)
+
+    def test_out_of_range_page_shows_the_last_page(self):
+        resp = self.client.get(self.url, {"page": 99})
+        self.assertEqual(resp.context["page"].number, 2)

@@ -40,6 +40,20 @@
   .wsc-count { font-size: 13px; color: var(--text-sub); }
   .wsc-count b { color: var(--text-main); }
   .wsc-count .picked { color: var(--teal); font-weight: 650; }
+  .wsc-range { color: var(--text-faint); }
+
+  /* ---- pages ---- */
+  .wsc-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .wsc-pager-info { font-size: 12.5px; color: var(--text-sub); }
+  .wsc-pager-info b { color: var(--text-main); }
+  .wsc-pages { display: flex; gap: 4px; flex-wrap: wrap; }
+  .wsc-page { min-width: 34px; height: 34px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: var(--radius-sm, 8px);
+    background: var(--bg); color: var(--text-main); font-size: 13px; font-weight: 600; text-decoration: none; }
+  a.wsc-page:hover { border-color: var(--teal); color: var(--teal); }
+  .wsc-page.is-current { background: var(--teal); border-color: var(--teal); color: #fff; }
+  .wsc-page.is-off { opacity: .45; }
+  .wsc-page-gap { align-self: center; padding: 0 4px; color: var(--text-faint); }
+  @media (max-width: 760px) { .wsc-pager { justify-content: center; } .wsc-pager-info { width: 100%; text-align: center; } }
   .wsc-btns { display: flex; flex-wrap: wrap; gap: 8px; }
   .wsc-btn { display: inline-flex; align-items: center; gap: 7px; border: 1px solid transparent; border-radius: var(--radius-sm, 8px); padding: 9px 13px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; }
   .wsc-btn.primary { background: var(--teal); color: #fff; }
@@ -318,11 +332,12 @@
   <div class="wsc-card">
     <div class="wsc-toolbar">
       <span class="wsc-count">
-        {% if filtered %}<b>{{ people|length }}</b> of {{ stats.all }} match{% else %}<b>{{ people|length }}</b> {{ people|length|pluralize:"person,people" }}{% endif %}
+        {% if filtered %}<b>{{ matching_count }}</b> of {{ stats.all }} match{% else %}<b>{{ matching_count }}</b> {{ matching_count|pluralize:"person,people" }}{% endif %}
+        {% if page.paginator.num_pages > 1 %}<span class="wsc-range">· showing {{ page.start_index }}–{{ page.end_index }}</span>{% endif %}
         <span id="wscPickedNote" hidden> · <span class="picked"><span id="wscPickedCount">0</span> ticked</span> — actions below use just them · <button type="button" class="wsc-linkbtn" id="wscClear">Clear</button></span>
       </span>
       <div class="wsc-btns">
-        <button type="button" class="wsc-btn primary" id="wscOpen" {% if not people %}disabled{% endif %}><i class="fa-solid fa-envelope"></i> Write a message</button>
+        <button type="button" class="wsc-btn primary" id="wscOpen" {% if not matching_count %}disabled{% endif %} title="With nobody ticked, goes to all {{ matching_count }} people matching your filters"><i class="fa-solid fa-envelope"></i> Write a message</button>
         <a class="wsc-btn ghost wsc-export" data-base="{% url 'workshop_admin:contacts_export' %}?{{ query }}{% if query %}&amp;{% endif %}kind=full" href="{% url 'workshop_admin:contacts_export' %}?{{ query }}{% if query %}&amp;{% endif %}kind=full"><i class="fa-solid fa-file-csv"></i> Export CSV</a>
         <a class="wsc-btn ghost wsc-export" data-base="{% url 'workshop_admin:contacts_export' %}?{{ query }}{% if query %}&amp;{% endif %}kind=sms" href="{% url 'workshop_admin:contacts_export' %}?{{ query }}{% if query %}&amp;{% endif %}kind=sms" title="Phone, Name, First Name — Ghana mobile numbers only, ready to import into a bulk-SMS tool"><i class="fa-solid fa-mobile-screen"></i> Export SMS list</a>
       </div>
@@ -331,7 +346,7 @@
     <div class="wsc-table-wrap">
       <table class="wsc-table">
         <thead><tr>
-          <th><label class="wsc-pick"><input type="checkbox" id="wscPickAll" aria-label="Tick everyone listed"> Name</label></th>
+          <th><label class="wsc-pick"><input type="checkbox" id="wscPickAll" aria-label="Tick everyone on this page" title="Tick everyone on this page"> Name</label></th>
           <th>Contact</th><th>Workshops</th><th>Last registered</th><th></th>
         </tr></thead>
         <tbody>
@@ -353,7 +368,7 @@
               <div class="wsc-actions">
                 <button type="button" class="wsc-icon go wsc-msg-one" data-id="{{ c.pk }}" title="Write {{ c.name }} an email / SMS"><i class="fa-solid fa-envelope"></i></button>
                 <form method="post" data-confirm="Remove {{ c.name }} from the contact list? Their workshop registrations are kept; they'll be added back if they register again." data-confirm-variant="danger">
-                  {% csrf_token %}<input type="hidden" name="action" value="delete_contact"><input type="hidden" name="contact_id" value="{{ c.pk }}"><input type="hidden" name="return_query" value="{{ query }}">
+                  {% csrf_token %}<input type="hidden" name="action" value="delete_contact"><input type="hidden" name="contact_id" value="{{ c.pk }}"><input type="hidden" name="return_query" value="{{ query }}{% if page.number > 1 %}{% if query %}&amp;{% endif %}page={{ page.number }}{% endif %}">
                   <button class="wsc-icon danger" title="Remove from the list"><i class="fa-solid fa-trash"></i></button>
                 </form>
               </div>
@@ -368,6 +383,24 @@
         </tbody>
       </table>
     </div>
+
+    <span id="wscTotals" data-total="{{ matching_count }}" data-sms="{{ matching_sms }}" hidden></span>
+    {% if page.paginator.num_pages > 1 %}
+    <nav class="wsc-pager" aria-label="Contact pages">
+      <span class="wsc-pager-info">Page <b>{{ page.number }}</b> of <b>{{ page.paginator.num_pages }}</b> · {{ page.paginator.per_page }} per page</span>
+      <div class="wsc-pages">
+        {% if page.has_previous %}<a class="wsc-page" href="?{% if query %}{{ query }}&amp;{% endif %}page={{ page.previous_page_number }}" aria-label="Previous page">&lsaquo; Prev</a>
+        {% else %}<span class="wsc-page is-off" aria-hidden="true">&lsaquo; Prev</span>{% endif %}
+        {% for num in page_range %}
+          {% if num == page.paginator.ELLIPSIS %}<span class="wsc-page-gap">&hellip;</span>
+          {% elif num == page.number %}<span class="wsc-page is-current" aria-current="page">{{ num }}</span>
+          {% else %}<a class="wsc-page" href="?{% if query %}{{ query }}&amp;{% endif %}page={{ num }}" aria-label="Page {{ num }}">{{ num }}</a>{% endif %}
+        {% endfor %}
+        {% if page.has_next %}<a class="wsc-page" href="?{% if query %}{{ query }}&amp;{% endif %}page={{ page.next_page_number }}" aria-label="Next page">Next &rsaquo;</a>
+        {% else %}<span class="wsc-page is-off" aria-hidden="true">Next &rsaquo;</span>{% endif %}
+      </div>
+    </nav>
+    {% endif %}
   </div>
 
   {# One person's workshops, filled in by the script below from #wscModalData. #}
@@ -430,7 +463,16 @@
 
     function box(r) { return r.querySelector(".wsc-pick-row"); }
     function picked() { return rows.filter(function (r) { return box(r).checked; }); }
-    function targets() { var p = picked(); return p.length ? p : rows; }
+    // With nobody ticked, a send reaches everyone the filters match -- all
+    // pages, not just the 20 rows on screen -- so count from the server's totals.
+    var totalsEl = document.getElementById("wscTotals");
+    var TOTAL = totalsEl ? +totalsEl.dataset.total : rows.length;
+    var TOTAL_SMS = totalsEl ? +totalsEl.dataset.sms : rows.filter(function (r) { return r.dataset.sms === "1"; }).length;
+    function reachCounts() {
+      var p = picked();
+      if (p.length) return { n: p.length, sms: p.filter(function (r) { return r.dataset.sms === "1"; }).length };
+      return { n: TOTAL, sms: TOTAL_SMS };
+    }
     function plural(n, one, many) { return n + " " + (n === 1 ? one : (many || one + "s")); }
 
     function refresh() {
@@ -480,13 +522,12 @@
     }
 
     function refreshCompose() {
-      var t = targets(), p = picked();
-      var smsable = t.filter(function (r) { return r.dataset.sms === "1"; }).length;
+      var p = picked(), c = reachCounts(), smsable = c.sms;
       if (to) to.textContent = p.length === 1 ? p[0].dataset.name
         : p.length ? plural(p.length, "ticked person", "ticked people")
-        : "everyone listed — " + plural(t.length, "person", "people");
-      if (reach) reach.textContent = useSms && useSms.checked && smsable < t.length
-        ? "· SMS reaches " + smsable + " of " + t.length : "";
+        : "everyone matching — " + plural(c.n, "person", "people");
+      if (reach) reach.textContent = useSms && useSms.checked && smsable < c.n
+        ? "· SMS reaches " + smsable + " of " + c.n : "";
       if (smsCount && smsBody) {
         var n = segments(smsBody.value);
         smsCount.textContent = smsBody.value.length + " characters · " + plural(n, "SMS", "SMS") + " each" +
@@ -498,7 +539,7 @@
         if (useEmail && useEmail.checked) via.push("email");
         if (useSms && useSms.checked) via.push("SMS");
         form.dataset.confirm = "Send this " + (via.join(" + ") || "message") + " to " +
-          (p.length === 1 ? p[0].dataset.name : plural(t.length, "person", "people")) + "?";
+          (p.length === 1 ? p[0].dataset.name : plural(c.n, "person", "people")) + "?";
       }
     }
     function syncChannels() {
@@ -549,14 +590,14 @@
 
     // Checked before the shared confirm dialog (script.js) ever opens.
     if (form) form.addEventListener("submit", function (e) {
-      var problem = "", focusEl = null, t = targets();
+      var problem = "", focusEl = null, c = reachCounts();
       var mail = useEmail && useEmail.checked, text = useSms && useSms.checked;
-      if (!t.length) problem = "Nobody is listed.";
+      if (!c.n) problem = "Nobody is listed.";
       else if (!mail && !text) problem = "Choose email, SMS or both.";
       else if (mail && !subject.value.trim()) { problem = "Add a subject for the email."; focusEl = subject; }
       else if (mail && !body.value.trim()) { problem = "Write the email message."; focusEl = body; }
       else if (text && !smsBody.value.trim()) { problem = "Write the SMS text."; focusEl = smsBody; }
-      else if (text && !mail && !t.some(function (r) { return r.dataset.sms === "1"; })) problem = "None of these people has a Ghana mobile number to text.";
+      else if (text && !mail && !c.sms) problem = "None of these people has a Ghana mobile number to text.";
       if (problem) {
         e.preventDefault();
         e.stopImmediatePropagation();

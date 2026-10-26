@@ -23,6 +23,12 @@ logger = logging.getLogger(__name__)
 
 staff_required = user_passes_test(is_staff_side, login_url="pages:login")
 
+# The public workshop page's title size, set per workshop in Settings.
+TITLE_FONT_MIN, TITLE_FONT_MAX = 1, 200
+
+# Workshop Contacts list page size.
+CONTACTS_PER_PAGE = 20
+
 
 def _dashboard(request):
     """Which sidebar to show -- a Secretariat (non-admin) user gets the
@@ -279,9 +285,24 @@ def _save_settings(request, ws):
     ws.ends_at = _parse_dt(request.POST.get("ends_at"))
     ws.registration_closes_at = _parse_dt(request.POST.get("registration_closes_at"))
 
+    # Any size the admin picks is used as-is on the public page (which only
+    # scales big titles down on phones) -- 1 to 200 px, whole or decimal
+    # input rounded to whole pixels. Anything else is refused with a message
+    # rather than silently changed.
     raw_size = (request.POST.get("title_font_size") or "").strip()
-    if raw_size.isdigit():
-        ws.title_font_size = max(14, min(int(raw_size), 72))
+    if raw_size:
+        try:
+            size = round(float(raw_size))
+        except ValueError:
+            size = None
+        if size is None or not TITLE_FONT_MIN <= size <= TITLE_FONT_MAX:
+            messages.error(
+                request,
+                f"Title font size must be a number from {TITLE_FONT_MIN} to {TITLE_FONT_MAX} px; "
+                f"it was left at {ws.title_font_size}px.",
+            )
+        else:
+            ws.title_font_size = size
 
     raw_fee = request.POST.get("certificate_fee", "").strip()
     if raw_fee:
@@ -715,8 +736,19 @@ def contacts(request):
         back = request.POST.get("return_query", "")
         return redirect(reverse("workshop_admin:contacts") + (f"?{back}" if back else ""))
 
+    from django.core.paginator import Paginator
+
     f = _contact_filters(request.GET)
-    people = _filtered_contacts(f)
+    matching = _filtered_contacts(f)
+    # 20 to a page. Sends and exports still cover everyone the filters
+    # match (or just the ticked rows), not only the page on screen.
+    paginator = Paginator(matching, CONTACTS_PER_PAGE)
+    page = paginator.get_page(request.GET.get("page"))
+    people = list(page.object_list)
+    # The query string without ?page=, for page links, exports and redirects.
+    params = request.GET.copy()
+    params.pop("page", None)
+    query = params.urlencode()
 
     # Everything the per-person workshop modal shows, handed to the page as
     # JSON so opening it needs no extra request.
@@ -756,9 +788,13 @@ def contacts(request):
     everyone = list(WorkshopContact.objects.only("phone", "has_paid", "registration_count"))
     return render(request, "dashboards/admin/workshop_contacts.html", {
         "people": people,
+        "page": page,
+        "page_range": paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1),
+        "matching_count": len(matching),
+        "matching_sms": sum(1 for c in matching if c.sms_ok),
         "modal": modal,
         "f": f,
-        "query": request.GET.urlencode(),
+        "query": query,
         "workshops": Workshop.objects.order_by("-starts_at", "-created_at").only("pk", "title", "starts_at"),
         "stats": {
             "all": len(everyone),

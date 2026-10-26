@@ -473,3 +473,45 @@ class AdminDollarGuideTests(PinnedRateMixin, TestCase):
         self.ws.save()
         html = self.client.get(reverse("workshop_admin:manage", args=[self.ws.pk])).content.decode()
         self.assertNotIn("US$", html)
+
+
+class TitleFontSizeTests(PinnedRateMixin, TestCase):
+    """Settings > Title font size: any size from 1 to 200 px is kept exactly
+    and reaches the public page; anything else is refused, not clamped."""
+
+    def setUp(self):
+        super().setUp()
+        self.ws = _workshop()
+        admin = User.objects.create_superuser(
+            email="fontadmin@example.com", password="pw-admin-123", first_name="Ada", last_name="Admin")
+        self.client.force_login(admin)
+        self.url = reverse("workshop_admin:manage", args=[self.ws.pk])
+
+    def _save(self, size):
+        return self.client.post(self.url, {
+            "action": "save_settings", "tab": "settings", "title": self.ws.title,
+            "certificate_fee": "150.00", "fee_currency": "GHS", "is_published": "on",
+            "title_font_size": size,
+        }, follow=True)
+
+    def test_small_and_large_sizes_are_kept_exactly(self):
+        for size in ("10", "13", "150", "200", "1"):
+            self._save(size)
+            self.ws.refresh_from_db()
+            self.assertEqual(self.ws.title_font_size, int(size))
+        page = self.client.get(reverse("workshop:register", args=[self.ws.slug]))
+        self.assertContains(page, "--ws-title-size: 1px;")
+
+    def test_public_page_uses_the_size_without_a_floor(self):
+        self._save("12")
+        page = self.client.get(reverse("workshop:register", args=[self.ws.slug]))
+        self.assertContains(page, "--ws-title-size: 12px;")
+        self.assertNotContains(page, "clamp(24px")
+
+    def test_unusable_values_are_refused_with_a_message(self):
+        self._save("40")
+        for bad in ("0", "500", "abc", "-5"):
+            resp = self._save(bad)
+            self.assertContains(resp, "Title font size must be a number from 1 to 200")
+            self.ws.refresh_from_db()
+            self.assertEqual(self.ws.title_font_size, 40)

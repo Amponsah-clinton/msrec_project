@@ -587,7 +587,7 @@
           <h4><i class="fa-regular fa-file-lines"></i> Workshop details</h4>
           <div class="wsa-form-grid">
             <div class="wsa-f"><label for="wsaTitle">Title</label><input id="wsaTitle" type="text" name="title" value="{{ ws.title }}" maxlength="200"></div>
-            <div class="wsa-f"><label for="wsaTitleSize">Title font size (px)</label><input id="wsaTitleSize" type="number" name="title_font_size" value="{{ ws.title_font_size }}" min="14" max="72" step="1"><span class="hint">Size on the public page; it scales down on small screens.</span></div>
+            <div class="wsa-f"><label for="wsaTitleSize">Title font size (px)</label><input id="wsaTitleSize" type="number" name="title_font_size" value="{{ ws.title_font_size }}" min="1" max="200" step="1" inputmode="numeric"><span class="hint">Any size from 1 to 200 px. Shown exactly at this size on computers; on phones, sizes above 32 px are scaled down a little so the title fits the screen.</span></div>
             <div class="wsa-f wide"><label for="wsaTagline">Tagline</label><input id="wsaTagline" type="text" name="tagline" value="{{ ws.tagline }}" maxlength="300"></div>
             <div class="wsa-f wide"><label for="wsaDesc">Description</label><textarea id="wsaDesc" name="description" rows="3">{{ ws.description }}</textarea></div>
           </div>
