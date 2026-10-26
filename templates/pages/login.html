@@ -21,15 +21,21 @@
             <p class="login-sub">Access your research ethics account.</p>
 
             {% if maintenance_locked %}
-              <div class="login-messages"><div class="login-message" style="border-left:3px solid #f5a524;">The site is under scheduled maintenance{% if maintenance_end %} until {{ maintenance_end|date:"j M Y, H:i" }} GMT{% endif %}. Only the administrator area is available until then.</div></div>
-            {% endif %}
-            {% if messages %}
-              <div class="login-messages">
-                {% for message in messages %}
-                  <p class="login-message{% if message.tags %} {{ message.tags }}{% endif %}">{{ message }}</p>
-                {% endfor %}
+              {% comment %}
+              Not a flash message -- it describes the state of the site,
+              so it has no close button and does not time out.
+              {% endcomment %}
+              <div class="ms-alerts">
+                <div class="ms-alert ms-alert--warning" role="status">
+                  {% include "_alert_icon.html" with variant="warning" %}
+                  <div class="ms-alert__content">
+                    <h6 class="ms-alert__title">Scheduled maintenance</h6>
+                    <div class="ms-alert__text">The site is under scheduled maintenance{% if maintenance_end %} until {{ maintenance_end|date:"j M Y, H:i" }} GMT{% endif %}. Only the administrator area is available until then.</div>
+                  </div>
+                </div>
               </div>
             {% endif %}
+            {% include "_alerts.html" %}
 
             <form id="loginForm" method="post" action="{% url 'pages:login' %}" novalidate>
               {% csrf_token %}
@@ -361,5 +367,4 @@
 
 {% block extra_js %}
 <script src="{% static 'assets/js/login.js' %}"></script>
-<script src="{% static 'assets/js/auth-alerts.js' %}"></script>
 {% endblock %}

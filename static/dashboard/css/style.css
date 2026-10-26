@@ -842,40 +842,13 @@ svg {
   flex: 1;
 }
 
-/* ---------------- Flash messages (django.contrib.messages) ---------------- */
-.flash-messages { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
-.flash-message {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 500;
-  background: var(--green-light);
-  color: var(--text-main);
-  border: 1px solid color-mix(in srgb, var(--green) 25%, transparent);
-  /* Auto-dismissed by script.js 5s after the page loads -- fades and
-     collapses on the way out (removed from the DOM once the transition
-     ends), so the next alert slides up instead of leaving a gap. */
-  overflow: hidden;
-  max-height: 60px;
-  transition: opacity .25s ease, transform .25s ease, max-height .25s ease .1s, padding .25s ease .1s;
-}
-.flash-message.is-dismissing {
-  opacity: 0;
-  transform: translateY(-6px);
-  max-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  border-width: 0;
-}
-.flash-message svg { width: 17px; height: 17px; color: var(--green); flex-shrink: 0; }
-.flash-message.error {
-  background: var(--red-light);
-  border-color: color-mix(in srgb, var(--red) 25%, transparent);
-}
-.flash-message.error svg { color: var(--red); }
+/* ---------------- Flash messages (django.contrib.messages) ----------------
+   The boxes themselves are the shared .ms-alert system
+   (assets/css/alerts.css, via templates/_alerts.html). base.html keeps
+   the .flash-messages class on the wrapper purely as a hook: the print
+   rules in letter.css / protocol-review.css / governance-docs.css /
+   member-meetings.css and the Workshop admin page's floating-toast
+   tweak all target it. */
 
 /* Stat cards */
 

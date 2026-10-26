@@ -61,8 +61,14 @@ class DuplicateTests(PinnedRateMixin, TestCase):
             workshop=ws or self.ws, name=name, institution="UG", email=email, phone=phone, **kw)
 
     def test_registering_twice_for_one_workshop_counts_once(self):
-        for _ in range(3):
-            self._reg("Emmanuel Kofi Obah", "obah@example.com", "0545254190")
+        # The public form now refuses the second and third attempt, but rows
+        # like these are still in the table from before the rule, kept as
+        # flagged duplicates rather than deleted. The contact layer counts
+        # distinct workshops, so all three are still one registration.
+        self._reg("Emmanuel Kofi Obah", "obah@example.com", "0545254190")
+        for _ in range(2):
+            self._reg("Emmanuel Kofi Obah", "obah@example.com", "0545254190",
+                      is_duplicate=True)
         c = WorkshopContact.objects.get()
         self.assertEqual(c.registration_count, 1)
         self.assertEqual(c.workshop_titles, ["AI Ethics"])
@@ -137,8 +143,14 @@ class ContactPageTests(PinnedRateMixin, TestCase):
 
     def test_workshop_modal_data(self):
         kofi = WorkshopContact.objects.get(email="kofi@example.com")
+        # A repeat row on the same workshop -- which is what this asserts:
+        # the modal collapses it into one entry showing "times: 2". The
+        # public form now refuses such a second attempt, so rows like this
+        # exist only as flagged duplicates (the ones already in the live
+        # table), and the modal must still account for them.
         WorkshopRegistration.objects.create(workshop=self.ws, name="Kofi Paid", institution="UG",
-                                            email="kofi@example.com", phone="0241111111")
+                                            email="kofi@example.com", phone="0241111111",
+                                            is_duplicate=True)
         resp = self.client.get(self.url)
         self.assertContains(resp, 'id="wscModalData"')
         self.assertContains(resp, 'class="wsc-ws-btn"')

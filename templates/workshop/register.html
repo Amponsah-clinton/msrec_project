@@ -288,13 +288,36 @@
   .ws-cert-frame-wrap iframe { width: 100%; height: 62vh; border: 0; display: block; }
 
   /* ---- Messages ---------------------------------------------------- */
-  .ws-msgs { margin-bottom: 18px; display: flex; flex-direction: column; gap: 8px; }
-  .ws-msg { border-radius: 11px; padding: 12px 15px; font-size: 14px; line-height: 1.5;
-    display: flex; gap: 9px; align-items: flex-start; }
-  .ws-msg.error { background: #fdeaea; color: #a52222; border: 1px solid #f3c6c6; }
-  .ws-msg.success { background: #e9f7ef; color: #1c7a46; border: 1px solid #c3e9d3; }
-  .ws-msg.warning { background: #fff7e6; color: #8a5a10; border: 1px solid #f3dcae; }
-  .ws-msg.info { background: #eef4ff; color: #1e4ba0; border: 1px solid #cfdcf7; }
+  /* Already-registered notice. Replaces the form rather than sitting above
+     it: the answer is "you're on the list", so re-filling it is pointless. */
+  .ws-dupe { border: 1px solid #f3dcae; background: linear-gradient(180deg, #fffaf0, #fff7e6);
+    border-radius: 14px; padding: 22px; display: flex; gap: 16px; align-items: flex-start; }
+  .ws-dupe .ico { flex: none; width: 44px; height: 44px; border-radius: 12px; background: #b4731f;
+    color: #fff; display: flex; align-items: center; justify-content: center; font-size: 20px;
+    box-shadow: 0 6px 14px -6px rgba(180,115,31,.75); }
+  .ws-dupe .body { flex: 1; min-width: 0; }
+  .ws-dupe h3 { margin: 0 0 6px; font-size: 17px; color: #7a4e0c; }
+  .ws-dupe p { margin: 0 0 10px; font-size: 14px; line-height: 1.6; color: #6b5324; }
+  .ws-dupe p:last-child { margin-bottom: 0; }
+  .ws-dupe .ws-dupe-who { display: inline-flex; align-items: center; gap: 7px; font-size: 13px;
+    font-weight: 700; background: rgba(180,115,31,.12); color: #7a4e0c; border-radius: 9px;
+    padding: 6px 11px; margin-bottom: 12px; }
+  .ws-dupe-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .ws-dupe-btn { background: #0f8a86; color: #fff; border-radius: 10px; padding: 12px 22px;
+    font-size: 14.5px; font-weight: 700; text-decoration: none; display: inline-flex;
+    align-items: center; justify-content: center; gap: 8px; min-height: 48px; }
+  .ws-dupe-btn:hover { background: #0c726e; color: #fff; }
+  .ws-dupe-link { color: #7a4e0c; font-weight: 700; text-decoration: none; padding: 12px 0;
+    display: inline-flex; align-items: center; gap: 7px; font-size: 14px; }
+  @media (max-width: 640px) {
+    .ws-dupe { padding: 17px; gap: 13px; flex-direction: column; }
+    .ws-dupe-actions { flex-direction: column; align-items: stretch; }
+    .ws-dupe-btn { width: 100%; }
+    .ws-dupe-link { justify-content: center; }
+  }
+
+  /* Alerts on this page come from the shared .ms-alert system
+     (assets/css/alerts.css, loaded in base.html). */
 
   /* ---- Responsive -------------------------------------------------- */
   @media (max-width: 860px) {
@@ -411,13 +434,7 @@
       </div>
     </section>
 
-    {% if messages %}
-      <div class="ws-msgs">
-        {% for message in messages %}
-          <div class="ws-msg {{ message.tags }}"><i class="bi bi-exclamation-circle-fill"></i><span>{{ message }}</span></div>
-        {% endfor %}
-      </div>
-    {% endif %}
+    {% include "_alerts.html" %}
 
     {% if ws.description %}<p class="ws-intro">{{ ws.description|linebreaksbr }}</p>{% endif %}
 
@@ -433,8 +450,53 @@
         </p>
       </div>
 
-      {% if not ws.registration_open %}
-        <div class="ws-msg error"><i class="bi bi-lock-fill"></i><span>Registration is currently closed. Please check back later.</span></div>
+      {% if duplicate %}
+        <div class="ws-dupe">
+          <span class="ico"><i class="bi bi-person-check-fill"></i></span>
+          <div class="body">
+            {% if duplicate.by_email %}
+              <h3>You're already registered for this workshop</h3>
+              <span class="ws-dupe-who"><i class="bi bi-envelope-check"></i> {{ prefill.email }}{% if duplicate.registered_on %} · registered {{ duplicate.registered_on|date:"j M Y" }}{% endif %}</span>
+              {% if duplicate.pay_url %}
+                <p>Your place is already held under this email address — there's no need to register again.
+                   What's still outstanding is the certificate fee.</p>
+                <p><strong>Continue with the registration you already have</strong> rather than starting a new one,
+                   so your payment is matched to it.</p>
+                <div class="ws-dupe-actions">
+                  <a class="ws-dupe-btn" href="{{ duplicate.pay_url }}"><i class="bi bi-lock-fill"></i> Pay {{ duplicate.currency }} {{ duplicate.amount }} now</a>
+                  <a class="ws-dupe-link" href="{% url 'workshop:list' %}"><i class="bi bi-arrow-left"></i> Other workshops</a>
+                </div>
+              {% else %}
+                <p>We already have your registration for this workshop, so there's nothing more to do.
+                   {% if duplicate.is_paid %}Your certificate fee is paid and your certificate will be emailed to you after the workshop.
+                   {% else %}We'll email you the joining link and any materials beforehand.{% endif %}</p>
+                <p>Registering again would only create a duplicate, so the form is closed for this address.</p>
+                <div class="ws-dupe-actions">
+                  <a class="ws-dupe-link" href="{% url 'workshop:list' %}"><i class="bi bi-arrow-left"></i> Register for a different workshop</a>
+                </div>
+              {% endif %}
+            {% else %}
+              <h3>That name is already registered for this workshop</h3>
+              <span class="ws-dupe-who"><i class="bi bi-person"></i> {{ duplicate.name }}{% if duplicate.registered_on %} · registered {{ duplicate.registered_on|date:"j M Y" }}{% endif %}</span>
+              <p>Someone is already on this workshop's list under this name, so we haven't added a second entry.</p>
+              <p>If that was you, you're already registered — check your email for the joining details.
+                 <strong>If you're a different person who happens to share the name</strong>, please
+                 <a href="{% url 'pages:contact' %}">contact the Secretariat</a> and we'll add you manually.</p>
+              <div class="ws-dupe-actions">
+                <a class="ws-dupe-link" href="{% url 'workshop:list' %}"><i class="bi bi-arrow-left"></i> Register for a different workshop</a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% elif not ws.registration_open %}
+        <div class="ms-alerts">
+          <div class="ms-alert ms-alert--danger ms-alert--slim" role="status">
+            {% include "_alert_icon.html" with variant="danger" %}
+            <div class="ms-alert__content">
+              <div class="ms-alert__text">Registration is currently closed. Please check back later.</div>
+            </div>
+          </div>
+        </div>
       {% else %}
       <form method="post" id="wsForm" novalidate>
         {% csrf_token %}
@@ -510,8 +572,11 @@
             <div class="ws-fee-note" id="wsFeeNote">
               {% if ws.certificate_fee_payable %}
                 {% with usd=ws.certificate_fee|usd %}
-                <h4>Certificate fee</h4>
-                <p>You'll pay securely on the next step, straight after registering.</p>
+                <h4>Certificate fee — payment required</h4>
+                <p>Choosing a certificate means paying for it: you'll go straight to secure
+                   checkout after this form, and <strong>your registration isn't complete until
+                   the fee is paid</strong>. Pick “No, thank you” if you'd rather take part
+                   without one — that's free.</p>
                 <div class="ws-price">
                   <span class="amt"><small>{{ ws.fee_currency }}</small>{{ ws.certificate_fee }}</span>
                   {% if usd %}<span class="usd"><i class="bi bi-globe-americas"></i> ≈ {{ usd }}</span>{% endif %}
@@ -537,7 +602,8 @@
         <div class="ws-actions">
           <span class="ws-secure"><i class="bi bi-shield-lock-fill"></i> Your details are kept private</span>
           <button type="button" class="ws-btn-outline" id="wsPreviewCertBtn" {% if not ws.certificate_required %}hidden{% endif %}><i class="bi bi-eye"></i> Preview certificate</button>
-          <button type="submit" class="ws-btn" id="wsSubmit">
+          <button type="submit" class="ws-btn" id="wsSubmit"
+                  {% if not ws.certificate_required and ws.certificate_fee_payable %}data-label-cert="Register &amp; pay {{ ws.fee_currency }} {{ ws.certificate_fee }}" data-label-plain="Register"{% endif %}>
             {% if ws.certificate_required and ws.certificate_fee_payable %}
               <i class="bi bi-lock-fill"></i> Register &amp; pay {{ ws.fee_currency }} {{ ws.certificate_fee }}
             {% else %}
@@ -650,11 +716,19 @@
     // compulsory the question isn't asked and the fee is stated outright.
     var feeNote = document.getElementById("wsFeeNote");
     var previewBtn = document.getElementById("wsPreviewCertBtn");
+    var submitBtn = document.getElementById("wsSubmit");
     document.querySelectorAll('input[name="wants_certificate"]').forEach(function (r) {
       r.addEventListener("change", function () {
         var yes = r.value === "yes" && r.checked;
         if (feeNote) feeNote.classList.toggle("show", yes);
         if (previewBtn) previewBtn.hidden = !yes;
+        // Choosing a certificate commits them to paying, so the button
+        // says so rather than springing it on them at checkout.
+        if (submitBtn && submitBtn.dataset.labelCert) {
+          submitBtn.innerHTML = yes
+            ? '<i class="bi bi-lock-fill"></i> ' + submitBtn.dataset.labelCert
+            : submitBtn.dataset.labelPlain + ' <i class="bi bi-arrow-right"></i>';
+        }
       });
     });
 

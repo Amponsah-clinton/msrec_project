@@ -212,33 +212,5 @@ body.login-page {
   .login-main { padding: 150px 16px 50px; }
 }
 
-/* ---------------- Flash messages ---------------- */
-.login-messages { display: flex; flex-direction: column; gap: 8px; margin: 0 0 20px; }
-.login-message {
-  margin: 0;
-  padding: 11px 14px;
-  border-radius: 10px;
-  font-size: 13.5px;
-  font-weight: 500;
-  background: #eef6f4;
-  color: var(--heading-color);
-  border: 1px solid color-mix(in srgb, var(--accent-color) 25%, transparent);
-  opacity: 1;
-  max-height: 80px;
-  overflow: hidden;
-  transition: opacity 0.35s ease, max-height 0.35s ease, margin 0.35s ease, padding 0.35s ease;
-}
-/* Auto-dismissed 4s after page load -- see assets/js/auth-alerts.js */
-.login-message.is-dismissing {
-  opacity: 0;
-  max-height: 0;
-  margin: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  border-width: 0;
-}
-.login-message.error {
-  background: #fdecea;
-  color: #7a1f16;
-  border-color: color-mix(in srgb, #c0392b 25%, transparent);
-}
+/* Flash messages on this page come from the shared .ms-alert system
+   (assets/css/alerts.css + assets/js/alerts.js, via templates/_alerts.html). */

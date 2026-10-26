@@ -1,0 +1,316 @@
+/* =====================================================================
+   MSREC alerts -- one alert vocabulary for the whole project.
+   =====================================================================
+   Used by templates/_alerts.html (django.contrib.messages) on both the
+   public site and the dashboards, so it is deliberately free of any
+   framework dependency: no Bootstrap `.alert` base rules underneath it
+   and no icon font, because templates/dashboards/base.html loads
+   neither. Everything an alert needs -- box, icon badge, close button --
+   is in this file plus the inline SVGs in the partial.
+
+   The palette is the Bootstrap 5 tint scale (green/red/orange/blue,
+   100-600). Deliberately NOT a coloured edge strip: the tinted surface
+   and the icon badge carry the status, so an alert reads the same
+   whichever side of the page it sits on.
+   ===================================================================== */
+
+:root {
+  --ms-alert-radius: 12px;
+  --ms-alert-surface: #f8f9fa;
+  --ms-alert-icon-bg: #e9ecef;
+  --ms-alert-icon-fg: #495057;
+  --ms-alert-text: #212529;
+  --ms-alert-muted: #5b6671;
+  --ms-alert-accent: #6c757d;
+}
+
+/* The dashboards flip this on <html>; the public site never sets it and
+   so always gets the light tokens above. */
+:root[data-theme="dark"] {
+  --ms-alert-surface: #1d222c;
+  --ms-alert-icon-bg: #2a303c;
+  --ms-alert-icon-fg: #c7cdd8;
+  --ms-alert-text: #e8eaef;
+  --ms-alert-muted: #9aa1b0;
+}
+
+/* ---------------------------------------------------------------- stack */
+
+.ms-alerts {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0 0 20px;
+}
+.ms-alerts:empty { display: none; margin: 0; }
+
+/* ---------------------------------------------------------------- alert */
+
+.ms-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 0;
+  border-radius: var(--ms-alert-radius);
+  background: var(--ms-alert-surface);
+  color: var(--ms-alert-text);
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+  /* Collapses rather than just fading, so the alerts below slide up into
+     the gap instead of the stack leaving a hole. Animated via max-height
+     because the real height is content-dependent -- 600px is an
+     over-tall ceiling, not a measured value. */
+  max-height: 600px;
+  overflow: hidden;
+  opacity: 1;
+  transition: opacity .3s ease, transform .3s ease,
+              max-height .3s ease .05s, padding .3s ease .05s,
+              margin .3s ease .05s;
+}
+.ms-alert.is-entering {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+.ms-alert.is-dismissing {
+  opacity: 0;
+  transform: translateY(-6px);
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* ----------------------------------------------------------- icon badge */
+
+.ms-alert__icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--ms-alert-icon-bg);
+  color: var(--ms-alert-icon-fg);
+}
+.ms-alert__icon svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* A single-line alert has no heading, so centre the badge against the one
+   line of text instead of top-aligning it. */
+.ms-alert--slim { align-items: center; }
+.ms-alert--slim .ms-alert__icon { width: 30px; height: 30px; }
+.ms-alert--slim .ms-alert__icon svg { width: 16px; height: 16px; }
+
+/* -------------------------------------------------------------- content */
+
+.ms-alert__content {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 1px;
+}
+.ms-alert__title {
+  margin: 0 0 3px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--ms-alert-text);
+  letter-spacing: -0.01em;
+}
+.ms-alert--slim .ms-alert__content { padding-top: 0; }
+.ms-alert__text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 450;
+  color: var(--ms-alert-muted);
+  overflow-wrap: anywhere;
+}
+/* Without a heading above it the body line IS the message, so it carries
+   the full-strength text colour, not the muted sub-line one. */
+.ms-alert--slim .ms-alert__text { color: var(--ms-alert-text); font-weight: 500; }
+
+.ms-alert__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+}
+.ms-alert__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 15px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ms-alert-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter .15s ease;
+}
+.ms-alert__btn:hover { filter: brightness(1.08); color: #fff; }
+.ms-alert__btn--link {
+  background: transparent;
+  color: var(--ms-alert-text);
+}
+.ms-alert__btn--link:hover { background: rgba(0, 0, 0, .05); color: var(--ms-alert-text); }
+:root[data-theme="dark"] .ms-alert__btn--link:hover { background: rgba(255, 255, 255, .08); }
+
+/* --------------------------------------------------------- close button */
+
+.ms-alert__close {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin: -2px -4px 0 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ms-alert-text);
+  opacity: .45;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: opacity .15s ease, background-color .15s ease;
+}
+.ms-alert__close svg {
+  width: 13px;
+  height: 13px;
+  display: block;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+}
+.ms-alert__close:hover { opacity: 1; background: rgba(0, 0, 0, .07); }
+:root[data-theme="dark"] .ms-alert__close:hover { background: rgba(255, 255, 255, .1); }
+.ms-alert__close:focus-visible {
+  opacity: 1;
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+.ms-alert--slim .ms-alert__close { margin-top: 0; }
+
+/* ------------------------------------------------------------- variants */
+
+.ms-alert--success {
+  --ms-alert-surface: #d1e7dd;
+  --ms-alert-icon-bg: #a4cfbb;
+  --ms-alert-icon-fg: #135033;
+  --ms-alert-text: #152b21;
+  --ms-alert-muted: #3c5a4c;
+  --ms-alert-accent: #198754;
+}
+.ms-alert--danger {
+  --ms-alert-surface: #f8d7da;
+  --ms-alert-icon-bg: #f0aeb5;
+  --ms-alert-icon-fg: #83202a;
+  --ms-alert-text: #3a1217;
+  --ms-alert-muted: #6b3b40;
+  --ms-alert-accent: #dc3545;
+}
+.ms-alert--warning {
+  --ms-alert-surface: #ffe4d1;
+  --ms-alert-icon-bg: #fecaa3;
+  --ms-alert-icon-fg: #974b14;
+  --ms-alert-text: #3d2208;
+  --ms-alert-muted: #6d4a2a;
+  --ms-alert-accent: #c9631c;
+}
+.ms-alert--info {
+  --ms-alert-surface: #cfe3fe;
+  --ms-alert-icon-bg: #9ec7fc;
+  --ms-alert-icon-fg: #034696;
+  --ms-alert-text: #0a1f3d;
+  --ms-alert-muted: #35496b;
+  --ms-alert-accent: #0d6efd;
+}
+
+:root[data-theme="dark"] .ms-alert--success {
+  --ms-alert-surface: #10291e;
+  --ms-alert-icon-bg: #1b4a35;
+  --ms-alert-icon-fg: #7fd3ab;
+  --ms-alert-text: #dcf2e7;
+  --ms-alert-muted: #93b6a5;
+}
+:root[data-theme="dark"] .ms-alert--danger {
+  --ms-alert-surface: #2d1417;
+  --ms-alert-icon-bg: #55222a;
+  --ms-alert-icon-fg: #f09aa3;
+  --ms-alert-text: #fadddf;
+  --ms-alert-muted: #c3989c;
+}
+:root[data-theme="dark"] .ms-alert--warning {
+  --ms-alert-surface: #2d1d0e;
+  --ms-alert-icon-bg: #55351a;
+  --ms-alert-icon-fg: #f3b075;
+  --ms-alert-text: #fae7d4;
+  --ms-alert-muted: #c0a287;
+}
+:root[data-theme="dark"] .ms-alert--info {
+  --ms-alert-surface: #11223c;
+  --ms-alert-icon-bg: #1d3a63;
+  --ms-alert-icon-fg: #8fbcfa;
+  --ms-alert-text: #dbe8fb;
+  --ms-alert-muted: #96aac7;
+}
+
+/* ------------------------------------------------------- toast position */
+/* Alerts raised from JS (MSRECAlerts.show) float over the page instead of
+   pushing layout, since there is no request cycle to place them in. */
+
+.ms-alerts--toast {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4000;
+  width: min(560px, calc(100% - 32px));
+  margin: 0;
+  pointer-events: none;
+}
+.ms-alerts--toast .ms-alert {
+  pointer-events: auto;
+  box-shadow: 0 14px 40px -16px rgba(16, 24, 40, .45);
+}
+
+/* ----------------------------------------------------------- responsive */
+
+@media (max-width: 575.98px) {
+  .ms-alert { padding: 14px; gap: 11px; }
+  .ms-alert__icon { width: 30px; height: 30px; }
+  .ms-alert__icon svg { width: 16px; height: 16px; }
+  .ms-alert__title { font-size: 14.5px; }
+  .ms-alert__text { font-size: 13.5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ms-alert { transition: opacity .01s linear; }
+  .ms-alert.is-entering,
+  .ms-alert.is-dismissing { transform: none; }
+}
+
+@media print {
+  .ms-alerts { display: none !important; }
+}

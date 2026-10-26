@@ -11,6 +11,13 @@
 {% block content %}
   <main class="main role-status-main">
     <div class="role-status-card">
+      {% comment %}
+      This page is a landing spot straight out of login_view, so the
+      welcome alert has to be rendered here too -- it would otherwise be
+      consumed and dropped on the way through. Inside the card, not
+      beside it: .role-status-main centres a single child in a flex row.
+      {% endcomment %}
+      {% include "_alerts.html" %}
       <span class="role-status-icon">
         <i class="bi bi-hourglass-split"></i>
       </span>

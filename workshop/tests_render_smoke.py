@@ -65,9 +65,13 @@ class RenderSmokeTests(PinnedRateMixin, TestCase):
         return Workshop.objects.create(**fields)
 
     def _reg(self, ws, **kwargs):
+        # A distinct email per row by default: one workshop allows only one
+        # active registration per address, so fixtures that need several
+        # people on one workshop must use several addresses.
+        self._seq = getattr(self, "_seq", 0) + 1
         base = dict(
             workshop=ws, name="Ama Mensah", institution="UG",
-            email="ama@example.com", phone="0241234567",
+            email=f"ama{self._seq}@example.com", phone="0241234567",
         )
         base.update(kwargs)
         return WorkshopRegistration.objects.create(**base)

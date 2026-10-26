@@ -29,9 +29,11 @@ class WorkshopListTests(PinnedRateMixin, TestCase):
         _workshop(title="Old Workshop", starts_at=now - timezone.timedelta(days=30))
         _workshop(title="Hidden Draft", is_published=False)
         Workshop.objects.create(title="Undated Workshop")
-        for status in (PS.SUCCESS, PS.SUCCESS, PS.PENDING):
+        # Three different fee-payers (one active registration per address
+        # per workshop), two of them paid -> the 67% and GHS 300.00 below.
+        for i, status in enumerate((PS.SUCCESS, PS.SUCCESS, PS.PENDING), start=1):
             WorkshopRegistration.objects.create(
-                workshop=soon, name="P", institution="UG", email="p@example.com",
+                workshop=soon, name=f"P{i}", institution="UG", email=f"p{i}@example.com",
                 wants_certificate=True, payment_status=status, amount=Decimal("150.00"),
             )
 

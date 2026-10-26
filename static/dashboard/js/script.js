@@ -457,22 +457,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ---------------------------------------------------------------------
-// Flash messages (django.contrib.messages, rendered once in base.html so
-// every dashboard page gets it) -- auto-dismiss each alert 5s after the
-// page loads instead of leaving success/error banners on screen forever.
-// Timer starts at page load, not per-message stagger, so several messages
-// from the same request all disappear together.
-document.addEventListener("DOMContentLoaded", () => {
-  const FLASH_AUTO_DISMISS_MS = 5000;
-
-  document.querySelectorAll(".flash-messages .flash-message").forEach((el) => {
-    setTimeout(() => {
-      el.classList.add("is-dismissing");
-      // Transition end removes it cleanly; the fallback timeout covers
-      // reduced-motion / no-transition environments where that event
-      // never fires, so the (by-then invisible) element doesn't linger.
-      el.addEventListener("transitionend", () => el.remove(), { once: true });
-      setTimeout(() => el.remove(), 500);
-    }, FLASH_AUTO_DISMISS_MS);
-  });
-});
+// Flash messages (django.contrib.messages) are rendered by
+// templates/_alerts.html and driven by assets/js/alerts.js -- closing,
+// auto-dismiss and the hover pause all live there, shared with the
+// public site, so there is nothing to do here.

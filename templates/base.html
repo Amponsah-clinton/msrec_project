@@ -29,6 +29,12 @@
 
 <link href="{% static 'assets/css/main.css' %}" rel="stylesheet">
 <link href="{% static 'assets/css/site-search.css' %}" rel="stylesheet">
+{% comment %}
+alerts.css is global, not per-page: _alerts.html is included wherever
+a flash message can land (Login, Sign Up, password reset, Workshop
+registration, ...) and alerts.js can raise one from any page.
+{% endcomment %}
+<link href="{% static 'assets/css/alerts.css' %}" rel="stylesheet">
 {% block extra_css %}{% endblock %}
 </head>
 <body class="{% block body_class %}{% endblock %}">
@@ -319,6 +325,7 @@
   {% block vendor_js %}{% endblock %}
   <script src="{% static 'assets/js/main.js' %}"></script>
   <script src="{% static 'assets/js/site-search.js' %}"></script>
+  <script src="{% static 'assets/js/alerts.js' %}"></script>
   {% block extra_js %}{% endblock %}
   {% include "assistant/_widget.html" %}
   {% include "_maintenance_bar.html" %}

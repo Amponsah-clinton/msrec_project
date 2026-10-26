@@ -121,16 +121,23 @@ class OptionalCertificateTests(PinnedRateMixin, TestCase):
         self.assertEqual(reg.payment_status, PS.PENDING)
         self.assertEqual(reg.amount, Decimal("150.00"))
 
-    def test_an_unpaid_opt_in_may_skip_payment(self):
-        """Nothing is compulsory, so "I'll pay later" stays on the pay page."""
-        self.client.post(
-            reverse("workshop:register", args=[self.ws.slug]),
-            _form(wants_certificate="yes"),
-        )
+    def test_an_unpaid_opt_in_is_not_a_completed_registration(self):
+        """Asking for a certificate commits you to paying for it, so there
+        is no "pay later" on the optional path either -- see
+        tests_payment_required for the full rule."""
+        with mock.patch("workshop.emails.send_branded_email", return_value=True):
+            self.client.post(
+                reverse("workshop:register", args=[self.ws.slug]),
+                _form(wants_certificate="yes"),
+            )
         reg = WorkshopRegistration.objects.get()
         html = self.client.get(reverse("workshop:pay", args=[reg.pk])).content.decode()
-        self.assertIn("pay later", html)
-        self.assertTrue(reg.registration_complete)
+        self.assertNotIn("pay later", html)
+        self.assertIn("Payment is required to complete your registration", html)
+        self.assertFalse(reg.registration_complete)
+        # What they can do instead is drop the certificate, which is a
+        # change of choice rather than a non-payment.
+        self.assertIn("don't want a certificate after all", html)
 
 
 class CompulsoryCertificateTests(PinnedRateMixin, TestCase):
@@ -218,7 +225,9 @@ class CompulsoryCertificateTests(PinnedRateMixin, TestCase):
         reg = WorkshopRegistration.objects.get()
         html = self.client.get(reverse("workshop:pay", args=[reg.pk])).content.decode()
         self.assertNotIn("pay later", html)
-        self.assertIn("only complete once this fee is paid", html)
+        self.assertIn("Payment is required to complete your registration", html)
+        # Nothing to decline when the workshop compels the certificate.
+        self.assertNotIn("don't want a certificate after all", html)
 
     def test_paying_completes_the_registration(self):
         self.client.post(reverse("workshop:register", args=[self.ws.slug]), _form())
@@ -440,11 +449,23 @@ class CheckoutEmailTests(TestCase):
         subjects = [c.kwargs.get("subject", "") for c in send.call_args_list]
         self.assertTrue(any("Certificate fee outstanding" in s for s in subjects), subjects)
 
-    def test_an_optional_opt_in_is_not_chased_automatically(self):
+    def test_an_optional_opt_in_is_also_sent_the_payment_link(self):
+        """It used not to be, back when an unpaid opt-in still counted as a
+        registration. Now it doesn't count until the fee is paid, so the way
+        back to the checkout has to reach them too."""
         ws = _workshop()
         with mock.patch("workshop.emails.send_branded_email", return_value=True) as send:
             self.client.post(
                 reverse("workshop:register", args=[ws.slug]), _form(wants_certificate="yes")
+            )
+        subjects = [c.kwargs.get("subject", "") for c in send.call_args_list]
+        self.assertTrue(any("Certificate fee outstanding" in s for s in subjects), subjects)
+
+    def test_declining_the_certificate_needs_no_payment_link(self):
+        ws = _workshop()
+        with mock.patch("workshop.emails.send_branded_email", return_value=True) as send:
+            self.client.post(
+                reverse("workshop:register", args=[ws.slug]), _form(wants_certificate="no")
             )
         subjects = [c.kwargs.get("subject", "") for c in send.call_args_list]
         self.assertFalse(any("Certificate fee outstanding" in s for s in subjects), subjects)

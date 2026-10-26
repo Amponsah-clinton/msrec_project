@@ -122,6 +122,13 @@
   .wsa-pick { display: inline-flex; align-items: flex-start; gap: 9px; cursor: pointer; }
   .wsa-pick input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--teal); cursor: pointer; flex: none; }
   tr.wsa-reg-row.picked td { background: color-mix(in srgb, var(--teal) 7%, transparent); }
+  /* A flagged repeat stays in the table -- dimmed, never hidden, so it is
+     obvious that the row still exists and can be restored. */
+  tr.wsa-row-dupe td { opacity: .62; }
+  tr.wsa-row-dupe td:first-child { box-shadow: inset 3px 0 0 var(--orange, #b4731f); }
+  .wsa-badge.dupe { background: #fff4e5; color: #b4731f; }
+  .wsa-chip-dupe b { color: var(--orange, #b4731f); }
+  .wsa-chip-await b { color: var(--orange, #b4731f); }
   .wsa-selbar { display: none; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.8px; color: var(--text-sub); margin: -4px 0 12px; }
   .wsa-selbar.on { display: flex; }
   .wsa-selbar b { color: var(--teal); }
@@ -348,11 +355,13 @@
        list below AND is the group every send button acts on. (It used to be
        three separate pickers that could disagree with each other.) {% endcomment %}
     <div class="wsa-chips">
-      <button type="button" class="wsa-chip active" data-filter="all" data-label="Everyone"><b>{{ counts.all }}</b><span>Registered</span></button>
+      <button type="button" class="wsa-chip active" data-filter="confirmed" data-label="Confirmed (fee settled)"><b>{{ counts.confirmed }}</b><span>Registered</span></button>
+      <button type="button" class="wsa-chip" data-filter="all" data-label="Everyone"><b>{{ counts.all }}</b><span>All entries</span></button>
       <button type="button" class="wsa-chip" data-filter="wants_cert" data-label="Wants a certificate"><b>{{ counts.wants_cert }}</b><span>Want certificate</span></button>
       <button type="button" class="wsa-chip" data-filter="paid" data-label="Paid"><b>{{ counts.paid }}</b><span>Paid</span></button>
-      <button type="button" class="wsa-chip" data-filter="unpaid" data-label="Not paid (fee owed)"><b>{{ counts.unpaid }}</b><span>Not paid</span></button>
+      <button type="button" class="wsa-chip wsa-chip-await" data-filter="unpaid" data-label="Awaiting payment (not yet registered)"><b>{{ counts.unpaid }}</b><span>Awaiting payment</span></button>
       <button type="button" class="wsa-chip" data-filter="no_cert" data-label="No certificate"><b>{{ counts.no_cert }}</b><span>No certificate</span></button>
+      {% if counts.duplicates %}<button type="button" class="wsa-chip wsa-chip-dupe" data-filter="duplicates" data-label="Repeat registrations"><b>{{ counts.duplicates }}</b><span>Repeats</span></button>{% endif %}
     </div>
 
     <div class="wsa-actions">
@@ -496,7 +505,7 @@
           <thead><tr><th><label class="wsa-pick" title="Tick everyone on this page"><input type="checkbox" id="wsaPickAll" aria-label="Tick everyone on this page"> Name</label></th><th>Institution</th><th>Contact</th><th>Certificate</th><th>Sent</th><th>Actions</th></tr></thead>
           <tbody>
             {% for r in regs %}
-            <tr class="wsa-reg-row" data-search="{{ r.name|lower }} {{ r.email|lower }} {{ r.phone }} {{ r.institution|lower }}" data-id="{{ r.pk }}" data-name="{{ r.name }}" data-sms="{{ r.sms_ok|yesno:'1,0' }}" data-wants="{{ r.wants_certificate|yesno:'1,0' }}" data-paid="{{ r.is_paid|yesno:'1,0' }}" data-unpaid="{{ r.payment_outstanding|yesno:'1,0' }}">
+            <tr class="wsa-reg-row{% if r.is_duplicate %} wsa-row-dupe{% endif %}" data-search="{{ r.name|lower }} {{ r.email|lower }} {{ r.phone }} {{ r.institution|lower }}" data-id="{{ r.pk }}" data-name="{{ r.name }}" data-sms="{{ r.sms_ok|yesno:'1,0' }}" data-wants="{{ r.wants_certificate|yesno:'1,0' }}" data-paid="{{ r.is_paid|yesno:'1,0' }}" data-unpaid="{{ r.payment_outstanding|yesno:'1,0' }}" data-duplicate="{{ r.is_duplicate|yesno:'1,0' }}">
               <td class="wsa-td-name"><label class="wsa-pick"><input type="checkbox" class="wsa-pick-row" value="{{ r.pk }}" aria-label="Tick {{ r.name }}"><span><span class="wsa-who">{{ r.name }}</span><br><span class="wsa-when">Registered {{ r.created_at|date:"j M Y" }}</span></span></label></td>
               <td data-label="Institution"><span class="wsa-dim">{{ r.institution }}</span></td>
               <td data-label="Contact"><span class="wsa-dim">{{ r.email }}{% if r.phone %}<br>{{ r.phone }}{% endif %}</span>{% if not r.phone %}<br><span class="wsa-nosms">No phone — email only</span>{% endif %}</td>
@@ -510,6 +519,7 @@
                   {% elif r.payment_status == 'failed' %}<span class="wsa-badge failed">Failed — {{ r.currency }} {{ r.amount }}</span>
                   {% else %}<span class="wsa-badge yes">Free</span>{% endif %}
                 {% else %}<span class="wsa-badge no">No cert</span>{% endif %}
+                {% if r.is_duplicate %}<br><span class="wsa-badge dupe" title="A repeat registration for this workshop — excluded from counts and bulk sends. Nothing was deleted.">Repeat</span>{% endif %}
                 </span>
               </td>
               <td data-label="Sent">
@@ -529,6 +539,11 @@
                   <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="send_materials"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn" title="Send materials"><i class="fa-solid fa-folder-open"></i></button></form>
                   {% if r.payment_outstanding %}<form method="post" action="{% url 'workshop_admin:manage' ws.pk %}" data-confirm="Email + SMS {{ r.name }} a link to pay {{ r.currency }} {{ r.amount }}?">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="send_payment_link"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn pay" title="Send payment link"><i class="fa-solid fa-credit-card"></i></button></form>{% endif %}
                   <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}" data-confirm="Approve {{ r.name }} and email + SMS their documents?">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="approve_send"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn go" title="Approve &amp; send documents"><i class="fa-solid fa-user-check"></i></button></form>
+                  {% if r.is_duplicate %}
+                  <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}" data-confirm="Restore {{ r.name }} as a real registration? They will be counted and included in bulk sends again.">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="unmark_duplicate"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn" style="color:#1c7a46;border-color:#c3e9d3;" title="Not a repeat — restore"><i class="fa-solid fa-rotate-left"></i></button></form>
+                  {% else %}
+                  <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}" data-confirm="Mark {{ r.name }} as a repeat registration? They are removed from counts and bulk sends, but nothing is deleted.">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="mark_duplicate"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn" style="color:#b4731f;border-color:#f3dcae;" title="Mark as a repeat registration"><i class="fa-solid fa-clone"></i></button></form>
+                  {% endif %}
                   <form method="post" action="{% url 'workshop_admin:manage' ws.pk %}" data-confirm="Delete {{ r.name }}'s registration?" data-confirm-variant="danger">{% csrf_token %}<input type="hidden" name="tab" value="registrations"><input type="hidden" name="action" value="delete_registration"><input type="hidden" name="reg_id" value="{{ r.pk }}"><button class="wsa-icon-btn danger" title="Delete"><i class="fa-solid fa-trash"></i></button></form>
                 </div>
               </td>
@@ -731,14 +746,11 @@
 
     // Flash feedback as a floating toast, so it's visible even though the
     // page scrolls to #registrations after an action.
+    // .ms-alerts--toast is the shared floating position from
+    // assets/css/alerts.css; alerts.js handles the close button and the
+    // auto-dismiss once it is there.
     var flash = document.querySelector(".flash-messages");
-    if (flash) {
-      flash.style.cssText = "position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:4000;max-width:560px;width:calc(100% - 32px);box-shadow:0 14px 40px -16px rgba(0,0,0,.4);";
-      setTimeout(function () {
-        flash.style.transition = "opacity .4s"; flash.style.opacity = "0";
-        setTimeout(function () { if (flash.parentNode) flash.parentNode.removeChild(flash); }, 420);
-      }, 6000);
-    }
+    if (flash) flash.classList.add("ms-alerts--toast");
 
     // Live banner preview on file select.
     var bannerInput = document.getElementById("wsBannerInput");
@@ -804,11 +816,16 @@
     var PER_PAGE = 25;
 
     function matches(row, f) {
+      // A repeat shows only under its own chip, so the others agree with
+      // the server-side counts and with who a bulk send would reach.
+      if (f !== "duplicates" && row.dataset.duplicate === "1") return false;
       if (f === "all") return true;
       if (f === "wants_cert") return row.dataset.wants === "1";
       if (f === "no_cert") return row.dataset.wants === "0";
       if (f === "paid") return row.dataset.paid === "1";
       if (f === "unpaid") return row.dataset.unpaid === "1";
+      if (f === "duplicates") return row.dataset.duplicate === "1";
+      if (f === "confirmed") return row.dataset.unpaid !== "1";
       return true;
     }
     // Ticked rows narrow every send on the tab to just those people; with

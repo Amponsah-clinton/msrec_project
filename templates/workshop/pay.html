@@ -74,7 +74,10 @@
   .wsp-foot { margin-top: 18px; text-align: center; }
   .wsp-trust { display: inline-flex; align-items: center; justify-content: center; gap: 7px;
     font-size: 12.5px; color: var(--muted,#8a93a6); }
-  .wsp-skip { display: inline-block; margin-top: 14px; color: var(--muted,#56607a); font-size: 13.5px; }
+  .wsp-decline { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border,#eef1f6); }
+  .wsp-decline-btn { background: none; border: none; padding: 6px 2px; font: inherit; font-size: 13px;
+    color: var(--muted,#6b7488); text-decoration: underline; cursor: pointer; line-height: 1.5; }
+  .wsp-decline-btn:hover { color: #0f8a86; }
   .wsp-foot-note { margin: 14px 0 0; font-size: 12.5px; line-height: 1.55; color: var(--muted,#6b7488); }
 
   @media (max-width: 640px) {
@@ -104,12 +107,13 @@
         <h1>Pay your certificate fee</h1>
         {% if reg.certificate_required_at_signup %}
           <p>A certificate of participation is part of this workshop, so the one-time fee applies to every participant.</p>
-          <p class="wsp-required"><i class="bi bi-exclamation-triangle-fill"></i>
-            <span>Your details are saved and your place is held, but your registration is
-            <strong>only complete once this fee is paid</strong>.</span></p>
         {% else %}
-          <p>A one-time fee applies for your certificate of participation. Your registration is already saved.</p>
+          <p>You asked for a certificate of participation, so the one-time fee below applies.</p>
         {% endif %}
+        <p class="wsp-required"><i class="bi bi-exclamation-triangle-fill"></i>
+          <span><strong>Payment is required to complete your registration.</strong>
+          Your details are saved and your place is held, but you are not registered for this
+          workshop until this fee is paid.</span></p>
       </div>
 
       <div class="wsp-summary">
@@ -143,10 +147,19 @@
 
       <div class="wsp-foot">
         <span class="wsp-trust"><i class="bi bi-shield-check"></i> Secured by Paystack · Card, Mobile Money &amp; bank</span>
-        {% if reg.certificate_required_at_signup %}
-          <p class="wsp-foot-note">If you close this page, use the link we've emailed and texted you to finish paying.</p>
-        {% else %}
-          <div><a href="{% url 'workshop:thanks' %}?r={{ reg.pk }}" class="wsp-skip">I'll pay later</a></div>
+        <p class="wsp-foot-note">If you close this page, use the link we've emailed and texted you to finish paying.</p>
+        {% if not reg.certificate_required_at_signup %}
+          {% comment %}
+            The certificate was their choice, so changing that choice has to
+            be possible -- otherwise the only way out is to register again
+            without one. Not offered when the workshop makes it compulsory.
+            ({# #} is single-line only; a multi-line one renders as text.)
+          {% endcomment %}
+          <form method="post" action="{% url 'workshop:decline_certificate' reg.pk %}" class="wsp-decline"
+                id="wspDeclineForm">
+            {% csrf_token %}
+            <button type="submit" class="wsp-decline-btn">I don't want a certificate after all — register without one</button>
+          </form>
         {% endif %}
       </div>
     </div>
@@ -159,6 +172,19 @@
 <script src="https://js.paystack.co/v1/inline.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
+    // Dropping the certificate is a real decision, so confirm it. (The
+    // dashboards' data-confirm helper isn't loaded on the public site.)
+    var decline = document.getElementById("wspDeclineForm");
+    if (decline) decline.addEventListener("submit", function (e) {
+      var ok = window.confirm(
+        "Register without a certificate?
+
+" +
+        "You won't pay anything, and no certificate will be issued to you for this workshop."
+      );
+      if (!ok) e.preventDefault();
+    });
+
     var btn = document.getElementById("wspPayBtn");
     var errorEl = document.getElementById("wspError");
     var original = btn.innerHTML;
