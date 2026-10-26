@@ -255,8 +255,6 @@
     margin-top: 26px; padding-top: 22px; border-top: 1px solid var(--border, #eef1f6);
     display: flex; justify-content: flex-end; align-items: center; gap: 12px; flex-wrap: wrap;
   }
-  .ws-actions .ws-secure { margin-right: auto; font-size: 12.5px; color: var(--muted, #6b7488);
-    display: inline-flex; align-items: center; gap: 6px; }
   .ws-btn {
     background: #0f8a86; color: #fff; border: none; border-radius: 11px; padding: 14px 28px;
     font-size: 15.5px; font-weight: 700; font-family: inherit; cursor: pointer;
@@ -360,7 +358,6 @@
     /* Full-width, thumb-sized buttons, primary action first. */
     .ws-actions { flex-direction: column-reverse; align-items: stretch; gap: 10px; }
     .ws-actions .ws-btn, .ws-actions .ws-btn-outline { width: 100%; }
-    .ws-actions .ws-secure { margin: 2px 0 0; justify-content: center; }
     .ws-modal { padding: 0; align-items: stretch; }
     .ws-modal-panel { max-width: none; max-height: 100vh; border-radius: 0; }
     .ws-cert-frame-wrap iframe { height: calc(100vh - 150px); }
@@ -600,7 +597,6 @@
         </div>
 
         <div class="ws-actions">
-          <span class="ws-secure"><i class="bi bi-shield-lock-fill"></i> Your details are kept private</span>
           <button type="button" class="ws-btn-outline" id="wsPreviewCertBtn" {% if not ws.certificate_required %}hidden{% endif %}><i class="bi bi-eye"></i> Preview certificate</button>
           <button type="submit" class="ws-btn" id="wsSubmit"
                   {% if not ws.certificate_required and ws.certificate_fee_payable %}data-label-cert="Register &amp; pay {{ ws.fee_currency }} {{ ws.certificate_fee }}" data-label-plain="Register"{% endif %}>
