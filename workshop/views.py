@@ -222,17 +222,47 @@ def register(request, slug):
         _notify_admin_of_registration(reg, ws)
 
         if needs_payment:
-            # They need a way back to the checkout if they close the page,
-            # emailed and texted before the redirect, not after -- the
-            # redirect is where they leave. No confirmation goes out yet:
-            # they are not registered until this is paid.
+            # They need a way back to the checkout if they close the popup,
+            # emailed and texted before checkout opens, not after. No
+            # confirmation goes out yet: they are not registered until this
+            # is paid.
             _send_payment_link(reg, ws)
+            # The workshop page submits in the background and opens Paystack
+            # right there; without JavaScript, the standalone checkout.
+            if _wants_json(request):
+                return JsonResponse({"ok": True, "checkout": _checkout_params(reg)})
             return redirect("workshop:pay", pk=reg.pk)
 
         _notify_registration_success(reg, ws)
-        return redirect(f"{reverse('workshop:thanks')}?r={reg.pk}")
+        thanks_url = f"{reverse('workshop:thanks')}?r={reg.pk}"
+        if _wants_json(request):
+            return JsonResponse({"ok": True, "redirect": thanks_url})
+        return redirect(thanks_url)
 
     return render(request, "workshop/register.html", _register_context(ws, {}))
+
+
+def _wants_json(request):
+    """The workshop page's own background submit. Only successful
+    registrations answer in JSON; validation errors and duplicates render the
+    page as before, and the script falls back to a normal submit to show it
+    (neither of those writes anything, so resending is harmless)."""
+    return request.headers.get("x-requested-with") == "XMLHttpRequest"
+
+
+def _checkout_params(reg):
+    """What the Paystack popup is opened with (assets/js/workshop-pay.js).
+    Everything comes from the registration row, never from the browser."""
+    return {
+        "key": SiteSettings.get_solo().effective_paystack_public_key,
+        "email": reg.email,
+        "amount": reg.amount_subunit,
+        "currency": reg.currency,
+        "reference": reg.payment_reference,
+        "workshop": reg.workshop.title if reg.workshop else "",
+        "name": reg.name,
+        "verify_url": reverse("workshop:pay_verify", kwargs={"pk": reg.pk}),
+    }
 
 
 def _already_registered(request, ws, clash, matched_on, prefill):
@@ -248,6 +278,7 @@ def _already_registered(request, ws, clash, matched_on, prefill):
     registration. They get an explanation and the secretariat instead.
     """
     by_email = matched_on == dedupe.EMAIL
+    can_pay = by_email and clash.payment_outstanding
     return render(request, "workshop/register.html", _register_context(ws, prefill, duplicate={
         "matched_on": matched_on,
         "by_email": by_email,
@@ -256,8 +287,10 @@ def _already_registered(request, ws, clash, matched_on, prefill):
         # Only ever populated for an email match.
         "pay_url": (
             reverse("workshop:pay", kwargs={"pk": clash.pk})
-            if by_email and clash.payment_outstanding else None
+            if can_pay else None
         ),
+        # Opens Paystack on this page; pay_url is the no-JavaScript fallback.
+        "checkout": _checkout_params(clash) if can_pay else None,
         "amount": clash.amount if by_email else None,
         "currency": clash.currency if by_email else None,
         "is_paid": clash.is_paid if by_email else False,
@@ -278,8 +311,7 @@ def pay(request, pk):
     return render(request, "workshop/pay.html", {
         "reg": reg,
         "ws": reg.workshop,
-        "paystack_public_key": SiteSettings.get_solo().effective_paystack_public_key,
-        "verify_url": reverse("workshop:pay_verify", kwargs={"pk": reg.pk}),
+        "checkout": _checkout_params(reg),
     })
 
 

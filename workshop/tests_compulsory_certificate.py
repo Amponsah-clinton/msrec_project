@@ -197,7 +197,8 @@ class CompulsoryCertificateTests(PinnedRateMixin, TestCase):
     def test_pay_page_shows_cedis_and_the_dollar_equivalent(self):
         self.client.post(reverse("workshop:register", args=[self.ws.slug]), _form())
         reg = WorkshopRegistration.objects.get()
-        html = self.client.get(reverse("workshop:pay", args=[reg.pk])).content.decode()
+        resp = self.client.get(reverse("workshop:pay", args=[reg.pk]))
+        html = resp.content.decode()
         # The charge, in cedis.
         self.assertIn("GHS", html)
         self.assertIn("150.00", html)
@@ -206,8 +207,8 @@ class CompulsoryCertificateTests(PinnedRateMixin, TestCase):
         self.assertIn("Approximate equivalent", html)
         self.assertIn("converts at its own rate", html)
         # Paystack is still handed cedi subunits, never the dollar figure.
-        self.assertIn('currency: "GHS"', html)
-        self.assertIn("amount: 15000", html)
+        self.assertEqual(resp.context["checkout"]["currency"], "GHS")
+        self.assertEqual(resp.context["checkout"]["amount"], 15000)
 
     def test_pay_page_hides_the_dollar_line_when_no_rate_is_available(self):
         """No rate must degrade to the cedi price alone, never to a guess."""

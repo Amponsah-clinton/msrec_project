@@ -271,6 +271,11 @@
     transition: background-color .15s;
   }
   .ws-btn-outline:hover { background: rgba(15,138,134,.08); }
+  /* Checkout problems, and the "place held, fee still due" note after
+     the Paystack popup is closed without paying. */
+  .ws-pay-error { margin-top: 18px; color: #c0392b; font-size: 13.5px; line-height: 1.55; text-align: right; }
+  .ws-pay-error:empty { display: none; }
+  .ws-dupe .ws-pay-error { text-align: left; margin-top: 4px; }
 
   /* ---- Certificate preview modal ----------------------------------- */
   .ws-modal { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; }
@@ -459,8 +464,10 @@
                    What's still outstanding is the certificate fee.</p>
                 <p><strong>Continue with the registration you already have</strong> rather than starting a new one,
                    so your payment is matched to it.</p>
+                {% csrf_token %}
+                <div class="ws-pay-error" id="wsDupePayError" role="alert"></div>
                 <div class="ws-dupe-actions">
-                  <a class="ws-dupe-btn" href="{{ duplicate.pay_url }}"><i class="bi bi-lock-fill"></i> Pay {{ duplicate.currency }} {{ duplicate.amount }} now</a>
+                  <a class="ws-dupe-btn" id="wsDupePayBtn" href="{{ duplicate.pay_url }}"><i class="bi bi-lock-fill"></i> Pay {{ duplicate.currency }} {{ duplicate.amount }} now</a>
                   <a class="ws-dupe-link" href="{% url 'workshop:list' %}"><i class="bi bi-arrow-left"></i> Other workshops</a>
                 </div>
               {% else %}
@@ -596,6 +603,7 @@
           </div>
         </div>
 
+        <div class="ws-pay-error" id="wsPayError" role="alert"></div>
         <div class="ws-actions">
           <button type="button" class="ws-btn-outline" id="wsPreviewCertBtn" {% if not ws.certificate_required %}hidden{% endif %}><i class="bi bi-eye"></i> Preview certificate</button>
           <button type="submit" class="ws-btn" id="wsSubmit"
@@ -684,6 +692,11 @@
 <script src="{% static 'assets/js/workshop-countdown.js' %}" defer></script>
 <script src="{% static 'assets/js/institutions.js' %}"></script>
 <script src="{% static 'assets/js/searchable-select.js' %}"></script>
+{% if ws.certificate_fee_payable or duplicate.checkout %}
+{% if duplicate.checkout %}{{ duplicate.checkout|json_script:"wsDupeCheckout" }}{% endif %}
+<script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="{% static 'assets/js/workshop-pay.js' %}"></script>
+{% endif %}
 <script>
   (function () {
     var instSelect = document.getElementById("wsInstitution");
@@ -768,10 +781,80 @@
         }
         return;
       }
-      var btn = document.getElementById("wsSubmit");
-      btn.disabled = true;
-      btn.innerHTML = '<i class="bi bi-arrow-repeat"></i> Please wait…';
+      // Submitted in the background so a certificate fee is paid right
+      // here, in the Paystack popup, instead of on a separate page.
+      e.preventDefault();
+      payError.textContent = "";
+      if (pending) { payNow(pending); return; }
+      busy('<i class="bi bi-arrow-repeat"></i> Please wait…');
+      fetch(window.location.href, {
+        method: "POST",
+        body: new FormData(form),
+        credentials: "same-origin",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      })
+        .then(function (res) {
+          var json = (res.headers.get("Content-Type") || "").indexOf("application/json") !== -1;
+          return json ? res.json() : null;
+        })
+        .then(function (data) {
+          if (data && data.ok && data.checkout) {
+            // The registration is saved; from here on the button only
+            // reopens checkout, so it can't be registered twice.
+            pending = data.checkout;
+            payNow(pending);
+          } else if (data && data.ok && data.redirect) {
+            window.location.href = data.redirect;
+          } else {
+            // A validation error or an existing registration: neither
+            // saves anything, so let the server render it the normal way.
+            form.submit();
+          }
+        })
+        .catch(function () { form.submit(); });
     });
+
+    var payError = document.getElementById("wsPayError");
+    var pending = null;
+
+    function busy(html) { submitBtn.disabled = true; submitBtn.innerHTML = html; }
+    function afterCheckout(msg) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<i class="bi bi-lock-fill"></i> Pay ' + pending.currency + " " + (pending.amount / 100).toFixed(2) + " to finish";
+      payError.textContent = msg;
+    }
+    function payNow(checkout) {
+      busy('<i class="bi bi-lock-fill"></i> Opening secure checkout…');
+      if (!window.MSRECWorkshopPay) { afterCheckout("Couldn't load the payment popup. Please refresh the page and try again."); return; }
+      window.MSRECWorkshopPay.open(checkout, {
+        onVerifying: function () { busy("Confirming payment…"); },
+        onError: afterCheckout,
+        onClose: function () {
+          afterCheckout("Your place is held, but your registration isn't complete until the certificate fee is paid. We've also emailed you a payment link.");
+        },
+      });
+    }
+
+    // "Already registered, fee outstanding": pay on this page too. The
+    // link's own href (the standalone checkout) is the no-JavaScript fallback.
+    var dupeBtn = document.getElementById("wsDupePayBtn");
+    var dupeData = document.getElementById("wsDupeCheckout");
+    if (dupeBtn && dupeData && window.MSRECWorkshopPay) {
+      var dupeCheckout = JSON.parse(dupeData.textContent);
+      var dupeError = document.getElementById("wsDupePayError");
+      var dupe0 = dupeBtn.innerHTML;
+      dupeBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        if (dupeBtn.getAttribute("aria-disabled") === "true") return;
+        dupeError.textContent = "";
+        function reset(msg) { dupeBtn.removeAttribute("aria-disabled"); dupeBtn.innerHTML = dupe0; dupeError.textContent = msg || ""; }
+        window.MSRECWorkshopPay.open(dupeCheckout, {
+          onVerifying: function () { dupeBtn.setAttribute("aria-disabled", "true"); dupeBtn.innerHTML = "Confirming payment…"; },
+          onError: reset,
+          onClose: function () { reset(""); },
+        });
+      });
+    }
   })();
 </script>
 {% endblock %}

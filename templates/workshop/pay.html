@@ -169,7 +169,9 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ checkout|json_script:"wspCheckout" }}
 <script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="{% static 'assets/js/workshop-pay.js' %}"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     // Dropping the certificate is a real decision, so confirm it. (The
@@ -177,9 +179,7 @@
     var decline = document.getElementById("wspDeclineForm");
     if (decline) decline.addEventListener("submit", function (e) {
       var ok = window.confirm(
-        "Register without a certificate?
-
-" +
+        "Register without a certificate?\n\n" +
         "You won't pay anything, and no certificate will be issued to you for this workshop."
       );
       if (!ok) e.preventDefault();
@@ -188,47 +188,17 @@
     var btn = document.getElementById("wspPayBtn");
     var errorEl = document.getElementById("wspError");
     var original = btn.innerHTML;
+    var checkout = JSON.parse(document.getElementById("wspCheckout").textContent);
 
-    function csrf() {
-      var i = document.querySelector('input[name="csrfmiddlewaretoken"]');
-      return i ? i.value : "";
-    }
+    function reset() { btn.disabled = false; btn.innerHTML = original; }
 
     btn.addEventListener("click", function () {
       errorEl.textContent = "";
-      if (typeof PaystackPop === "undefined") {
-        errorEl.textContent = "Couldn't load the payment popup. Check your connection and try again.";
-        return;
-      }
-      // Always the cedi amount and currency held on the registration row --
-      // the dollar figure on this page is display only and never sent.
-      var handler = PaystackPop.setup({
-        key: "{{ paystack_public_key }}",
-        email: "{{ reg.email }}",
-        amount: {{ reg.amount_subunit }},
-        currency: "{{ reg.currency }}",
-        ref: "{{ reg.payment_reference }}",
-        metadata: { custom_fields: [
-          { display_name: "Workshop", variable_name: "workshop", value: "{{ ws.title|escapejs }}" },
-          { display_name: "Name", variable_name: "name", value: "{{ reg.name|escapejs }}" }
-        ]},
-        callback: function (response) {
-          btn.disabled = true; btn.innerHTML = "Confirming payment…";
-          fetch("{{ verify_url }}", {
-            method: "POST",
-            headers: { "X-CSRFToken": csrf(), "Content-Type": "application/x-www-form-urlencoded", "X-Requested-With": "XMLHttpRequest" },
-            body: new URLSearchParams({ reference: response.reference }),
-          })
-            .then(function (res) { return res.json().then(function (data) { return { ok: res.ok, data: data }; }); })
-            .then(function (r) {
-              if (r.ok && r.data.ok) { window.location.href = r.data.redirect; }
-              else { btn.disabled = false; btn.innerHTML = original; errorEl.textContent = (r.data && r.data.error) || ("Couldn't confirm payment. Reference: " + response.reference); }
-            })
-            .catch(function () { btn.disabled = false; btn.innerHTML = original; errorEl.textContent = "Payment may have gone through, but we couldn't confirm it. Reference: " + response.reference; });
-        },
-        onClose: function () { btn.disabled = false; btn.innerHTML = original; },
+      window.MSRECWorkshopPay.open(checkout, {
+        onVerifying: function () { btn.disabled = true; btn.innerHTML = "Confirming payment…"; },
+        onError: function (msg) { reset(); errorEl.textContent = msg; },
+        onClose: reset,
       });
-      handler.openIframe();
     });
   });
 </script>
