@@ -460,10 +460,6 @@
               <h3>You're already registered for this workshop</h3>
               <span class="ws-dupe-who"><i class="bi bi-envelope-check"></i> {{ prefill.email }}{% if duplicate.registered_on %} · registered {{ duplicate.registered_on|date:"j M Y" }}{% endif %}</span>
               {% if duplicate.pay_url %}
-                <p>Your place is already held under this email address — there's no need to register again.
-                   What's still outstanding is the certificate fee.</p>
-                <p><strong>Continue with the registration you already have</strong> rather than starting a new one,
-                   so your payment is matched to it.</p>
                 {% csrf_token %}
                 <div class="ws-pay-error" id="wsDupePayError" role="alert"></div>
                 <div class="ws-dupe-actions">
@@ -577,10 +573,6 @@
               {% if ws.certificate_fee_payable %}
                 {% with usd=ws.certificate_fee|usd %}
                 <h4>Certificate fee — payment required</h4>
-                <p>Choosing a certificate means paying for it: you'll go straight to secure
-                   checkout after this form, and <strong>your registration isn't complete until
-                   the fee is paid</strong>. Pick “No, thank you” if you'd rather take part
-                   without one — that's free.</p>
                 <div class="ws-price">
                   <span class="amt"><small>{{ ws.fee_currency }}</small>{{ ws.certificate_fee }}</span>
                   {% if usd %}<span class="usd"><i class="bi bi-globe-americas"></i> ≈ {{ usd }}</span>{% endif %}
