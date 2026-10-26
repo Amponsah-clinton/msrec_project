@@ -15,8 +15,9 @@ from messaging.access import is_staff_side
 
 from . import services
 from .models import Notification
+from urllib.parse import urlencode
 
-PAGE_SIZE = 25
+PAGE_SIZE = 20
 
 # Which audiences a given user is allowed to read/clear -- a notification
 # for role X is only ever meant for whoever currently holds role X (see
@@ -194,7 +195,8 @@ def list_page(request, audience):
     query = (request.GET.get("q") or "").strip()[:100]
 
     qs = services.history(request.user, audience, state=state, query=query)
-    page = Paginator(qs, PAGE_SIZE).get_page(request.GET.get("page"))
+    paginator = Paginator(qs, PAGE_SIZE)
+    page = paginator.get_page(request.GET.get("page"))
     groups = _group_by_day(list(page.object_list), audience)
 
     params = {}
@@ -202,7 +204,9 @@ def list_page(request, audience):
         params["filter"] = state
     if query:
         params["q"] = query
-    query_string = "&".join(f"{k}={v}" for k, v in params.items())
+    # Properly encoded, so a search with "&", "#" or spaces keeps working
+    # across the page links.
+    query_string = urlencode(params)
 
     home_url_name = _DASHBOARD_HOME_URL_NAME.get(audience, "pages:index")
     scope = services.scope(audience)
@@ -212,6 +216,7 @@ def list_page(request, audience):
         "mixed_sources": len(scope) > 1,
         "groups": groups,
         "page": page,
+        "page_range": paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1),
         "counts": services.counts(request.user, audience),
         "state": state,
         "query": query,

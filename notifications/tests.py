@@ -53,13 +53,24 @@ class NotificationPageTests(TestCase):
         self.client.force_login(self.admin)
         first = self.client.get(self.url)
         self.assertEqual(first.context["counts"]["all"], 130)  # more than the old 100 cap
-        self.assertEqual(len(self.texts(first)), 25)
+        self.assertEqual(len(self.texts(first)), 20)  # 20 to a page
         self.assertEqual(self.texts(first)[0], "n129")  # newest first
-        last = self.client.get(self.url + "?page=6")
-        self.assertEqual(len(self.texts(last)), 5)
+        self.assertContains(first, "Showing <strong>1–20</strong> of 130 notifications")
+        self.assertContains(first, 'href="?page=7"')  # numbered links, last page included
+        last = self.client.get(self.url + "?page=7")
+        self.assertEqual(len(self.texts(last)), 10)
         self.assertIn("n0", self.texts(last))
         self.assertEqual(self.client.get(self.url + "?page=999").status_code, 200)  # clamped, not an error
         self.assertEqual(self.client.get(self.url + "?page=abc").status_code, 200)
+
+    def test_page_links_carry_an_encoded_search(self):
+        for i in range(25):
+            self.note(message=f"R&D update {i}")
+        self.client.force_login(self.admin)
+        response = self.client.get(self.url, {"q": "R&D", "filter": "unread"})
+        self.assertEqual(response.context["page"].paginator.count, 25)
+        # "&" in the search must be encoded, or the next page would search for "R".
+        self.assertContains(response, 'href="?page=2&amp;filter=unread&amp;q=R%26D"')
 
     # ---- reading and filtering ----
     def test_filters_and_search(self):

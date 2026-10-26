@@ -87,6 +87,9 @@
   {% endif %}
 
   {% if groups %}
+  {% if page.paginator.num_pages > 1 %}
+  <p class="np-range">Showing <strong>{{ page.start_index }}–{{ page.end_index }}</strong> of {{ page.paginator.count }} notification{{ page.paginator.count|pluralize }}</p>
+  {% endif %}
   {% for label, items in groups %}
   <h3 class="np-day">{{ label }}</h3>
   <ul class="np-list">
@@ -130,9 +133,18 @@
 
   {% if page.paginator.num_pages > 1 %}
   <nav class="np-pager" aria-label="Notification pages">
-    {% if page.has_previous %}<a class="np-btn" href="?page={{ page.previous_page_number }}{% if query_string %}&amp;{{ query_string|safe }}{% endif %}">&larr; Newer</a>{% else %}<span class="np-btn is-disabled">&larr; Newer</span>{% endif %}
-    <span class="np-pager-info">Page {{ page.number }} of {{ page.paginator.num_pages }} &middot; {{ page.paginator.count }} notification{{ page.paginator.count|pluralize }}</span>
-    {% if page.has_next %}<a class="np-btn" href="?page={{ page.next_page_number }}{% if query_string %}&amp;{{ query_string|safe }}{% endif %}">Older &rarr;</a>{% else %}<span class="np-btn is-disabled">Older &rarr;</span>{% endif %}
+    <span class="np-pager-info">Page <strong>{{ page.number }}</strong> of <strong>{{ page.paginator.num_pages }}</strong> &middot; {{ page.paginator.per_page }} per page</span>
+    <div class="np-pages">
+      {% if page.has_previous %}<a class="np-page" href="?page={{ page.previous_page_number }}{% if query_string %}&amp;{{ query_string }}{% endif %}" aria-label="Newer notifications">&lsaquo; Newer</a>
+      {% else %}<span class="np-page is-off" aria-hidden="true">&lsaquo; Newer</span>{% endif %}
+      {% for num in page_range %}
+        {% if num == page.paginator.ELLIPSIS %}<span class="np-page-gap">&hellip;</span>
+        {% elif num == page.number %}<span class="np-page is-current" aria-current="page">{{ num }}</span>
+        {% else %}<a class="np-page" href="?page={{ num }}{% if query_string %}&amp;{{ query_string }}{% endif %}" aria-label="Page {{ num }}">{{ num }}</a>{% endif %}
+      {% endfor %}
+      {% if page.has_next %}<a class="np-page" href="?page={{ page.next_page_number }}{% if query_string %}&amp;{{ query_string }}{% endif %}" aria-label="Older notifications">Older &rsaquo;</a>
+      {% else %}<span class="np-page is-off" aria-hidden="true">Older &rsaquo;</span>{% endif %}
+    </div>
   </nav>
   {% endif %}
 

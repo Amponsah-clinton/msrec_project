@@ -62,8 +62,20 @@
 .np-icon-btn:hover { background: var(--hover-bg); color: var(--teal); }
 .np-icon-danger:hover { background: var(--red-light); color: var(--red); }
 
-.np-pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 18px; }
-.np-pager-info { font-size: 12.5px; color: var(--text-sub); text-align: center; }
+.np-pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 12px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+.np-pager-info { font-size: 12.5px; color: var(--text-sub); }
+.np-pager-info strong { color: var(--text-main); }
+.np-pages { display: flex; flex-wrap: wrap; gap: 4px; }
+.np-page { min-width: 34px; height: 34px; padding: 0 10px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: var(--radius-sm, 8px); background: var(--bg); color: var(--text-main);
+  font-size: 13px; font-weight: 600; text-decoration: none; }
+a.np-page:hover { border-color: var(--teal); color: var(--teal); }
+.np-page.is-current { background: var(--teal); border-color: var(--teal); color: #fff; }
+.np-page.is-off { opacity: .45; }
+.np-page-gap { align-self: center; padding: 0 4px; color: var(--text-faint); }
+.np-range { margin: 0 0 6px; font-size: 12.5px; color: var(--text-sub); }
+.np-range strong { color: var(--text-main); }
+@media (max-width: 640px) { .np-pager { justify-content: center; } .np-pager-info { width: 100%; text-align: center; } }
 
 .np-empty { text-align: center; padding: 56px 20px; }
 .np-empty h3 { margin: 12px 0 4px; font-size: 16px; }
