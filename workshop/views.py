@@ -7,6 +7,8 @@ import uuid
 from decimal import Decimal
 
 from django.contrib import messages
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.db import IntegrityError, transaction
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -158,8 +160,16 @@ def register(request, slug):
             errors.append("Please choose your institution.")
         if not email:
             errors.append("Your email is required.")
+        else:
+            # Paystack is handed this address, and the joining link goes to it.
+            try:
+                validate_email(email)
+            except ValidationError:
+                errors.append("Please enter a valid email address.")
         if not phone:
             errors.append("Your phone number is required.")
+        elif not 7 <= sum(c.isdigit() for c in phone) <= 15:
+            errors.append("Please enter a valid phone number.")
         if not cert_required and "wants_certificate" not in request.POST:
             errors.append("Please tell us whether you want a certificate.")
         if errors:

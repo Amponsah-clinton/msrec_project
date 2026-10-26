@@ -759,9 +759,25 @@
     // instead of leaving someone staring at an unchanged page. Invalid
     // styling only switches on after a failed attempt (.ws-validated).
     var form = document.getElementById("wsForm");
+    var phoneInput = document.getElementById("wsPhone");
+    function checkPhone() {
+      var digits = phoneInput.value.replace(/\D/g, "").length;
+      phoneInput.setCustomValidity(
+        phoneInput.value && (digits < 7 || digits > 15) ? "Please enter a valid phone number." : ""
+      );
+    }
+    if (phoneInput) phoneInput.addEventListener("input", checkPhone);
     if (form) form.addEventListener("submit", function (e) {
+      // Spaces alone don't count as filling a field in. Checked again
+      // before reopening checkout, so payment never opens on an
+      // incomplete form; the server re-checks all of it regardless.
+      form.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], textarea').forEach(function (i) {
+        i.value = i.value.trim();
+      });
+      if (phoneInput) checkPhone();
       if (typeof form.checkValidity === "function" && !form.checkValidity()) {
         e.preventDefault();
+        payError.textContent = "Please fill in all the required fields correctly — payment can't start until they're complete.";
         form.classList.add("ws-validated");
         var bad = form.querySelector(":invalid");
         if (bad) {

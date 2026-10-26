@@ -58,6 +58,32 @@ class InlineCheckoutTests(PinnedRateMixin, TestCase):
         self.assertIn("text/html", resp["Content-Type"])
         self.assertFalse(WorkshopRegistration.objects.exists())
 
+    def test_no_checkout_until_every_required_field_is_filled(self):
+        cases = {
+            "name": {"name": ""},
+            "name (spaces only)": {"name": "   "},
+            "institution": {"institution": ""},
+            "institution (Other, left blank)": {"institution": "__other__", "institution_other": " "},
+            "email": {"email": ""},
+            "email (invalid)": {"email": "ama@example"},
+            "phone": {"phone": ""},
+            "phone (too short)": {"phone": "024"},
+        }
+        for label, overrides in cases.items():
+            with self.subTest(label):
+                resp = self.client.post(self.url, _form(**overrides), **AJAX)
+                self.assertEqual(resp.status_code, 400)
+                self.assertNotIn("application/json", resp["Content-Type"])
+                self.assertFalse(WorkshopRegistration.objects.exists())
+
+    def test_certificate_answer_required_before_checkout(self):
+        ws = _workshop(title="Optional cert")
+        data = _form()
+        del data["wants_certificate"]
+        resp = self.client.post(reverse("workshop:register", args=[ws.slug]), data, **AJAX)
+        self.assertEqual(resp.status_code, 400)
+        self.assertFalse(WorkshopRegistration.objects.exists())
+
     def test_already_registered_page_can_pay_in_place(self):
         self.client.post(self.url, _form())
         reg = WorkshopRegistration.objects.get()
