@@ -234,20 +234,38 @@
       if (first.focus) first.focus({ preventScroll: true });
       return;
     }
-    var backAfterChanges = !!$("psaRequestCallout");
-    if (sending && !window.confirm(
-      (backAfterChanges ? "Send the updated agreement back to " : "Send this agreement to ") + val("psaClientEmailIn") +
-      "?\n\nThey'll get an email with a link to review and sign it.")) {
-      e.preventDefault();
-      return;
+    function go() {
+      // Don't post empty deliverable lines.
+      rows().forEach(function (r) { if (blank(r)) input(r).disabled = true; });
+      form.querySelectorAll('button[type="submit"]').forEach(function (b) { b.disabled = true; });
+      // Disabled buttons aren't posted, so carry the chosen action.
+      var keep = document.createElement("input");
+      keep.type = "hidden"; keep.name = "action"; keep.value = sending ? "send" : "draft";
+      form.appendChild(keep);
+      submitter.textContent = sending ? "Sending…" : "Saving…";
     }
-    // Don't post the empty last line.
-    rows().forEach(function (r) { if (blank(r)) input(r).disabled = true; });
-    form.querySelectorAll('button[type="submit"]').forEach(function (b) { b.disabled = true; });
-    // Disabled buttons aren't posted, so carry the chosen action.
-    var keep = document.createElement("input");
-    keep.type = "hidden"; keep.name = "action"; keep.value = sending ? "send" : "draft";
-    form.appendChild(keep);
-    submitter.textContent = sending ? "Sending…" : "Saving…";
+    if (!sending) { go(); return; }        // a save goes straight through
+
+    // Sending emails the client, so ask first -- in the dashboard's own
+    // dialog (MSRECConfirm, dashboard/js/script.js), not the browser's.
+    e.preventDefault();
+    var back = !!$("psaRequestCallout");
+    var who = val("psaClientNameIn") || "The client";
+    var to = val("psaClientEmailIn");
+    var ask = window.MSRECConfirm
+      ? window.MSRECConfirm({
+          variant: "primary",
+          title: back ? "Send the updated agreement back?" : "Send this agreement to the client?",
+          message: who + " will get an email with a private link to review " +
+            (back ? "the updated agreement" : "the agreement") + " and sign it.",
+          detail: "To: " + to,
+          okLabel: back ? "Send back" : "Send agreement",
+        })
+      : Promise.resolve(window.confirm("Send this agreement to " + to + "?"));
+    ask.then(function (ok) {
+      if (!ok) return;
+      go();
+      form.submit();   // the signature pad already filled its fields on this submit
+    });
   });
 })();

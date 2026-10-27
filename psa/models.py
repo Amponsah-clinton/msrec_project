@@ -223,3 +223,42 @@ class ChangeRequest(models.Model):
 
     def __str__(self):
         return f"{self.agreement.reference}: {self.get_section_display()}"
+
+
+class PsaSettings(models.Model):
+    """Singleton (pk=1, via get_solo): the letterhead artwork printed on
+    every page of an agreement PDF (psa/pdf.py).
+
+    The images are cleaned up on upload by pages.letter_images (blank
+    margins trimmed, at most 2480 px wide = 300 dpi across A4) and kept
+    here in the database rather than Storage: they're small, they print
+    the moment they're saved, and they work wherever the app does."""
+
+    header_image = models.BinaryField(null=True, blank=True)
+    header_type = models.CharField(max_length=20, blank=True)     # image/png | image/jpeg
+    header_width = models.PositiveIntegerField(default=0)
+    header_height = models.PositiveIntegerField(default=0)
+    footer_image = models.BinaryField(null=True, blank=True)
+    footer_type = models.CharField(max_length=20, blank=True)
+    footer_width = models.PositiveIntegerField(default=0)
+    footer_height = models.PositiveIntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+
+    class Meta:
+        db_table = "service_agreement_settings"
+
+    def __str__(self):
+        return "PSA letterhead"
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+
+    def image(self, kind):
+        """Raw bytes of the header or footer artwork, or None."""
+        data = getattr(self, f"{kind}_image")
+        return bytes(data) if data else None

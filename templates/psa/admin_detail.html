@@ -35,7 +35,10 @@
             </div>
             <details class="psa-unchanged">
               <summary>Send back without changes</summary>
-              <form method="post" action="{% url 'psa_admin:psa_send' a.pk %}" id="psaSendUnchangedForm" data-confirm="Send {{ a.reference }} back to {{ a.client_email }} without changes?">
+              <form method="post" action="{% url 'psa_admin:psa_send' a.pk %}" id="psaSendUnchangedForm"
+                    data-confirm-title="Send it back without changes?" data-confirm-variant="primary" data-confirm-label="Send back"
+                    data-confirm="{{ a.client_name }} will get your reply and the agreement as it stands, and can sign it."
+                    data-confirm-detail="To: {{ a.client_email }}">
                 {% csrf_token %}
                 <label for="psaUnchangedNote" class="psa-label">Reply to the client</label>
                 <textarea class="field-input" id="psaUnchangedNote" name="client_note" rows="4" maxlength="2000" required
@@ -58,11 +61,17 @@
 
             <div class="psa-side-actions">
               {% if a.status == 'draft' %}
-              <form method="post" action="{% url 'psa_admin:psa_send' a.pk %}" data-confirm="Send {{ a.reference }} to {{ a.client_email|default:'the client' }}? They'll get an email with a link to review and sign it.">
+              <form method="post" action="{% url 'psa_admin:psa_send' a.pk %}"
+                    data-confirm-title="Send this agreement to the client?" data-confirm-variant="primary" data-confirm-label="Send agreement"
+                    data-confirm="{{ a.client_name }} will get an email with a private link to review {{ a.reference }} and sign it."
+                    data-confirm-detail="To: {{ a.client_email|default:'(no email yet)' }}">
                 {% csrf_token %}<button type="submit" class="btn-primary" id="psaSendNow">Send to client</button>
               </form>
               {% elif a.status == 'sent' %}
-              <form method="post" action="{% url 'psa_admin:psa_resend' a.pk %}" data-confirm="Email {{ a.client_email }} a reminder with the link to sign?">
+              <form method="post" action="{% url 'psa_admin:psa_resend' a.pk %}"
+                    data-confirm-title="Send a reminder?" data-confirm-variant="primary" data-confirm-label="Send reminder"
+                    data-confirm="{{ a.client_name }} will get another email with the link to review and sign {{ a.reference }}."
+                    data-confirm-detail="To: {{ a.client_email }}">
                 {% csrf_token %}<button type="submit" class="btn-primary" id="psaResend">Resend email</button>
               </form>
               {% endif %}
@@ -122,12 +131,14 @@
           {% if a.is_editable or a.status == 'cancelled' %}
           <div class="psa-danger">
             {% if a.is_editable %}
-            <form method="post" action="{% url 'psa_admin:psa_cancel' a.pk %}" data-confirm="Cancel {{ a.reference }}?{% if a.status == 'sent' %} The client won't be able to sign it any more.{% endif %}">
+            <form method="post" action="{% url 'psa_admin:psa_cancel' a.pk %}" data-confirm-title="Cancel {{ a.reference }}?" data-confirm-label="Cancel agreement"
+                    data-confirm="{% if a.status == 'draft' %}It won't be sent. You can still delete it afterwards.{% else %}{{ a.client_name }}'s link will stop working, so they won't be able to sign it.{% endif %}">
               {% csrf_token %}<button type="submit" class="psa-link psa-link-danger" id="psaCancel">Cancel agreement</button>
             </form>
             {% endif %}
             {% if a.status == 'draft' or a.status == 'cancelled' %}
-            <form method="post" action="{% url 'psa_admin:psa_delete' a.pk %}" data-confirm="Delete {{ a.reference }} permanently? This can't be undone.">
+            <form method="post" action="{% url 'psa_admin:psa_delete' a.pk %}" data-confirm-title="Delete {{ a.reference }}?" data-confirm-variant="danger" data-confirm-label="Delete"
+                    data-confirm="This permanently removes the agreement. It can't be undone.">
               {% csrf_token %}<button type="submit" class="psa-link psa-link-danger" id="psaDelete">Delete</button>
             </form>
             {% endif %}
@@ -140,13 +151,6 @@
 {% block extra_js %}
 <script>
   (function () {
-    document.querySelectorAll("form[data-confirm]").forEach(function (f) {
-      f.addEventListener("submit", function (e) {
-        if (!window.confirm(f.dataset.confirm)) { e.preventDefault(); return; }
-        var b = f.querySelector('button[type="submit"]');
-        if (b) b.disabled = true;
-      });
-    });
     var copy = document.getElementById("psaCopyLink");
     if (copy) copy.addEventListener("click", function () {
       var input = document.querySelector(copy.dataset.copy);

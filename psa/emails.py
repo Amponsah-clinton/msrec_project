@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 # Always told when a client signs or asks for changes, whoever prepared the
 # agreement.
-SIGNED_NOTIFY_EMAIL = "ceo@academicdigital.space"
+CEO_NOTIFY_EMAIL = "ceo@academicdigital.space"
 
 
 def _money(a):
@@ -24,9 +24,9 @@ def _send(**kwargs):
 
 def _staff_recipients(a):
     """The CEO, plus whoever prepared the agreement."""
-    to = [SIGNED_NOTIFY_EMAIL]
+    to = [CEO_NOTIFY_EMAIL]
     preparer = getattr(a.created_by, "email", "") or getattr(a.company_signed_by, "email", "")
-    if preparer and preparer.lower() != SIGNED_NOTIFY_EMAIL:
+    if preparer and preparer.lower() != CEO_NOTIFY_EMAIL:
         to.append(preparer)
     return to
 

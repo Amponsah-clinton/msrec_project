@@ -392,67 +392,124 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // ---------------------------------------------------------------------
-// Generic confirm modal — any `<form data-confirm="...">` on any dashboard
-// page gets its submit intercepted and re-asked through this modal instead
-// of the browser's native window.confirm(). Add data-confirm-variant="danger"
-// on a form for the red/destructive styling (delete); anything else gets the
-// neutral orange styling (suspend, reopen, etc). Registered as its own
-// top-level listener (not inside the block above) so it still wires up even
-// on pages that don't load the rest of that block's markup.
-document.addEventListener("DOMContentLoaded", () => {
-  const forms = Array.from(document.querySelectorAll("form[data-confirm]"));
-  if (!forms.length) return;
+// Confirm modal — the dashboards' replacement for the browser's native
+// window.confirm(), in two forms:
+//
+//   1. Markup: any `<form data-confirm="...">` has its submit intercepted
+//      and re-asked here. Optional attributes:
+//        data-confirm-title    a short heading above the message
+//        data-confirm-detail   a highlighted line (e.g. who an email goes to)
+//        data-confirm-label    the confirm button's text (default "Confirm")
+//        data-confirm-variant  "danger" (red: delete), "primary" (teal: send,
+//                              approve); anything else is the neutral orange
+//                              (suspend, reopen, ...).
+//
+//   2. Script: window.MSRECConfirm({title, message, detail, okLabel,
+//      cancelLabel, variant}) returns a Promise that resolves true/false --
+//      for submits that must be checked first (see psa-form.js).
+//
+// Escape, clicking outside and Cancel all decline; focus stays inside the
+// dialog while it's open and goes back where it was afterwards.
+window.MSRECConfirm = (function () {
+  const ICONS = {
+    warn: '<path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/>',
+    danger: '<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
+    primary: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/>',
+  };
+  let overlay, titleEl, msgEl, detailEl, iconEl, okBtn, cancelBtn;
+  let resolver = null;
+  let returnFocus = null;
 
-  const overlay = document.createElement("div");
-  overlay.className = "confirm-modal-overlay";
-  overlay.hidden = true;
-  overlay.innerHTML = `
-    <div class="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmModalMsg">
-      <div class="confirm-modal-icon">
-        <svg viewBox="0 0 24 24"><path d="M12 9v4"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 17h.01"/></svg>
-      </div>
-      <p id="confirmModalMsg"></p>
-      <div class="confirm-modal-actions">
-        <button type="button" class="confirm-modal-cancel">Cancel</button>
-        <button type="button" class="confirm-modal-ok">Confirm</button>
-      </div>
-    </div>
-  `;
-  document.body.appendChild(overlay);
-
-  const msgEl = overlay.querySelector("#confirmModalMsg");
-  const okBtn = overlay.querySelector(".confirm-modal-ok");
-  const cancelBtn = overlay.querySelector(".confirm-modal-cancel");
-  let pendingForm = null;
-
-  function close() {
+  function build() {
+    overlay = document.createElement("div");
+    overlay.className = "confirm-modal-overlay";
     overlay.hidden = true;
-    overlay.classList.remove("is-danger");
-    pendingForm = null;
+    overlay.innerHTML = `
+      <div class="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmModalTitle" aria-describedby="confirmModalMsg">
+        <div class="confirm-modal-icon"><svg viewBox="0 0 24 24"></svg></div>
+        <h3 class="confirm-modal-title" id="confirmModalTitle" hidden></h3>
+        <p id="confirmModalMsg"></p>
+        <div class="confirm-modal-detail" hidden></div>
+        <div class="confirm-modal-actions">
+          <button type="button" class="confirm-modal-cancel">Cancel</button>
+          <button type="button" class="confirm-modal-ok">Confirm</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    titleEl = overlay.querySelector(".confirm-modal-title");
+    msgEl = overlay.querySelector("#confirmModalMsg");
+    detailEl = overlay.querySelector(".confirm-modal-detail");
+    iconEl = overlay.querySelector(".confirm-modal-icon svg");
+    okBtn = overlay.querySelector(".confirm-modal-ok");
+    cancelBtn = overlay.querySelector(".confirm-modal-cancel");
+
+    okBtn.addEventListener("click", () => finish(true));
+    cancelBtn.addEventListener("click", () => finish(false));
+    overlay.addEventListener("click", (event) => { if (event.target === overlay) finish(false); });
+    document.addEventListener("keydown", (event) => {
+      if (overlay.hidden) return;
+      if (event.key === "Escape") { event.preventDefault(); finish(false); }
+      // Keep Tab cycling between the two buttons.
+      if (event.key === "Tab") {
+        event.preventDefault();
+        (document.activeElement === okBtn ? cancelBtn : okBtn).focus();
+      }
+    });
   }
 
-  forms.forEach((form) => {
+  function finish(answer) {
+    if (!resolver) return;
+    const done = resolver;
+    resolver = null;
+    overlay.hidden = true;
+    overlay.classList.remove("is-danger", "is-primary");
+    if (returnFocus && document.contains(returnFocus)) returnFocus.focus();
+    done(answer);
+  }
+
+  return function confirm(options) {
+    if (!overlay) build();
+    if (resolver) finish(false);           // a new question replaces an open one
+    const opts = options || {};
+    const variant = opts.variant === "danger" || opts.variant === "primary" ? opts.variant : "warn";
+    titleEl.textContent = opts.title || "";
+    titleEl.hidden = !opts.title;
+    msgEl.textContent = opts.message || "";
+    detailEl.textContent = opts.detail || "";
+    detailEl.hidden = !opts.detail;
+    iconEl.innerHTML = ICONS[variant];
+    okBtn.textContent = opts.okLabel || "Confirm";
+    cancelBtn.textContent = opts.cancelLabel || "Cancel";
+    overlay.classList.toggle("is-danger", variant === "danger");
+    overlay.classList.toggle("is-primary", variant === "primary");
+    returnFocus = document.activeElement;
+    overlay.hidden = false;
+    okBtn.focus();
+    return new Promise((resolve) => { resolver = resolve; });
+  };
+})();
+
+// Registered as its own top-level listener (not inside the block above) so
+// it still wires up even on pages that don't load the rest of that block's
+// markup.
+document.addEventListener("DOMContentLoaded", () => {
+  document.querySelectorAll("form[data-confirm]").forEach((form) => {
     form.addEventListener("submit", (event) => {
       event.preventDefault();
-      pendingForm = form;
-      msgEl.textContent = form.dataset.confirm;
-      okBtn.textContent = form.dataset.confirmLabel || "Confirm";
-      overlay.classList.toggle("is-danger", form.dataset.confirmVariant === "danger");
-      overlay.hidden = false;
-      okBtn.focus();
+      window.MSRECConfirm({
+        title: form.dataset.confirmTitle,
+        message: form.dataset.confirm,
+        detail: form.dataset.confirmDetail,
+        okLabel: form.dataset.confirmLabel,
+        variant: form.dataset.confirmVariant,
+      }).then((ok) => {
+        if (!ok) return;
+        // Once confirmed, it goes once: no double submit from a second click.
+        form.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = true; });
+        form.submit();
+      });
     });
-  });
-
-  okBtn.addEventListener("click", () => {
-    if (!pendingForm) return;
-    const form = pendingForm;
-    close();
-    form.submit();
-  });
-  cancelBtn.addEventListener("click", close);
-  overlay.addEventListener("click", (event) => { if (event.target === overlay) close(); });
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !overlay.hidden) close();
   });
 });
 

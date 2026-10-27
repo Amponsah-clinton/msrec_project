@@ -2539,6 +2539,28 @@ svg {
 .confirm-modal-ok:hover { background: color-mix(in srgb, var(--orange), black 10%); }
 .confirm-modal-overlay.is-danger .confirm-modal-ok { background: var(--red); }
 .confirm-modal-overlay.is-danger .confirm-modal-ok:hover { background: color-mix(in srgb, var(--red), black 10%); }
+/* Optional heading and highlighted detail line (data-confirm-title /
+   data-confirm-detail, or MSRECConfirm({title, detail})). */
+.confirm-modal-title { margin: 0 0 8px; font-size: 16px; font-weight: 700; color: var(--text-main); line-height: 1.35; }
+.confirm-modal-title + p { color: var(--text-sub); }
+.confirm-modal-detail {
+  margin: -8px 0 22px; padding: 10px 12px; border-radius: var(--radius-sm);
+  background: var(--bg); border: 1px solid var(--border);
+  font-size: 13px; font-weight: 600; color: var(--text-main); overflow-wrap: anywhere;
+}
+.confirm-modal-icon svg { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* "primary": a positive action like sending -- teal, not a warning. */
+.confirm-modal-overlay.is-primary .confirm-modal-icon { background: var(--teal-light); color: var(--teal); }
+.confirm-modal-overlay.is-primary .confirm-modal-ok { background: var(--teal); }
+.confirm-modal-overlay.is-primary .confirm-modal-ok:hover { background: color-mix(in srgb, var(--teal), black 12%); }
+.confirm-modal-ok:focus-visible, .confirm-modal-cancel:focus-visible { outline: 2px solid var(--teal); outline-offset: 2px; }
+.confirm-modal-overlay:not([hidden]) { animation: confirmFade .16s ease-out; }
+.confirm-modal-overlay:not([hidden]) .confirm-modal { animation: confirmPop .18s ease-out; }
+@keyframes confirmFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes confirmPop { from { opacity: 0; transform: translateY(6px) scale(.98); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .confirm-modal-overlay:not([hidden]), .confirm-modal-overlay:not([hidden]) .confirm-modal { animation: none; }
+}
 
 /* Admin bell: the "Needs attention" backlog under the live notifications */
 .bell-subhead { border-top: 1px solid var(--border); }
