@@ -53,7 +53,9 @@ class ServiceAgreement(models.Model):
 
     # Identity. `reference` is the human-facing number (PSA-2026-0001);
     # `token` is the unguessable key in the client's link.
-    reference = models.CharField(max_length=30, unique=True, blank=True, editable=False)
+    # NULL (not "") until numbered just after the insert, so two agreements
+    # created at the same moment never clash on the unique constraint.
+    reference = models.CharField(max_length=30, unique=True, null=True, blank=True, editable=False)
     token = models.CharField(max_length=64, unique=True, default=_new_token, editable=False)
     status = models.CharField(max_length=12, choices=Status.choices, default=Status.DRAFT, db_index=True)
 
