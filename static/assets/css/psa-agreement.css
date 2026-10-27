@@ -121,6 +121,22 @@
 
 .psa-foot { padding: 16px 48px 22px; font-size: 12px; color: var(--psa-faint); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--psa-line); background: var(--psa-soft); }
 
+/* While the client is signing, their part gets the whole width and a big
+   pad to sign on; the company's signature sits underneath, compact. */
+.psa-signs.is-form { grid-template-columns: 1fr; gap: 16px; }
+.psa-signs.is-form #psaClientSign { padding: 22px 24px 18px; border: 1.5px solid var(--psa-accent); box-shadow: 0 0 0 4px var(--psa-accent-soft); }
+.psa-signs.is-form #psaClientSign .psa-sign-who { font-size: 13px; color: var(--psa-ink); margin-bottom: 12px; }
+.psa-signs.is-form .sigpad-paper { height: 260px; }
+.psa-signs.is-form .sigpad-line { bottom: 54px; left: 44px; right: 32px; }
+.psa-signs.is-form .sigpad-paper--typed { height: 170px; }
+.psa-signs.is-form .sigpad-paper--typed .sigpad-line { bottom: 44px; }
+.psa-signs.is-form .sigpad-typed { font-size: 64px; left: 46px; bottom: 42px; }
+.psa-signs.is-form .sigpad-hint { font-size: 15px; top: 40%; }
+.psa-signs.is-form .sigpad-tab { font-size: 14px; padding: 9px 16px; }
+.psa-signs.is-form .sigpad-tool { font-size: 13.5px; padding: 8px 16px; }
+.psa-signs.is-form .sigpad-typed-row input { font-size: 16px; padding: 12px 14px; }
+.psa-signs.is-form #psaCompanySign .psa-sign-mark { height: 64px; }
+
 /* Stamp on a signed copy */
 .psa-stamp { position: absolute; top: 34px; right: 46px; transform: rotate(-8deg); border: 2.5px solid rgba(15, 127, 123, .75); color: rgba(15, 127, 123, .9);
   border-radius: 10px; padding: 4px 12px; font-weight: 800; letter-spacing: .18em; font-size: 13px; text-transform: uppercase; pointer-events: none; }
@@ -175,6 +191,10 @@
   .psa-split div { text-align: left; }
   .psa-stamp { top: 14px; right: 14px; font-size: 11px; }
   .sigpad-typed { font-size: 38px; }
+  .psa-signs.is-form #psaClientSign { padding: 16px 14px 14px; }
+  .psa-signs.is-form .sigpad-paper { height: 220px; }
+  .psa-signs.is-form .sigpad-line { left: 24px; right: 18px; }
+  .psa-signs.is-form .sigpad-typed { font-size: 44px; left: 24px; }
 }
 
 /* ==================================================================

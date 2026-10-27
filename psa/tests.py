@@ -358,3 +358,168 @@ class ListTests(StaffTestCase):
         self.assertIn(self.one.reference, body)
         self.assertIn("1. Search strategy | 2. Screening of records", body)
         self.assertNotIn(self.two.reference, body)
+
+
+class ChangeRequestTests(StaffTestCase):
+    """The client flags something to fix instead of signing; staff fix it
+    (or reply that it stands) and send it back; the client can then sign."""
+
+    def setUp(self):
+        super().setUp()
+        self.a = self._sent()
+        self.url = reverse("psa:client", args=[self.a.token])
+        self.flag_url = reverse("psa:request_changes", args=[self.a.token])
+        mail.outbox.clear()
+
+    def _flag(self, message="The deposit we agreed was GHS 800, not 1,000.", section="payment"):
+        anon = self.client_class()
+        return anon.post(self.flag_url, {"section": section, "message": message}, REMOTE_ADDR="198.51.100.4")
+
+    def _send_back(self, **overrides):
+        data = _form(company_signature_typed="", action="send", seen_status="changes",
+                     client_note="Deposit corrected to GHS 800.", deposit="800")
+        data.update(overrides)
+        return self.client.post(reverse("psa_admin:psa_edit", args=[self.a.pk]), data)
+
+    def test_client_flags_an_issue(self):
+        resp = self._flag()
+        self.assertRedirects(resp, self.url)
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.CHANGES)
+        req = self.a.change_requests.get()
+        self.assertEqual(req.section, "payment")
+        self.assertEqual(req.client_ip, "198.51.100.4")
+        self.assertIsNone(req.resolved_at)
+        # Staff (CEO + preparer) are told, and the client gets a receipt.
+        staff, receipt = sorted(mail.outbox, key=lambda m: m.to[0] == "kwame@example.com")
+        self.assertEqual(staff.to, ["ceo@academicdigital.space", "admin@example.com"])
+        self.assertIn("Changes requested", staff.subject)
+        self.assertIn("GHS 800", staff.body)
+        self.assertEqual(receipt.to, ["kwame@example.com"])
+        self.assertTrue(Notification.objects.filter(icon="warn", link_url_name="psa_admin:psa_detail").exists())
+
+    def test_request_needs_a_real_message(self):
+        anon = self.client_class()
+        for message in ("", "   ", "fix it"):
+            with self.subTest(message=message):
+                resp = anon.post(self.flag_url, {"section": "term", "message": message})
+                self.assertEqual(resp.status_code, 400)
+                self.assertContains(resp, 'id="psaChanges" open', status_code=400)
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.SENT)
+        self.assertFalse(self.a.change_requests.exists())
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_signing_is_locked_while_changes_are_pending(self):
+        self._flag()
+        anon = self.client_class()
+        anon.post(self.url, _client_form())
+        self._flag("A second request from another tab.")
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.CHANGES)
+        self.assertEqual(self.a.change_requests.count(), 1)
+        page = anon.get(self.url)
+        self.assertContains(page, "Your requested changes are with Metascholar")
+        self.assertContains(page, "GHS 800")
+        self.assertNotContains(page, 'id="psaClientForm"')
+        self.assertNotContains(page, 'id="psaChangesForm"')
+
+    def test_staff_see_it(self):
+        self._flag()
+        detail = self.client.get(reverse("psa_admin:psa_detail", args=[self.a.pk]))
+        self.assertContains(detail, 'id="psaOpenRequest"')
+        self.assertContains(detail, "GHS 800")
+        listing = self.client.get(reverse("psa_admin:psa_list"), {"status": "changes"})
+        self.assertEqual([x.pk for x in listing.context["page"]], [self.a.pk])
+        self.assertEqual(listing.context["stats"]["changes"], 1)
+        edit = self.client.get(reverse("psa_admin:psa_edit", args=[self.a.pk]))
+        self.assertContains(edit, 'id="psaRequestCallout"')
+        self.assertContains(edit, 'name="seen_status" value="changes"')
+        csv_body = self.client.get(reverse("psa_admin:psa_export")).content.decode("utf-8-sig")
+        self.assertIn("4. Payment: The deposit we agreed", csv_body)
+
+    def test_fix_and_send_back_then_client_signs(self):
+        self._flag()
+        mail.outbox.clear()
+        resp = self._send_back()
+        self.assertRedirects(resp, reverse("psa_admin:psa_detail", args=[self.a.pk]))
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.SENT)
+        self.assertEqual(self.a.deposit, Decimal("800.00"))
+        req = self.a.change_requests.get()
+        self.assertIsNotNone(req.resolved_at)
+        self.assertEqual(req.resolved_by, self.admin)
+        self.assertEqual(req.response, "Deposit corrected to GHS 800.")
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertTrue(mail.outbox[0].subject.startswith("Updated:"))
+        self.assertIn("Deposit corrected to GHS 800.", mail.outbox[0].body)
+        # The client sees the reply and can sign now.
+        anon = self.client_class()
+        page = anon.get(self.url)
+        self.assertContains(page, 'id="psaLastReply"')
+        self.assertContains(page, 'id="psaClientForm"')
+        anon.post(self.url, _client_form())
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.SIGNED)
+
+    def test_send_back_unchanged_needs_a_reply(self):
+        self._flag()
+        url = reverse("psa_admin:psa_send", args=[self.a.pk])
+        self.client.post(url, {"client_note": "  "})
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.CHANGES)
+        self.client.post(url, {"client_note": "The deposit was agreed at GHS 1,000 on our call."})
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.SENT)
+        self.assertEqual(self.a.deposit, Decimal("1000.00"))
+        self.assertEqual(self.a.change_requests.get().response, "The deposit was agreed at GHS 1,000 on our call.")
+
+    def test_request_arriving_while_editing_is_not_closed_unread(self):
+        # Staff opened the edit form while it was still with the client...
+        self._flag()
+        mail.outbox.clear()
+        resp = self._send_back(seen_status="sent", fee="2600")
+        self.assertRedirects(resp, reverse("psa_admin:psa_edit", args=[self.a.pk]))
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.fee, Decimal("2600.00"))          # the edit is kept
+        self.assertEqual(self.a.status, Status.CHANGES)           # but nothing was sent
+        self.assertIsNone(self.a.change_requests.get().resolved_at)
+        self.assertEqual(len(mail.outbox), 0)
+
+    def test_several_rounds(self):
+        self._flag()
+        self._send_back()
+        self._flag("Please also add the poster design as a deliverable.", section="service")
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.CHANGES)
+        self.assertEqual(self.a.change_requests.count(), 2)
+        self.assertEqual(self.a.open_change_request.section, "service")
+
+    def test_saving_without_sending_keeps_it_with_staff(self):
+        self._flag()
+        self._send_back(action="draft")
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.CHANGES)
+        self.assertIsNone(self.a.change_requests.get().resolved_at)
+
+    def test_cancel_while_changes_pending(self):
+        self._flag()
+        self.client.post(reverse("psa_admin:psa_cancel", args=[self.a.pk]))
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.CANCELLED)
+        self.assertContains(self.client_class().get(self.url), "withdrawn")
+
+    def test_no_flagging_drafts_or_signed_agreements(self):
+        draft = self._sent(action="draft")
+        anon = self.client_class()
+        resp = anon.post(reverse("psa:request_changes", args=[draft.token]), {"message": "Something is wrong here."})
+        self.assertEqual(resp.status_code, 404)
+        anon.post(self.url, _client_form())
+        self._flag()
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.SIGNED)
+        self.assertFalse(self.a.change_requests.exists())
+
+    def test_signing_area_is_the_large_layout(self):
+        page = self.client_class().get(self.url)
+        self.assertContains(page, 'class="psa-signs is-form"')

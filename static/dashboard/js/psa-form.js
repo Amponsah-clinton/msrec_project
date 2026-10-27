@@ -234,7 +234,10 @@
       if (first.focus) first.focus({ preventScroll: true });
       return;
     }
-    if (sending && !window.confirm("Send this agreement to " + val("psaClientEmailIn") + "?\n\nThey'll get an email with a link to review and sign it.")) {
+    var backAfterChanges = !!$("psaRequestCallout");
+    if (sending && !window.confirm(
+      (backAfterChanges ? "Send the updated agreement back to " : "Send this agreement to ") + val("psaClientEmailIn") +
+      "?\n\nThey'll get an email with a link to review and sign it.")) {
       e.preventDefault();
       return;
     }

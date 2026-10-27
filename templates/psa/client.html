@@ -37,12 +37,42 @@
   .psac-state { max-width: 640px; margin: 0 auto; text-align: center; padding: 40px 24px; background: #fff; border: 1px solid #e2e6ed; border-radius: 16px; }
   .psac-state h2 { font-size: 22px; margin: 12px 0 8px; }
   .psac-state p { color: #5d6676; margin: 0; }
+  .psac-intro .ico-wait { background: #b7791f; }
+  .psac-intro a { color: #0f7f7b; font-weight: 600; }
+  .psac-actions-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* The client's request (and Metascholar's reply) */
+  .psac-request { max-width: 860px; margin: 0 auto 18px; padding: 14px 18px; border-radius: 12px; background: #fff8eb; border: 1px solid #f1d9a8; }
+  .psac-request.psac-reply { background: #eef7f6; border-color: #c9e4e1; }
+  .psac-request-label { display: block; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #8a5a10; margin-bottom: 4px; }
+  .psac-reply .psac-request-label { color: #0f6b67; }
+  .psac-request p { margin: 0 0 10px; color: #1b2433; font-size: 14.5px; line-height: 1.6; }
+  .psac-request p:last-child { margin-bottom: 0; }
+
+  /* Request changes */
+  .psac-changes { max-width: 860px; margin: 22px auto 0; border: 1px solid #e2e6ed; border-radius: 12px; background: #fff; }
+  .psac-changes > summary { cursor: pointer; padding: 16px 18px; font-weight: 700; font-size: 15px; color: #1b2433; list-style: none; display: flex; align-items: center; gap: 10px; }
+  .psac-changes > summary::-webkit-details-marker { display: none; }
+  .psac-changes > summary::after { content: "+"; margin-left: auto; font-size: 20px; color: #8e96a4; line-height: 1; }
+  .psac-changes[open] > summary::after { content: "−"; }
+  .psac-changes > summary .bi { color: #b7791f; }
+  .psac-changes form { padding: 0 18px 18px; display: grid; gap: 8px; }
+  .psac-changes label { font-size: 13px; font-weight: 600; color: #1b2433; margin-top: 6px; }
+  .psac-changes .req { color: #c0392b; }
+  .psac-changes textarea { resize: vertical; min-height: 120px; line-height: 1.55; }
+  .psac-changes-intro { margin: 0; font-size: 14px; color: #5d6676; line-height: 1.6; }
+  .psac-changes-foot { display: flex; justify-content: space-between; gap: 10px; min-height: 18px; }
+  .psac-changes-foot .psa-field-error { margin: 0; }
+  .psac-count { font-size: 12px; color: #8e96a4; margin-left: auto; }
+  .psac-changes .psac-btn { justify-self: start; margin-top: 4px; }
   @media (max-width: 640px) {
     .psac-wrap { padding-top: 104px; }
     .psac-actions { flex-direction: column-reverse; align-items: stretch; }
+    .psac-actions-btns { flex-direction: column-reverse; }
     .psac-btn { width: 100%; }
+    .psac-changes .psac-btn { justify-self: stretch; }
   }
-  @media print { .psac-intro, .psac-actions, .psac-flash, .psac-summary { display: none !important; } }
+  @media print { .psac-intro, .psac-actions, .psac-flash, .psac-summary, .psac-changes, .psac-request { display: none !important; } }
 </style>
 {% endblock %}
 
@@ -72,19 +102,49 @@
         <button type="button" class="psac-btn ghost" onclick="window.print()"><i class="bi bi-printer"></i> Print or save as PDF</button>
       </div>
 
+    {% elif a.status == 'changes' %}
+      {# The client flagged something; signing is locked until it comes back. #}
+      <div class="psac-intro">
+        <span class="ico ico-wait"><i class="bi bi-hourglass-split"></i></span>
+        <div>
+          <h2>Your requested changes are with Metascholar</h2>
+          <p>You asked for changes{% if open_request %} on {{ open_request.created_at|date:"j F Y" }}{% endif %}. Metascholar Limited is updating the agreement and will email you as soon as it's ready to review and sign. There's nothing more you need to do until then.</p>
+        </div>
+      </div>
+      {% if open_request %}
+      <div class="psac-request" id="psaOpenRequest">
+        <span class="psac-request-label">Your request · {{ open_request.get_section_display }}</span>
+        <p>{{ open_request.message|linebreaksbr }}</p>
+      </div>
+      {% endif %}
+      {% include "psa/_agreement.html" %}
+
     {% else %}
       <div class="psac-intro">
         <span class="ico"><i class="bi bi-pen"></i></span>
         <div>
-          <h2>Review and sign your agreement</h2>
-          <p>Metascholar Limited has prepared and signed this agreement. Please read it through, enter your full name and phone number, and sign at the bottom.</p>
+          <h2>{% if last_reply %}Your updated agreement{% else %}Review and sign your agreement{% endif %}</h2>
+          <p>Metascholar Limited has prepared and signed this agreement. Please read it through, enter your full name and phone number, and sign at the bottom. If anything isn't right, <a href="#psaChanges" data-open-changes>request changes</a> instead of signing.</p>
           <ol class="psac-steps">
             <li><b>1</b>Check your details</li>
             <li><b>2</b>Review the service &amp; fees</li>
-            <li><b>3</b>Accept &amp; sign</li>
+            <li><b>3</b>Sign, or request changes</li>
           </ol>
         </div>
       </div>
+
+      {% if last_reply %}
+      <div class="psac-request psac-reply" id="psaLastReply">
+        <span class="psac-request-label">You asked · {{ last_reply.get_section_display }} · {{ last_reply.created_at|date:"j M Y" }}</span>
+        <p>{{ last_reply.message|linebreaksbr }}</p>
+        {% if last_reply.response %}
+        <span class="psac-request-label">Metascholar replied · {{ last_reply.resolved_at|date:"j M Y" }}</span>
+        <p>{{ last_reply.response|linebreaksbr }}</p>
+        {% else %}
+        <span class="psac-request-label">Metascholar updated the agreement · {{ last_reply.resolved_at|date:"j M Y" }}</span>
+        {% endif %}
+      </div>
+      {% endif %}
 
       <form method="post" id="psaClientForm" novalidate>
         {% csrf_token %}
@@ -92,9 +152,34 @@
         {% include "psa/_agreement.html" with form=True %}
         <div class="psac-actions">
           <p>By selecting “Accept &amp; sign”, you are signing this agreement electronically. It is as binding as a handwritten signature.</p>
-          <button type="submit" class="psac-btn" id="psaClientSubmit"><i class="bi bi-pen-fill"></i> Accept &amp; sign agreement</button>
+          <div class="psac-actions-btns">
+            <a href="#psaChanges" class="psac-btn ghost" data-open-changes id="psaRequestChangesBtn"><i class="bi bi-flag"></i> Request changes</a>
+            <button type="submit" class="psac-btn" id="psaClientSubmit"><i class="bi bi-pen-fill"></i> Accept &amp; sign agreement</button>
+          </div>
         </div>
       </form>
+
+      {# Instead of signing: flag what needs fixing. A separate form -- it never submits the signature. #}
+      <details class="psac-changes" id="psaChanges"{% if change_errors %} open{% endif %}>
+        <summary><i class="bi bi-flag"></i> Something not right? Request changes before you sign</summary>
+        <form method="post" action="{% url 'psa:request_changes' a.token %}" id="psaChangesForm" novalidate>
+          {% csrf_token %}
+          <p class="psac-changes-intro">Tell Metascholar Limited what needs to change. We'll fix the agreement and email it back to you to sign. You can't sign it while it's being changed.</p>
+          <label for="psaChangeSection">Which part of the agreement?</label>
+          <select id="psaChangeSection" name="section" class="psa-input">
+            {% for value, label in sections %}<option value="{{ value }}" {% if cv.section == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+          <label for="psaChangeMessage">What needs to change? <span class="req">*</span></label>
+          <textarea id="psaChangeMessage" name="message" class="psa-input" rows="5" maxlength="2000" required
+                    placeholder="e.g. The completion date should be 30 November, and the deposit we agreed was GHS 800."
+                    {% if change_errors.message %}aria-invalid="true" aria-describedby="psaChangeMessageErr"{% endif %}>{{ cv.message }}</textarea>
+          <div class="psac-changes-foot">
+            <p class="psa-field-error" id="psaChangeMessageErr">{{ change_errors.message|default:'' }}</p>
+            <span class="psac-count" id="psaChangeCount" aria-live="polite"></span>
+          </div>
+          <button type="submit" class="psac-btn" id="psaChangesSubmit"><i class="bi bi-send"></i> Send request to Metascholar</button>
+        </form>
+      </details>
     {% endif %}
   </div>
 </main>
@@ -160,6 +245,44 @@
     // Clear a pad's error as soon as it's signed.
     pad.addEventListener("sigpad:change", function () {
       if (!pad.sigpad.isEmpty()) { pad.classList.remove("has-error"); document.getElementById("clientSigError").textContent = ""; }
+    });
+
+    // ---- Request changes (instead of signing) ----
+    var changes = document.getElementById("psaChanges");
+    var changesForm = document.getElementById("psaChangesForm");
+    var message = document.getElementById("psaChangeMessage");
+    var messageErr = document.getElementById("psaChangeMessageErr");
+    var count = document.getElementById("psaChangeCount");
+    var MIN = 10, MAX = 2000;
+
+    document.querySelectorAll("[data-open-changes]").forEach(function (link) {
+      link.addEventListener("click", function (e) {
+        e.preventDefault();
+        changes.open = true;
+        changes.scrollIntoView({ block: "start", behavior: "smooth" });
+        message.focus({ preventScroll: true });
+      });
+    });
+    function updateCount() {
+      var n = message.value.trim().length;
+      count.textContent = n ? n + " / " + MAX : "";
+      if (n >= MIN) { messageErr.textContent = ""; message.setAttribute("aria-invalid", "false"); }
+    }
+    message.addEventListener("input", updateCount);
+    updateCount();
+    if (changes.open) message.focus();
+
+    changesForm.addEventListener("submit", function (e) {
+      if (message.value.trim().length < MIN) {
+        e.preventDefault();
+        messageErr.textContent = "Tell us what needs to change (at least a few words).";
+        message.setAttribute("aria-invalid", "true");
+        message.focus();
+        return;
+      }
+      var btn = document.getElementById("psaChangesSubmit");
+      btn.disabled = true;
+      btn.textContent = "Sending…";
     });
   })();
 </script>

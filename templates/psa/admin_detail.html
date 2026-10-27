@@ -24,13 +24,34 @@
         <div>{% include "psa/_agreement.html" with show_audit=True %}</div>
 
         <aside class="psa-side" aria-label="Status and actions">
-          <section class="panel">
-            <div class="panel-header"><h2>Status</h2>
-              {% if a.status == 'signed' %}<span class="badge text-bg-success">Signed</span>{% elif a.status == 'sent' %}<span class="badge text-bg-warning">Awaiting client</span>{% elif a.status == 'cancelled' %}<span class="badge text-bg-danger">Cancelled</span>{% else %}<span class="badge text-bg-secondary">Draft</span>{% endif %}
+          {% if open_request %}
+          <section class="panel psa-request-panel" id="psaOpenRequest">
+            <div class="panel-header"><h2>Changes requested</h2><span class="psa-request-when">{{ open_request.created_at|date:"d M Y, H:i" }}</span></div>
+            <p class="psa-request-section">{{ open_request.get_section_display }}</p>
+            <blockquote class="psa-request-msg">{{ open_request.message|linebreaksbr }}</blockquote>
+            <p class="psa-side-text">{{ a.client_name }} can't sign until you send it back. Fix the agreement and send it, or reply that it stands.</p>
+            <div class="psa-side-actions">
+              <a class="btn-primary" href="{% url 'psa_admin:psa_edit' a.pk %}" id="psaFixAgreement">Edit &amp; send back</a>
             </div>
+            <details class="psa-unchanged">
+              <summary>Send back without changes</summary>
+              <form method="post" action="{% url 'psa_admin:psa_send' a.pk %}" id="psaSendUnchangedForm" data-confirm="Send {{ a.reference }} back to {{ a.client_email }} without changes?">
+                {% csrf_token %}
+                <label for="psaUnchangedNote" class="psa-label">Reply to the client</label>
+                <textarea class="field-input" id="psaUnchangedNote" name="client_note" rows="4" maxlength="2000" required
+                          placeholder="Explain why the agreement stays as it is."></textarea>
+                <button type="submit" class="btn-secondary" id="psaSendUnchanged">Send back to client</button>
+              </form>
+            </details>
+          </section>
+          {% endif %}
+
+          <section class="panel">
+            <div class="panel-header"><h2>Status</h2>{% include "psa/_status_badge.html" %}</div>
             <p class="psa-side-text">
               {% if a.status == 'draft' %}Not sent yet.{% if not a.is_company_signed %} Sign it for Metascholar Limited before sending.{% endif %}
               {% elif a.status == 'sent' %}Waiting for {{ a.client_name }} to sign.{% if a.viewed_at %} Opened {{ a.viewed_at|date:"d M Y, H:i" }}.{% else %} Not opened yet.{% endif %}
+              {% elif a.status == 'changes' %}The client asked for changes. Signing is locked until it's sent back.
               {% elif a.status == 'signed' %}Signed by both parties. It can no longer be changed.
               {% else %}Cancelled. The client's link no longer accepts a signature.{% endif %}
             </p>
@@ -45,7 +66,7 @@
                 {% csrf_token %}<button type="submit" class="btn-primary" id="psaResend">Resend email</button>
               </form>
               {% endif %}
-              {% if a.is_editable %}<a class="btn-secondary" href="{% url 'psa_admin:psa_edit' a.pk %}" id="psaEdit">Edit</a>{% endif %}
+              {% if a.is_editable and a.status != 'changes' %}<a class="btn-secondary" href="{% url 'psa_admin:psa_edit' a.pk %}" id="psaEdit">Edit</a>{% endif %}
               <button type="button" class="btn-secondary" onclick="window.print()" id="psaPrint">Print / PDF</button>
             </div>
           </section>
@@ -68,6 +89,10 @@
               <div><dt>Signed for Metascholar</dt><dd>{% if a.company_signed_at %}{{ a.company_signed_at|date:"d M Y, H:i" }}<span>{{ a.company_signatory_name }}</span>{% else %}&mdash;{% endif %}</dd></div>
               <div><dt>Sent</dt><dd>{% if a.sent_at %}{{ a.sent_at|date:"d M Y, H:i" }}{% if a.send_count > 1 %}<span>{{ a.send_count }} emails, last {{ a.last_sent_at|date:"d M Y" }}</span>{% endif %}{% else %}&mdash;{% endif %}</dd></div>
               <div><dt>Opened by client</dt><dd>{% if a.viewed_at %}{{ a.viewed_at|date:"d M Y, H:i" }}{% else %}&mdash;{% endif %}</dd></div>
+              {% for r in change_requests reversed %}
+              <div><dt>Changes requested</dt><dd>{{ r.created_at|date:"d M Y, H:i" }}<span>{{ r.get_section_display }}</span>
+                {% if r.resolved_at %}<span>Sent back {{ r.resolved_at|date:"d M Y" }}{% if r.resolved_by %} by {{ r.resolved_by.full_name }}{% endif %}</span>{% else %}<span class="psa-open">Open</span>{% endif %}</dd></div>
+              {% endfor %}
               {% if a.status == 'cancelled' %}
               <div><dt>Cancelled</dt><dd>{{ a.cancelled_at|date:"d M Y, H:i" }}</dd></div>
               {% else %}
@@ -75,6 +100,24 @@
               {% endif %}
             </dl>
           </section>
+
+          {% if change_requests %}
+          <section class="panel">
+            <div class="panel-header"><h2>Client requests</h2><span class="psa-request-when">{{ change_requests|length }}</span></div>
+            <ol class="psa-requests" id="psaRequestLog">
+              {% for r in change_requests %}
+              <li>
+                <span class="psa-request-meta">{{ r.created_at|date:"d M Y" }} · {{ r.get_section_display }}{% if not r.resolved_at %} · <span class="psa-open">Open</span>{% endif %}</span>
+                <p>{{ r.message|linebreaksbr }}</p>
+                {% if r.resolved_at %}
+                <span class="psa-request-meta">Reply{% if r.resolved_by %} from {{ r.resolved_by.full_name }}{% endif %} · {{ r.resolved_at|date:"d M Y" }}</span>
+                <p class="psa-reply">{{ r.response|default:"Agreement updated and sent back."|linebreaksbr }}</p>
+                {% endif %}
+              </li>
+              {% endfor %}
+            </ol>
+          </section>
+          {% endif %}
 
           {% if a.is_editable or a.status == 'cancelled' %}
           <div class="psa-danger">

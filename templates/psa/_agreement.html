@@ -130,7 +130,7 @@ The agreement as one sheet (styles: assets/css/psa-agreement.css).
     <h2 class="psa-sec-title" id="psaSecAcceptanceTitle"><span class="n">5</span> Client Review and Acceptance</h2>
     <p class="psa-clause" style="margin-top:0">By signing or electronically accepting this Agreement, the Client confirms that they have reviewed and accepted the services, timelines, and payment terms set out above.</p>
 
-    <div class="psa-signs">
+    <div class="psa-signs{% if form %} is-form{% endif %}">
       <div class="psa-sign" id="psaClientSign">
         <div class="psa-sign-who">Client Signature / Electronic Acceptance{% if form %} <span class="req" style="color:var(--psa-error)">*</span>{% endif %}</div>
         {% if form %}

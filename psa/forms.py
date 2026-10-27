@@ -11,7 +11,7 @@ from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
-from .models import CURRENCIES, ServiceAgreement
+from .models import CURRENCIES, ChangeRequest, ServiceAgreement
 
 MAX_DELIVERABLES = 30
 MAX_SIGNATURE_UPLOAD = 2 * 1024 * 1024  # the drawn PNG, before cropping
@@ -204,3 +204,21 @@ def parse_client(post):
         errors["client_signature"] = "Sign the agreement by drawing your signature or typing your name."
     c["client_signature_kind"], c["client_signature"] = kind or "", value or ""
     return c, errors
+
+
+CHANGE_MESSAGE_MIN, CHANGE_MESSAGE_MAX = 10, 2000
+
+
+def parse_change_request(post):
+    """The client flagging something to fix instead of signing: which part,
+    and what's wrong with it."""
+    errors = {}
+    section = post.get("section", "")
+    if section not in ChangeRequest.Section.values:
+        section = ChangeRequest.Section.OTHER
+    message = post.get("message", "").strip()
+    if len(message) < CHANGE_MESSAGE_MIN:
+        errors["message"] = "Tell us what needs to change (at least a few words)."
+    elif len(message) > CHANGE_MESSAGE_MAX:
+        errors["message"] = f"Please keep it under {CHANGE_MESSAGE_MAX} characters."
+    return {"section": section, "message": message[:CHANGE_MESSAGE_MAX]}, errors

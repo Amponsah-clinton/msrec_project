@@ -25,8 +25,8 @@ from django.views.decorators.http import require_POST
 from messaging.access import is_staff_side
 
 from . import emails
-from .forms import parse_agreement, parse_client, parse_signature
-from .models import CURRENCIES, ServiceAgreement
+from .forms import parse_agreement, parse_change_request, parse_client, parse_signature
+from .models import CURRENCIES, ChangeRequest, ServiceAgreement
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +146,7 @@ def psa_list(request):
             "all": sum(counts.values()),
             "draft": counts.get(Status.DRAFT, 0),
             "sent": counts.get(Status.SENT, 0),
+            "changes": counts.get(Status.CHANGES, 0),
             "signed": counts.get(Status.SIGNED, 0),
             "cancelled": counts.get(Status.CANCELLED, 0),
         },
@@ -162,7 +163,7 @@ def psa_list(request):
 def psa_export(request):
     """CSV of every agreement matching the list's filters (not only the
     page on screen)."""
-    rows = _filtered(_filters(request.GET))
+    rows = _filtered(_filters(request.GET)).prefetch_related("change_requests")
     today = timezone.localdate().isoformat()
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="metascholar-psa-{today}.csv"'
@@ -182,9 +183,11 @@ def psa_export(request):
         "Expected Completion", "Currency", "Agreed Fee", "Payment Basis", "Deposit / Upfront",
         "Balance Due", "Payment Schedule", "Signed for Metascholar By", "Company Signed On",
         "Client Signed On", "First Sent", "Times Sent", "Client First Opened", "Created By",
-        "Created On",
+        "Created On", "Change Requests", "Open Change Request",
     ])
     for a in rows:
+        requests = list(a.change_requests.all())   # newest first
+        open_req = next((r for r in requests if not r.resolved_at), None)
         writer.writerow([
             a.reference, a.get_status_display(), day(a.agreement_date), a.client_name,
             a.client_email, a.client_phone, a.client_address, a.service_title,
@@ -195,6 +198,8 @@ def psa_export(request):
             a.company_signatory_name, when(a.company_signed_at), when(a.client_signed_at),
             when(a.sent_at), a.send_count, when(a.viewed_at),
             a.created_by.full_name if a.created_by else "", when(a.created_at),
+            len(requests),
+            f"{open_req.get_section_display()}: {open_req.message}" if open_req else "",
         ])
     return response
 
@@ -236,6 +241,7 @@ def _form(request, a, values, errors=None, status=200):
         "a": a,
         "v": values,
         "balance": _balance_display(values),
+        "open_request": a.open_change_request if a and a.status == Status.CHANGES else None,
         "errors": errors or {},
         "currencies": CURRENCIES,
         "bases": ServiceAgreement.Basis.choices,
@@ -270,6 +276,8 @@ def psa_edit(request, pk):
 
 def _save(request, a):
     sending = request.POST.get("action") == "send"
+    # What staff wrote back to the client about their requested changes.
+    note = request.POST.get("client_note", "").strip()[:2000]
     cleaned, errors = parse_agreement(request.POST, sending=sending)
 
     kind, signature, sig_error = parse_signature(request.POST, "company")
@@ -282,10 +290,12 @@ def _save(request, a):
     if errors:
         values = {k: request.POST.get(k, "") for k in FORM_FIELDS}
         values["deliverables"] = cleaned["deliverables"]
+        values["client_note"] = note
         messages.error(request, "Please fix the highlighted fields." if len(errors) > 1 else next(iter(errors.values())))
         return _form(request, a, values, errors, status=400)
 
     creating = a is None
+    unseen_request = False
     with transaction.atomic():
         if creating:
             a = ServiceAgreement(created_by=request.user)
@@ -296,6 +306,13 @@ def _save(request, a):
             if not a.is_editable:
                 messages.error(request, f"{a.reference} was {a.get_status_display().lower()} in the meantime, so your changes weren't saved.")
                 return redirect("psa_admin:psa_detail", pk=a.pk)
+            # The client asked for changes after this form was opened: keep
+            # the edits, but don't send -- that would close a request this
+            # person hasn't read.
+            unseen_request = (
+                sending and a.status == Status.CHANGES
+                and request.POST.get("seen_status") != Status.CHANGES
+            )
         for field, value in cleaned.items():
             if value is None and field in ("agreement_date",):
                 value = timezone.localdate()
@@ -311,24 +328,45 @@ def _save(request, a):
             a.company_signed_at = timezone.now()
         a.save()
 
+    if unseen_request:
+        messages.warning(
+            request,
+            f"Your changes are saved, but {a.client_name} asked for changes while you were editing, "
+            "so nothing was sent. Read their request below, then send it back when it's ready.",
+        )
+        return redirect("psa_admin:psa_edit", pk=a.pk)
     if not sending:
         messages.success(request, f"{a.reference} {'saved as a draft' if creating or a.status == Status.DRAFT else 'updated'}.")
         if a.status == Status.SENT:
             messages.info(request, "The client's link already shows these changes. Use Resend if you'd like them to get a fresh email.")
+        elif a.status == Status.CHANGES:
+            messages.info(request, "The client can't sign until you send it back to them.")
         return redirect("psa_admin:psa_detail", pk=a.pk)
-    return _send(request, a, reminder=False)
+    return _send(request, a, reminder=False, note=note)
 
 
-def _send(request, a, *, reminder):
-    ok = emails.send_to_client(a, reminder=reminder)
+def _send(request, a, *, reminder, note=""):
+    """Email the client their link and mark the agreement as with them.
+    Going back after a change request closes that request, recording what
+    staff replied."""
     now = timezone.now()
-    a.status = Status.SENT
-    a.sent_at = a.sent_at or now
-    a.last_sent_at = now
-    a.send_count += 1
-    a.save(update_fields=["status", "sent_at", "last_sent_at", "send_count", "updated_at"])
+    with transaction.atomic():
+        a = ServiceAgreement.objects.select_for_update().get(pk=a.pk)
+        updated = a.status == Status.CHANGES
+        if updated:
+            a.change_requests.filter(resolved_at__isnull=True).update(
+                resolved_at=now, resolved_by=request.user, response=note,
+            )
+        a.status = Status.SENT
+        a.sent_at = a.sent_at or now
+        a.last_sent_at = now
+        a.send_count += 1
+        a.save(update_fields=["status", "sent_at", "last_sent_at", "send_count", "updated_at"])
+    # Emailed once the link is live again, so the client can sign straight away.
+    ok = emails.send_to_client(a, reminder=reminder, updated=updated, note=note)
     if ok:
-        messages.success(request, f"{a.reference} {'resent' if reminder else 'sent'} to {a.client_email}.")
+        verb = "sent back" if updated else ("resent" if reminder else "sent")
+        messages.success(request, f"{a.reference} {verb} to {a.client_email}.")
     else:
         messages.warning(
             request,
@@ -346,8 +384,11 @@ def _send(request, a, *, reminder):
 @staff_required
 def psa_detail(request, pk):
     a = get_object_or_404(ServiceAgreement.objects.select_related("created_by", "company_signed_by"), pk=pk)
+    change_requests = list(a.change_requests.select_related("resolved_by"))
     return render(request, "psa/admin_detail.html", {
         "a": a,
+        "open_request": next((r for r in change_requests if not r.resolved_at), None),
+        "change_requests": change_requests,
         "client_link": a.client_url() if a.status != Status.DRAFT else "",
         "dashboard": _dashboard(request),
     })
@@ -368,16 +409,21 @@ def psa_resend(request, pk):
 @staff_required
 @require_POST
 def psa_send(request, pk):
-    """Send a finished draft from its own page (the form's "Sign & send"
-    does the same in one step)."""
+    """Send from the agreement's own page: a finished draft, or one the
+    client asked to change, sent back as it stands with a reply (the form's
+    "Save & send" does the same after editing)."""
     a = get_object_or_404(ServiceAgreement, pk=pk)
-    if a.status != Status.DRAFT:
+    if a.status not in (Status.DRAFT, Status.CHANGES):
         return redirect("psa_admin:psa_detail", pk=a.pk)
     missing = parse_agreement(_as_post(a), sending=True)[1]
     if missing or not a.is_company_signed:
         messages.error(request, "Finish the agreement and sign it for Metascholar Limited before sending.")
         return redirect("psa_admin:psa_edit", pk=a.pk)
-    return _send(request, a, reminder=False)
+    note = request.POST.get("client_note", "").strip()[:2000]
+    if a.status == Status.CHANGES and not note:
+        messages.error(request, "Tell the client why the agreement stands as it is before sending it back unchanged.")
+        return redirect("psa_admin:psa_detail", pk=a.pk)
+    return _send(request, a, reminder=False, note=note)
 
 
 def _as_post(a):
@@ -434,14 +480,24 @@ def _client_ip(request):
         return None
 
 
-def _client_page(request, a, *, values=None, errors=None, status=200):
+def _client_page(request, a, *, values=None, errors=None, change_values=None,
+                 change_errors=None, status=200):
     resp = render(request, "psa/client.html", {
         "a": a,
         "v": values or {
-            "client_name": a.client_name, "client_email": a.client_email,
-            "client_phone": a.client_phone, "client_address": a.client_address,
+            "client_name": a.client_name, "client_phone": a.client_phone,
+            "client_address": a.client_address,
         },
         "errors": errors or {},
+        "sections": ChangeRequest.Section.choices,
+        "cv": change_values or {},
+        "change_errors": change_errors or {},
+        "open_request": a.open_change_request if a.status == Status.CHANGES else None,
+        # Back from a change request: what they asked and what we replied.
+        "last_reply": (
+            a.change_requests.filter(resolved_at__isnull=False).first()
+            if a.status == Status.SENT else None
+        ),
     }, status=status)
     # The link is the key to the agreement: keep it out of caches and out
     # of the Referer sent to any third-party asset.
@@ -476,17 +532,7 @@ def client(request, token):
 
         emails.send_client_copy(a)
         emails.send_signed_to_staff(a)
-        try:
-            from notifications.models import Notification
-            from notifications.services import notify
-            notify(
-                Notification.Audience.SECRETARIAT,
-                f"{a.client_name} signed service agreement {a.reference}."[:255],
-                icon=Notification.Icon.SUCCESS,
-                link_url_name="psa_admin:psa_detail", link_kwargs={"pk": a.pk},
-            )
-        except Exception:
-            logger.exception("PSA signed notification failed for %s", a.reference)
+        _notify_staff(a, f"{a.client_name} signed service agreement {a.reference}.", icon="success")
         messages.success(request, "Thank you — the agreement is signed. We've emailed you a copy.")
         return redirect("psa:client", token=a.token)
 
@@ -494,3 +540,46 @@ def client(request, token):
         a.viewed_at = timezone.now()
         a.save(update_fields=["viewed_at"])
     return _client_page(request, a)
+
+
+@require_POST
+def client_request_changes(request, token):
+    """The client flags something to fix instead of signing. Signing locks
+    until staff send the agreement back."""
+    a = get_object_or_404(ServiceAgreement, token=token)
+    if a.status == Status.DRAFT:
+        raise Http404("No agreement at this link.")
+    with transaction.atomic():
+        a = ServiceAgreement.objects.select_for_update().get(pk=a.pk)
+        if a.status != Status.SENT:
+            # Already signed, already flagged (a second tab), or withdrawn.
+            return redirect("psa:client", token=a.token)
+        data, errors = parse_change_request(request.POST)
+        if errors:
+            return _client_page(request, a, change_values=data, change_errors=errors, status=400)
+        req = ChangeRequest.objects.create(agreement=a, client_ip=_client_ip(request), **data)
+        a.status = Status.CHANGES
+        a.save(update_fields=["status", "updated_at"])
+
+    emails.send_changes_requested_to_staff(a, req)
+    emails.send_change_request_receipt(a, req)
+    _notify_staff(a, f"{a.client_name} asked for changes to service agreement {a.reference}.", icon="warn")
+    messages.success(
+        request,
+        "Thank you — your request has been sent to Metascholar Limited. "
+        "We'll email you as soon as the updated agreement is ready to sign.",
+    )
+    return redirect("psa:client", token=a.token)
+
+
+def _notify_staff(a, message, *, icon):
+    """A dashboard notification for Admin and the Secretariat. Best effort."""
+    try:
+        from notifications.models import Notification
+        from notifications.services import notify
+        notify(
+            Notification.Audience.SECRETARIAT, message[:255], icon=icon,
+            link_url_name="psa_admin:psa_detail", link_kwargs={"pk": a.pk},
+        )
+    except Exception:
+        logger.exception("PSA notification failed for %s", a.reference)

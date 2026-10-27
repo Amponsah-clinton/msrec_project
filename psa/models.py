@@ -8,6 +8,10 @@ The life of one agreement:
   SENT       Signed for Metascholar Limited and emailed to the client, who
              gets a private link (``token``) to complete their details and
              sign. The company's terms can still be corrected and resent.
+  CHANGES    The client flagged something that needs fixing instead of
+             signing (a ChangeRequest). Signing is locked until staff fix it
+             -- or reply that it stands -- and send it back, which returns
+             it to SENT. This can go round as many times as needed.
   SIGNED     The client has accepted and signed. The agreement is locked:
              nothing on it can change after this.
   CANCELLED  Withdrawn before the client signed. The link stops working.
@@ -38,6 +42,7 @@ class ServiceAgreement(models.Model):
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
         SENT = "sent", "Awaiting client"
+        CHANGES = "changes", "Changes requested"
         SIGNED = "signed", "Signed"
         CANCELLED = "cancelled", "Cancelled"
 
@@ -163,7 +168,12 @@ class ServiceAgreement(models.Model):
 
     @property
     def is_editable(self):
-        return self.status in (self.Status.DRAFT, self.Status.SENT)
+        return self.status in (self.Status.DRAFT, self.Status.SENT, self.Status.CHANGES)
+
+    @property
+    def open_change_request(self):
+        """The client's request that hasn't been answered yet, if any."""
+        return self.change_requests.filter(resolved_at__isnull=True).order_by("-created_at").first()
 
     @property
     def is_company_signed(self):
@@ -181,3 +191,35 @@ class ServiceAgreement(models.Model):
 
     def deliverable_list(self):
         return [d for d in (self.deliverables or []) if str(d).strip()]
+
+
+class ChangeRequest(models.Model):
+    """The client flagging something on the agreement that needs fixing,
+    instead of signing it -- and how Metascholar answered."""
+
+    class Section(models.TextChoices):
+        PARTIES = "parties", "1. The Parties"
+        TERM = "term", "2. Term"
+        SERVICE = "service", "3. The Service"
+        PAYMENT = "payment", "4. Payment"
+        OTHER = "other", "Something else"
+
+    agreement = models.ForeignKey(ServiceAgreement, on_delete=models.CASCADE, related_name="change_requests")
+    section = models.CharField(max_length=12, choices=Section.choices, default=Section.OTHER)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    client_ip = models.GenericIPAddressField(null=True, blank=True)
+
+    # Filled in when staff send the agreement back to the client.
+    resolved_at = models.DateTimeField(null=True, blank=True)
+    resolved_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+    response = models.TextField(blank=True)
+
+    class Meta:
+        db_table = "service_agreement_change_requests"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.agreement.reference}: {self.get_section_display()}"

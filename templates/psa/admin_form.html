@@ -28,6 +28,15 @@
 
       <form method="post" id="psaForm" class="panel psa-form" novalidate data-has-signature="{% if a.is_company_signed %}1{% else %}0{% endif %}">
         {% csrf_token %}
+        {# Which state this form was opened in, so a change request that arrives meanwhile isn't closed unread. #}
+        {% if a %}<input type="hidden" name="seen_status" value="{{ a.status }}">{% endif %}
+        {% if open_request %}
+        <div class="psa-request-callout" id="psaRequestCallout" role="note">
+          <strong>{{ a.client_name }} asked for changes · {{ open_request.get_section_display }}</strong>
+          <span class="psa-request-when">{{ open_request.created_at|date:"d M Y, H:i" }}</span>
+          <blockquote class="psa-request-msg">{{ open_request.message|linebreaksbr }}</blockquote>
+        </div>
+        {% endif %}
         <p class="field-error psa-form-error" id="psaFormSummary" role="alert">{% if errors %}Some details need attention. They're marked below.{% endif %}</p>
 
         {# ---------------------------------------------------------- client #}
@@ -187,10 +196,22 @@
           {% if a.is_company_signed %}</div>{% endif %}
         </div>
 
+        {% if open_request %}
+        <div class="form-section" id="psaStepReply">
+          <h3 class="form-section-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2Z"/></svg> Reply to the client</h3>
+          <div class="field-group">
+            <label for="psaClientNote">Note to {{ a.client_name }} <span class="psa-optional">(optional)</span></label>
+            <textarea class="field-input" id="psaClientNote" name="client_note" rows="3" maxlength="2000"
+                      placeholder="e.g. We've moved the completion date to 30 November as you asked.">{{ v.client_note|default:'' }}</textarea>
+            <p class="field-hint">Included in the email that sends the updated agreement back.</p>
+          </div>
+        </div>
+        {% endif %}
+
         <div class="form-actions psa-actions">
           <a href="{% if a %}{% url 'psa_admin:psa_detail' a.pk %}{% else %}{% url 'psa_admin:psa_list' %}{% endif %}" class="psa-link psa-cancel">Cancel</a>
-          <button type="submit" class="btn-secondary" name="action" value="draft" id="psaSaveDraftBtn">{% if a.status == 'sent' %}Save changes{% else %}Save draft{% endif %}</button>
-          <button type="submit" class="btn-primary" name="action" value="send" id="psaSendBtn">{% if a.status == 'sent' %}Save &amp; resend{% else %}Sign &amp; send to client{% endif %}</button>
+          <button type="submit" class="btn-secondary" name="action" value="draft" id="psaSaveDraftBtn">{% if a.status == 'sent' or a.status == 'changes' %}Save changes{% else %}Save draft{% endif %}</button>
+          <button type="submit" class="btn-primary" name="action" value="send" id="psaSendBtn">{% if a.status == 'changes' %}Save &amp; send back to client{% elif a.status == 'sent' %}Save &amp; resend{% else %}Sign &amp; send to client{% endif %}</button>
         </div>
       </form>
 {% endblock %}

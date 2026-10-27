@@ -26,9 +26,14 @@
           <span class="acct-summary-value">{{ stats.draft }}</span>
           <span class="acct-summary-label">Drafts</span>
         </div>
-        <div class="acct-summary-cell{% if stats.sent %} warn{% endif %}">
+        <div class="acct-summary-cell">
           <span class="acct-summary-value">{{ stats.sent }}</span>
           <span class="acct-summary-label">Awaiting Client</span>
+        </div>
+        {# Highlighted: these are waiting on us, not the client. #}
+        <div class="acct-summary-cell{% if stats.changes %} warn{% endif %}">
+          <span class="acct-summary-value">{{ stats.changes }}</span>
+          <span class="acct-summary-label">Changes Requested</span>
         </div>
         <div class="acct-summary-cell">
           <span class="acct-summary-value">{{ stats.signed }}</span>
@@ -46,6 +51,7 @@
             <a href="?{% if f.q %}q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if not f.status %} active{% endif %}">All <span class="count badge rounded-pill text-bg-secondary">{{ stats.all }}</span></a>
             <a href="?status=draft{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if f.status == 'draft' %} active{% endif %}">Drafts <span class="count badge rounded-pill text-bg-secondary">{{ stats.draft }}</span></a>
             <a href="?status=sent{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if f.status == 'sent' %} active{% endif %}">Awaiting Client <span class="count badge rounded-pill text-bg-secondary">{{ stats.sent }}</span></a>
+            <a href="?status=changes{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if f.status == 'changes' %} active{% endif %}" data-filter="revisions">Changes Requested <span class="count badge rounded-pill text-bg-secondary">{{ stats.changes }}</span></a>
             <a href="?status=signed{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if f.status == 'signed' %} active{% endif %}">Signed <span class="count badge rounded-pill text-bg-secondary">{{ stats.signed }}</span></a>
             <a href="?status=cancelled{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if f.status == 'cancelled' %} active{% endif %}">Cancelled <span class="count badge rounded-pill text-bg-secondary">{{ stats.cancelled }}</span></a>
           </div>
@@ -131,10 +137,11 @@
                 </td>
                 <td data-label="Status">
                   <div class="acct-cell">
-                    <span>{% if a.status == 'signed' %}<span class="badge text-bg-success">Signed</span>{% elif a.status == 'sent' %}<span class="badge text-bg-warning">Awaiting client</span>{% elif a.status == 'cancelled' %}<span class="badge text-bg-danger">Cancelled</span>{% else %}<span class="badge text-bg-secondary">Draft</span>{% endif %}</span>
+                    <span>{% include "psa/_status_badge.html" %}</span>
                     <span class="acct-sub psa-nowrap">
                       {% if a.status == 'signed' %}{{ a.client_signed_at|date:"d M Y" }}
                       {% elif a.status == 'sent' %}{% if a.viewed_at %}Opened {{ a.viewed_at|date:"d M" }}{% else %}Not opened yet{% endif %}
+                      {% elif a.status == 'changes' %}Needs your action
                       {% elif a.status == 'cancelled' %}{{ a.cancelled_at|date:"d M Y" }}
                       {% else %}{% if a.is_company_signed %}Ready to send{% else %}Not signed{% endif %}{% endif %}
                     </span>
