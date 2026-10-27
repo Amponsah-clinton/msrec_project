@@ -67,12 +67,16 @@ def parse_agreement(post, *, sending):
     """The staff form. A draft only needs a client name, so work can be
     saved part-way; sending needs everything the client will be asked to
     accept. Returns (cleaned, errors) -- cleaned always holds what was
-    typed, so the form can be shown again with it."""
+    typed, so the form can be shown again with it.
+
+    ``client_phone`` is deliberately absent: the client gives their own
+    number when they sign (parse_client, where it is compulsory), so staff
+    never guess it and a number the client typed is never overwritten by a
+    later staff edit."""
     errors = {}
     c = {
         "client_name": " ".join(post.get("client_name", "").split())[:200],
         "client_email": post.get("client_email", "").strip().lower()[:254],
-        "client_phone": post.get("client_phone", "").strip()[:40],
         "client_address": post.get("client_address", "").strip()[:255],
         "service_title": " ".join(post.get("service_title", "").split())[:255],
         "deliverables": deliverables_from(post),
@@ -90,10 +94,9 @@ def parse_agreement(post, *, sending):
     elif sending and not c["client_email"]:
         errors["client_email"] = "The client's email is needed to send the agreement."
 
-    if c["client_phone"] and not phone_ok(c["client_phone"]):
-        errors["client_phone"] = "Enter a valid phone number (7–15 digits)."
-
-    for field, label in (("agreement_date", "agreement date"), ("start_date", "start date"),
+    # The agreement date is fixed when the agreement is created, so it isn't
+    # read back from the form.
+    for field, label in (("start_date", "start date"),
                          ("completion_date", "expected completion date")):
         value = _date(post.get(field))
         if value is False:

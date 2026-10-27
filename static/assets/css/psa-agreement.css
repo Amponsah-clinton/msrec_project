@@ -7,6 +7,19 @@
    is scoped under .psa-doc / .sigpad so neither site's CSS leaks in.
    ================================================================== */
 
+/* The signing hand, served from here rather than only from Google Fonts:
+   a typed signature has to look written whatever the network does, and
+   this is the same face psa/pdf.py embeds in the PDF, so the screen and
+   the document match. Declared after the Google <link> on every page that
+   uses it, so this is the copy that wins. */
+@font-face {
+  font-family: "Great Vibes";
+  src: url("../fonts/GreatVibes-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 .psa-doc, .sigpad {
   --psa-ink: #1b2433;
   --psa-sub: #5d6676;
@@ -20,7 +33,8 @@
   --psa-error: #c0392b;
   --psa-serif: "IBM Plex Serif", "Source Serif Pro", Georgia, "Times New Roman", serif;
   --psa-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  --psa-hand: "Great Vibes", "Segoe Script", "Brush Script MT", cursive;
+  --psa-hand: "Great Vibes", "Snell Roundhand", "Apple Chancery", "Segoe Script",
+              "Brush Script MT", "Lucida Handwriting", cursive;
 }
 
 .psa-doc *, .psa-doc *::before, .psa-doc *::after,

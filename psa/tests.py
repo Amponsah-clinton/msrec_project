@@ -32,7 +32,6 @@ def _form(**overrides):
         "agreement_date": today.isoformat(),
         "client_name": "Kwame Mensah",
         "client_email": "kwame@example.com",
-        "client_phone": "0241234567",
         "client_address": "",
         "start_date": today.isoformat(),
         "completion_date": (today + timezone.timedelta(days=30)).isoformat(),
@@ -135,6 +134,23 @@ class CreateAndSendTests(StaffTestCase):
         self.assertEqual(mail.outbox[0].to, ["kwame@example.com"])
         self.assertIn(a.reference, mail.outbox[0].subject)
         self.assertIn(reverse("psa:client", args=[a.token]), mail.outbox[0].body)
+
+    def test_staff_never_set_the_phone_number(self):
+        # It isn't on the staff form at all -- the client gives it when
+        # they sign -- and a posted one is ignored rather than trusted.
+        page = self.client.get(reverse("psa_admin:psa_new"))
+        self.assertNotContains(page, 'name="client_phone"')
+        a = self._sent(client_phone="0241234567")
+        self.assertEqual(a.client_phone, "")
+
+    def test_a_staff_edit_leaves_the_clients_own_number_alone(self):
+        a = self._sent()
+        a.client_phone = "+233 24 123 4567"
+        a.save()
+        self.client.post(reverse("psa_admin:psa_edit", args=[a.pk]),
+                         _form(client_phone="0000000000", action="draft"))
+        a.refresh_from_db()
+        self.assertEqual(a.client_phone, "+233 24 123 4567")
 
     def test_drawn_signature_is_stored_as_png(self):
         a = self._sent(company_signature_kind="drawn", company_signature_typed="",

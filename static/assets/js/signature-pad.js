@@ -15,9 +15,9 @@
   // A nib lays down a wider line the slower it moves, and a stylus adds
   // real pressure on top of that. These turn the pointer's speed into a
   // width so a stroke tapers and swells instead of being a flat ribbon.
-  var BASE_W = 2.6;             // width at an ordinary writing speed
-  var FAST = 1.1;               // px per ms counted as a fast flick
-  var THICKEST = 1.5, THINNEST = 0.5;   // multiples of BASE_W
+  var BASE_W = 2.7;             // width at an ordinary writing speed
+  var FAST = 0.95;              // px per ms counted as a fast flick
+  var THICKEST = 1.65, THINNEST = 0.45; // multiples of BASE_W
 
   function setup(root) {
     var kindInput = root.querySelector('[data-sig="kind"]');
