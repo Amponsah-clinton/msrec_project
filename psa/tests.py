@@ -257,8 +257,12 @@ class ClientSigningTests(StaffTestCase):
         self.assertEqual(self.a.client_phone, "+233 24 123 4567")
         self.assertEqual(self.a.client_address, "Accra")
         self.assertEqual(self.a.client_signed_ip, "203.0.113.9")
-        # A copy to the client, and word to the staff member who sent it.
-        self.assertEqual(sorted(m.to[0] for m in mail.outbox), ["admin@example.com", "kwame@example.com"])
+        # A copy to the client, and word to the CEO and the staff member who sent it.
+        self.assertEqual(len(mail.outbox), 2)
+        client_copy, staff = sorted(mail.outbox, key=lambda m: m.to[0] != "kwame@example.com")
+        self.assertEqual(client_copy.to, ["kwame@example.com"])
+        self.assertEqual(staff.to, ["ceo@academicdigital.space", "admin@example.com"])
+        self.assertIn("Kwame Mensah", staff.subject)
         self.assertTrue(Notification.objects.filter(link_url_name="psa_admin:psa_detail").exists())
         # The signed copy shows, without a form.
         page = self.client.get(self.url)

@@ -4,6 +4,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Always told when a client signs, whoever prepared the agreement.
+SIGNED_NOTIFY_EMAIL = "ceo@academicdigital.space"
+
 
 def _money(a):
     return f"{a.currency} {a.fee:,.2f}" if a.fee is not None else ""
@@ -68,10 +71,12 @@ def send_client_copy(a):
 
 
 def send_signed_to_staff(a):
-    """Tells whoever prepared the agreement that the client has signed."""
-    to = getattr(a.created_by, "email", "") or getattr(a.company_signed_by, "email", "")
-    if not to:
-        return False
+    """Tells the CEO, and whoever prepared the agreement, that the client
+    has signed."""
+    to = [SIGNED_NOTIFY_EMAIL]
+    preparer = getattr(a.created_by, "email", "") or getattr(a.company_signed_by, "email", "")
+    if preparer and preparer.lower() != SIGNED_NOTIFY_EMAIL:
+        to.append(preparer)
     return _send(
         subject=f"Client signed PSA {a.reference} — {a.client_name}",
         to=to,
