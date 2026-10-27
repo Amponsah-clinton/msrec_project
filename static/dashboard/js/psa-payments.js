@@ -19,6 +19,7 @@
   var amount = document.getElementById("psaPayAmount");
   var amountHint = document.getElementById("psaPayAmountHint");
   var noteOpt = document.getElementById("psaPayNoteOpt");
+  var deposit = document.getElementById("psaPayDeposit");
   var noteHint = document.getElementById("psaPayNoteHint");
   var submit = document.getElementById("psaPaySubmit");
   var kinds = form.querySelectorAll("[data-psa-kind]");
@@ -30,6 +31,19 @@
     return n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  // The deposit from the agreement form already counts as received. Said
+  // plainly while there are no entries yet, which is when someone is most
+  // likely to record it a second time.
+  function showDeposit() {
+    var upfront = row && row.deposit;
+    var first = row && parseFloat(row.entries || "0") === 0;
+    deposit.hidden = !(upfront && first);
+    if (!deposit.hidden) {
+      deposit.textContent = "The " + (row.currency || "") + " " + money(upfront) +
+        " deposit from Section 4 is already counted. Record what has come in since it.";
+    }
+  }
+
   // A refund is capped at what has come in, and needs a reason; a payment
   // is pre-filled with what's still owing, which is usually the amount.
   function applyKind() {
@@ -39,7 +53,8 @@
     noteOpt.hidden = refund;
     if (refund) {
       amountHint.textContent = paid > 0
-        ? "At most " + (row.currency || "") + " " + money(paid) + " has been received."
+        ? "At most " + (row.currency || "") + " " + money(paid) +
+          " has been received" + (row.deposit ? " (deposit included)." : ".")
         : "Nothing has been received on this agreement yet.";
       noteHint.textContent = "Say what the refund or correction is for.";
       submit.textContent = "Save refund";
@@ -64,6 +79,7 @@
     form.querySelector("#psaPayNote").value = "";
     submit.disabled = false;
     applyKind();
+    showDeposit();
     dialog.showModal();
     // The amount is the one field that is usually changed.
     amount.focus();

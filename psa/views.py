@@ -104,23 +104,29 @@ def _role_label(user):
 # ---------------------------------------------------------------------
 
 def _with_money(qs):
-    """Add `paid_total` (the ledger's sum) and `owing` (fee less that) to
-    every row, so the list can show, sort and filter on what's owing
-    without a query per agreement. A subquery rather than a join, so the
-    other filters can't multiply the rows the sum runs over.
+    """Add `paid_total` (the deposit plus the ledger) and `owing` (fee less
+    that) to every row, so the list can show, sort and filter on what's
+    owing without a query per agreement. A subquery rather than a join, so
+    the other filters can't multiply the rows the sum runs over.
 
-    `owing` treats a missing fee as zero -- nothing is owed until a fee is
-    agreed -- and the templates read `a.amount_owing`, which is None in
-    that case, rather than the annotation.
+    The deposit counts as received, the same way ServiceAgreement.
+    amount_paid does -- it is the amount taken upfront, so an agreement
+    with a deposit and no entries yet is part paid, not unpaid.
+    `_ledger_total` is the entries on their own, for showing the two
+    apart. `owing` treats a missing fee as zero -- nothing is owed until a
+    fee is agreed -- and the templates read `a.amount_owing`, which is
+    None in that case, rather than the annotation.
     """
-    paid = Subquery(
+    entries = Coalesce(Subquery(
         Payment.objects.filter(agreement=OuterRef("pk"))
         .values("agreement").annotate(t=Sum("amount")).values("t"),
         output_field=MONEY,
-    )
+    ), ZERO)
+    paid = Coalesce(F("deposit"), ZERO) + entries
     return qs.annotate(
-        paid_total=Coalesce(paid, ZERO),
-        owing=Coalesce(F("fee"), ZERO) - Coalesce(paid, ZERO),
+        _ledger_total=entries,
+        paid_total=paid,
+        owing=Coalesce(F("fee"), ZERO) - paid,
     )
 
 
@@ -247,7 +253,8 @@ def psa_export(request):
         "Reference", "Status", "Agreement Date", "Client Name", "Client Email", "Client Phone",
         "Client Address", "Service / Project Title", "Deliverables", "Start Date",
         "Expected Completion", "Currency", "Agreed Fee", "Payment Basis", "Deposit / Upfront",
-        "Balance Due", "Payment Schedule", "Total Received", "Amount Owing", "Payment Status",
+        "Balance After Deposit", "Payment Schedule", "Total Received (Deposit + Payments)",
+        "Payments Since Deposit", "Amount Owing", "Payment Status",
         "Payments Recorded", "Last Payment On", "Signed for Metascholar By", "Company Signed On",
         "Client Signed On", "First Sent", "Times Sent", "Client First Opened", "Created By",
         "Created On", "Change Requests", "Open Change Request",
@@ -263,7 +270,7 @@ def psa_export(request):
             day(a.start_date), day(a.completion_date), a.currency,
             a.fee if a.fee is not None else "", a.payment_basis_label, a.deposit,
             a.balance if a.balance is not None else "", a.payment_schedule,
-            a.amount_paid, a.amount_owing if a.amount_owing is not None else "",
+            a.amount_paid, a.ledger_total, a.amount_owing if a.amount_owing is not None else "",
             a.payment_state_label, len(payments),
             day(payments[0].paid_on) if payments else "",
             a.company_signatory_name, when(a.company_signed_at), when(a.client_signed_at),

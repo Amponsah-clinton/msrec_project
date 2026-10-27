@@ -540,10 +540,24 @@ class PaymentLedgerTests(StaffTestCase):
         data.update(overrides)
         return self.client.post(self.url, data)
 
-    def test_owing_starts_as_the_whole_fee(self):
-        self.assertEqual(self.a.amount_paid, Decimal("0.00"))
-        self.assertEqual(self.a.amount_owing, Decimal("2500.00"))
-        self.assertEqual(self.a.payment_state, "unpaid")
+    def test_the_deposit_from_the_form_counts_as_received(self):
+        """The admin typed a GHS 1,000 deposit when preparing the
+        agreement, so that much is in before any entry is recorded."""
+        self.assertEqual(self.a.deposit, Decimal("1000.00"))
+        self.assertEqual(self.a.ledger_total, Decimal("0.00"))
+        self.assertEqual(self.a.amount_paid, Decimal("1000.00"))
+        self.assertEqual(self.a.amount_owing, Decimal("1500.00"))
+        self.assertEqual(self.a.payment_state, "part")
+        # Which is what the agreement document itself says is left.
+        self.assertEqual(self.a.amount_owing, self.a.balance)
+
+    def test_with_no_deposit_the_whole_fee_is_owing(self):
+        a = self._sent(client_name="No Deposit", deposit="")
+        self.assertEqual(a.deposit, Decimal("0.00"))
+        self.assertIsNone(a.deposit_paid)
+        self.assertEqual(a.amount_paid, Decimal("0.00"))
+        self.assertEqual(a.amount_owing, Decimal("2500.00"))
+        self.assertEqual(a.payment_state, "unpaid")
 
     def test_recording_a_payment_reduces_what_is_owing(self):
         resp = self._pay("1000")
@@ -553,40 +567,65 @@ class PaymentLedgerTests(StaffTestCase):
         self.assertEqual(payment.method, "momo")
         self.assertEqual(payment.recorded_by, self.admin)
         self.a.refresh_from_db()
-        self.assertEqual(self.a.amount_paid, Decimal("1000.00"))
-        self.assertEqual(self.a.amount_owing, Decimal("1500.00"))
+        # On top of the GHS 1,000 deposit already counted.
+        self.assertEqual(self.a.ledger_total, Decimal("1000.00"))
+        self.assertEqual(self.a.amount_paid, Decimal("2000.00"))
+        self.assertEqual(self.a.amount_owing, Decimal("500.00"))
         self.assertEqual(self.a.payment_state, "part")
 
     def test_paid_in_full(self):
-        self._pay("1500", note="Deposit")
-        self._pay("1000", note="Balance")
+        self._pay("1000", note="Second instalment")
+        self._pay("500", note="Balance")
         self.a.refresh_from_db()
         self.assertEqual(self.a.amount_owing, Decimal("0.00"))
         self.assertEqual(self.a.payment_state, "settled")
         self.assertEqual(self.a.payment_state_label, "Paid in full")
 
     def test_overpayment_shows_as_overpaid(self):
-        self._pay("3000")
+        self._pay("2000")                      # 1,000 deposit + 2,000 > 2,500
         self.a.refresh_from_db()
         self.assertEqual(self.a.amount_owing, Decimal("-500.00"))
         self.assertEqual(self.a.overpaid_by, Decimal("500.00"))
         self.assertEqual(self.a.payment_state, "over")
 
+    def test_recording_the_deposit_again_shows_up_as_overpaid(self):
+        """Nothing stops it, but the figures say so plainly -- which is why
+        the form says the deposit is already counted."""
+        self._pay("1500", note="Balance")
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.payment_state, "settled")
+        self._pay("1000", note="The deposit, by mistake")
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.payment_state, "over")
+        self.assertEqual(self.a.overpaid_by, Decimal("1000.00"))
+
     def test_refund_is_a_negative_entry(self):
         self._pay("1000")
-        self._pay("400", kind="refund", note="Overpaid the deposit")
+        self._pay("400", kind="refund", note="Overpaid the instalment")
         self.a.refresh_from_db()
         self.assertEqual(self.a.payments.count(), 2)
-        self.assertEqual(self.a.amount_paid, Decimal("600.00"))
-        self.assertEqual(self.a.amount_owing, Decimal("1900.00"))
+        self.assertEqual(self.a.ledger_total, Decimal("600.00"))
+        self.assertEqual(self.a.amount_paid, Decimal("1600.00"))
+        self.assertEqual(self.a.amount_owing, Decimal("900.00"))
         refund = self.a.payments.order_by("-pk").first()
         self.assertTrue(refund.is_refund)
         self.assertEqual(refund.abs_amount, Decimal("400.00"))
 
     def test_a_refund_cannot_exceed_what_came_in(self):
-        self._pay("500")
-        self._pay("600", kind="refund", note="Too much")
-        self.assertEqual(self.a.payments.count(), 1)
+        a = self._sent(client_name="No Deposit", deposit="")
+        url = reverse("psa_admin:psa_payment_add", args=[a.pk])
+        base = {"method": "cash", "paid_on": timezone.localdate().isoformat()}
+        self.client.post(url, {"kind": "received", "amount": "500", **base})
+        self.client.post(url, {"kind": "refund", "amount": "600", "note": "Too much", **base})
+        self.assertEqual(a.payments.count(), 1)
+
+    def test_the_deposit_can_be_given_back(self):
+        """The deposit is money in, so it is money a refund can reach."""
+        self._pay("1000", kind="refund", note="Deposit returned")
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.amount_paid, Decimal("0.00"))
+        self.assertEqual(self.a.amount_owing, Decimal("2500.00"))
+        self.assertEqual(self.a.payment_state, "unpaid")
 
     def test_a_refund_needs_a_reason(self):
         self._pay("500")
@@ -675,7 +714,7 @@ class PaymentLedgerTests(StaffTestCase):
         anon.post(reverse("psa:client", args=[self.a.token]), _client_form())
         self.a.refresh_from_db()
         self.assertEqual(self.a.status, Status.SIGNED)
-        self._pay("2500", note="Paid on delivery")
+        self._pay("1500", note="Paid on delivery")   # the 1,000 deposit, then this
         self.a.refresh_from_db()
         self.assertEqual(self.a.amount_owing, Decimal("0.00"))
 
@@ -709,7 +748,8 @@ class PaymentListTests(StaffTestCase):
 
     def setUp(self):
         super().setUp()
-        self.a = self._sent()                                   # 2,500, nothing paid
+        # 2,500 fee, 1,000 deposit typed on the form -> 1,500 owing.
+        self.a = self._sent()
         self.b = self._sent(client_name="Ama Owusu", fee="1000", deposit="0")
         Payment.objects.create(agreement=self.b, amount=Decimal("1000.00"),
                                paid_on=timezone.localdate(), method="bank")
@@ -717,25 +757,28 @@ class PaymentListTests(StaffTestCase):
     def test_the_column_shows_what_is_owing(self):
         resp = self.client.get(reverse("psa_admin:psa_list"))
         self.assertContains(resp, "Amount Owing")
-        self.assertContains(resp, "GHS 2,500.00")
+        self.assertContains(resp, "GHS 1,500.00")          # fee less the deposit
+        self.assertContains(resp, "GHS 1,000.00 paid")     # the deposit, counted
         self.assertContains(resp, "Paid in full")
         # The running total across live agreements.
         self.assertEqual([dict(row) for row in resp.context["outstanding"]],
-                         [{"currency": "GHS", "total": Decimal("2500.00")}])
+                         [{"currency": "GHS", "total": Decimal("1500.00")}])
 
     def test_the_total_comes_from_the_ledger_not_a_query_per_row(self):
         for i in range(6):
             Payment.objects.create(agreement=self.a, amount=Decimal("10.00"),
                                    paid_on=timezone.localdate(), method="cash", note=str(i))
         resp = self.client.get(reverse("psa_admin:psa_list"))
-        rows = {a.pk: a.paid_total for a in resp.context["page"].object_list}
-        self.assertEqual(rows[self.a.pk], Decimal("60.00"))
-        self.assertEqual(rows[self.b.pk], Decimal("1000.00"))
+        rows = {a.pk: (a.paid_total, a._ledger_total) for a in resp.context["page"].object_list}
+        # The deposit and the entries, annotated together and apart.
+        self.assertEqual(rows[self.a.pk], (Decimal("1060.00"), Decimal("60.00")))
+        self.assertEqual(rows[self.b.pk], (Decimal("1000.00"), Decimal("1000.00")))
 
     def test_filters(self):
         url = reverse("psa_admin:psa_list")
-        cases = {"owing": [self.a.pk], "unpaid": [self.a.pk], "settled": [self.b.pk],
-                 "part": [], "over": []}
+        # a: part paid by its deposit. b: settled by its payment.
+        cases = {"owing": [self.a.pk], "part": [self.a.pk], "settled": [self.b.pk],
+                 "unpaid": [], "over": []}
         for value, expected in cases.items():
             with self.subTest(value):
                 resp = self.client.get(url, {"pay": value})
@@ -750,17 +793,34 @@ class PaymentListTests(StaffTestCase):
 
     def test_the_export_carries_the_money_columns(self):
         body = self.client.get(reverse("psa_admin:psa_export")).content.decode("utf-8-sig")
-        self.assertIn("Total Received", body)
+        self.assertIn("Total Received (Deposit + Payments)", body)
+        self.assertIn("Payments Since Deposit", body)
         self.assertIn("Amount Owing", body)
         self.assertIn("Paid in full", body)
-        self.assertIn("Nothing paid", body)
+        self.assertIn("Part paid", body)
 
     def test_the_agreement_page_shows_the_ledger(self):
         resp = self.client.get(reverse("psa_admin:psa_detail", args=[self.b.pk]))
         self.assertContains(resp, "Amount owing")
         self.assertContains(resp, "GHS 1,000.00 received of GHS 1,000.00")
         self.assertContains(resp, "Bank transfer")
-        self.assertContains(resp, "edited or deleted")
+
+    def test_the_deposit_is_listed_as_the_first_thing_received(self):
+        resp = self.client.get(reverse("psa_admin:psa_detail", args=[self.a.pk]))
+        self.assertContains(resp, "is-deposit")
+        self.assertContains(resp, "Taken upfront, from Section 4")
+        self.assertContains(resp, "GHS 1,000.00 received of GHS 2,500.00")
+        # And the form says not to enter it again.
+        self.assertContains(resp, "deposit from Section 4 is already counted")
+
+    def test_the_warning_paragraph_is_gone(self):
+        for url in (reverse("psa_admin:psa_list"),
+                    reverse("psa_admin:psa_detail", args=[self.a.pk])):
+            with self.subTest(url):
+                body = self.client.get(url).content.decode()
+                self.assertNotIn("psa-pay-warn", body)
+                self.assertNotIn("a mistake has to be put right", body)
+                self.assertNotIn("Check the amount and date", body)
 
 
 class DeadlineTests(StaffTestCase):

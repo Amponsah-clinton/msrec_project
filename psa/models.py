@@ -150,14 +150,27 @@ class ServiceAgreement(models.Model):
         return max(self.fee - (self.deposit or Decimal("0.00")), Decimal("0.00"))
 
     @property
-    def amount_paid(self):
-        """Everything recorded as received, refunds included (they are
-        negative rows). The list annotates this as ``paid_total`` so a page
-        of agreements doesn't cost a query each."""
-        total = getattr(self, "paid_total", None)
+    def ledger_total(self):
+        """The payment entries only, refunds included (they are negative
+        rows). The list annotates this as ``ledger_total`` so a page of
+        agreements doesn't cost a query each."""
+        total = getattr(self, "_ledger_total", None)
         if total is None:
             total = self.payments.aggregate(t=Sum("amount"))["t"]
         return total or Decimal("0.00")
+
+    @property
+    def amount_paid(self):
+        """Everything in: the deposit entered on the agreement form plus
+        every payment recorded since.
+
+        The deposit is the amount taken upfront, so whoever typed it has
+        already had the money -- leaving it out would show the whole fee
+        as owing on an agreement that was half paid before it was even
+        sent. Counting it also keeps this figure equal to the document's
+        "Balance After Deposit" until a payment is recorded, instead of
+        contradicting it."""
+        return (self.deposit or Decimal("0.00")) + self.ledger_total
 
     @property
     def amount_owing(self):
@@ -199,6 +212,11 @@ class ServiceAgreement(models.Model):
     @property
     def payment_state_label(self):
         return self.PAYMENT_STATE_LABELS[self.payment_state]
+
+    @property
+    def deposit_paid(self):
+        """The deposit from the agreement form, if one was entered."""
+        return self.deposit if self.deposit and self.deposit > 0 else None
 
     @property
     def can_record_payment(self):

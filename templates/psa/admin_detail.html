@@ -97,14 +97,22 @@
                 {{ a.currency }} {{ a.amount_paid|money }} received of {{ a.currency }} {{ a.fee|money }}
                 {% if a.payment_state == 'over' %}&middot; overpaid by {{ a.currency }} {{ a.overpaid_by|money }}{% endif %}
               </span>
-              <span class="psa-owing-note">What has actually come in &mdash; not the deposit agreed in Section 4.</span>
+              <span class="psa-owing-note">{% if a.deposit_paid %}The Section 4 deposit counts as received, with every entry below.{% else %}Everything received, from the entries below.{% endif %}</span>
               <div class="psa-owing-bar" role="img" aria-label="{{ a.payment_state_label }}">
                 <i style="width:{% widthratio a.amount_paid a.fee 100 %}%"></i>
               </div>
             </div>
 
-            {% if payments %}
+            {% if payments or a.deposit_paid %}
             <ol class="psa-ledger" id="psaLedger">
+              {% if a.deposit_paid %}
+              {# Entered on the agreement form rather than here, so it carries its own note. #}
+              <li class="is-deposit">
+                <span class="psa-ledger-amt">{{ a.currency }} {{ a.deposit_paid|money }}</span>
+                <span class="psa-ledger-meta">{{ a.agreement_date|date:"d M Y" }} &middot; Deposit</span>
+                <span class="psa-ledger-note">Taken upfront, from Section 4 of the agreement{% if a.is_editable %} &mdash; change it on the <a href="{% url 'psa_admin:psa_edit' a.pk %}">agreement form</a>{% endif %}.</span>
+              </li>
+              {% endif %}
               {% for p in payments %}
               <li class="{% if p.is_refund %}is-refund{% endif %}">
                 <span class="psa-ledger-amt">{% if p.is_refund %}&minus;{% endif %}{{ a.currency }} {{ p.abs_amount|money }}</span>
@@ -114,7 +122,6 @@
               </li>
               {% endfor %}
             </ol>
-            <p class="field-hint">Entries are a record of money that moved, so they stay as saved. Correct a mistake with a refund or correction entry.</p>
             {% else %}
             <p class="psa-side-text">Nothing received yet.</p>
             {% endif %}
@@ -124,8 +131,7 @@
               <summary>Record a payment</summary>
               <form method="post" action="{% url 'psa_admin:psa_payment_add' a.pk %}" id="psaPayAddForm"
                     data-confirm-title="Save this entry?" data-confirm-variant="primary" data-confirm-label="Save entry"
-                    data-confirm="A saved entry is part of {{ a.reference }}'s record and can't be edited or deleted afterwards. Check the amount and the date."
-                    data-confirm-detail="A mistake has to be put right with a second, correcting entry.">
+                    data-confirm="Record this against {{ a.reference }}?">
                 {% csrf_token %}
                 <fieldset class="psa-fieldset">
                   <legend>What is this entry?</legend>
@@ -134,6 +140,9 @@
                     <label class="psa-radio"><input type="radio" name="kind" value="refund"> Refund / correction</label>
                   </div>
                 </fieldset>
+                {% if a.deposit_paid and not payments %}
+                <p class="psa-pay-deposit">The {{ a.currency }} {{ a.deposit_paid|money }} deposit from Section 4 is already counted. Record what has come in <em>since</em> it.</p>
+                {% endif %}
                 <div class="field-group">
                   <label for="psaAddAmount">Amount ({{ a.currency }})</label>
                   <input type="text" inputmode="decimal" class="field-input" id="psaAddAmount" name="amount" required

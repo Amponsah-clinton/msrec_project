@@ -195,10 +195,10 @@ dialog.psa-dialog::backdrop { background: var(--overlay-bg); backdrop-filter: bl
 .psa-dialog-body .field-group { margin-bottom: 14px; }
 .psa-dialog-foot { padding: 6px 24px 20px; display: flex; gap: 10px; justify-content: flex-end; }
 .psa-pay-cur { font-weight: 600; color: var(--text-faint); }
-#psaPayForm.is-refund .psa-pay-warn { border-color: var(--red); background: var(--red-light); color: var(--red); }
-.psa-pay-warn { display: flex; gap: 9px; margin: 2px 0 0; padding: 10px 12px; border: 1px solid var(--orange);
-  border-radius: 8px; background: var(--orange-light); font-size: 12.5px; line-height: 1.5; color: var(--text-main); }
-.psa-pay-warn svg { flex: none; width: 16px; height: 16px; margin-top: 1px; }
+/* The deposit already counted, so it isn't entered a second time. */
+.psa-pay-deposit { margin: 2px 0 0; padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg); font-size: 12.5px; line-height: 1.5; color: var(--text-sub); }
+.psa-pay-deposit[hidden] { display: none; }
 
 /* ---------------- Payment panel (agreement page) ---------------- */
 .psa-pay-state { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); }
@@ -222,6 +222,9 @@ dialog.psa-dialog::backdrop { background: var(--overlay-bg); backdrop-filter: bl
 .psa-ledger { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 10px; }
 .psa-ledger li { display: grid; gap: 1px; padding-left: 10px; border-left: 3px solid var(--green); }
 .psa-ledger li.is-refund { border-left-color: var(--red); }
+/* The deposit comes from the agreement, not from this panel. */
+.psa-ledger li.is-deposit { border-left-color: var(--teal); }
+.psa-ledger li.is-deposit .psa-ledger-note a { color: var(--teal); }
 .psa-ledger-amt { font-size: 14px; font-weight: 700; color: var(--text-main); font-variant-numeric: tabular-nums; }
 .psa-ledger li.is-refund .psa-ledger-amt { color: var(--red); }
 .psa-ledger-meta { font-size: 11.5px; color: var(--text-faint); }

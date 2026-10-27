@@ -190,7 +190,8 @@
                             data-pk="{{ a.pk }}" data-ref="{{ a.reference }}" data-client="{{ a.client_name }}"
                             data-currency="{{ a.currency }}" data-owing="{% if a.amount_owing and a.amount_owing > 0 %}{{ a.amount_owing }}{% endif %}"
                             data-owing-text="{% if a.payment_state == 'over' %}overpaid by {{ a.currency }} {{ a.overpaid_by|money }}{% else %}{{ a.currency }} {{ a.amount_owing|money }} owing{% endif %}"
-                            data-paid="{{ a.amount_paid }}">
+                            data-paid="{{ a.amount_paid }}" data-entries="{{ a.ledger_total }}"
+                            data-deposit="{% if a.deposit_paid %}{{ a.deposit_paid }}{% endif %}">
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
                       Record payment
                     </button>
