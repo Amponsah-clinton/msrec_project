@@ -520,3 +520,26 @@ def render(a, settings=None):
     doc.build(story, canvasmaker=lambda *args, **kw: _Canvas(*args, footer=footer, footer_text=footer_text,
                                                               sans=sans, **kw))
     return buffer.getvalue()
+
+
+def sample_agreement():
+    """An unsaved, clearly-sample agreement for the letterhead preview, so
+    the artwork can be checked on a realistic page before anything is sent."""
+    from datetime import timedelta
+    from decimal import Decimal
+
+    from .models import ServiceAgreement
+
+    today = timezone.localdate()
+    return ServiceAgreement(
+        reference="PSA-SAMPLE", status=ServiceAgreement.Status.SIGNED, agreement_date=today,
+        client_name="Sample Client", client_email="client@example.com", client_phone="+233 24 000 0000",
+        client_address="Sample address, Accra", start_date=today, completion_date=today + timedelta(days=30),
+        service_title="Sample service — letterhead preview",
+        deliverables=["First deliverable", "Second deliverable", "Third deliverable"],
+        currency="GHS", fee=Decimal("2500.00"), payment_basis="fixed", deposit=Decimal("1000.00"),
+        payment_schedule="Deposit on signing; balance on delivery.",
+        company_signatory_name="Metascholar Limited", company_signature_kind="typed",
+        company_signature="Metascholar", company_signed_at=timezone.now(),
+        client_signature_kind="typed", client_signature="Sample Client", client_signed_at=timezone.now(),
+    )

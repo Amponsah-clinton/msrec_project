@@ -56,9 +56,9 @@
             <a href="?status=cancelled{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if f.status == 'cancelled' %} active{% endif %}">Cancelled <span class="count badge rounded-pill text-bg-secondary">{{ stats.cancelled }}</span></a>
           </div>
           <div class="psa-toolbar-btns">
-            <a class="btn-secondary psa-export" id="psaExportBtn" href="{% url 'psa_admin:psa_export' %}{% if query %}?{{ query }}{% endif %}"{% if not matching_count %} aria-disabled="true"{% endif %}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
-              Export CSV
+            <a class="btn-secondary" id="psaLetterheadBtn" href="{% url 'psa_admin:psa_letterhead' %}" title="Header and footer artwork for agreement PDFs">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M4 7h16M4 17h16"/></svg>
+              Letterhead
             </a>
             <a href="{% url 'psa_admin:psa_new' %}" class="btn-primary" id="psaCreateBtn">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" width="16" height="16"><path d="M12 5v14M5 12h14"/></svg>
@@ -91,6 +91,16 @@
             <option value="fee_high" {% if f.sort == 'fee_high' %}selected{% endif %}>Highest fee</option>
             <option value="fee_low" {% if f.sort == 'fee_low' %}selected{% endif %}>Lowest fee</option>
           </select>
+          <div class="psa-exports">
+            <a class="btn-secondary psa-export" id="psaExportBtn" href="{% url 'psa_admin:psa_export' %}{% if query %}?{{ query }}{% endif %}"{% if not matching_count %} aria-disabled="true"{% endif %} title="Every agreement matching these filters, as a spreadsheet">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg>
+              CSV
+            </a>
+            <a class="btn-secondary psa-export" id="psaPdfZipBtn" href="{% url 'psa_admin:psa_pdf_zip' %}{% if query %}?{{ query }}{% endif %}"{% if not stats.signed %} aria-disabled="true"{% endif %} title="Every signed agreement matching these filters, as PDFs in one .zip">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M12 12v6M9 15l3 3 3-3"/></svg>
+              Signed PDFs
+            </a>
+          </div>
         </form>
 
         <div class="table-wrap acct-table-wrap" id="psaList">
@@ -151,6 +161,9 @@
                   <div class="acct-icons">
                     <a class="acct-icon" href="{% url 'psa_admin:psa_detail' a.pk %}" title="View agreement" aria-label="View {{ a.reference }}">
                       <svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </a>
+                    <a class="acct-icon" href="{% url 'psa_admin:psa_pdf' a.pk %}" title="{% if a.status == 'signed' %}Download the signed PDF{% else %}Download as PDF{% endif %}" aria-label="Download {{ a.reference }} as PDF" id="psaPdf{{ a.pk }}">
+                      <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M12 11v6M9 14l3 3 3-3"/></svg>
                     </a>
                     {% if a.is_editable %}
                     <a class="acct-icon" href="{% url 'psa_admin:psa_edit' a.pk %}" title="Edit agreement" aria-label="Edit {{ a.reference }}">

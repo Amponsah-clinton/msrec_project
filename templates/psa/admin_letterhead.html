@@ -1,0 +1,99 @@
+{% extends "dashboards/base.html" %}
+{% load static psa_tags %}
+
+{% block title %}PSA Letterhead | MSREC Admin{% endblock %}
+
+{% block extra_css %}
+<link href="{% static_v 'dashboard/css/psa.css' %}" rel="stylesheet">
+{% endblock %}
+
+{% block nav_content %}
+{% if dashboard == 'secretariat' %}{% include "dashboards/_secretariat_nav.html" %}{% else %}{% include "dashboards/admin/_nav.html" with active="psa" %}{% endif %}
+{% endblock %}
+
+{% block topbar %}
+{% include "dashboards/_staff_topbar.html" with page_title="Agreement Letterhead" page_subtitle="Header and footer artwork printed on every page of agreement PDFs" %}
+{% endblock %}
+
+{% block main_content %}
+      <a class="psa-back" href="{% url 'psa_admin:psa_list' %}"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg> All agreements</a>
+
+      <div class="psa-lh">
+        <div class="panel psa-lh-forms">
+          {% for kind, p in parts.items %}
+          <div class="form-section" id="psaLetterhead{{ kind|title }}">
+            <h3 class="form-section-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/>{% if kind == 'header' %}<path d="M3 9h18"/>{% else %}<path d="M3 15h18"/>{% endif %}</svg>
+              {{ kind|title }}
+            </h3>
+            <p class="psa-section-note">
+              {% if kind == 'header' %}Printed across the top of every page.{% else %}Printed across the bottom of every page, with the page number just above it.{% endif %}
+              Without one, a plain text {{ kind }} is used.
+            </p>
+
+            {% if p.set %}
+            <figure class="psa-lh-current">
+              <img src="{% url 'psa_admin:psa_letterhead_image' kind %}?v={{ s.updated_at|date:'U' }}" alt="Current {{ kind }} artwork" id="psaLh{{ kind|title }}Img">
+              <figcaption>
+                {{ p.width }} × {{ p.height }} px · prints {{ p.mm.0 }} × {{ p.mm.1 }} mm{% if p.mm.2 %}, full page width{% else %}, scaled down and centred (taller than {{ p.limit_mm }} mm){% endif %}
+                {% if p.soft %}<span class="psa-open"> · may print slightly soft</span>{% endif %}
+              </figcaption>
+            </figure>
+            {% endif %}
+
+            <form method="post" enctype="multipart/form-data" class="psa-lh-upload">
+              {% csrf_token %}
+              <input type="hidden" name="kind" value="{{ kind }}">
+              <div class="field-group">
+                <label for="psaLh{{ kind|title }}File">{% if p.set %}Replace the {{ kind }}{% else %}Upload a {{ kind }}{% endif %}</label>
+                <input class="field-input" type="file" id="psaLh{{ kind|title }}File" name="image" accept="image/png,image/jpeg,image/webp" required>
+                <p class="field-hint">Design it for the full A4 width: ideally 2480 × up to {{ p.ideal_px }} px (210 × {{ p.limit_mm }} mm at 300 dpi). PNG or JPG, under 12 MB. Taller artwork is scaled down to fit; nothing is cropped.</p>
+              </div>
+              <div class="psa-lh-actions">
+                <button type="submit" class="btn-primary">{% if p.set %}Replace {{ kind }}{% else %}Upload {{ kind }}{% endif %}</button>
+              </div>
+            </form>
+            {% if p.set %}
+            <form method="post" class="psa-lh-remove"
+                  data-confirm-title="Remove the {{ kind }}?" data-confirm-label="Remove" data-confirm-variant="danger"
+                  data-confirm="Agreement PDFs will use the plain text {{ kind }} instead.">
+              {% csrf_token %}
+              <input type="hidden" name="kind" value="{{ kind }}">
+              <input type="hidden" name="action" value="remove">
+              <button type="submit" class="psa-link psa-link-danger">Remove {{ kind }}</button>
+            </form>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+
+        <aside class="panel psa-lh-preview" aria-label="Page preview">
+          <div class="panel-header"><h2>A4 preview</h2><span class="psa-request-when">to scale</span></div>
+          <div class="psa-a4" id="psaA4">
+            {% if parts.header.set %}
+            <img class="psa-a4-header" src="{% url 'psa_admin:psa_letterhead_image' 'header' %}?v={{ s.updated_at|date:'U' }}" alt=""
+                 style="width:{{ parts.header.pct_w }}%;height:{{ parts.header.pct_h }}%;">
+            {% else %}
+            <div class="psa-a4-texthead"><b>Metascholar Limited</b><span></span></div>
+            {% endif %}
+            <div class="psa-a4-text" style="top:{{ text_top_pct }}%;bottom:{{ text_bottom_pct }}%;">
+              <i class="t"></i><i class="m"></i>
+              <i class="h"></i><i></i><i></i><i class="s"></i>
+              <i class="h"></i><i></i><i class="s"></i>
+              <i class="h"></i><i></i><i></i><i></i>
+            </div>
+            {% if parts.footer.set %}
+            <img class="psa-a4-footer" src="{% url 'psa_admin:psa_letterhead_image' 'footer' %}?v={{ s.updated_at|date:'U' }}" alt=""
+                 style="width:{{ parts.footer.pct_w }}%;height:{{ parts.footer.pct_h }}%;">
+            {% else %}
+            <div class="psa-a4-textfoot"><span></span></div>
+            {% endif %}
+          </div>
+          <p class="field-hint">Text starts {{ text_top_mm }} mm from the top and stops {{ text_bottom_mm }} mm from the bottom of each page, so it never runs into the artwork.</p>
+          <a class="btn-secondary psa-lh-pdf" href="{% url 'psa_admin:psa_letterhead_preview' %}" target="_blank" rel="noopener" id="psaLhPreviewPdf">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+            Preview a sample PDF
+          </a>
+        </aside>
+      </div>
+{% endblock %}

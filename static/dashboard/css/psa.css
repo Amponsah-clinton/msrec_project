@@ -30,6 +30,8 @@
 .psa-filterbar .field-input { width: auto; padding: 8px 10px; font-size: 12.5px; background: var(--bg); }
 .psa-filter { min-width: 130px; }
 .psa-date { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--text-sub); margin: 0; }
+.psa-exports { display: flex; gap: 8px; margin-left: auto; }
+.psa-exports .btn-secondary { padding: 8px 13px; font-size: 12.5px; text-decoration: none; }
 .psa-export[aria-disabled="true"] { opacity: .5; pointer-events: none; }
 
 .psa-table { min-width: 900px; }
@@ -127,6 +129,40 @@
 .psa-history dd span { display: block; font-size: 12px; color: var(--text-sub); }
 .psa-danger { display: flex; gap: 18px; justify-content: center; padding: 2px 0; }
 .psa-danger form { margin: 0; }
+
+/* ---------------- Letterhead settings ---------------- */
+.psa-lh { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }
+.psa-lh-current { margin: 0 0 14px; }
+.psa-lh-current img { display: block; width: 100%; height: auto; border: 1px solid var(--border); border-radius: 6px; background: #fff; }
+.psa-lh-current figcaption { margin-top: 6px; font-size: 12px; color: var(--text-sub); }
+.psa-lh-upload .field-group { margin-bottom: 10px; }
+.psa-lh-upload input[type="file"] { padding: 8px; background: var(--bg); }
+.psa-lh-actions { display: flex; justify-content: flex-end; }
+.psa-lh-remove { margin: 10px 0 0; text-align: right; }
+.psa-lh-preview { position: sticky; top: 90px; }
+.psa-lh-pdf { width: 100%; justify-content: center; text-decoration: none; margin-top: 12px; }
+
+/* An A4 sheet to scale (210 x 297): artwork and text area are placed with
+   the same measurements the PDF uses. */
+.psa-a4 { position: relative; width: 100%; aspect-ratio: 210 / 297; background: #fff; border: 1px solid var(--border);
+  box-shadow: 0 6px 18px -10px rgba(0, 0, 0, .35); overflow: hidden; }
+.psa-a4-header { position: absolute; top: 0; left: 50%; transform: translateX(-50%); object-fit: fill; }
+.psa-a4-footer { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); object-fit: fill; }
+.psa-a4-texthead { position: absolute; top: 4.7%; left: 9.5%; right: 9.5%; height: 6.5%; border-bottom: 2px solid #14233f; }
+.psa-a4-texthead b { font-size: 9px; color: #14233f; font-family: Georgia, serif; }
+.psa-a4-textfoot { position: absolute; bottom: 5.4%; left: 9.5%; right: 9.5%; border-top: 1px solid #d5dae2; }
+.psa-a4-text { position: absolute; left: 9.5%; right: 9.5%; display: flex; flex-direction: column; gap: 4.5%;
+  outline: 1px dashed rgba(21, 154, 150, .45); outline-offset: 2px; overflow: hidden; }
+.psa-a4-text i { display: block; height: 3px; border-radius: 2px; background: #dfe3ea; flex: none; }
+.psa-a4-text i.t { width: 60%; height: 5px; margin: 2% auto 0; background: #9aa3b2; }
+.psa-a4-text i.m { width: 100%; height: 2px; }
+.psa-a4-text i.h { width: 34%; height: 4px; background: #9aa3b2; margin-top: 2%; }
+.psa-a4-text i.s { width: 70%; }
+
+@media (max-width: 1100px) {
+  .psa-lh { grid-template-columns: 1fr; }
+  .psa-lh-preview { position: static; max-width: 360px; }
+}
 
 /* ---------------- Client change requests ---------------- */
 .psa-request-panel { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-light); }

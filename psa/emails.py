@@ -79,8 +79,20 @@ def send_to_client(a, *, reminder=False, updated=False, note=""):
     )
 
 
-def send_client_copy(a):
-    """Confirmation for the client, with the link to their signed copy."""
+def signed_pdf(a):
+    """(filename, bytes, mimetype) of the signed agreement for attaching, or
+    None if it couldn't be built -- the email still goes without it."""
+    from . import pdf
+    try:
+        return (pdf.filename(a), pdf.render(a), "application/pdf")
+    except Exception:
+        logger.exception("PSA PDF for %s couldn't be built", a.reference)
+        return None
+
+
+def send_client_copy(a, attachment=None):
+    """The client's "thank you", with their signed copy attached (and the
+    link to it, which keeps working)."""
     return _send(
         subject=f"Signed: Professional Service Agreement {a.reference}",
         to=a.client_email,
@@ -89,20 +101,24 @@ def send_client_copy(a):
             f"Dear {a.client_name},",
             f"Thank you for signing the Professional Service Agreement for “{a.service_title}”. "
             "Both parties have now signed it.",
-            "You can open, print or save your copy at any time from the link below.",
+            ("Your signed copy is attached to this email as a PDF. You can also open, print or download "
+             "it at any time from the link below." if attachment else
+             "You can open, print or download your signed copy at any time from the link below."),
+            "We look forward to working with you.",
         ],
         callout_label="Agreement",
         callout_value=a.reference,
         callout_note=f"Agreed fee: {_money(a)}" if a.fee is not None else None,
         cta_text="View your signed agreement",
         cta_url=a.client_url(),
-        preheader=f"Your signed agreement {a.reference}.",
+        preheader=f"Your signed agreement {a.reference}" + (" is attached." if attachment else "."),
+        attachments=[attachment] if attachment else None,
     )
 
 
-def send_signed_to_staff(a):
+def send_signed_to_staff(a, attachment=None):
     """Tells the CEO, and whoever prepared the agreement, that the client
-    has signed."""
+    has signed -- with the signed PDF attached for filing."""
     return _send(
         subject=f"Client signed PSA {a.reference} — {a.client_name}",
         to=_staff_recipients(a),
@@ -110,10 +126,11 @@ def send_signed_to_staff(a):
         paragraphs=[
             f"{a.client_name} has reviewed and signed {a.reference} ({a.service_title}).",
             f"Agreed fee: {_money(a)} · Deposit: {a.currency} {a.deposit:,.2f}",
-        ],
+        ] + (["The signed agreement is attached."] if attachment else []),
         cta_text="Open the agreement",
         cta_url=a.staff_url(),
         preheader=f"{a.client_name} signed {a.reference}.",
+        attachments=[attachment] if attachment else None,
     )
 
 

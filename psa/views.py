@@ -530,8 +530,10 @@ def client(request, token):
             a.client_user_agent = request.META.get("HTTP_USER_AGENT", "")[:300]
             a.save()
 
-        emails.send_client_copy(a)
-        emails.send_signed_to_staff(a)
+        # Built once, attached to both emails.
+        attachment = emails.signed_pdf(a)
+        emails.send_client_copy(a, attachment)
+        emails.send_signed_to_staff(a, attachment)
         _notify_staff(a, f"{a.client_name} signed service agreement {a.reference}.", icon="success")
         messages.success(request, "Thank you — the agreement is signed. We've emailed you a copy.")
         return redirect("psa:client", token=a.token)
@@ -583,3 +585,177 @@ def _notify_staff(a, message, *, icon):
         )
     except Exception:
         logger.exception("PSA notification failed for %s", a.reference)
+
+
+# ---------------------------------------------------------------------
+# PDF
+# ---------------------------------------------------------------------
+
+def _pdf_response(a, *, inline=False):
+    from . import pdf
+    resp = HttpResponse(pdf.render(a), content_type="application/pdf")
+    disposition = "inline" if inline else "attachment"
+    resp["Content-Disposition"] = f'{disposition}; filename="{pdf.filename(a)}"'
+    resp["Cache-Control"] = "no-store"
+    return resp
+
+
+@login_required
+@staff_required
+def psa_pdf(request, pk):
+    """The agreement as a PDF (?inline=1 to open it in the browser)."""
+    a = get_object_or_404(ServiceAgreement, pk=pk)
+    return _pdf_response(a, inline=request.GET.get("inline") == "1")
+
+
+PDF_ZIP_LIMIT = 200
+
+
+@login_required
+@staff_required
+def psa_pdf_zip(request):
+    """Every signed agreement matching the list's filters, as PDFs in one
+    .zip -- the clients' signed responses, ready to file."""
+    import zipfile
+    from io import BytesIO
+
+    from . import pdf
+    from .models import PsaSettings
+
+    back = reverse("psa_admin:psa_list") + (f"?{request.GET.urlencode()}" if request.GET else "")
+    signed = list(_filtered(_filters(request.GET)).filter(status=Status.SIGNED)[:PDF_ZIP_LIMIT + 1])
+    if not signed:
+        messages.error(request, "None of the agreements matching these filters have been signed yet.")
+        return redirect(back)
+    if len(signed) > PDF_ZIP_LIMIT:
+        messages.error(request, f"That's more than {PDF_ZIP_LIMIT} signed agreements. Narrow the filters "
+                                "(for example by agreement date) and download them in batches.")
+        return redirect(back)
+
+    letterhead_settings = PsaSettings.get_solo()   # read once for the whole batch
+    buffer = BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as zf:
+        for a in signed:
+            zf.writestr(pdf.filename(a), pdf.render(a, letterhead_settings))
+    resp = HttpResponse(buffer.getvalue(), content_type="application/zip")
+    resp["Content-Disposition"] = (
+        f'attachment; filename="metascholar-signed-agreements-{timezone.localdate().isoformat()}.zip"'
+    )
+    return resp
+
+
+def client_pdf(request, token):
+    """The client's own copy, once both parties have signed."""
+    a = get_object_or_404(ServiceAgreement, token=token)
+    if a.status != Status.SIGNED:
+        raise Http404("The PDF is available once the agreement is signed.")
+    resp = _pdf_response(a)
+    resp["X-Robots-Tag"] = "noindex, nofollow"
+    return resp
+
+
+# ---------------------------------------------------------------------
+# Letterhead (PSA > Letterhead)
+# ---------------------------------------------------------------------
+
+@login_required
+@staff_required
+def psa_letterhead(request):
+    from . import letterhead, pdf
+    from .models import PsaSettings
+
+    s = PsaSettings.get_solo()
+    if request.method == "POST":
+        kind = request.POST.get("kind")
+        if kind not in ("header", "footer"):
+            messages.error(request, "That request couldn't be processed.")
+            return redirect("psa_admin:psa_letterhead")
+        if request.POST.get("action") == "remove":
+            setattr(s, f"{kind}_image", None)
+            setattr(s, f"{kind}_type", "")
+            setattr(s, f"{kind}_width", 0)
+            setattr(s, f"{kind}_height", 0)
+            s.updated_by = request.user
+            s.save()
+            messages.success(request, f"Letterhead {kind} removed. Agreement PDFs use the plain {kind} again.")
+            return redirect("psa_admin:psa_letterhead")
+
+        upload = request.FILES.get("image")
+        if not upload:
+            messages.error(request, f"Choose an image for the {kind}.")
+            return redirect("psa_admin:psa_letterhead")
+        if upload.size > letterhead.MAX_UPLOAD:
+            messages.error(request, "That image is too large. Keep it under 12 MB.")
+            return redirect("psa_admin:psa_letterhead")
+        try:
+            data, content_type, width, height = letterhead.process(upload.read(), kind)
+        except ValueError as exc:
+            messages.error(request, str(exc))
+            return redirect("psa_admin:psa_letterhead")
+        setattr(s, f"{kind}_image", data)
+        setattr(s, f"{kind}_type", content_type)
+        setattr(s, f"{kind}_width", width)
+        setattr(s, f"{kind}_height", height)
+        s.updated_by = request.user
+        s.save()
+        w_mm, h_mm, full = letterhead.printed_size(width, height, kind)
+        note = (f"It prints across the full page width, {h_mm} mm tall." if full else
+                f"It's taller than the {letterhead.LIMIT_MM[kind]:.0f} mm allowed for a {kind}, so it prints "
+                f"scaled down to {w_mm} × {h_mm} mm, centred.")
+        messages.success(request, f"Letterhead {kind} saved ({width} × {height} px). {note}")
+        if width < letterhead.SHARP_WIDTH:
+            messages.warning(request, f"At {width} px wide it may look slightly soft in print. "
+                                      f"Artwork {letterhead.MAX_WIDTH} px wide prints sharpest.")
+        return redirect("psa_admin:psa_letterhead")
+
+    header, footer = pdf.letterhead(s)
+    top, _, bottom = pdf.frame_bounds(header, footer)
+    page_w_mm, page_h_mm = pdf.PAGE_W / pdf.mm, pdf.PAGE_H / pdf.mm
+    parts = {}
+    for kind in ("header", "footer"):
+        width, height = getattr(s, f"{kind}_width"), getattr(s, f"{kind}_height")
+        size = letterhead.printed_size(width, height, kind) if getattr(s, f"{kind}_image") else None
+        parts[kind] = {
+            "set": bool(size),
+            "width": width, "height": height, "mm": size,
+            # Where it sits on the A4 preview, as % of the page.
+            "pct_h": round(100 * size[1] / page_h_mm, 3) if size else 0,
+            "pct_w": round(100 * size[0] / page_w_mm, 3) if size else 0,
+            "limit_mm": round(letterhead.LIMIT_MM[kind]),
+            "ideal_px": round(letterhead.MAX_WIDTH * letterhead.LIMIT_MM[kind] / page_w_mm),
+            "soft": bool(size) and width < letterhead.SHARP_WIDTH,
+        }
+    return render(request, "psa/admin_letterhead.html", {
+        "s": s,
+        "parts": parts,
+        "text_top_pct": round(100 * (top / pdf.mm) / page_h_mm, 3),
+        "text_bottom_pct": round(100 * (bottom / pdf.mm) / page_h_mm, 3),
+        "text_top_mm": round(top / pdf.mm, 1), "text_bottom_mm": round(bottom / pdf.mm, 1),
+        "dashboard": _dashboard(request),
+    })
+
+
+@login_required
+@staff_required
+def psa_letterhead_image(request, kind):
+    from .models import PsaSettings
+    if kind not in ("header", "footer"):
+        raise Http404
+    s = PsaSettings.get_solo()
+    data = s.image(kind)
+    if not data:
+        raise Http404
+    resp = HttpResponse(data, content_type=getattr(s, f"{kind}_type") or "image/png")
+    resp["Cache-Control"] = "private, no-cache"
+    return resp
+
+
+@login_required
+@staff_required
+def psa_letterhead_preview(request):
+    """A sample agreement printed with the current letterhead."""
+    from . import pdf
+    resp = HttpResponse(pdf.render(pdf.sample_agreement()), content_type="application/pdf")
+    resp["Content-Disposition"] = 'inline; filename="letterhead-preview.pdf"'
+    resp["Cache-Control"] = "no-store"
+    return resp
