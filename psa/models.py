@@ -386,9 +386,12 @@ class Payment(models.Model):
         indexes = [
             models.Index(fields=["agreement", "-paid_on"], name="service_agr_payments_idx"),
         ]
-        constraints = [
-            models.CheckConstraint(condition=~models.Q(amount=0), name="service_agreement_payments_amount_nonzero"),
-        ]
+        # No CheckConstraint for "amount <> 0": its keyword is `check` up to
+        # Django 5.0 and `condition` from 5.1, with no spelling that works on
+        # both, and this project runs 4.2 in production. The rule is kept
+        # where it is read anyway -- psa.forms.parse_payment refuses a zero
+        # amount -- and psa/supabase.sql declares the CHECK on the Postgres
+        # table itself.
 
     def __str__(self):
         return f"{self.agreement.reference}: {self.agreement.currency} {self.amount}"
