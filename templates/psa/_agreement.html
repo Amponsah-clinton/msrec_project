@@ -44,12 +44,8 @@ The agreement as one sheet (styles: assets/css/psa-agreement.css).
                {% if errors.client_name %}aria-invalid="true" aria-describedby="psaClientNameErr"{% endif %}>
         <p class="psa-field-error" id="psaClientNameErr">{{ errors|get:"client_name" }}</p>
       </div>
-      <div class="psa-field">
-        <label for="psaClientEmail">Client Email <span class="req">*</span></label>
-        <input class="psa-input" type="email" id="psaClientEmail" name="client_email" value="{{ v.client_email }}" maxlength="254" autocomplete="email" inputmode="email" required
-               {% if errors.client_email %}aria-invalid="true" aria-describedby="psaClientEmailErr"{% endif %}>
-        <p class="psa-field-error" id="psaClientEmailErr">{{ errors|get:"client_email" }}</p>
-      </div>
+      {# Where the agreement was sent and the signed copy goes -- not editable here. #}
+      <dl class="psa-field" style="margin:0"><dt>Client Email</dt><dd id="psaClientEmail">{{ a.client_email }}</dd></dl>
       <div class="psa-field">
         <label for="psaClientPhone">Phone <span class="req">*</span></label>
         <input class="psa-input" type="tel" id="psaClientPhone" name="client_phone" value="{{ v.client_phone }}" maxlength="40" autocomplete="tel" inputmode="tel" required
@@ -134,17 +130,9 @@ The agreement as one sheet (styles: assets/css/psa-agreement.css).
     <h2 class="psa-sec-title" id="psaSecAcceptanceTitle"><span class="n">5</span> Client Review and Acceptance</h2>
     <p class="psa-clause" style="margin-top:0">By signing or electronically accepting this Agreement, the Client confirms that they have reviewed and accepted the services, timelines, and payment terms set out above.</p>
 
-    {% if form %}
-    <label class="psa-accept{% if errors.accept %} has-error{% endif %}" for="psaAccept" id="psaAcceptLabel">
-      <input type="checkbox" id="psaAccept" name="accept" value="yes" {% if v.accept == 'yes' %}checked{% endif %} required>
-      <span>I have reviewed this agreement and accept the services, timelines and payment terms set out above.</span>
-    </label>
-    <p class="psa-field-error" id="psaAcceptErr">{{ errors|get:"accept" }}</p>
-    {% endif %}
-
     <div class="psa-signs">
       <div class="psa-sign" id="psaClientSign">
-        <div class="psa-sign-who">Client Signature / Electronic Acceptance</div>
+        <div class="psa-sign-who">Client Signature / Electronic Acceptance{% if form %} <span class="req" style="color:var(--psa-error)">*</span>{% endif %}</div>
         {% if form %}
           {% include "psa/_signature.html" with prefix="client" fill_from="#psaClientName" typed=v.client_signature_typed error=errors.client_signature %}
         {% else %}

@@ -118,11 +118,6 @@
 .psa-sign-meta span { color: var(--psa-sub); }
 .psa-sign-date { text-align: right; }
 
-.psa-accept { display: flex; gap: 12px; align-items: flex-start; margin: 18px 0 0; padding: 14px 16px; border-radius: 12px;
-  border: 1.5px solid var(--psa-line); background: var(--psa-soft); cursor: pointer; font-size: 14px; }
-.psa-accept input { width: 19px; height: 19px; margin: 2px 0 0; accent-color: var(--psa-accent); flex: none; cursor: pointer; }
-.psa-accept:has(input:checked) { border-color: var(--psa-accent); background: var(--psa-accent-soft); }
-.psa-accept.has-error { border-color: var(--psa-error); }
 
 .psa-foot { padding: 16px 48px 22px; font-size: 12px; color: var(--psa-faint); display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; border-top: 1px solid var(--psa-line); background: var(--psa-soft); }
 

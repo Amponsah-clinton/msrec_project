@@ -179,20 +179,19 @@ def parse_signature(post, prefix):
 
 
 def parse_client(post):
-    """The client's part: their details, acceptance and signature."""
+    """The client's part. Three things are compulsory: their full name,
+    their phone number and their signature -- signing is the acceptance
+    (Section 5 of the agreement). The address is optional. The email isn't
+    theirs to change here: it's where the agreement was sent and where the
+    signed copy goes."""
     errors = {}
     c = {
         "client_name": " ".join(post.get("client_name", "").split())[:200],
-        "client_email": post.get("client_email", "").strip().lower()[:254],
         "client_phone": post.get("client_phone", "").strip()[:40],
         "client_address": post.get("client_address", "").strip()[:255],
     }
     if not c["client_name"]:
         errors["client_name"] = "Enter your full name."
-    if not c["client_email"]:
-        errors["client_email"] = "Enter your email address."
-    elif not email_ok(c["client_email"]):
-        errors["client_email"] = "Enter a valid email address."
     if not c["client_phone"]:
         errors["client_phone"] = "Enter your phone number."
     elif not phone_ok(c["client_phone"]):
@@ -204,7 +203,4 @@ def parse_client(post):
     elif not value:
         errors["client_signature"] = "Sign the agreement by drawing your signature or typing your name."
     c["client_signature_kind"], c["client_signature"] = kind or "", value or ""
-
-    if post.get("accept") != "yes":
-        errors["accept"] = "Confirm that you have reviewed and accept the agreement."
     return c, errors

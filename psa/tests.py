@@ -57,7 +57,7 @@ def _client_form(**overrides):
     data = {
         "client_name": "Kwame Mensah", "client_email": "kwame@example.com",
         "client_phone": "+233 24 123 4567", "client_address": "Accra",
-        "accept": "yes", "client_signature_kind": "typed", "client_signature_typed": "Kwame Mensah",
+        "client_signature_kind": "typed", "client_signature_typed": "Kwame Mensah",
         "client_signature_drawn": "",
     }
     data.update(overrides)
@@ -241,15 +241,15 @@ class ClientSigningTests(StaffTestCase):
         self.a.refresh_from_db()
         self.assertIsNotNone(self.a.viewed_at)
 
-    def test_client_must_complete_their_part(self):
+    def test_client_must_give_name_phone_and_signature(self):
         self.client.logout()
         cases = {
-            "name": {"client_name": ""},
+            "name": {"client_name": "  "},
             "phone": {"client_phone": ""},
             "short phone": {"client_phone": "024"},
-            "email": {"client_email": "nope"},
-            "acceptance": {"accept": ""},
-            "signature": {"client_signature_typed": ""},
+            "typed signature": {"client_signature_typed": ""},
+            "drawn signature": {"client_signature_kind": "drawn", "client_signature_typed": "", "client_signature_drawn": ""},
+            "no signature at all": {"client_signature_kind": "", "client_signature_typed": ""},
             "broken drawing": {"client_signature_kind": "drawn", "client_signature_drawn": "data:image/png;base64,???"},
         }
         for label, overrides in cases.items():
@@ -259,6 +259,25 @@ class ClientSigningTests(StaffTestCase):
                 self.a.refresh_from_db()
                 self.assertEqual(self.a.status, Status.SENT)
         self.assertEqual(len(mail.outbox), 0)
+
+    def test_only_those_three_are_needed(self):
+        # No address, no email, no tick box: name, phone and signature sign it.
+        self.client.logout()
+        self.client.post(self.url, {
+            "client_name": "Kwame Mensah", "client_phone": "0241234567",
+            "client_signature_kind": "typed", "client_signature_typed": "Kwame Mensah",
+        })
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.SIGNED)
+
+    def test_client_cannot_change_the_email(self):
+        self.client.logout()
+        page = self.client.get(self.url)
+        self.assertNotContains(page, 'name="client_email"')
+        self.assertNotContains(page, 'name="accept"')
+        self.client.post(self.url, _client_form(client_email="someone.else@example.com"))
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.client_email, "kwame@example.com")
 
     def test_signing(self):
         self.client.logout()

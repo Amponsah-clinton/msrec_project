@@ -77,7 +77,7 @@
         <span class="ico"><i class="bi bi-pen"></i></span>
         <div>
           <h2>Review and sign your agreement</h2>
-          <p>Metascholar Limited has prepared and signed this agreement. Please read it through, confirm your details, and sign at the bottom.</p>
+          <p>Metascholar Limited has prepared and signed this agreement. Please read it through, enter your full name and phone number, and sign at the bottom.</p>
           <ol class="psac-steps">
             <li><b>1</b>Check your details</li>
             <li><b>2</b>Review the service &amp; fees</li>
@@ -127,23 +127,13 @@
         var msg = test(input.value);
         if (!setError(input, err, msg)) { ok = false; first = first || input; }
       }
+      // The three compulsory parts: full name, phone number and signature.
       field("psaClientName", function (v) { return v ? "" : "Enter your full name."; });
-      field("psaClientEmail", function (v) {
-        if (!v) return "Enter your email address.";
-        return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) ? "" : "Enter a valid email address.";
-      });
       field("psaClientPhone", function (v) {
         if (!v) return "Enter your phone number.";
         var d = digits(v);
         return d >= 7 && d <= 15 ? "" : "Enter a valid phone number (7–15 digits).";
       });
-
-      var accept = document.getElementById("psaAccept");
-      var acceptLabel = document.getElementById("psaAcceptLabel");
-      var acceptErr = document.getElementById("psaAcceptErr");
-      acceptLabel.classList.toggle("has-error", !accept.checked);
-      acceptErr.textContent = accept.checked ? "" : "Confirm that you have reviewed and accept the agreement.";
-      if (!accept.checked) { ok = false; first = first || accept; }
 
       var sigErr = document.getElementById("clientSigError");
       var empty = pad.sigpad.isEmpty();
