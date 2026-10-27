@@ -202,10 +202,11 @@ class ServiceAgreement(models.Model):
 
     @property
     def can_record_payment(self):
-        """Money is only recorded against an agreement the client has seen
-        and a fee has been agreed on. A cancelled one still can: a deposit
-        taken before it was withdrawn is part of the record."""
-        return self.status != self.Status.DRAFT and self.fee is not None
+        """Anything with a fee can take a payment, whatever its status: a
+        deposit can arrive before the paperwork goes out, and one taken
+        before an agreement was withdrawn is still part of the record.
+        Without a fee there is nothing to owe against."""
+        return self.fee is not None
 
     @property
     def client_initials(self):

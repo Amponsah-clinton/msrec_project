@@ -640,12 +640,15 @@ class PaymentLedgerTests(StaffTestCase):
         self._pay("500", note="Teller 2")
         self.assertEqual(self.a.payments.count(), 2)
 
-    def test_nothing_is_recorded_against_a_draft(self):
+    def test_a_draft_with_a_fee_can_take_a_deposit(self):
+        """Money can arrive before the paperwork goes out."""
         draft = self._sent(action="draft", client_name="Draft Client")
+        self.assertEqual(draft.status, Status.DRAFT)
+        self.assertTrue(draft.can_record_payment)
         self.client.post(reverse("psa_admin:psa_payment_add", args=[draft.pk]),
                          {"kind": "received", "amount": "100", "method": "cash",
                           "paid_on": timezone.localdate().isoformat()})
-        self.assertFalse(draft.payments.exists())
+        self.assertEqual(draft.payments.get().amount, Decimal("100.00"))
 
     def test_nothing_is_recorded_without_an_agreed_fee(self):
         a = ServiceAgreement.objects.create(client_name="No Fee", status=Status.SENT,

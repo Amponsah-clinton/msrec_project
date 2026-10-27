@@ -34,7 +34,7 @@
 .psa-exports .btn-secondary { padding: 8px 13px; font-size: 12.5px; text-decoration: none; }
 .psa-export[aria-disabled="true"] { opacity: .5; pointer-events: none; }
 
-.psa-table { min-width: 1040px; }
+.psa-table { min-width: 1180px; }
 .psa-table .acct-person { min-width: 200px; }
 .psa-avatar { background: var(--navy, #1f3a5f); }
 .psa-ref { text-decoration: none; }
@@ -159,6 +159,21 @@
 .psa-owing .psa-owing-amt { font-size: 14.5px; }
 .psa-owing-set { font-size: 11.5px; font-weight: 600; color: var(--teal); text-decoration: none; }
 .psa-owing-set:hover { text-decoration: underline; }
+
+/* Row actions spelled out as buttons rather than bare icons. */
+.psa-row-btns { display: inline-flex; align-items: center; gap: 6px; }
+.psa-row-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--white);
+  font-size: 12px; font-weight: 600; color: var(--text-sub); text-decoration: none; white-space: nowrap;
+  transition: background .15s, color .15s, border-color .15s; }
+.psa-row-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.psa-row-btn:hover { border-color: var(--teal); background: var(--hover-bg); color: var(--teal); }
+
+@media (max-width: 640px) {
+  /* Stacked cards: the buttons share the row's full width. */
+  .acct-table td[data-label="Actions"] .psa-row-btns { width: 100%; }
+  .psa-row-btn { flex: 1; justify-content: center; }
+}
 
 /* ---------------- Record payment dialog ---------------- */
 dialog.psa-dialog { border: 0; border-radius: 16px; padding: 0; width: min(520px, calc(100vw - 32px));

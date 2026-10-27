@@ -210,13 +210,6 @@ def _day(d):
     return f"{d.day} {d:%B %Y}" if d else ""
 
 
-def _when(dt):
-    if not dt:
-        return ""
-    local = timezone.localtime(dt)
-    return f"{local.day} {local:%B %Y} at {local:%H:%M} ({local:%Z})"
-
-
 def _money(a, value):
     return f"{a.currency} {value:,.2f}" if value is not None else ""
 
@@ -277,7 +270,6 @@ def render(a, settings=None):
         "value": ParagraphStyle("value", fontName=serif, fontSize=10.5, leading=14, textColor=BODY),
         "value_b": ParagraphStyle("value_b", fontName=serif_bold, fontSize=10.5, leading=14, textColor=BODY),
         "body": ParagraphStyle("body", fontName=serif, fontSize=10.2, leading=14.2, textColor=BODY),
-        "small": ParagraphStyle("small", fontName=sans, fontSize=7.6, leading=10.4, textColor=MUTED),
         "party": ParagraphStyle("party", fontName=sans_bold, fontSize=7.8, leading=10.5, textColor=MUTED),
     }
     P = Paragraph
@@ -471,20 +463,6 @@ def render(a, settings=None):
     ]))
     acceptance.append(signatures)
 
-    # Electronic-signature record: what an auditor would ask for.
-    record = []
-    if a.company_signed_at:
-        record.append(f"Signed for Metascholar Limited by {escape(a.company_signatory_name)}"
-                      f"{' (' + escape(a.company_signatory_role) + ')' if a.company_signatory_role else ''} "
-                      f"on {escape(_when(a.company_signed_at))}.")
-    if a.client_signed_at:
-        how = "a drawn signature" if a.client_signature_kind == "drawn" else "a typed name"
-        where = f" from IP address {escape(a.client_signed_ip)}" if a.client_signed_ip else ""
-        record.append(f"Signed electronically by {escape(a.client_name)} on {escape(_when(a.client_signed_at))}, "
-                      f"using {how}{where}.")
-    if record:
-        acceptance += [Spacer(1, 8 * mm), P("ELECTRONIC SIGNATURE RECORD", st["party"]), Spacer(1, 1 * mm)]
-        acceptance += [P(line, st["small"]) for line in record]
     story.append(KeepTogether(acceptance))
 
     # ---- Build --------------------------------------------------------

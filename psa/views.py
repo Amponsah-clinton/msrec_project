@@ -495,11 +495,7 @@ def psa_payment_add(request, pk):
     """
     a = get_object_or_404(ServiceAgreement, pk=pk)
     if not a.can_record_payment:
-        messages.error(request, (
-            f"{a.reference} has no agreed fee yet, so there's nothing to record against it."
-            if a.fee is None else
-            f"{a.reference} is still a draft. Send it to {a.client_name} before recording a payment."
-        ))
+        messages.error(request, f"{a.reference} has no agreed fee yet, so there's nothing to record against it.")
         return _back(request, a)
 
     with transaction.atomic():
