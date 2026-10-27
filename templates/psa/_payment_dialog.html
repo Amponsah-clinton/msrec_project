@@ -1,0 +1,64 @@
+{% comment %}
+Record a payment, from the PSA list's "Record payment" button. One dialog
+for the whole page: dashboard/js/psa-payments.js fills in the agreement
+and posts to psa_admin:psa_payment_add.
+
+Needs `methods` and `today` in the context. The agreement's own page has
+the same fields as a plain panel instead, so it works without the script.
+{% endcomment %}
+<dialog class="psa-dialog" id="psaPayDialog" aria-labelledby="psaPayTitle">
+  <form method="post" id="psaPayForm" data-action-template="{% url 'psa_admin:psa_payment_add' 0 %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ request.get_full_path }}">
+    <div class="psa-dialog-head">
+      <h3 id="psaPayTitle">Record a payment</h3>
+      <p><span class="acct-mono" id="psaPayRef"></span> &middot; <span id="psaPayClient"></span> &middot; <span id="psaPayOwing"></span></p>
+    </div>
+    <div class="psa-dialog-body">
+      <fieldset class="psa-fieldset">
+        <legend>What is this entry?</legend>
+        <div class="psa-radios">
+          <label class="psa-radio"><input type="radio" name="kind" value="received" checked data-psa-kind> Payment received</label>
+          <label class="psa-radio"><input type="radio" name="kind" value="refund" data-psa-kind> Refund / correction</label>
+        </div>
+      </fieldset>
+
+      <div class="field-row">
+        <div class="field-group">
+          <label for="psaPayAmount">Amount <span class="psa-pay-cur" id="psaPayCurrency"></span></label>
+          <input type="text" inputmode="decimal" class="field-input" id="psaPayAmount" name="amount"
+                 required autocomplete="off" placeholder="0.00">
+          <span class="field-hint" id="psaPayAmountHint"></span>
+        </div>
+        <div class="field-group">
+          <label for="psaPayDate">Date received</label>
+          <input type="date" class="field-input" id="psaPayDate" name="paid_on" required
+                 value="{{ today|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}">
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label for="psaPayMethod">How it was paid</label>
+        <select class="field-input" id="psaPayMethod" name="method" required>
+          {% for value, label in methods %}<option value="{{ value }}" {% if value == 'bank' %}selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+      </div>
+
+      <div class="field-group">
+        <label for="psaPayNote">Reference <span class="psa-optional" id="psaPayNoteOpt">(optional)</span></label>
+        <input type="text" class="field-input" id="psaPayNote" name="note" maxlength="200" autocomplete="off"
+               placeholder="Teller or momo transaction number, cheque number&hellip;">
+        <span class="field-hint" id="psaPayNoteHint">Whatever would let someone find this payment again.</span>
+      </div>
+
+      <p class="psa-pay-warn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v4M12 16h.01"/></svg>
+        <span>Check the amount and date. A saved entry becomes part of the record and <strong>can&rsquo;t be edited or deleted</strong> &mdash; a mistake has to be put right with a second, correcting entry.</span>
+      </p>
+    </div>
+    <div class="psa-dialog-foot">
+      <button type="button" class="btn-secondary" data-psa-pay-close>Cancel</button>
+      <button type="submit" class="btn-primary" id="psaPaySubmit">Save entry</button>
+    </div>
+  </form>
+</dialog>

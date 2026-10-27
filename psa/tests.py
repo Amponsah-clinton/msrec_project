@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw
 from accounts.models import User
 from notifications.models import Notification
 
-from .models import ServiceAgreement
+from .models import Payment, ServiceAgreement
 
 Status = ServiceAgreement.Status
 
@@ -523,3 +523,238 @@ class ChangeRequestTests(StaffTestCase):
     def test_signing_area_is_the_large_layout(self):
         page = self.client_class().get(self.url)
         self.assertContains(page, 'class="psa-signs is-form"')
+
+
+class PaymentLedgerTests(StaffTestCase):
+    """Money received against an agreement, and the amount owing that
+    follows from it."""
+
+    def setUp(self):
+        super().setUp()
+        self.a = self._sent()          # GHS 2,500 fee, sent to the client
+        self.url = reverse("psa_admin:psa_payment_add", args=[self.a.pk])
+
+    def _pay(self, amount="1000", **overrides):
+        data = {"kind": "received", "amount": amount, "method": "momo",
+                "paid_on": timezone.localdate().isoformat(), "note": ""}
+        data.update(overrides)
+        return self.client.post(self.url, data)
+
+    def test_owing_starts_as_the_whole_fee(self):
+        self.assertEqual(self.a.amount_paid, Decimal("0.00"))
+        self.assertEqual(self.a.amount_owing, Decimal("2500.00"))
+        self.assertEqual(self.a.payment_state, "unpaid")
+
+    def test_recording_a_payment_reduces_what_is_owing(self):
+        resp = self._pay("1000")
+        self.assertRedirects(resp, reverse("psa_admin:psa_detail", args=[self.a.pk]))
+        payment = self.a.payments.get()
+        self.assertEqual(payment.amount, Decimal("1000.00"))
+        self.assertEqual(payment.method, "momo")
+        self.assertEqual(payment.recorded_by, self.admin)
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.amount_paid, Decimal("1000.00"))
+        self.assertEqual(self.a.amount_owing, Decimal("1500.00"))
+        self.assertEqual(self.a.payment_state, "part")
+
+    def test_paid_in_full(self):
+        self._pay("1500", note="Deposit")
+        self._pay("1000", note="Balance")
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.amount_owing, Decimal("0.00"))
+        self.assertEqual(self.a.payment_state, "settled")
+        self.assertEqual(self.a.payment_state_label, "Paid in full")
+
+    def test_overpayment_shows_as_overpaid(self):
+        self._pay("3000")
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.amount_owing, Decimal("-500.00"))
+        self.assertEqual(self.a.overpaid_by, Decimal("500.00"))
+        self.assertEqual(self.a.payment_state, "over")
+
+    def test_refund_is_a_negative_entry(self):
+        self._pay("1000")
+        self._pay("400", kind="refund", note="Overpaid the deposit")
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.payments.count(), 2)
+        self.assertEqual(self.a.amount_paid, Decimal("600.00"))
+        self.assertEqual(self.a.amount_owing, Decimal("1900.00"))
+        refund = self.a.payments.order_by("-pk").first()
+        self.assertTrue(refund.is_refund)
+        self.assertEqual(refund.abs_amount, Decimal("400.00"))
+
+    def test_a_refund_cannot_exceed_what_came_in(self):
+        self._pay("500")
+        self._pay("600", kind="refund", note="Too much")
+        self.assertEqual(self.a.payments.count(), 1)
+
+    def test_a_refund_needs_a_reason(self):
+        self._pay("500")
+        self._pay("100", kind="refund", note="")
+        self.assertEqual(self.a.payments.count(), 1)
+
+    def test_bad_entries_are_refused(self):
+        tomorrow = (timezone.localdate() + timezone.timedelta(days=1)).isoformat()
+        cases = {
+            "blank": {"amount": ""},
+            "words": {"amount": "five hundred"},
+            "zero": {"amount": "0"},
+            "negative": {"amount": "-100"},
+            "slipped decimal": {"amount": "250000"},
+            "future date": {"paid_on": tomorrow},
+            "no date": {"paid_on": ""},
+            "unknown method": {"method": "crypto"},
+        }
+        for case, data in cases.items():
+            with self.subTest(case):
+                self._pay(**data)
+                self.assertFalse(self.a.payments.exists(), case)
+
+    def test_a_saved_entry_cannot_be_changed_or_deleted(self):
+        self._pay("1000")
+        payment = self.a.payments.get()
+        payment.amount = Decimal("9999.00")
+        with self.assertRaises(ValueError):
+            payment.save()
+        with self.assertRaises(ValueError):
+            payment.delete()
+        payment.refresh_from_db()
+        self.assertEqual(payment.amount, Decimal("1000.00"))
+
+    def test_no_edit_or_delete_route_exists(self):
+        """There is nothing on the site that could change an entry."""
+        from django.urls import NoReverseMatch
+        self._pay("1000")
+        pk = self.a.payments.get().pk
+        for name in ("psa_payment_edit", "psa_payment_delete"):
+            with self.subTest(name), self.assertRaises(NoReverseMatch):
+                reverse(f"psa_admin:{name}", args=[pk])
+
+    def test_a_double_submit_records_one_payment(self):
+        self._pay("1000", note="Teller 88213")
+        self._pay("1000", note="Teller 88213")
+        self.assertEqual(self.a.payments.count(), 1)
+
+    def test_two_real_payments_of_the_same_amount_are_told_apart(self):
+        self._pay("500", note="Teller 1")
+        self._pay("500", note="Teller 2")
+        self.assertEqual(self.a.payments.count(), 2)
+
+    def test_nothing_is_recorded_against_a_draft(self):
+        draft = self._sent(action="draft", client_name="Draft Client")
+        self.client.post(reverse("psa_admin:psa_payment_add", args=[draft.pk]),
+                         {"kind": "received", "amount": "100", "method": "cash",
+                          "paid_on": timezone.localdate().isoformat()})
+        self.assertFalse(draft.payments.exists())
+
+    def test_nothing_is_recorded_without_an_agreed_fee(self):
+        a = ServiceAgreement.objects.create(client_name="No Fee", status=Status.SENT,
+                                            created_by=self.admin)
+        self.assertIsNone(a.fee)
+        self.assertIsNone(a.amount_owing)
+        self.assertEqual(a.payment_state, "no_fee")
+        self.assertFalse(a.can_record_payment)
+        self.client.post(reverse("psa_admin:psa_payment_add", args=[a.pk]),
+                         {"kind": "received", "amount": "100", "method": "cash",
+                          "paid_on": timezone.localdate().isoformat()})
+        self.assertFalse(a.payments.exists())
+
+    def test_a_cancelled_agreement_keeps_its_deposit_on_the_record(self):
+        self._pay("1000")
+        self.client.post(reverse("psa_admin:psa_cancel", args=[self.a.pk]))
+        self._pay("500", note="Second instalment")
+        self.assertEqual(self.a.payments.count(), 2)
+
+    def test_signed_agreements_still_take_payments(self):
+        """Signing locks the agreement, not the money that comes in after."""
+        anon = self.client_class()
+        anon.get(reverse("psa:client", args=[self.a.token]))
+        anon.post(reverse("psa:client", args=[self.a.token]), _client_form())
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.status, Status.SIGNED)
+        self._pay("2500", note="Paid on delivery")
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.amount_owing, Decimal("0.00"))
+
+    def test_only_staff_can_record_a_payment(self):
+        applicant = User.objects.create_user(email="nope@example.com", password="pw-12345678",
+                                             first_name="N", last_name="P", role=User.Role.APPLICANT)
+        other = self.client_class()
+        other.force_login(applicant)
+        self.assertEqual(other.post(self.url, {"amount": "100"}).status_code, 302)
+        self.assertFalse(self.a.payments.exists())
+
+    def test_the_secretariat_can_record_a_payment(self):
+        sec = User.objects.create_user(email="sec@example.com", password="pw-12345678",
+                                       first_name="Sam", last_name="Sec", role=User.Role.SECRETARIAT)
+        theirs = self.client_class()
+        theirs.force_login(sec)
+        theirs.post(self.url, {"kind": "received", "amount": "250", "method": "cash",
+                               "paid_on": timezone.localdate().isoformat()})
+        self.assertEqual(self.a.payments.get().recorded_by, sec)
+
+    def test_it_comes_back_to_the_list_it_was_recorded_from(self):
+        back = reverse("psa_admin:psa_list") + "?pay=owing&page=1"
+        self.assertRedirects(self._pay("100", next=back), back)
+        # Somewhere else's URL is ignored.
+        self.assertRedirects(self._pay("200", next="https://evil.example.com/x", note="2"),
+                             reverse("psa_admin:psa_detail", args=[self.a.pk]))
+
+
+class PaymentListTests(StaffTestCase):
+    """The amount owing column, its filters and the running total."""
+
+    def setUp(self):
+        super().setUp()
+        self.a = self._sent()                                   # 2,500, nothing paid
+        self.b = self._sent(client_name="Ama Owusu", fee="1000", deposit="0")
+        Payment.objects.create(agreement=self.b, amount=Decimal("1000.00"),
+                               paid_on=timezone.localdate(), method="bank")
+
+    def test_the_column_shows_what_is_owing(self):
+        resp = self.client.get(reverse("psa_admin:psa_list"))
+        self.assertContains(resp, "Amount Owing")
+        self.assertContains(resp, "GHS 2,500.00")
+        self.assertContains(resp, "Paid in full")
+        # The running total across live agreements.
+        self.assertEqual([dict(row) for row in resp.context["outstanding"]],
+                         [{"currency": "GHS", "total": Decimal("2500.00")}])
+
+    def test_the_total_comes_from_the_ledger_not_a_query_per_row(self):
+        for i in range(6):
+            Payment.objects.create(agreement=self.a, amount=Decimal("10.00"),
+                                   paid_on=timezone.localdate(), method="cash", note=str(i))
+        resp = self.client.get(reverse("psa_admin:psa_list"))
+        rows = {a.pk: a.paid_total for a in resp.context["page"].object_list}
+        self.assertEqual(rows[self.a.pk], Decimal("60.00"))
+        self.assertEqual(rows[self.b.pk], Decimal("1000.00"))
+
+    def test_filters(self):
+        url = reverse("psa_admin:psa_list")
+        cases = {"owing": [self.a.pk], "unpaid": [self.a.pk], "settled": [self.b.pk],
+                 "part": [], "over": []}
+        for value, expected in cases.items():
+            with self.subTest(value):
+                resp = self.client.get(url, {"pay": value})
+                self.assertEqual([a.pk for a in resp.context["page"].object_list], expected)
+
+    def test_sorting_by_what_is_owing(self):
+        url = reverse("psa_admin:psa_list")
+        high = [a.pk for a in self.client.get(url, {"sort": "owing_high"}).context["page"].object_list]
+        self.assertEqual(high[0], self.a.pk)
+        low = [a.pk for a in self.client.get(url, {"sort": "owing_low"}).context["page"].object_list]
+        self.assertEqual(low[0], self.b.pk)
+
+    def test_the_export_carries_the_money_columns(self):
+        body = self.client.get(reverse("psa_admin:psa_export")).content.decode("utf-8-sig")
+        self.assertIn("Total Received", body)
+        self.assertIn("Amount Owing", body)
+        self.assertIn("Paid in full", body)
+        self.assertIn("Nothing paid", body)
+
+    def test_the_agreement_page_shows_the_ledger(self):
+        resp = self.client.get(reverse("psa_admin:psa_detail", args=[self.b.pk]))
+        self.assertContains(resp, "Amount owing")
+        self.assertContains(resp, "GHS 1,000.00 received of GHS 1,000.00")
+        self.assertContains(resp, "Bank transfer")
+        self.assertContains(resp, "edited or deleted")

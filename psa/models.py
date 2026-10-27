@@ -18,12 +18,18 @@ The life of one agreement:
 
 Both signatures are stored either as a drawn PNG (a data: URL, cropped by
 pages.signature) or as a typed name rendered in a script face.
+
+Money received against an agreement is kept separately, as Payment rows
+(the ledger). What is still owing is the agreed fee less everything
+recorded, so it follows from the ledger rather than being a figure anyone
+types over. Each row is written once and never changed afterwards.
 """
 import secrets
 from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.db.models import Sum
 from django.urls import reverse
 from django.utils import timezone
 
@@ -144,6 +150,64 @@ class ServiceAgreement(models.Model):
         return max(self.fee - (self.deposit or Decimal("0.00")), Decimal("0.00"))
 
     @property
+    def amount_paid(self):
+        """Everything recorded as received, refunds included (they are
+        negative rows). The list annotates this as ``paid_total`` so a page
+        of agreements doesn't cost a query each."""
+        total = getattr(self, "paid_total", None)
+        if total is None:
+            total = self.payments.aggregate(t=Sum("amount"))["t"]
+        return total or Decimal("0.00")
+
+    @property
+    def amount_owing(self):
+        """The agreed fee less what has come in. None while there is no
+        fee to owe against; negative if the client has overpaid."""
+        if self.fee is None:
+            return None
+        return self.fee - self.amount_paid
+
+    @property
+    def overpaid_by(self):
+        owing = self.amount_owing
+        return -owing if owing is not None and owing < 0 else None
+
+    @property
+    def payment_state(self):
+        """How the money stands: used for the list's wording and colour.
+
+        no_fee    no fee agreed yet, so nothing to owe
+        unpaid    nothing received
+        part      some received, more to come
+        settled   paid in full
+        over      more received than the fee
+        """
+        if self.fee is None:
+            return "no_fee"
+        paid, owing = self.amount_paid, self.amount_owing
+        if owing < 0:
+            return "over"
+        if owing == 0:
+            return "settled"
+        return "part" if paid > 0 else "unpaid"
+
+    PAYMENT_STATE_LABELS = {
+        "no_fee": "No fee set", "unpaid": "Nothing paid", "part": "Part paid",
+        "settled": "Paid in full", "over": "Overpaid",
+    }
+
+    @property
+    def payment_state_label(self):
+        return self.PAYMENT_STATE_LABELS[self.payment_state]
+
+    @property
+    def can_record_payment(self):
+        """Money is only recorded against an agreement the client has seen
+        and a fee has been agreed on. A cancelled one still can: a deposit
+        taken before it was withdrawn is part of the record."""
+        return self.status != self.Status.DRAFT and self.fee is not None
+
+    @property
     def client_initials(self):
         """"Kwame Mensah" -> "KM"; one word -> its first letter."""
         words = [w for w in (self.client_name or "").split() if w[:1].isalnum()]
@@ -223,6 +287,75 @@ class ChangeRequest(models.Model):
 
     def __str__(self):
         return f"{self.agreement.reference}: {self.get_section_display()}"
+
+
+
+class Payment(models.Model):
+    """One amount received against an agreement -- or given back, as a
+    negative row.
+
+    The ledger is write-once. A saved entry is the record of money that
+    actually moved on a day, so nothing edits or removes it afterwards:
+    ``save`` refuses a second write and ``delete`` refuses outright. A
+    mistake is put right by recording a correction of its own, which
+    leaves both the error and the fix visible. (Deleting the agreement
+    still takes its ledger with it -- that cascade doesn't go through
+    these methods.)
+    """
+
+    class Method(models.TextChoices):
+        CASH = "cash", "Cash"
+        BANK = "bank", "Bank transfer"
+        MOMO = "momo", "Mobile money"
+        CHEQUE = "cheque", "Cheque"
+        CARD = "card", "Card"
+        OTHER = "other", "Other"
+
+    agreement = models.ForeignKey(ServiceAgreement, on_delete=models.CASCADE, related_name="payments")
+    # Negative for a refund or for correcting an earlier entry.
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    paid_on = models.DateField(default=timezone.localdate)
+    method = models.CharField(max_length=10, choices=Method.choices, default=Method.BANK)
+    # Teller number, momo transaction id, cheque number -- or why a
+    # correction was needed.
+    note = models.CharField(max_length=200, blank=True)
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+    recorded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = "service_agreement_payments"
+        ordering = ["-paid_on", "-recorded_at"]
+        indexes = [
+            models.Index(fields=["agreement", "-paid_on"], name="service_agr_payments_idx"),
+        ]
+        constraints = [
+            models.CheckConstraint(condition=~models.Q(amount=0), name="service_agreement_payments_amount_nonzero"),
+        ]
+
+    def __str__(self):
+        return f"{self.agreement.reference}: {self.agreement.currency} {self.amount}"
+
+    def save(self, *args, **kwargs):
+        if not self._state.adding:
+            raise ValueError(
+                "A recorded payment can't be changed. Record a correcting entry instead."
+            )
+        super().save(*args, **kwargs)
+
+    def delete(self, *args, **kwargs):
+        raise ValueError(
+            "A recorded payment can't be deleted. Record a correcting entry instead."
+        )
+
+    @property
+    def is_refund(self):
+        return self.amount < 0
+
+    @property
+    def abs_amount(self):
+        return abs(self.amount)
 
 
 class PsaSettings(models.Model):

@@ -20,7 +20,7 @@
 .field-hint:empty { display: none; }
 
 /* ---------------- List ---------------- */
-.psa-summary { grid-template-columns: repeat(6, 1fr); }
+.psa-summary { grid-template-columns: repeat(7, 1fr); }
 .psa-summary-money { font-size: 16px; line-height: 1.35; padding-top: 3px; }
 .psa-toolbar-btns { display: flex; gap: 8px; flex-shrink: 0; }
 .psa-toolbar-btns a { text-decoration: none; }
@@ -34,7 +34,7 @@
 .psa-exports .btn-secondary { padding: 8px 13px; font-size: 12.5px; text-decoration: none; }
 .psa-export[aria-disabled="true"] { opacity: .5; pointer-events: none; }
 
-.psa-table { min-width: 900px; }
+.psa-table { min-width: 1040px; }
 .psa-table .acct-person { min-width: 200px; }
 .psa-avatar { background: var(--navy, #1f3a5f); }
 .psa-ref { text-decoration: none; }
@@ -42,6 +42,7 @@
 .psa-clip { display: block; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .psa-nowrap { white-space: nowrap; }
 
+@media (max-width: 1400px) { .psa-summary { grid-template-columns: repeat(4, 1fr); } }
 @media (max-width: 1100px) { .psa-summary { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 640px) {
   .psa-summary { grid-template-columns: repeat(2, 1fr); }
@@ -129,6 +130,80 @@
 .psa-history dd span { display: block; font-size: 12px; color: var(--text-sub); }
 .psa-danger { display: flex; gap: 18px; justify-content: center; padding: 2px 0; }
 .psa-danger form { margin: 0; }
+
+/* ---------------- Money owing (list) ---------------- */
+/* The summary cell doubles as the filter for the rows behind the figure. */
+.psa-summary-link { display: block; text-decoration: none; color: inherit; }
+.psa-summary-link:hover { background: var(--bg); }
+.psa-summary-link.owed .acct-summary-value { color: var(--orange); }
+
+.psa-owing .psa-owing-amt { font-variant-numeric: tabular-nums; font-weight: 700; }
+.psa-owing.is-unpaid .psa-owing-amt, .psa-owing.is-part .psa-owing-amt { color: var(--orange); }
+.psa-owing.is-settled .psa-owing-amt { color: var(--green); }
+.psa-owing.is-over .psa-owing-amt { color: var(--teal); }
+.psa-owing.is-settled .acct-sub { color: var(--green); }
+
+/* Shown on hover or focus of the row, so a dense table stays readable --
+   always visible on touch, where there is no hover. */
+.psa-pay-btn { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; padding: 3px 8px 3px 5px;
+  border: 1px solid var(--border); border-radius: 999px; background: var(--white); cursor: pointer;
+  font-size: 11.5px; font-weight: 600; color: var(--text-sub); white-space: nowrap; opacity: 0; transition: opacity .12s; }
+.psa-pay-btn svg { width: 13px; height: 13px; }
+.psa-pay-btn:hover { border-color: var(--teal); color: var(--teal); }
+tr:hover .psa-pay-btn, .psa-pay-btn:focus-visible { opacity: 1; }
+@media (hover: none) { .psa-pay-btn { opacity: 1; } }
+
+/* ---------------- Record payment dialog ---------------- */
+dialog.psa-dialog { border: 0; border-radius: 16px; padding: 0; width: min(520px, calc(100vw - 32px));
+  background: var(--white); color: var(--text-main); box-shadow: var(--shadow-lg); }
+dialog.psa-dialog::backdrop { background: var(--overlay-bg); backdrop-filter: blur(2px); }
+.psa-dialog-head { padding: 20px 24px 4px; }
+.psa-dialog-head h3 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+.psa-dialog-head p { margin: 0; font-size: 12.5px; color: var(--text-sub); }
+.psa-dialog-body { padding: 16px 24px 4px; }
+.psa-dialog-body .field-group { margin-bottom: 14px; }
+.psa-dialog-foot { padding: 6px 24px 20px; display: flex; gap: 10px; justify-content: flex-end; }
+.psa-pay-cur { font-weight: 600; color: var(--text-faint); }
+#psaPayForm.is-refund .psa-pay-warn { border-color: var(--red); background: var(--red-light); color: var(--red); }
+.psa-pay-warn { display: flex; gap: 9px; margin: 2px 0 0; padding: 10px 12px; border: 1px solid var(--orange);
+  border-radius: 8px; background: var(--orange-light); font-size: 12.5px; line-height: 1.5; color: var(--text-main); }
+.psa-pay-warn svg { flex: none; width: 16px; height: 16px; margin-top: 1px; }
+
+/* ---------------- Payment panel (agreement page) ---------------- */
+.psa-pay-state { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); }
+.psa-pay-state.is-unpaid, .psa-pay-state.is-part { color: var(--orange); }
+.psa-pay-state.is-settled { color: var(--green); }
+.psa-pay-state.is-over { color: var(--teal); }
+
+.psa-owing-big { display: grid; gap: 3px; padding: 12px 14px; margin-bottom: 14px; border-radius: 10px;
+  border: 1px solid var(--border); background: var(--bg); }
+.psa-owing-label { font-size: 11.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); }
+.psa-owing-big strong { font-size: 24px; font-weight: 700; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.psa-owing-big.is-unpaid strong, .psa-owing-big.is-part strong { color: var(--orange); }
+.psa-owing-big.is-settled strong { color: var(--green); }
+.psa-owing-big.is-over strong { color: var(--teal); }
+.psa-owing-of { font-size: 12px; color: var(--text-sub); }
+.psa-owing-bar { height: 5px; margin-top: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.psa-owing-bar i { display: block; height: 100%; max-width: 100%; border-radius: 999px; background: var(--orange); }
+.psa-owing-big.is-settled .psa-owing-bar i, .psa-owing-big.is-over .psa-owing-bar i { background: var(--green); }
+
+.psa-ledger { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 10px; }
+.psa-ledger li { display: grid; gap: 1px; padding-left: 10px; border-left: 3px solid var(--green); }
+.psa-ledger li.is-refund { border-left-color: var(--red); }
+.psa-ledger-amt { font-size: 14px; font-weight: 700; color: var(--text-main); font-variant-numeric: tabular-nums; }
+.psa-ledger li.is-refund .psa-ledger-amt { color: var(--red); }
+.psa-ledger-meta { font-size: 11.5px; color: var(--text-faint); }
+.psa-ledger-note { font-size: 12.5px; color: var(--text-sub); overflow-wrap: anywhere; }
+
+.psa-pay-add { margin-top: 12px; }
+.psa-pay-add > summary { cursor: pointer; padding: 8px 12px; border: 1px solid var(--border); border-radius: 8px;
+  text-align: center; font-size: 13px; font-weight: 600; color: var(--teal); list-style: none; }
+.psa-pay-add > summary::-webkit-details-marker { display: none; }
+.psa-pay-add > summary:hover { border-color: var(--teal); background: var(--bg); }
+.psa-pay-add[open] > summary { margin-bottom: 12px; }
+.psa-pay-add form { display: grid; gap: 0; }
+.psa-pay-add .field-group { margin-bottom: 12px; }
+.psa-pay-add .btn-primary { width: 100%; justify-content: center; }
 
 /* ---------------- Letterhead settings ---------------- */
 .psa-lh { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 20px; align-items: start; }

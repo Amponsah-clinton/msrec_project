@@ -11,7 +11,7 @@ from decimal import Decimal, InvalidOperation
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 
-from .models import CURRENCIES, ChangeRequest, ServiceAgreement
+from .models import CURRENCIES, ChangeRequest, Payment, ServiceAgreement
 
 MAX_DELIVERABLES = 30
 MAX_SIGNATURE_UPLOAD = 2 * 1024 * 1024  # the drawn PNG, before cropping
@@ -141,6 +141,62 @@ def parse_agreement(post, *, sending):
         errors["payment_schedule"] = "Give the payment due date or schedule."
 
     return c, errors
+
+
+
+def parse_payment(post, agreement):
+    """One entry for the payment ledger (psa/views.py psa_payment_add).
+
+    The amount is typed as a positive figure and the kind says which way
+    it goes, so "refund" doesn't depend on anyone remembering a minus
+    sign. Nothing here can be edited later, so what can be checked is
+    checked now: a real amount, a date that has happened, and a refund no
+    bigger than what has actually come in.
+
+    Returns (cleaned, errors) ready for Payment(**cleaned).
+    """
+    errors = {}
+    refund = post.get("kind") == "refund"
+
+    amount = _money(post.get("amount"))
+    if amount is False:
+        errors["amount"] = "Enter the amount as a number, e.g. 500.00."
+        amount = None
+    elif not amount:
+        errors["amount"] = "Enter the amount received." if not refund else "Enter the amount refunded."
+    elif agreement.fee is not None and not refund and amount > agreement.fee * 10:
+        # A slipped decimal point: ten times the whole fee in one payment.
+        errors["amount"] = f"That's far more than the agreed fee ({agreement.currency} {agreement.fee:,.2f}). Check the amount."
+    elif refund and amount > agreement.amount_paid:
+        paid = agreement.amount_paid
+        errors["amount"] = (
+            f"Only {agreement.currency} {paid:,.2f} has been received, so there's nothing more to give back."
+            if paid <= 0 else
+            f"You can't give back more than the {agreement.currency} {paid:,.2f} received."
+        )
+
+    paid_on = _date(post.get("paid_on"))
+    if paid_on is False:
+        errors["paid_on"] = "Enter a valid date."
+        paid_on = None
+    elif paid_on is None:
+        errors["paid_on"] = "Enter the date the money moved."
+    elif paid_on > date.today():
+        errors["paid_on"] = "That date is in the future. Record a payment once it has come in."
+
+    method = post.get("method", "")
+    if method not in Payment.Method.values:
+        errors["method"] = "Choose how it was paid."
+        method = Payment.Method.BANK
+
+    note = " ".join(post.get("note", "").split())[:200]
+    if refund and not note:
+        errors["note"] = "Say what the refund or correction is for."
+
+    return {
+        "amount": -amount if (refund and amount) else amount,
+        "paid_on": paid_on, "method": method, "note": note,
+    }, errors
 
 
 def parse_signature(post, prefix):

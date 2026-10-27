@@ -80,6 +80,88 @@
             </div>
           </section>
 
+          {# Money. The figure comes from the entries below it, so it can't
+             drift from them; entries are added and never edited. #}
+          <section class="panel psa-money-panel" id="psaMoney">
+            <div class="panel-header"><h2>Payment</h2><span class="psa-pay-state is-{{ a.payment_state }}">{{ a.payment_state_label }}</span></div>
+
+            {% if a.fee is None %}
+            <p class="psa-side-text">No fee has been agreed yet, so there's nothing owing. Add the fee to the agreement first.</p>
+            {% else %}
+            <div class="psa-owing-big is-{{ a.payment_state }}">
+              <span class="psa-owing-label">Amount owing</span>
+              <strong id="psaAmountOwing">{{ a.currency }} {% if a.payment_state == 'over' %}0.00{% else %}{{ a.amount_owing|money }}{% endif %}</strong>
+              <span class="psa-owing-of">
+                {{ a.currency }} {{ a.amount_paid|money }} received of {{ a.currency }} {{ a.fee|money }}
+                {% if a.payment_state == 'over' %}&middot; overpaid by {{ a.currency }} {{ a.overpaid_by|money }}{% endif %}
+              </span>
+              <div class="psa-owing-bar" role="img" aria-label="{{ a.payment_state_label }}">
+                <i style="width:{% widthratio a.amount_paid a.fee 100 %}%"></i>
+              </div>
+            </div>
+
+            {% if payments %}
+            <ol class="psa-ledger" id="psaLedger">
+              {% for p in payments %}
+              <li class="{% if p.is_refund %}is-refund{% endif %}">
+                <span class="psa-ledger-amt">{% if p.is_refund %}&minus;{% endif %}{{ a.currency }} {{ p.abs_amount|money }}</span>
+                <span class="psa-ledger-meta">{{ p.paid_on|date:"d M Y" }} &middot; {{ p.get_method_display }}{% if p.is_refund %} &middot; refund{% endif %}</span>
+                {% if p.note %}<span class="psa-ledger-note">{{ p.note }}</span>{% endif %}
+                <span class="psa-ledger-meta">Recorded{% if p.recorded_by %} by {{ p.recorded_by.full_name }}{% endif %} on {{ p.recorded_at|date:"d M Y, H:i" }}</span>
+              </li>
+              {% endfor %}
+            </ol>
+            <p class="field-hint">Entries are a record of money that moved, so they stay as saved. Correct a mistake with a refund or correction entry.</p>
+            {% else %}
+            <p class="psa-side-text">Nothing received yet.</p>
+            {% endif %}
+
+            {% if a.can_record_payment %}
+            <details class="psa-pay-add" id="psaPayAdd">
+              <summary>Record a payment</summary>
+              <form method="post" action="{% url 'psa_admin:psa_payment_add' a.pk %}" id="psaPayAddForm"
+                    data-confirm-title="Save this entry?" data-confirm-variant="primary" data-confirm-label="Save entry"
+                    data-confirm="A saved entry is part of {{ a.reference }}'s record and can't be edited or deleted afterwards. Check the amount and the date."
+                    data-confirm-detail="A mistake has to be put right with a second, correcting entry.">
+                {% csrf_token %}
+                <fieldset class="psa-fieldset">
+                  <legend>What is this entry?</legend>
+                  <div class="psa-radios">
+                    <label class="psa-radio"><input type="radio" name="kind" value="received" checked> Received</label>
+                    <label class="psa-radio"><input type="radio" name="kind" value="refund"> Refund / correction</label>
+                  </div>
+                </fieldset>
+                <div class="field-group">
+                  <label for="psaAddAmount">Amount ({{ a.currency }})</label>
+                  <input type="text" inputmode="decimal" class="field-input" id="psaAddAmount" name="amount" required
+                         autocomplete="off" placeholder="0.00"
+                         value="{% if a.amount_owing and a.amount_owing > 0 %}{{ a.amount_owing }}{% endif %}">
+                </div>
+                <div class="field-group">
+                  <label for="psaAddDate">Date received</label>
+                  <input type="date" class="field-input" id="psaAddDate" name="paid_on" required
+                         value="{{ today|date:'Y-m-d' }}" max="{{ today|date:'Y-m-d' }}">
+                </div>
+                <div class="field-group">
+                  <label for="psaAddMethod">How it was paid</label>
+                  <select class="field-input" id="psaAddMethod" name="method" required>
+                    {% for value, label in methods %}<option value="{{ value }}" {% if value == 'bank' %}selected{% endif %}>{{ label }}</option>{% endfor %}
+                  </select>
+                </div>
+                <div class="field-group">
+                  <label for="psaAddNote">Reference <span class="psa-optional">(optional)</span></label>
+                  <input type="text" class="field-input" id="psaAddNote" name="note" maxlength="200" autocomplete="off"
+                         placeholder="Teller or momo number&hellip;">
+                </div>
+                <button type="submit" class="btn-primary" id="psaPayAddSave">Save entry</button>
+              </form>
+            </details>
+            {% elif a.status == 'draft' %}
+            <p class="field-hint">Payments can be recorded once the agreement has gone to the client.</p>
+            {% endif %}
+            {% endif %}
+          </section>
+
           {% if client_link %}
           <section class="panel">
             <div class="panel-header"><h2>Client link</h2></div>

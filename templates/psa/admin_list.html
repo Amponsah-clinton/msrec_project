@@ -43,6 +43,11 @@
           <span class="acct-summary-value psa-summary-money">{% for row in signed_value %}{{ row.currency }} {{ row.total|money }}{% if not forloop.last %}<br>{% endif %}{% empty %}&mdash;{% endfor %}</span>
           <span class="acct-summary-label">Signed Value</span>
         </div>
+        {# Still to come in, across live agreements. A link to the same rows. #}
+        <a class="acct-summary-cell psa-summary-link{% if outstanding %} owed{% endif %}" href="?pay=owing" id="psaOutstanding">
+          <span class="acct-summary-value psa-summary-money">{% for row in outstanding %}{{ row.currency }} {{ row.total|money }}{% if not forloop.last %}<br>{% endif %}{% empty %}&mdash;{% endfor %}</span>
+          <span class="acct-summary-label">Amount Owing</span>
+        </a>
       </section>
 
       <section class="panel acct-panel">
@@ -83,6 +88,10 @@
           </select>
           <label class="psa-date"><span>From</span><input type="date" name="date_from" id="psaFilterFrom" class="field-input" value="{{ f.date_from }}" data-autosubmit></label>
           <label class="psa-date"><span>To</span><input type="date" name="date_to" id="psaFilterTo" class="field-input" value="{{ f.date_to }}" data-autosubmit></label>
+          <select name="pay" id="psaFilterPay" class="field-input psa-filter" data-autosubmit aria-label="Payment state">
+            <option value="">Paid or owing</option>
+            {% for value, label in pay_filters %}<option value="{{ value }}" {% if f.pay == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
           <select name="sort" id="psaSort" class="field-input psa-filter" data-autosubmit aria-label="Sort by">
             <option value="newest" {% if f.sort == 'newest' %}selected{% endif %}>Newest first</option>
             <option value="oldest" {% if f.sort == 'oldest' %}selected{% endif %}>Oldest first</option>
@@ -90,6 +99,8 @@
             <option value="client" {% if f.sort == 'client' %}selected{% endif %}>Client name</option>
             <option value="fee_high" {% if f.sort == 'fee_high' %}selected{% endif %}>Highest fee</option>
             <option value="fee_low" {% if f.sort == 'fee_low' %}selected{% endif %}>Lowest fee</option>
+            <option value="owing_high" {% if f.sort == 'owing_high' %}selected{% endif %}>Most owing</option>
+            <option value="owing_low" {% if f.sort == 'owing_low' %}selected{% endif %}>Least owing</option>
           </select>
           <div class="psa-exports">
             <a class="btn-secondary psa-export" id="psaExportBtn" href="{% url 'psa_admin:psa_export' %}{% if query %}?{{ query }}{% endif %}"{% if not matching_count %} aria-disabled="true"{% endif %} title="Every agreement matching these filters, as a spreadsheet">
@@ -111,6 +122,7 @@
                 <th>Agreement</th>
                 <th>Service</th>
                 <th>Fee</th>
+                <th>Amount Owing</th>
                 <th>Status</th>
                 <th class="acct-th-actions">Actions</th>
               </tr>
@@ -145,6 +157,30 @@
                     <span class="acct-sub">{{ a.get_payment_basis_display|default:"" }}</span>
                   </div>
                 </td>
+                <td data-label="Amount Owing">
+                  <div class="acct-cell psa-owing is-{{ a.payment_state }}">
+                    {% if a.fee is None %}
+                    <span class="acct-main psa-nowrap">&mdash;</span>
+                    <span class="acct-sub">No fee set</span>
+                    {% elif a.payment_state == 'over' %}
+                    <span class="acct-main psa-nowrap psa-owing-amt">{{ a.currency }} 0.00</span>
+                    <span class="acct-sub">Overpaid by {{ a.currency }} {{ a.overpaid_by|money }}</span>
+                    {% else %}
+                    <span class="acct-main psa-nowrap psa-owing-amt">{{ a.currency }} {{ a.amount_owing|money }}</span>
+                    <span class="acct-sub">{% if a.payment_state == 'settled' %}Paid in full{% elif a.payment_state == 'unpaid' %}Nothing paid yet{% else %}{{ a.currency }} {{ a.amount_paid|money }} paid{% endif %}</span>
+                    {% endif %}
+                    {% if a.can_record_payment %}
+                    <button type="button" class="psa-pay-btn" data-psa-pay
+                            data-pk="{{ a.pk }}" data-ref="{{ a.reference }}" data-client="{{ a.client_name }}"
+                            data-currency="{{ a.currency }}" data-owing="{% if a.amount_owing and a.amount_owing > 0 %}{{ a.amount_owing }}{% endif %}"
+                            data-owing-text="{% if a.payment_state == 'over' %}overpaid by {{ a.currency }} {{ a.overpaid_by|money }}{% else %}{{ a.currency }} {{ a.amount_owing|money }} owing{% endif %}"
+                            data-paid="{{ a.amount_paid }}">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                      Record payment
+                    </button>
+                    {% endif %}
+                  </div>
+                </td>
                 <td data-label="Status">
                   <div class="acct-cell">
                     <span>{% include "psa/_status_badge.html" %}</span>
@@ -175,7 +211,7 @@
               </tr>
               {% empty %}
               <tr class="acct-empty-row">
-                <td colspan="6">
+                <td colspan="7">
                   <div class="empty-state">
                     <span class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></span>
                     {% if filtered %}
@@ -224,6 +260,8 @@
         </div>
         {% endif %}
       </section>
+
+      {% include "psa/_payment_dialog.html" %}
 {% endblock %}
 
 {% block extra_js %}
@@ -233,4 +271,5 @@
     el.addEventListener("change", function () { el.form.submit(); });
   });
 </script>
+<script src="{% static_v 'dashboard/js/psa-payments.js' %}"></script>
 {% endblock %}

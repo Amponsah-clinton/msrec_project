@@ -19,6 +19,7 @@ urlpatterns = [
     path("<int:pk>/pdf/", views.psa_pdf, name="psa_pdf"),
     path("<int:pk>/send/", views.psa_send, name="psa_send"),
     path("<int:pk>/resend/", views.psa_resend, name="psa_resend"),
+    path("<int:pk>/payments/add/", views.psa_payment_add, name="psa_payment_add"),
     path("<int:pk>/cancel/", views.psa_cancel, name="psa_cancel"),
     path("<int:pk>/delete/", views.psa_delete, name="psa_delete"),
 ]

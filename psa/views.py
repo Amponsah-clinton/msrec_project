@@ -10,23 +10,28 @@ confirms their details and signs -- and, once signed, their copy.
 import csv
 import ipaddress
 import logging
+from datetime import timedelta
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, DecimalField, F, OuterRef, Q, Subquery, Sum, Value
+from django.db.models.functions import Coalesce
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from messaging.access import is_staff_side
 
 from . import emails
-from .forms import parse_agreement, parse_change_request, parse_client, parse_signature
-from .models import CURRENCIES, ChangeRequest, ServiceAgreement
+from .forms import (parse_agreement, parse_change_request, parse_client, parse_payment,
+                    parse_signature)
+from .models import CURRENCIES, ChangeRequest, Payment, ServiceAgreement
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +55,26 @@ SORTS = {
     "fee_high": ("-fee", "-created_at"),
     "fee_low": ("fee", "-created_at"),
     "agreement_date": ("-agreement_date", "-created_at"),
+    # On the `owing` annotation added by _filtered.
+    "owing_high": ("-owing", "-created_at"),
+    "owing_low": ("owing", "-created_at"),
+}
+
+MONEY = DecimalField(max_digits=14, decimal_places=2)
+ZERO = Value(Decimal("0.00"), output_field=MONEY)
+
+PAY_CHOICES = [
+    ("owing", "Still owing"), ("unpaid", "Nothing paid"), ("part", "Part paid"),
+    ("settled", "Paid in full"), ("over", "Overpaid"),
+]
+
+# The money filter: what each choice means as a filter on the annotations.
+PAY_FILTERS = {
+    "owing": Q(fee__isnull=False, owing__gt=0),          # anything still due
+    "unpaid": Q(fee__isnull=False, paid_total=0),
+    "part": Q(fee__isnull=False, paid_total__gt=0, owing__gt=0),
+    "settled": Q(fee__isnull=False, owing=0),
+    "over": Q(owing__lt=0),
 }
 
 
@@ -74,6 +99,27 @@ def _role_label(user):
 # List, search, filter, export
 # ---------------------------------------------------------------------
 
+def _with_money(qs):
+    """Add `paid_total` (the ledger's sum) and `owing` (fee less that) to
+    every row, so the list can show, sort and filter on what's owing
+    without a query per agreement. A subquery rather than a join, so the
+    other filters can't multiply the rows the sum runs over.
+
+    `owing` treats a missing fee as zero -- nothing is owed until a fee is
+    agreed -- and the templates read `a.amount_owing`, which is None in
+    that case, rather than the annotation.
+    """
+    paid = Subquery(
+        Payment.objects.filter(agreement=OuterRef("pk"))
+        .values("agreement").annotate(t=Sum("amount")).values("t"),
+        output_field=MONEY,
+    )
+    return qs.annotate(
+        paid_total=Coalesce(paid, ZERO),
+        owing=Coalesce(F("fee"), ZERO) - Coalesce(paid, ZERO),
+    )
+
+
 def _filters(params):
     f = {
         "q": (params.get("q") or "").strip(),
@@ -82,8 +128,11 @@ def _filters(params):
         "currency": params.get("currency") or "",
         "date_from": params.get("date_from") or "",
         "date_to": params.get("date_to") or "",
+        "pay": params.get("pay") or "",
         "sort": params.get("sort") or "newest",
     }
+    if f["pay"] not in PAY_FILTERS:
+        f["pay"] = ""
     if f["status"] not in Status.values:
         f["status"] = ""
     if f["basis"] not in ServiceAgreement.Basis.values:
@@ -98,7 +147,7 @@ def _filters(params):
 def _filtered(f):
     from .forms import _date
 
-    qs = ServiceAgreement.objects.select_related("created_by", "company_signed_by")
+    qs = _with_money(ServiceAgreement.objects.select_related("created_by", "company_signed_by"))
     if f["q"]:
         for word in f["q"].split():
             qs = qs.filter(
@@ -117,6 +166,8 @@ def _filtered(f):
         qs = qs.filter(agreement_date__gte=start)
     if end:
         qs = qs.filter(agreement_date__lte=end)
+    if f["pay"]:
+        qs = qs.filter(PAY_FILTERS[f["pay"]])
     return qs.order_by(*SORTS[f["sort"]])
 
 
@@ -135,13 +186,20 @@ def psa_list(request):
         ServiceAgreement.objects.filter(status=Status.SIGNED, fee__isnull=False)
         .values("currency").annotate(total=Sum("fee")).order_by("currency")
     )
+    # What clients still owe, per currency. Live agreements only: a draft
+    # isn't an obligation yet and a cancelled one no longer is.
+    outstanding = list(
+        _with_money(ServiceAgreement.objects.filter(
+            status__in=(Status.SENT, Status.CHANGES, Status.SIGNED), fee__isnull=False))
+        .filter(owing__gt=0).values("currency").annotate(total=Sum("owing")).order_by("currency")
+    )
     return render(request, "psa/admin_list.html", {
         "page": page,
         "page_range": paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1),
         "matching_count": paginator.count,
         "f": f,
         "query": params.urlencode(),
-        "filtered": any(f[k] for k in ("q", "status", "basis", "currency", "date_from", "date_to")),
+        "filtered": any(f[k] for k in ("q", "status", "basis", "currency", "date_from", "date_to", "pay")),
         "stats": {
             "all": sum(counts.values()),
             "draft": counts.get(Status.DRAFT, 0),
@@ -151,9 +209,13 @@ def psa_list(request):
             "cancelled": counts.get(Status.CANCELLED, 0),
         },
         "signed_value": signed_value,
+        "outstanding": outstanding,
         "statuses": Status.choices,
         "bases": ServiceAgreement.Basis.choices,
         "currencies": CURRENCIES,
+        "pay_filters": PAY_CHOICES,
+        "methods": Payment.Method.choices,
+        "today": timezone.localdate(),
         "dashboard": _dashboard(request),
     })
 
@@ -163,7 +225,7 @@ def psa_list(request):
 def psa_export(request):
     """CSV of every agreement matching the list's filters (not only the
     page on screen)."""
-    rows = _filtered(_filters(request.GET)).prefetch_related("change_requests")
+    rows = _filtered(_filters(request.GET)).prefetch_related("change_requests", "payments")
     today = timezone.localdate().isoformat()
     response = HttpResponse(content_type="text/csv; charset=utf-8")
     response["Content-Disposition"] = f'attachment; filename="metascholar-psa-{today}.csv"'
@@ -181,13 +243,15 @@ def psa_export(request):
         "Reference", "Status", "Agreement Date", "Client Name", "Client Email", "Client Phone",
         "Client Address", "Service / Project Title", "Deliverables", "Start Date",
         "Expected Completion", "Currency", "Agreed Fee", "Payment Basis", "Deposit / Upfront",
-        "Balance Due", "Payment Schedule", "Signed for Metascholar By", "Company Signed On",
+        "Balance Due", "Payment Schedule", "Total Received", "Amount Owing", "Payment Status",
+        "Payments Recorded", "Last Payment On", "Signed for Metascholar By", "Company Signed On",
         "Client Signed On", "First Sent", "Times Sent", "Client First Opened", "Created By",
         "Created On", "Change Requests", "Open Change Request",
     ])
     for a in rows:
         requests = list(a.change_requests.all())   # newest first
         open_req = next((r for r in requests if not r.resolved_at), None)
+        payments = list(a.payments.all())          # newest first
         writer.writerow([
             a.reference, a.get_status_display(), day(a.agreement_date), a.client_name,
             a.client_email, a.client_phone, a.client_address, a.service_title,
@@ -195,6 +259,9 @@ def psa_export(request):
             day(a.start_date), day(a.completion_date), a.currency,
             a.fee if a.fee is not None else "", a.payment_basis_label, a.deposit,
             a.balance if a.balance is not None else "", a.payment_schedule,
+            a.amount_paid, a.amount_owing if a.amount_owing is not None else "",
+            a.payment_state_label, len(payments),
+            day(payments[0].paid_on) if payments else "",
             a.company_signatory_name, when(a.company_signed_at), when(a.client_signed_at),
             when(a.sent_at), a.send_count, when(a.viewed_at),
             a.created_by.full_name if a.created_by else "", when(a.created_at),
@@ -389,9 +456,90 @@ def psa_detail(request, pk):
         "a": a,
         "open_request": next((r for r in change_requests if not r.resolved_at), None),
         "change_requests": change_requests,
+        "payments": list(a.payments.select_related("recorded_by")),
+        "methods": Payment.Method.choices,
+        "today": timezone.localdate(),
         "client_link": a.client_url() if a.status != Status.DRAFT else "",
         "dashboard": _dashboard(request),
     })
+
+
+# ---------------------------------------------------------------------
+# Payments received (the ledger)
+# ---------------------------------------------------------------------
+
+def _back(request, a):
+    """Where the payment dialog was opened from -- the list (keeping its
+    filters and page) or the agreement itself."""
+    target = request.POST.get("next") or ""
+    if target and url_has_allowed_host_and_scheme(
+            target, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return redirect(target)
+    return redirect("psa_admin:psa_detail", pk=a.pk)
+
+
+# A second identical entry this soon after the first is a double-submit,
+# not a second payment -- and a wrong entry can't be taken back.
+DUPLICATE_WINDOW = timedelta(minutes=2)
+
+
+@login_required
+@staff_required
+@require_POST
+def psa_payment_add(request, pk):
+    """Record money received against an agreement, or given back.
+
+    Written once: there is no edit or delete for an entry, so everything
+    is checked before it goes in and a mistake is corrected by a further
+    entry (see psa.models.Payment).
+    """
+    a = get_object_or_404(ServiceAgreement, pk=pk)
+    if not a.can_record_payment:
+        messages.error(request, (
+            f"{a.reference} has no agreed fee yet, so there's nothing to record against it."
+            if a.fee is None else
+            f"{a.reference} is still a draft. Send it to {a.client_name} before recording a payment."
+        ))
+        return _back(request, a)
+
+    with transaction.atomic():
+        # Locked while the refund and total are worked out, so two people
+        # recording at once can't both be measured against the same total.
+        a = ServiceAgreement.objects.select_for_update().get(pk=a.pk)
+        cleaned, errors = parse_payment(request.POST, a)
+        if errors:
+            messages.error(request, next(iter(errors.values())))
+            return _back(request, a)
+
+        twin = a.payments.filter(
+            amount=cleaned["amount"], paid_on=cleaned["paid_on"], method=cleaned["method"],
+            note=cleaned["note"], recorded_at__gte=timezone.now() - DUPLICATE_WINDOW,
+        ).first()
+        if twin:
+            messages.warning(request, (
+                f"That entry is already on {a.reference} — recorded a moment ago, so nothing was added twice. "
+                "If it really is a second payment of the same amount, add a note that tells them apart."
+            ))
+            return _back(request, a)
+
+        payment = Payment.objects.create(agreement=a, recorded_by=request.user, **cleaned)
+        a.save(update_fields=["updated_at"])   # the list's "last touched"
+        owing, paid = a.amount_owing, a.amount_paid
+
+    if payment.is_refund:
+        messages.success(request, f"{a.currency} {payment.abs_amount:,.2f} refunded on {a.reference} recorded.")
+    else:
+        messages.success(request, f"{a.currency} {payment.amount:,.2f} received on {a.reference} recorded.")
+    if owing is not None and owing <= 0:
+        messages.info(request, (
+            f"{a.reference} is paid in full ({a.currency} {paid:,.2f} of {a.currency} {a.fee:,.2f})."
+            if owing == 0 else
+            f"{a.reference} is now overpaid by {a.currency} {-owing:,.2f}. "
+            "Record a refund if the difference goes back to the client."
+        ))
+    else:
+        messages.info(request, f"{a.currency} {owing:,.2f} still owing on {a.reference}.")
+    return _back(request, a)
 
 
 @login_required
