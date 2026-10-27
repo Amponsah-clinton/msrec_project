@@ -58,6 +58,10 @@ SORTS = {
     # On the `owing` annotation added by _filtered.
     "owing_high": ("-owing", "-created_at"),
     "owing_low": ("owing", "-created_at"),
+    # Nulls last either way: an agreement with no deadline isn't the most
+    # urgent thing on the list, nor the least.
+    "deadline_soon": (F("completion_date").asc(nulls_last=True), "-created_at"),
+    "deadline_late": (F("completion_date").desc(nulls_last=True), "-created_at"),
 }
 
 MONEY = DecimalField(max_digits=14, decimal_places=2)

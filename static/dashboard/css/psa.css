@@ -34,7 +34,7 @@
 .psa-exports .btn-secondary { padding: 8px 13px; font-size: 12.5px; text-decoration: none; }
 .psa-export[aria-disabled="true"] { opacity: .5; pointer-events: none; }
 
-.psa-table { min-width: 1180px; }
+.psa-table { min-width: 1300px; }
 .psa-table .acct-person { min-width: 200px; }
 .psa-avatar { background: var(--navy, #1f3a5f); }
 .psa-ref { text-decoration: none; }
@@ -130,6 +130,15 @@
 .psa-history dd span { display: block; font-size: 12px; color: var(--text-sub); }
 .psa-danger { display: flex; gap: 18px; justify-content: center; padding: 2px 0; }
 .psa-danger form { margin: 0; }
+
+/* ---------------- Deadline (list) ---------------- */
+/* Days left to deliver the work. Red once it has passed, orange as it
+   comes up, plain while there is time -- a cancelled one is just history. */
+.psa-deadline-count { font-weight: 700; }
+.psa-deadline.is-overdue .psa-deadline-count { color: var(--red); }
+.psa-deadline.is-overdue .acct-sub { color: var(--red); }
+.psa-deadline.is-today .psa-deadline-count, .psa-deadline.is-soon .psa-deadline-count { color: var(--orange); }
+.psa-deadline.is-closed .psa-deadline-count, .psa-deadline.is-none .acct-main { color: var(--text-faint); font-weight: 600; }
 
 /* ---------------- Money owing (list) ---------------- */
 /* The summary cell doubles as the filter for the rows behind the figure. */

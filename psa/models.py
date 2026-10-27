@@ -214,6 +214,61 @@ class ServiceAgreement(models.Model):
         words = [w for w in (self.client_name or "").split() if w[:1].isalnum()]
         return "".join(w[0] for w in (words[:1] + words[1:][-1:])).upper() or "?"
 
+    # Inside this many days the deadline is worth flagging on the list.
+    DEADLINE_SOON_DAYS = 7
+
+    @property
+    def days_to_deadline(self):
+        """Whole days from today to the expected completion date, counting
+        down: 0 on the day, negative once it has passed, None when no
+        completion date has been set."""
+        if not self.completion_date:
+            return None
+        return (self.completion_date - timezone.localdate()).days
+
+    @property
+    def deadline_state(self):
+        """How the deadline stands, for the list's wording and colour.
+
+        none      no completion date set
+        closed    withdrawn, so nothing is due
+        overdue   the date has passed
+        today     due today
+        soon      within DEADLINE_SOON_DAYS
+        ok        further off
+        """
+        if self.status == self.Status.CANCELLED:
+            return "closed"
+        days = self.days_to_deadline
+        if days is None:
+            return "none"
+        if days < 0:
+            return "overdue"
+        if days == 0:
+            return "today"
+        return "soon" if days <= self.DEADLINE_SOON_DAYS else "ok"
+
+    @property
+    def deadline_countdown(self):
+        """"In 12 days", "Tomorrow", "Due today", "3 days overdue" -- how
+        long there is left to deliver the work."""
+        days = self.days_to_deadline
+        if days is None or self.status == self.Status.CANCELLED:
+            return ""
+        if days < 0:
+            late = -days
+            return "1 day overdue" if late == 1 else f"{late} days overdue"
+        if days == 0:
+            return "Due today"
+        if days == 1:
+            return "Due tomorrow"
+        if days < 14:
+            return f"In {days} days"
+        if days < 60:
+            weeks = round(days / 7)
+            return f"In {weeks} weeks"
+        return f"In {round(days / 30)} months"
+
     @property
     def term_days(self):
         if self.start_date and self.completion_date:

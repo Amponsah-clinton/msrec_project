@@ -101,6 +101,8 @@
             <option value="fee_low" {% if f.sort == 'fee_low' %}selected{% endif %}>Lowest fee</option>
             <option value="owing_high" {% if f.sort == 'owing_high' %}selected{% endif %}>Most owing</option>
             <option value="owing_low" {% if f.sort == 'owing_low' %}selected{% endif %}>Least owing</option>
+            <option value="deadline_soon" {% if f.sort == 'deadline_soon' %}selected{% endif %}>Deadline soonest</option>
+            <option value="deadline_late" {% if f.sort == 'deadline_late' %}selected{% endif %}>Deadline latest</option>
           </select>
           <div class="psa-exports">
             <a class="btn-secondary psa-export" id="psaExportBtn" href="{% url 'psa_admin:psa_export' %}{% if query %}?{{ query }}{% endif %}"{% if not matching_count %} aria-disabled="true"{% endif %} title="Every agreement matching these filters, as a spreadsheet">
@@ -121,6 +123,7 @@
                 <th>Client</th>
                 <th>Agreement</th>
                 <th>Service</th>
+                <th>Deadline</th>
                 <th>Fee</th>
                 <th>Amount Owing</th>
                 <th>Status</th>
@@ -148,7 +151,19 @@
                 <td data-label="Service">
                   <div class="acct-cell">
                     <span class="acct-main psa-clip" title="{{ a.service_title }}">{{ a.service_title|default:"&mdash;" }}</span>
-                    <span class="acct-sub">{% if a.start_date %}{{ a.start_date|date:"d M" }} &ndash; {{ a.completion_date|date:"d M Y"|default:"?" }}{% else %}No dates yet{% endif %}</span>
+                    <span class="acct-sub">{% if a.start_date %}Started {{ a.start_date|date:"d M Y" }}{% else %}No start date yet{% endif %}</span>
+                  </div>
+                </td>
+                {# How long is left to deliver the work. #}
+                <td data-label="Deadline">
+                  <div class="acct-cell psa-deadline is-{{ a.deadline_state }}">
+                    {% if a.completion_date %}
+                    <span class="acct-main psa-nowrap psa-deadline-count">{{ a.deadline_countdown|default:"Cancelled" }}</span>
+                    <span class="acct-sub psa-nowrap">{% if a.status == 'cancelled' %}Was due {% endif %}{{ a.completion_date|date:"d M Y" }}</span>
+                    {% else %}
+                    <span class="acct-main psa-nowrap">&mdash;</span>
+                    <span class="acct-sub">No deadline set{% if a.is_editable %} &middot; <a class="psa-owing-set" href="{% url 'psa_admin:psa_edit' a.pk %}">Set one</a>{% endif %}</span>
+                    {% endif %}
                   </div>
                 </td>
                 <td data-label="Fee">
@@ -218,7 +233,7 @@
               </tr>
               {% empty %}
               <tr class="acct-empty-row">
-                <td colspan="7">
+                <td colspan="8">
                   <div class="empty-state">
                     <span class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></span>
                     {% if filtered %}

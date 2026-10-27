@@ -761,3 +761,66 @@ class PaymentListTests(StaffTestCase):
         self.assertContains(resp, "GHS 1,000.00 received of GHS 1,000.00")
         self.assertContains(resp, "Bank transfer")
         self.assertContains(resp, "edited or deleted")
+
+
+class DeadlineTests(StaffTestCase):
+    """Days left to deliver the work, on the list."""
+
+    def _with_deadline(self, days, **overrides):
+        today = timezone.localdate()
+        # Well back, so a deadline in the past is still after the start.
+        return self._sent(start_date=(today - timezone.timedelta(days=120)).isoformat(),
+                          completion_date=(today + timezone.timedelta(days=days)).isoformat(),
+                          **overrides)
+
+    def test_the_countdown_reads_as_days_left(self):
+        cases = {30: "In 4 weeks", 12: "In 12 days", 3: "In 3 days", 1: "Due tomorrow",
+                 0: "Due today", -1: "1 day overdue", -9: "9 days overdue"}
+        for days, expected in cases.items():
+            with self.subTest(days=days):
+                a = self._with_deadline(days)
+                self.assertEqual(a.days_to_deadline, days)
+                self.assertEqual(a.deadline_countdown, expected)
+
+    def test_the_state_follows_the_countdown(self):
+        for days, state in {40: "ok", 7: "soon", 1: "soon", 0: "today", -2: "overdue"}.items():
+            with self.subTest(days=days):
+                self.assertEqual(self._with_deadline(days).deadline_state, state)
+
+    def test_no_deadline_set(self):
+        a = self._sent(action="draft", completion_date="")
+        self.assertIsNone(a.completion_date)
+        self.assertIsNone(a.days_to_deadline)
+        self.assertEqual(a.deadline_state, "none")
+        self.assertEqual(a.deadline_countdown, "")
+
+    def test_a_cancelled_agreement_stops_counting_down(self):
+        a = self._with_deadline(-3)
+        self.client.post(reverse("psa_admin:psa_cancel", args=[a.pk]))
+        a.refresh_from_db()
+        self.assertEqual(a.deadline_state, "closed")
+        self.assertEqual(a.deadline_countdown, "")
+
+    def test_the_column_is_on_the_list(self):
+        overdue = self._with_deadline(-4, client_name="Late Client")
+        soon = self._with_deadline(2, client_name="Soon Client")
+        resp = self.client.get(reverse("psa_admin:psa_list"))
+        self.assertContains(resp, "<th>Deadline</th>", html=False)
+        self.assertContains(resp, "4 days overdue")
+        self.assertContains(resp, "In 2 days")
+        self.assertContains(resp, 'psa-deadline is-overdue')
+        self.assertContains(resp, 'psa-deadline is-soon')
+        self.assertContains(resp, overdue.completion_date.strftime("%d %b %Y"))
+        self.assertContains(resp, soon.completion_date.strftime("%d %b %Y"))
+
+    def test_sorting_by_deadline_puts_the_nearest_first(self):
+        far = self._with_deadline(90, client_name="Far")
+        near = self._with_deadline(2, client_name="Near")
+        none = self._sent(action="draft", completion_date="", client_name="Undated")
+        url = reverse("psa_admin:psa_list")
+        soonest = [a.pk for a in self.client.get(url, {"sort": "deadline_soon"}).context["page"].object_list]
+        self.assertEqual(soonest[:2], [near.pk, far.pk])
+        self.assertEqual(soonest[-1], none.pk, "no deadline sorts last")
+        latest = [a.pk for a in self.client.get(url, {"sort": "deadline_late"}).context["page"].object_list]
+        self.assertEqual(latest[:2], [far.pk, near.pk])
+        self.assertEqual(latest[-1], none.pk, "no deadline sorts last either way")
