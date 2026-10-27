@@ -296,3 +296,11 @@ def send_change_request_receipt(a, req):
         cta_url=a.client_url(),
         preheader=f"Your requested changes to {a.reference} are with us.",
     )
+    if ok:
+        _sms([_client_phone(a)], sms_change_request_receipt(a), "change request receipt")
+    return ok
+
+
+def sms_change_request_receipt(a):
+    return (f"Metascholar: we have your change request for agreement {a.reference}. "
+            "We will email you when it is ready to sign again.")
