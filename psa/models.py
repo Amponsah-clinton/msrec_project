@@ -139,6 +139,12 @@ class ServiceAgreement(models.Model):
         return max(self.fee - (self.deposit or Decimal("0.00")), Decimal("0.00"))
 
     @property
+    def client_initials(self):
+        """"Kwame Mensah" -> "KM"; one word -> its first letter."""
+        words = [w for w in (self.client_name or "").split() if w[:1].isalnum()]
+        return "".join(w[0] for w in (words[:1] + words[1:][-1:])).upper() or "?"
+
+    @property
     def term_days(self):
         if self.start_date and self.completion_date:
             return (self.completion_date - self.start_date).days

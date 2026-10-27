@@ -21,9 +21,8 @@ Every id is derived from the prefix, so two pads can share a page.
   <div class="sigpad-panel" data-panel="drawn" id="{{ prefix }}SigPanelDrawn" role="tabpanel" aria-labelledby="{{ prefix }}SigTabDrawn">
     <div class="sigpad-paper">
       <canvas id="{{ prefix }}SigCanvas" aria-label="Signature drawing area"></canvas>
-      <span class="sigpad-x" aria-hidden="true">✕</span>
       <span class="sigpad-line" aria-hidden="true"></span>
-      <span class="sigpad-hint">Sign here with your mouse, finger or stylus</span>
+      <span class="sigpad-hint">Sign here</span>
     </div>
     <div class="sigpad-tools">
       <button type="button" class="sigpad-tool" data-undo id="{{ prefix }}SigUndo">Undo</button>
@@ -41,7 +40,6 @@ Every id is derived from the prefix, so two pads can share a page.
       {% endif %}
     </div>
     <div class="sigpad-paper sigpad-paper--typed">
-      <span class="sigpad-x" aria-hidden="true">✕</span>
       <span class="sigpad-typed" data-typed-preview data-placeholder="Your signature"></span>
       <span class="sigpad-line" aria-hidden="true"></span>
     </div>

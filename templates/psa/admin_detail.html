@@ -1,12 +1,12 @@
 {% extends "dashboards/base.html" %}
 {% load static psa_tags %}
 
-{% block title %}{{ a.reference }} — {{ a.client_name }} | PSA{% endblock %}
+{% block title %}{{ a.reference }} | MSREC Admin{% endblock %}
 
 {% block extra_css %}
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'assets/css/psa-agreement.css' %}">
-<link rel="stylesheet" href="{% static 'dashboard/css/psa.css' %}">
+<link href="{% static 'assets/css/psa-agreement.css' %}" rel="stylesheet">
+<link href="{% static 'dashboard/css/psa.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block nav_content %}
@@ -18,90 +18,80 @@
 {% endblock %}
 
 {% block main_content %}
-<div class="psa" id="psaDetailPage">
-  <a class="psa-back" href="{% url 'psa_admin:psa_list' %}">← All agreements</a>
+      <a class="psa-back" href="{% url 'psa_admin:psa_list' %}"><svg viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></svg> All agreements</a>
 
-  <div class="psa-detail">
-    <div>{% include "psa/_agreement.html" with show_audit=True %}</div>
+      <div class="psa-detail">
+        <div>{% include "psa/_agreement.html" with show_audit=True %}</div>
 
-    <aside class="psa-side" aria-label="Agreement status and actions">
-      <div class="psa-card">
-        <h4>Status</h4>
-        <p style="margin:0 0 6px"><span class="psa-chip {{ a.status }}" id="psaStatusChip">{{ a.get_status_display }}</span></p>
-        <p class="psa-sub" style="margin:0">
-          {% if a.status == 'draft' %}Not sent yet. {% if not a.is_company_signed %}Sign it for Metascholar Limited, then send it to the client.{% else %}Signed and ready to send.{% endif %}
-          {% elif a.status == 'sent' %}Waiting for {{ a.client_name }} to sign.{% if a.viewed_at %} They opened it {{ a.viewed_at|timesince }} ago.{% else %} They haven't opened it yet.{% endif %}
-          {% elif a.status == 'signed' %}Signed by both Parties. This agreement is locked.
-          {% else %}Withdrawn — the client's link no longer accepts a signature.{% endif %}
-        </p>
-      </div>
+        <aside class="psa-side" aria-label="Status and actions">
+          <section class="panel">
+            <div class="panel-header"><h2>Status</h2>
+              {% if a.status == 'signed' %}<span class="badge text-bg-success">Signed</span>{% elif a.status == 'sent' %}<span class="badge text-bg-warning">Awaiting client</span>{% elif a.status == 'cancelled' %}<span class="badge text-bg-danger">Cancelled</span>{% else %}<span class="badge text-bg-secondary">Draft</span>{% endif %}
+            </div>
+            <p class="psa-side-text">
+              {% if a.status == 'draft' %}Not sent yet.{% if not a.is_company_signed %} Sign it for Metascholar Limited before sending.{% endif %}
+              {% elif a.status == 'sent' %}Waiting for {{ a.client_name }} to sign.{% if a.viewed_at %} Opened {{ a.viewed_at|date:"d M Y, H:i" }}.{% else %} Not opened yet.{% endif %}
+              {% elif a.status == 'signed' %}Signed by both parties. It can no longer be changed.
+              {% else %}Cancelled. The client's link no longer accepts a signature.{% endif %}
+            </p>
 
-      <div class="psa-card">
-        <h4>Actions</h4>
-        <div class="psa-side-actions">
-          {% if a.status == 'draft' %}
-            <form method="post" action="{% url 'psa_admin:psa_send' a.pk %}" id="psaSendForm" data-confirm="Send {{ a.reference }} to {{ a.client_email|default:'the client' }}? They'll get an email with a link to review and sign it.">
-              {% csrf_token %}
-              <button type="submit" class="psa-btn primary lg" id="psaSendNow"><svg viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></svg> Send to client</button>
+            <div class="psa-side-actions">
+              {% if a.status == 'draft' %}
+              <form method="post" action="{% url 'psa_admin:psa_send' a.pk %}" data-confirm="Send {{ a.reference }} to {{ a.client_email|default:'the client' }}? They'll get an email with a link to review and sign it.">
+                {% csrf_token %}<button type="submit" class="btn-primary" id="psaSendNow">Send to client</button>
+              </form>
+              {% elif a.status == 'sent' %}
+              <form method="post" action="{% url 'psa_admin:psa_resend' a.pk %}" data-confirm="Email {{ a.client_email }} a reminder with the link to sign?">
+                {% csrf_token %}<button type="submit" class="btn-primary" id="psaResend">Resend email</button>
+              </form>
+              {% endif %}
+              {% if a.is_editable %}<a class="btn-secondary" href="{% url 'psa_admin:psa_edit' a.pk %}" id="psaEdit">Edit</a>{% endif %}
+              <button type="button" class="btn-secondary" onclick="window.print()" id="psaPrint">Print / PDF</button>
+            </div>
+          </section>
+
+          {% if client_link %}
+          <section class="panel">
+            <div class="panel-header"><h2>Client link</h2></div>
+            <div class="psa-link-box">
+              <input type="text" class="field-input" readonly value="{{ client_link }}" id="psaClientLink" aria-label="Client's private link">
+              <button type="button" class="btn-secondary" id="psaCopyLink" data-copy="#psaClientLink">Copy</button>
+            </div>
+            <p class="field-hint">Anyone with this link can open the agreement{% if a.status == 'sent' %} and sign it{% endif %}.</p>
+          </section>
+          {% endif %}
+
+          <section class="panel">
+            <div class="panel-header"><h2>History</h2></div>
+            <dl class="psa-history" id="psaTimeline">
+              <div><dt>Created</dt><dd>{{ a.created_at|date:"d M Y, H:i" }}{% if a.created_by %}<span>{{ a.created_by.full_name }}</span>{% endif %}</dd></div>
+              <div><dt>Signed for Metascholar</dt><dd>{% if a.company_signed_at %}{{ a.company_signed_at|date:"d M Y, H:i" }}<span>{{ a.company_signatory_name }}</span>{% else %}&mdash;{% endif %}</dd></div>
+              <div><dt>Sent</dt><dd>{% if a.sent_at %}{{ a.sent_at|date:"d M Y, H:i" }}{% if a.send_count > 1 %}<span>{{ a.send_count }} emails, last {{ a.last_sent_at|date:"d M Y" }}</span>{% endif %}{% else %}&mdash;{% endif %}</dd></div>
+              <div><dt>Opened by client</dt><dd>{% if a.viewed_at %}{{ a.viewed_at|date:"d M Y, H:i" }}{% else %}&mdash;{% endif %}</dd></div>
+              {% if a.status == 'cancelled' %}
+              <div><dt>Cancelled</dt><dd>{{ a.cancelled_at|date:"d M Y, H:i" }}</dd></div>
+              {% else %}
+              <div><dt>Signed by client</dt><dd>{% if a.client_signed_at %}{{ a.client_signed_at|date:"d M Y, H:i" }}<span>{{ a.get_client_signature_kind_display }}{% if a.client_signed_ip %} &middot; {{ a.client_signed_ip }}{% endif %}</span>{% else %}&mdash;{% endif %}</dd></div>
+              {% endif %}
+            </dl>
+          </section>
+
+          {% if a.is_editable or a.status == 'cancelled' %}
+          <div class="psa-danger">
+            {% if a.is_editable %}
+            <form method="post" action="{% url 'psa_admin:psa_cancel' a.pk %}" data-confirm="Cancel {{ a.reference }}?{% if a.status == 'sent' %} The client won't be able to sign it any more.{% endif %}">
+              {% csrf_token %}<button type="submit" class="psa-link psa-link-danger" id="psaCancel">Cancel agreement</button>
             </form>
-          {% endif %}
-          {% if a.status == 'sent' %}
-            <form method="post" action="{% url 'psa_admin:psa_resend' a.pk %}" id="psaResendForm" data-confirm="Email {{ a.client_email }} a reminder with the link to sign?">
-              {% csrf_token %}
-              <button type="submit" class="psa-btn primary" id="psaResend"><svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg> Resend reminder email</button>
+            {% endif %}
+            {% if a.status == 'draft' or a.status == 'cancelled' %}
+            <form method="post" action="{% url 'psa_admin:psa_delete' a.pk %}" data-confirm="Delete {{ a.reference }} permanently? This can't be undone.">
+              {% csrf_token %}<button type="submit" class="psa-link psa-link-danger" id="psaDelete">Delete</button>
             </form>
+            {% endif %}
+          </div>
           {% endif %}
-          {% if a.is_editable %}
-            <a class="psa-btn ghost" href="{% url 'psa_admin:psa_edit' a.pk %}" id="psaEdit"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Edit agreement</a>
-          {% endif %}
-          <button type="button" class="psa-btn ghost" onclick="window.print()" id="psaPrint"><svg viewBox="0 0 24 24"><path d="M6 9V2h12v7"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg> Print / save as PDF</button>
-          {% if a.is_editable %}
-            <form method="post" action="{% url 'psa_admin:psa_cancel' a.pk %}" id="psaCancelForm" data-confirm="Cancel {{ a.reference }}? {% if a.status == 'sent' %}The client won't be able to sign it any more.{% endif %}">
-              {% csrf_token %}
-              <button type="submit" class="psa-btn danger" id="psaCancel">Cancel agreement</button>
-            </form>
-          {% endif %}
-          {% if a.status == 'draft' or a.status == 'cancelled' %}
-            <form method="post" action="{% url 'psa_admin:psa_delete' a.pk %}" id="psaDeleteForm" data-confirm="Delete {{ a.reference }} permanently? This can't be undone.">
-              {% csrf_token %}
-              <button type="submit" class="psa-btn danger" id="psaDelete">Delete</button>
-            </form>
-          {% endif %}
-        </div>
+        </aside>
       </div>
-
-      {% if client_link %}
-      <div class="psa-card">
-        <h4>Client link</h4>
-        <div class="psa-link-box">
-          <input type="text" readonly value="{{ client_link }}" id="psaClientLink" aria-label="Client's private link">
-          <button type="button" class="psa-btn ghost" id="psaCopyLink" data-copy="#psaClientLink">Copy</button>
-        </div>
-        <p class="psa-faint" style="margin:8px 0 0">Private to this client — anyone with the link can open the agreement{% if a.status == 'sent' %} and sign it{% endif %}.</p>
-      </div>
-      {% endif %}
-
-      <div class="psa-card">
-        <h4>History</h4>
-        <ol class="psa-timeline" id="psaTimeline">
-          <li class="done"><span class="dot"></span><b>Created</b><span>{{ a.created_at|date:"j M Y, H:i" }}{% if a.created_by %} · {{ a.created_by.full_name }}{% endif %}</span></li>
-          <li class="{% if a.company_signed_at %}done{% endif %}"><span class="dot"></span><b>Signed for Metascholar</b>
-            <span>{% if a.company_signed_at %}{{ a.company_signed_at|date:"j M Y, H:i" }} · {{ a.company_signatory_name }}{% else %}Not yet{% endif %}</span></li>
-          <li class="{% if a.sent_at %}done{% endif %}"><span class="dot"></span><b>Sent to client</b>
-            <span>{% if a.sent_at %}{{ a.sent_at|date:"j M Y, H:i" }}{% if a.send_count > 1 %} · sent {{ a.send_count }} times, last {{ a.last_sent_at|date:"j M Y" }}{% endif %}{% else %}Not yet{% endif %}</span></li>
-          <li class="{% if a.viewed_at %}done{% endif %}"><span class="dot"></span><b>Opened by client</b>
-            <span>{% if a.viewed_at %}{{ a.viewed_at|date:"j M Y, H:i" }}{% else %}Not yet{% endif %}</span></li>
-          {% if a.status == 'cancelled' %}
-          <li class="bad"><span class="dot"></span><b>Cancelled</b><span>{{ a.cancelled_at|date:"j M Y, H:i" }}</span></li>
-          {% else %}
-          <li class="{% if a.client_signed_at %}done{% endif %}"><span class="dot"></span><b>Signed by client</b>
-            <span>{% if a.client_signed_at %}{{ a.client_signed_at|date:"j M Y, H:i" }} · {{ a.get_client_signature_kind_display|lower }}{% else %}Waiting{% endif %}</span></li>
-          {% endif %}
-        </ol>
-      </div>
-    </aside>
-  </div>
-</div>
 {% endblock %}
 
 {% block extra_js %}

@@ -28,14 +28,9 @@
 
 .psa-doc {
   background: var(--psa-paper); color: var(--psa-ink); font-family: var(--psa-sans);
-  border: 1px solid var(--psa-line); border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(20, 30, 50, .04), 0 18px 48px -28px rgba(20, 30, 50, .35);
+  border: 1px solid var(--psa-line); border-radius: 10px;
   max-width: 860px; margin: 0 auto; position: relative; overflow: hidden;
   font-size: 14.5px; line-height: 1.6;
-}
-.psa-doc::before {          /* a thin accent rule across the top of the sheet */
-  content: ""; position: absolute; inset: 0 0 auto 0; height: 5px;
-  background: linear-gradient(90deg, var(--psa-accent), #1b2a5c);
 }
 
 /* ---- Letterhead ------------------------------------------------- */
@@ -95,7 +90,7 @@
 
 /* Payment */
 .psa-fee { display: flex; flex-wrap: wrap; gap: 18px; align-items: flex-end; justify-content: space-between; padding: 16px 18px;
-  border-radius: 12px; background: linear-gradient(135deg, var(--psa-accent-soft), #eef1f8); margin-bottom: 18px; }
+  border-radius: 8px; background: var(--psa-soft); border: 1px solid var(--psa-line); margin-bottom: 18px; }
 .psa-fee-label { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--psa-accent); }
 .psa-fee-amt { font-family: var(--psa-serif); font-size: 30px; font-weight: 600; line-height: 1.1; }
 .psa-fee-amt small { font-family: var(--psa-sans); font-size: 14px; font-weight: 700; color: var(--psa-sub); margin-right: 6px; }
@@ -195,7 +190,6 @@
   body * { visibility: hidden !important; }
   .psa-doc, .psa-doc * { visibility: visible !important; }
   .psa-doc { position: absolute; left: 0; top: 0; width: 100%; max-width: none; border: 0; box-shadow: none; border-radius: 0; font-size: 12.5px; }
-  .psa-doc::before { display: none; }
   .psa-head, .psa-sec, .psa-foot { padding-left: 0; padding-right: 0; }
   .psa-sec, .psa-sign, .psa-fee { break-inside: avoid; }
   .psa-fee, .psa-deliv li, .psa-foot { background: none !important; }
