@@ -824,3 +824,30 @@ class DeadlineTests(StaffTestCase):
         latest = [a.pk for a in self.client.get(url, {"sort": "deadline_late"}).context["page"].object_list]
         self.assertEqual(latest[:2], [far.pk, near.pk])
         self.assertEqual(latest[-1], none.pk, "no deadline sorts last either way")
+
+class TemplateHygieneTests(StaffTestCase):
+    """Django's {# ... #} comment is single-line only: written across two
+    lines it prints on the page as text. One did, in the agreement page's
+    sidebar, so this keeps it from coming back."""
+
+    def test_no_comment_is_left_open_on_its_line(self):
+        from pathlib import Path
+        from django.conf import settings
+        root = Path(settings.BASE_DIR) / "templates" / "psa"
+        offenders = [
+            f"{path.name}:{n}: {line.strip()}"
+            for path in sorted(root.glob("*.html"))
+            for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1)
+            if "{#" in line and "#}" not in line
+        ]
+        self.assertEqual(offenders, [], "use {% comment %} for a comment over several lines")
+
+    def test_no_template_syntax_reaches_the_page(self):
+        a = self._sent()
+        for url in (reverse("psa_admin:psa_list"),
+                    reverse("psa_admin:psa_detail", args=[a.pk]),
+                    reverse("psa_admin:psa_edit", args=[a.pk])):
+            with self.subTest(url):
+                body = self.client.get(url).content.decode()
+                for leak in ("{#", "#}", "{%", "%}", "{{", "}}"):
+                    self.assertNotIn(leak, body, f"{leak} printed on {url}")

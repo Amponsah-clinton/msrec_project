@@ -214,6 +214,7 @@ dialog.psa-dialog::backdrop { background: var(--overlay-bg); backdrop-filter: bl
 .psa-owing-big.is-settled strong { color: var(--green); }
 .psa-owing-big.is-over strong { color: var(--teal); }
 .psa-owing-of { font-size: 12px; color: var(--text-sub); }
+.psa-owing-note { margin-top: 4px; font-size: 11px; line-height: 1.45; color: var(--text-faint); }
 .psa-owing-bar { height: 5px; margin-top: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
 .psa-owing-bar i { display: block; height: 100%; max-width: 100%; border-radius: 999px; background: var(--orange); }
 .psa-owing-big.is-settled .psa-owing-bar i, .psa-owing-big.is-over .psa-owing-bar i { background: var(--green); }

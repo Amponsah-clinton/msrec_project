@@ -107,7 +107,7 @@ The agreement as one sheet (styles: assets/css/psa-agreement.css).
       </div>
       <div class="psa-split">
         <div><span>Deposit / Due Upfront</span><b id="psaDeposit">{{ a.currency }} {{ a.deposit|money }}</b></div>
-        <div><span>Balance Due</span><b id="psaBalance">{% if a.balance is not None %}{{ a.currency }} {{ a.balance|money }}{% else %}—{% endif %}</b></div>
+        <div><span>Balance After Deposit</span><b id="psaBalance">{% if a.balance is not None %}{{ a.currency }} {{ a.balance|money }}{% else %}—{% endif %}</b></div>
       </div>
     </div>
     <dl class="psa-fields">

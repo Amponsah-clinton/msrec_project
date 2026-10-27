@@ -80,8 +80,10 @@
             </div>
           </section>
 
-          {# Money. The figure comes from the entries below it, so it can't
-             drift from them; entries are added and never edited. #}
+          {% comment %}
+          Money. The figure comes from the entries below it, so it can't
+          drift from them; entries are added and never edited.
+          {% endcomment %}
           <section class="panel psa-money-panel" id="psaMoney">
             <div class="panel-header"><h2>Payment</h2><span class="psa-pay-state is-{{ a.payment_state }}">{{ a.payment_state_label }}</span></div>
 
@@ -95,6 +97,7 @@
                 {{ a.currency }} {{ a.amount_paid|money }} received of {{ a.currency }} {{ a.fee|money }}
                 {% if a.payment_state == 'over' %}&middot; overpaid by {{ a.currency }} {{ a.overpaid_by|money }}{% endif %}
               </span>
+              <span class="psa-owing-note">What has actually come in &mdash; not the deposit agreed in Section 4.</span>
               <div class="psa-owing-bar" role="img" aria-label="{{ a.payment_state_label }}">
                 <i style="width:{% widthratio a.amount_paid a.fee 100 %}%"></i>
               </div>

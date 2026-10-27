@@ -396,7 +396,7 @@ def render(a, settings=None):
         ("Agreed fee", P(escape(_money(a, a.fee) or "—"), st["value_b"])),
         ("Payment basis", escape(a.payment_basis_label or "—")),
         ("Deposit / amount due upfront", escape(_money(a, a.deposit))),
-        ("Balance due", escape(_money(a, a.balance) or "—")),
+        ("Balance after deposit", escape(_money(a, a.balance) or "—")),
         ("Payment due date / schedule", _text(a.payment_schedule) or "—"),
     ]))
     sec += clause("The Client agrees to pay the amounts stated above according to the agreed schedule. "
