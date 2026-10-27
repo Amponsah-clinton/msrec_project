@@ -102,6 +102,22 @@
 .psa-form .sigpad-paper { border-color: var(--border); }
 .psa-form .sigpad-error { color: var(--red); }
 
+/* A little more room to sign in than the 150px default: a signature drawn
+   with a mouse needs the elbow room, and the baseline sits lower so the
+   whole name fits above it. The line stays near the foot of the box, the
+   way it does on paper. */
+.psa-form .sigpad-paper { height: 200px; }
+.psa-form .sigpad-line { bottom: 42px; }
+.psa-form .sigpad-hint { top: 44%; }
+.psa-form .sigpad-paper--typed { height: 140px; }
+.psa-form .sigpad-paper--typed .sigpad-line { bottom: 38px; }
+.psa-form .sigpad-typed { font-size: 52px; bottom: 34px; }
+
+@media (max-width: 640px) {
+  .psa-form .sigpad-paper { height: 170px; }
+  .psa-form .sigpad-typed { font-size: 42px; }
+}
+
 @media (max-width: 640px) {
   .psa-currency { flex: 1 1 auto !important; }
   .psa-actions { flex-wrap: wrap; }

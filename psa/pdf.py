@@ -2,16 +2,26 @@
 the client's "thank you, it's signed" email, and offered on their signed
 copy.
 
-Laid out like a contract a firm would print, not a dashboard: a centred
-title, a reference line, numbered sections under hairline rules, the
-parties side by side, label/value rows, signature blocks over signing
-lines, and a small electronic-signature record at the end.
+Set as a contract, not as a printout of the signing page. The web version
+of the agreement is a form -- grey field labels, cards, tick boxes -- which
+is right on screen and wrong on paper. Here the same facts are set the way
+a law firm would set them: a title, a preamble naming the Parties, numbered
+clauses in flowing prose with the dates and figures inside the sentences,
+and an execution block at the end. One serif family carries the whole
+document; the sans face is kept for the running footer alone.
+
+Nothing is said here that the client did not see and accept on the signing
+page -- the clause wording is the same; only its arrangement differs.
 
 Letterhead: the header and footer artwork uploaded under PSA > Letterhead
 (PsaSettings) are drawn edge to edge on every page -- the way letterhead
 paper is printed -- and the text frame is computed from their heights, so
 the text always sits between them and never under them. Without artwork,
 a plain text letterhead and footer are drawn instead.
+
+An agreement that is not yet signed by both Parties carries a pale
+watermark saying so, so a draft can never be mistaken for an executed
+contract.
 """
 import base64
 import binascii
@@ -22,7 +32,7 @@ from xml.sax.saxutils import escape
 
 from django.utils import timezone
 from reportlab.lib import colors
-from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
@@ -31,11 +41,11 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.pdfgen import canvas as rl_canvas
 from reportlab.platypus import (
-    BaseDocTemplate, CondPageBreak, Frame, Image, KeepTogether, PageTemplate, Paragraph, Spacer, Table, TableStyle,
+    BaseDocTemplate, Frame, Image, KeepTogether, PageTemplate, Paragraph, Spacer, Table, TableStyle,
 )
 
 PAGE_W, PAGE_H = A4
-MARGIN_X = 20 * mm
+MARGIN_X = 22 * mm
 FRAME_W = PAGE_W - 2 * MARGIN_X
 
 # Letterhead artwork is scaled down (never up) to fit within these heights;
@@ -45,14 +55,28 @@ FOOTER_MAX_H = 35 * mm
 GAP_BELOW_HEADER = 9 * mm
 GAP_ABOVE_FOOTER = 10 * mm
 
-INK = colors.HexColor("#14233f")       # headings, rules
-BODY = colors.HexColor("#1b1f27")      # text
-MUTED = colors.HexColor("#5b6474")     # labels, footer
-HAIR = colors.HexColor("#d5dae2")      # row separators
+INK = colors.HexColor("#121823")       # headings
+BODY = colors.HexColor("#1a1f29")      # text
+MUTED = colors.HexColor("#5b6474")     # running footer
+HAIR = colors.HexColor("#b9c0cc")      # signing lines, table rules
+WASH = colors.HexColor("#f4f6f9")      # the one filled band, in the fee table
 
-LABEL_W = 46 * mm
+# Sub-clauses hang off their number at this indent, so "3.2" sits in the
+# margin of its own paragraph and wrapped lines align under the text.
+INDENT = 11 * mm
+SUB_INDENT = INDENT + 8 * mm
+
 SIGNATURE_FONT = "PsaGreatVibes"
 _SIGNATURE_FONT_PATH = os.path.join(os.path.dirname(__file__), "fonts", "GreatVibes-Regular.ttf")
+
+# What the watermark says while the agreement is not executed by both
+# Parties. A signed agreement carries none.
+WATERMARKS = {
+    "draft": "DRAFT",
+    "sent": "UNSIGNED",
+    "changes": "UNDER REVISION",
+    "cancelled": "CANCELLED",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -128,7 +152,7 @@ def frame_bounds(header, footer):
         top = header[3] + GAP_BELOW_HEADER
         top_first = top_later = top
     else:
-        top_first, top_later = 40 * mm, 24 * mm
+        top_first, top_later = 38 * mm, 26 * mm
     bottom = (footer[3] + GAP_ABOVE_FOOTER) if footer else 22 * mm
     return top_first, top_later, bottom
 
@@ -157,8 +181,8 @@ class _Canvas(rl_canvas.Canvas):
         super().save()
 
     def _draw_footer(self, total):
-        number = f"Page {self._pageNumber} of {total}"
-        self.setFont(self._sans, 7.5)
+        number = f"{self._pageNumber} of {total}"
+        self.setFont(self._sans, 7.2)
         self.setFillColor(MUTED)
         if self._footer:
             reader, x, w, h = self._footer
@@ -166,35 +190,50 @@ class _Canvas(rl_canvas.Canvas):
             self.drawRightString(PAGE_W - MARGIN_X, h + 3.5 * mm, number)
             return
         self.setStrokeColor(HAIR)
-        self.setLineWidth(0.5)
+        self.setLineWidth(0.4)
         self.line(MARGIN_X, 16 * mm, PAGE_W - MARGIN_X, 16 * mm)
         self.drawString(MARGIN_X, 11.5 * mm, self._footer_text)
         self.drawRightString(PAGE_W - MARGIN_X, 11.5 * mm, number)
 
 
+def _draw_watermark(c, word, serif_bold):
+    """A pale diagonal word across the page, drawn before the text so it
+    sits behind it."""
+    c.saveState()
+    c.translate(PAGE_W / 2, PAGE_H / 2)
+    c.rotate(52)
+    size = 78
+    while size > 24 and pdfmetrics.stringWidth(word, serif_bold, size) > PAGE_H * 0.72:
+        size -= 2
+    c.setFont(serif_bold, size)
+    c.setFillColor(colors.HexColor("#e5e9f0"))
+    c.drawCentredString(0, -size * 0.35, word)
+    c.restoreState()
+
+
 def _draw_text_letterhead(c, a, fonts, first):
-    """The plain letterhead used when no header artwork is uploaded."""
+    """The plain letterhead used when no header artwork is uploaded. Set in
+    the document's own serif, not a second voice."""
     sans, sans_bold, serif, serif_bold = fonts
+    name = a.provider_name.title() if a.provider_name.isupper() else a.provider_name
     if first:
         c.setFillColor(INK)
-        c.setFont(serif_bold, 15)
-        c.drawString(MARGIN_X, PAGE_H - 22 * mm, a.provider_name.title() if a.provider_name.isupper() else a.provider_name)
-        c.setFont(sans, 8.3)
+        c.setFont(serif_bold, 14)
+        c.drawString(MARGIN_X, PAGE_H - 21 * mm, name)
+        c.setFont(serif, 8.6)
         c.setFillColor(MUTED)
-        c.drawString(MARGIN_X, PAGE_H - 27.5 * mm, a.provider_address)
+        c.drawRightString(PAGE_W - MARGIN_X, PAGE_H - 21 * mm, a.provider_address)
         c.setStrokeColor(INK)
-        c.setLineWidth(0.9)
-        c.line(MARGIN_X, PAGE_H - 32 * mm, PAGE_W - MARGIN_X, PAGE_H - 32 * mm)
-        c.setLineWidth(0.3)
-        c.line(MARGIN_X, PAGE_H - 33.1 * mm, PAGE_W - MARGIN_X, PAGE_H - 33.1 * mm)
+        c.setLineWidth(0.8)
+        c.line(MARGIN_X, PAGE_H - 25 * mm, PAGE_W - MARGIN_X, PAGE_H - 25 * mm)
     else:
-        c.setFont(sans, 7.5)
+        c.setFont(serif, 8)
         c.setFillColor(MUTED)
-        c.drawString(MARGIN_X, PAGE_H - 14 * mm, "Metascholar Limited  ·  Professional Service Agreement")
-        c.drawRightString(PAGE_W - MARGIN_X, PAGE_H - 14 * mm, a.reference or "")
+        c.drawString(MARGIN_X, PAGE_H - 15 * mm, f"{name}  ·  Professional Service Agreement")
+        c.drawRightString(PAGE_W - MARGIN_X, PAGE_H - 15 * mm, a.reference or "")
         c.setStrokeColor(HAIR)
-        c.setLineWidth(0.5)
-        c.line(MARGIN_X, PAGE_H - 16.5 * mm, PAGE_W - MARGIN_X, PAGE_H - 16.5 * mm)
+        c.setLineWidth(0.4)
+        c.line(MARGIN_X, PAGE_H - 17.5 * mm, PAGE_W - MARGIN_X, PAGE_H - 17.5 * mm)
 
 
 # ---------------------------------------------------------------------------
@@ -206,12 +245,31 @@ def _text(value):
     return escape(str(value or "")).replace("\n", "<br/>")
 
 
+_ORDINALS = {1: "st", 2: "nd", 3: "rd", 21: "st", 22: "nd", 23: "rd", 31: "st"}
+
+
 def _day(d):
     return f"{d.day} {d:%B %Y}" if d else ""
 
 
+def _formal_day(d):
+    """"27th day of October 2026" -- how a contract dates itself."""
+    if not d:
+        return ""
+    return f"{d.day}{_ORDINALS.get(d.day, 'th')} day of {d:%B %Y}"
+
+
 def _money(a, value):
     return f"{a.currency} {value:,.2f}" if value is not None else ""
+
+
+def _letter(i):
+    """1 -> 'a', 26 -> 'z', 27 -> 'aa': the lettering for deliverables."""
+    label = ""
+    while i > 0:
+        i, rest = divmod(i - 1, 26)
+        label = chr(97 + rest) + label
+    return label
 
 
 def _data_url_image(data_url, max_w, max_h):
@@ -257,227 +315,250 @@ def render(a, settings=None):
     header, footer = letterhead(settings)
     top_first, top_later, bottom = frame_bounds(header, footer)
 
+    # Ragged right, not justified: there is no hyphenation dictionary on
+    # the server, so justifying this measure would open rivers of white
+    # space down the page -- the surest sign of a document nobody set.
+    body = ParagraphStyle("body", fontName=serif, fontSize=10, leading=14.4, textColor=BODY, spaceAfter=0)
     st = {
-        "title": ParagraphStyle("title", fontName=serif_bold, fontSize=16, leading=20, textColor=INK,
+        "title": ParagraphStyle("title", fontName=serif_bold, fontSize=15.5, leading=19, textColor=INK,
                                 alignment=TA_CENTER),
-        "caption": ParagraphStyle("caption", fontName=sans, fontSize=7.6, leading=10, textColor=MUTED,
-                                  alignment=TA_CENTER),
-        "meta": ParagraphStyle("meta", fontName=sans, fontSize=8.4, leading=11, textColor=MUTED),
-        "meta_r": ParagraphStyle("meta_r", fontName=sans, fontSize=8.4, leading=11, textColor=MUTED,
-                                 alignment=TA_RIGHT),
-        "h": ParagraphStyle("h", fontName=sans_bold, fontSize=9.2, leading=12, textColor=INK),
-        "label": ParagraphStyle("label", fontName=sans, fontSize=8.4, leading=11.5, textColor=MUTED),
-        "value": ParagraphStyle("value", fontName=serif, fontSize=10.5, leading=14, textColor=BODY),
-        "value_b": ParagraphStyle("value_b", fontName=serif_bold, fontSize=10.5, leading=14, textColor=BODY),
-        "body": ParagraphStyle("body", fontName=serif, fontSize=10.2, leading=14.2, textColor=BODY),
-        "party": ParagraphStyle("party", fontName=sans_bold, fontSize=7.8, leading=10.5, textColor=MUTED),
+        "ref": ParagraphStyle("ref", fontName=serif, fontSize=9, leading=12, textColor=MUTED,
+                              alignment=TA_CENTER),
+        "body": body,
+        "lead": ParagraphStyle("lead", parent=body, alignment=TA_CENTER, fontName=serif_bold, fontSize=9.4,
+                               textColor=INK),
+        "party": ParagraphStyle("party", parent=body, leftIndent=INDENT, bulletIndent=0),
+        "h": ParagraphStyle("h", fontName=serif_bold, fontSize=10.4, leading=13, textColor=INK),
+        "sub": ParagraphStyle("sub", parent=body, leftIndent=INDENT, bulletIndent=0),
+        "item": ParagraphStyle("item", parent=body, leftIndent=SUB_INDENT, bulletIndent=INDENT),
+        "cell": ParagraphStyle("cell", fontName=serif, fontSize=9.6, leading=12.6, textColor=BODY),
+        "cell_b": ParagraphStyle("cell_b", fontName=serif_bold, fontSize=9.6, leading=12.6, textColor=INK),
+        "sig_head": ParagraphStyle("sig_head", fontName=serif_bold, fontSize=8.6, leading=11.8, textColor=INK),
+        "sig_line": ParagraphStyle("sig_line", fontName=serif, fontSize=9.2, leading=12.6, textColor=BODY),
+        "note": ParagraphStyle("note", fontName=serif, fontSize=8.2, leading=11, textColor=MUTED),
     }
     P = Paragraph
 
-    def section(number, title):
-        heading = Table([[P(f"{number}.&nbsp;&nbsp;{escape(title.upper())}", st["h"])]], colWidths=[FRAME_W])
-        heading.setStyle(TableStyle([
-            ("LINEBELOW", (0, 0), (-1, -1), 0.7, INK),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-            ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-        ]))
-        # A heading is never left alone at the foot of a page.
-        return [CondPageBreak(32 * mm), Spacer(1, 6.5 * mm), heading, Spacer(1, 2.5 * mm)]
+    def strong(value, dash="—"):
+        """A figure or date set in bold inside a sentence."""
+        return f"<b>{escape(str(value))}</b>" if value else dash
 
-    def rows(pairs):
-        """Label / value rows on hairlines -- every label column the same
-        width, so all sections line up down the page. A value may be a list
-        of flowables: each becomes its own row under one label (with no
-        rules between them), so a long list can break across pages."""
-        data, style = [], [
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-            ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ]
-        for label, value in pairs:
-            parts = value if isinstance(value, list) else [value]
-            first = len(data)
-            for i, part in enumerate(parts):
-                cell = P(part, st["value"]) if isinstance(part, str) else part
-                data.append([P(escape(label), st["label"]) if i == 0 else "", cell])
-            last = len(data) - 1
-            style += [
-                ("TOPPADDING", (1, first), (1, first), 4.2),
-                ("TOPPADDING", (0, first), (0, first), 5.4),   # small sans label on the serif baseline
-                ("TOPPADDING", (0, first + 1), (-1, last), 1.2),
-                ("BOTTOMPADDING", (0, first), (-1, last - 1), 1.2),
-                ("BOTTOMPADDING", (0, last), (-1, last), 4.2),
-                ("LINEBELOW", (0, last), (-1, last), 0.4, HAIR),
-            ]
-        table = Table(data, colWidths=[LABEL_W, FRAME_W - LABEL_W])
-        table.setStyle(TableStyle(style))
-        return table
+    # Clause numbering runs straight through the document, so what the
+    # heading says and what the sub-clauses say can never drift apart.
+    counter = {"n": 0, "sub": 0}
 
-    def clause(text):
-        return [Spacer(1, 3 * mm), P(_text(text), st["body"])]
+    def heading(title):
+        counter["n"] += 1
+        counter["sub"] = 0
+        return [Spacer(1, 5.4 * mm),
+                P(f"{counter['n']}.&nbsp;&nbsp;{escape(title.upper())}", st["h"]),
+                Spacer(1, 2.2 * mm)]
+
+    def sub(text, style="sub", space=2.2 * mm):
+        counter["sub"] += 1
+        number = f"{counter['n']}.{counter['sub']}"
+        return [P(text, st[style], bulletText=number), Spacer(1, space)]
 
     story = []
 
-    # ---- Title block --------------------------------------------------
-    status = {
-        "signed": "Signed by both parties",
-        "sent": "Awaiting the client's signature",
-        "changes": "Under revision at the client's request",
-        "cancelled": "Cancelled",
-        "draft": "Draft",
-    }.get(a.status, "")
+    # ---- Title --------------------------------------------------------
+    rule = Table([[""]], colWidths=[48 * mm], rowHeights=[0.1])
+    rule.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 0.8, INK)]))
+    rule.hAlign = "CENTER"
     story += [
         P("PROFESSIONAL SERVICE AGREEMENT", st["title"]),
-        Spacer(1, 1.6 * mm),
-        P("C O N F I D E N T I A L", st["caption"]),
-        Spacer(1, 5 * mm),
+        Spacer(1, 2.6 * mm), rule, Spacer(1, 2.6 * mm),
+        P(f"Agreement No. {escape(a.reference or 'not yet issued')}", st["ref"]),
+        Spacer(1, 7 * mm),
     ]
-    meta = Table([[
-        P(f"Agreement No.&nbsp; <font name='{sans_bold}' color='#14233f'>{escape(a.reference or '—')}</font>", st["meta"]),
-        P(f"Agreement date&nbsp; <font name='{sans_bold}' color='#14233f'>{escape(_day(a.agreement_date))}</font>",
-          ParagraphStyle("meta_c", parent=st["meta"], alignment=TA_CENTER)),
-        P(f"Status&nbsp; <font name='{sans_bold}' color='#14233f'>{escape(status)}</font>", st["meta_r"]),
-    ]], colWidths=[FRAME_W / 3] * 3)
-    meta.setStyle(TableStyle([
-        ("LINEABOVE", (0, 0), (-1, 0), 0.4, HAIR), ("LINEBELOW", (0, 0), (-1, 0), 0.4, HAIR),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
-    ]))
-    story += [meta, Spacer(1, 3.5 * mm),
-              P("This agreement sets out the services, fees, timelines and responsibilities agreed between "
-                "Metascholar Limited and its client.", st["body"])]
 
-    # ---- 1. The parties -----------------------------------------------
-    sec = section(1, "The Parties")
-    provider = [P("SERVICE PROVIDER", st["party"]), Spacer(1, 1.5 * mm),
-                P(escape(a.provider_name), st["value_b"]), P(_text(a.provider_address), st["value"])]
-    client = [P("CLIENT", st["party"]), Spacer(1, 1.5 * mm), P(escape(a.client_name), st["value_b"])]
-    client += [P(escape(v), st["value"]) for v in (a.client_email, a.client_phone) if v]
+    # ---- Preamble -----------------------------------------------------
+    story += [
+        P(f"THIS PROFESSIONAL SERVICE AGREEMENT is made on the "
+          f"{strong(_formal_day(a.agreement_date), 'date stated below')}", st["lead"]),
+        Spacer(1, 4 * mm),
+        P("BETWEEN", st["lead"]),
+        Spacer(1, 3 * mm),
+    ]
+
+    provider = (f"<b>{escape(a.provider_name)}</b>, of {escape(a.provider_address).rstrip('.')} "
+                f"(the “<b>Provider</b>”); and")
+    story += [P(provider, st["party"], bulletText="(1)"), Spacer(1, 2.6 * mm)]
+
+    contact = "; ".join(x for x in [
+        f"email {escape(a.client_email)}" if a.client_email else "",
+        f"telephone {escape(a.client_phone)}" if a.client_phone else "",
+    ] if x)
+    client = f"<b>{escape(a.client_name)}</b>"
     if a.client_address:
-        client.append(P(_text(a.client_address), st["value"]))
-    parties = Table([[provider, client]], colWidths=[FRAME_W / 2] * 2)
-    parties.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (0, -1), 6 * mm),
-        ("RIGHTPADDING", (1, 0), (1, -1), 0), ("TOPPADDING", (0, 0), (-1, -1), 1),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 1),
+        client += f", of {escape(a.client_address).rstrip('.')}"
+    if contact:
+        client += f" ({contact})"
+    client += " (the “<b>Client</b>”)."
+    story += [P(client, st["party"], bulletText="(2)"), Spacer(1, 4.5 * mm)]
+
+    story += [P("The Provider and the Client are individually a “Party” and collectively the “Parties.” "
+                "This Agreement sets out the services, fees, timelines and responsibilities agreed between them, "
+                "and the Parties agree as follows.", st["body"])]
+
+    # ---- 1. The service -----------------------------------------------
+    story += heading("The Service")
+    story += sub(f"The Provider shall provide the Client with the professional service known as "
+                 f"{strong(a.service_title, 'the service described below')}.")
+    deliverables = a.deliverable_list()
+    if deliverables:
+        story += sub("The scope of work comprises the following deliverables:", space=2 * mm)
+        for i, d in enumerate(deliverables, 1):
+            story += [P(_text(d), st["item"], bulletText=f"({_letter(i)})"), Spacer(1, 1.4 * mm)]
+        story += [Spacer(1, 1 * mm)]
+    else:
+        story += sub("The scope of work and deliverables are as separately agreed between the Parties in writing.")
+    story += sub("The Client will provide all information, materials, approvals, and feedback reasonably needed to "
+                 "complete the agreed service.")
+    story += sub("Any changes to the scope, price, or deadline require agreement by both Parties.", space=0)
+
+    # ---- 2. Term --------------------------------------------------------
+    story += heading("Term")
+    duration = (f", a term of {strong(f'{a.term_days} day' + ('s' if a.term_days != 1 else ''))}"
+                if a.term_days is not None else "")
+    story += sub(f"The service shall begin on {strong(_day(a.start_date), 'the agreed start date')} and is expected "
+                 f"to be completed by {strong(_day(a.completion_date), 'the agreed completion date')}"
+                 f"{duration}.", space=0)
+
+    # ---- 3. Payment -----------------------------------------------------
+    story += heading("Payment")
+    basis = f" on a {escape(a.payment_basis_label.lower())} basis" if a.payment_basis_label else ""
+    story += sub(f"The agreed fee for the service is {strong(_money(a, a.fee), 'as separately agreed')}"
+                 f"{basis}, payable as set out below.", space=2.6 * mm)
+
+    amounts = [("Agreed fee", _money(a, a.fee) or "As separately agreed"),
+               ("Deposit / amount due upfront", _money(a, a.deposit) or f"{a.currency} 0.00"),
+               ("Balance after deposit", _money(a, a.balance) or "—")]
+    fee_table = Table(
+        [[P(escape(label), st["cell_b"] if i == 2 else st["cell"]),
+          P(escape(value), st["cell_b"] if i == 2 else st["cell"])] for i, (label, value) in enumerate(amounts)],
+        colWidths=[(FRAME_W - INDENT) * 0.6, (FRAME_W - INDENT) * 0.4],
+    )
+    fee_table.setStyle(TableStyle([
+        ("ALIGN", (1, 0), (1, -1), "RIGHT"),
+        ("BOX", (0, 0), (-1, -1), 0.5, HAIR),
+        ("INNERGRID", (0, 0), (-1, -1), 0.3, HAIR),
+        ("BACKGROUND", (0, 2), (-1, 2), WASH),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4.5), ("RIGHTPADDING", (0, 0), (-1, -1), 4.5),
+        ("TOPPADDING", (0, 0), (-1, -1), 3.6), ("BOTTOMPADDING", (0, 0), (-1, -1), 3.6),
     ]))
-    sec.append(parties)
-    sec += clause("Metascholar Limited and the Client are individually a “Party” and collectively the “Parties.”")
-    story.append(KeepTogether(sec))
+    fee_table.hAlign = "RIGHT"
+    story += [fee_table, Spacer(1, 3.4 * mm)]
 
-    # ---- 2. Term ------------------------------------------------------
-    sec = section(2, "Term")
-    term = [("Service start date", escape(_day(a.start_date)) or "—"),
-            ("Expected completion date", escape(_day(a.completion_date)) or "—")]
-    if a.term_days is not None:
-        term.append(("Duration", f"{a.term_days} day{'s' if a.term_days != 1 else ''}"))
-    sec.append(rows(term))
-    story.append(KeepTogether(sec))
+    if a.payment_schedule:
+        story += sub(f"Payment is due as follows: {_text(a.payment_schedule)}")
+    story += sub("The Client agrees to pay the amounts stated above according to the agreed schedule. Additional "
+                 "services or charges must be approved by the Client before they are incurred.", space=0)
 
-    # ---- 3. The service -----------------------------------------------
-    sec = section(3, "The Service")
-    sec.append(P("Metascholar Limited agrees to provide the following professional service(s):", st["body"]))
-    sec.append(Spacer(1, 2 * mm))
-    # Numbered with a hanging indent, so wrapped lines align with the text.
-    numbered = ParagraphStyle("numbered", parent=st["value"], leftIndent=7 * mm, bulletIndent=0)
-    items = [P(_text(d), numbered, bulletText=f"{i}.") for i, d in enumerate(a.deliverable_list(), 1)] or "—"
-    sec.append(rows([("Service / project title", P(escape(a.service_title or "—"), st["value_b"])),
-                     ("Scope of work / deliverables", items)]))
-    sec += clause("The Client will provide all information, materials, approvals, and feedback reasonably "
-                  "needed to complete the agreed service. Any changes to the scope, price, or deadline require "
-                  "agreement by both Parties.")
-    # A short list stays in one piece; a long one flows on from where it
-    # starts rather than leaving the rest of the page empty.
-    story += [KeepTogether(sec)] if len(a.deliverable_list()) <= 8 else sec
+    # ---- 4. Acceptance ---------------------------------------------------
+    story += heading("Client Review and Acceptance")
+    story += sub("By signing or electronically accepting this Agreement, the Client confirms that they have "
+                 "reviewed and accepted the services, timelines, and payment terms set out above.", space=0)
 
-    # ---- 4. Payment ---------------------------------------------------
-    sec = section(4, "Payment Amount")
-    sec.append(rows([
-        ("Agreed fee", P(escape(_money(a, a.fee) or "—"), st["value_b"])),
-        ("Payment basis", escape(a.payment_basis_label or "—")),
-        ("Deposit / amount due upfront", escape(_money(a, a.deposit))),
-        ("Balance after deposit", escape(_money(a, a.balance) or "—")),
-        ("Payment due date / schedule", _text(a.payment_schedule) or "—"),
-    ]))
-    sec += clause("The Client agrees to pay the amounts stated above according to the agreed schedule. "
-                  "Additional services or charges must be approved by the Client before they are incurred.")
-    story.append(KeepTogether(sec))
+    # ---- Execution -------------------------------------------------------
+    col_w = (FRAME_W - 14 * mm) / 2
+    sig_h = 16 * mm
 
-    # ---- 5. Acceptance -------------------------------------------------
-    acceptance = section(5, "Client Review and Acceptance")
-    acceptance.append(P("By signing or electronically accepting this Agreement, the Client confirms that they have "
-                        "reviewed and accepted the services, timelines, and payment terms set out above.", st["body"]))
-    acceptance.append(Spacer(1, 7 * mm))
-
-    col_w = (FRAME_W - 12 * mm) / 2
-    sig_h = 17 * mm
-
-    def signature(kind, value, name):
+    def mark(kind, value):
         """The signature itself, sitting on the signing line."""
         if kind == "drawn":
-            mark = _data_url_image(value, col_w, sig_h)
-            if mark:
-                return mark
+            drawn = _data_url_image(value, col_w - 2 * mm, sig_h)
+            if drawn:
+                return drawn
         if kind == "typed" and value:
             font = _signature_font()
             if font and _font_covers(font, value):
                 size = 26
-                while size > 13 and pdfmetrics.stringWidth(value, font, size) > col_w:
+                while size > 13 and pdfmetrics.stringWidth(value, font, size) > col_w - 2 * mm:
                     size -= 1
                 return P(escape(value), ParagraphStyle("sig", fontName=font, fontSize=size, leading=size * 1.1,
-                                                        textColor=colors.HexColor("#1b2a5c")))
+                                                       textColor=colors.HexColor("#17306b")))
             # A name the script face can't draw is set in the text face
             # (no <i>: the server's TrueType faces have no italic mapped).
-            return P(escape(value), ParagraphStyle("sig_plain", parent=st["value"], fontSize=14, leading=17))
+            return P(escape(value), ParagraphStyle("sig_plain", fontName=serif, fontSize=14, leading=17,
+                                                   textColor=colors.HexColor("#17306b")))
         return Spacer(1, sig_h)
 
-    def block(heading, kind, value, name, lines):
-        mark = Table([[signature(kind, value, name)]], colWidths=[col_w], rowHeights=[sig_h + 2 * mm])
-        mark.setStyle(TableStyle([
-            ("VALIGN", (0, 0), (-1, -1), "BOTTOM"), ("LINEBELOW", (0, 0), (-1, -1), 0.7, INK),
+    def block(heading_lines, kind, value, fields):
+        signing = Table([[mark(kind, value)]], colWidths=[col_w], rowHeights=[sig_h + 2 * mm])
+        signing.setStyle(TableStyle([
+            ("VALIGN", (0, 0), (-1, -1), "BOTTOM"), ("LINEBELOW", (0, 0), (-1, -1), 0.6, INK),
             ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
             ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5), ("TOPPADDING", (0, 0), (-1, -1), 0),
         ]))
-        cell = [P(escape(heading), st["party"]), Spacer(1, 1 * mm), mark, Spacer(1, 1.8 * mm)]
-        cell += [P(line, st["value_b"] if i == 0 else st["label"]) for i, line in enumerate(lines)]
+        cell = [P(line, st["sig_head"]) for line in heading_lines]
+        cell += [Spacer(1, 2 * mm), signing, Spacer(1, 1.6 * mm)]
+        cell += [P(f"{escape(label)}:&nbsp; {value or '&nbsp;'}", st["sig_line"]) for label, value in fields]
         return cell
 
-    client_block = block(
-        "CLIENT SIGNATURE / ELECTRONIC ACCEPTANCE", a.client_signature_kind, a.client_signature, a.client_name,
-        [escape(a.client_name),
-         f"Date: {escape(_day(timezone.localtime(a.client_signed_at).date()))}" if a.client_signed_at
-         else "Not yet signed"],
+    company_role = escape(a.company_signatory_role) if a.company_signatory_role else "Authorised signatory"
+    company = block(
+        ["SIGNED for and on behalf of", escape(a.provider_name.upper())],
+        a.company_signature_kind, a.company_signature,
+        [("Name", f"<b>{escape(a.company_signatory_name)}</b>" if a.company_signatory_name else ""),
+         ("Title", company_role),
+         ("Date", escape(_day(timezone.localtime(a.company_signed_at).date())) if a.company_signed_at else "")],
     )
-    company_block = block(
-        "FOR METASCHOLAR LIMITED", a.company_signature_kind, a.company_signature, a.company_signatory_name,
-        [escape(a.company_signatory_name or "Metascholar Limited"),
-         " · ".join(x for x in (escape(a.company_signatory_role),
-                                f"Date: {escape(_day(timezone.localtime(a.company_signed_at).date()))}"
-                                if a.company_signed_at else "") if x) or "Not yet signed"],
+    client_signed = (f"<b>{escape(a.client_name)}</b>" if a.client_name else "")
+    client = block(
+        ["SIGNED by the CLIENT", "&nbsp;"],
+        a.client_signature_kind, a.client_signature,
+        [("Name", client_signed),
+         ("Date", escape(_day(timezone.localtime(a.client_signed_at).date())) if a.client_signed_at else "")],
     )
-    signatures = Table([[client_block, "", company_block]], colWidths=[col_w, 12 * mm, col_w])
+
+    signatures = Table([[company, "", client]], colWidths=[col_w, 14 * mm, col_w])
     signatures.setStyle(TableStyle([
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
         ("TOPPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 0),
     ]))
-    acceptance.append(signatures)
 
-    story.append(KeepTogether(acceptance))
+    execution = [
+        Spacer(1, 7 * mm),
+        P("IN WITNESS WHEREOF the Parties have executed this Agreement on the dates stated below.", st["body"]),
+        Spacer(1, 7 * mm),
+        signatures,
+    ]
+    story.append(KeepTogether(execution))
 
-    # ---- Build --------------------------------------------------------
+    # ---- The electronic signature record ---------------------------------
+    if a.client_signed_at:
+        when = timezone.localtime(a.client_signed_at)
+        how = dict(a.SignatureKind.choices).get(a.client_signature_kind, "electronic")
+        record = (f"Electronic signature record — this Agreement was accepted electronically by "
+                  f"{escape(a.client_name)} on {when:%d %B %Y} at {when:%H:%M} ({how.lower()} signature)"
+                  + (f", from IP address {escape(a.client_signed_ip)}" if a.client_signed_ip else "")
+                  + f". Reference {escape(a.reference or '')}.")
+        note = Table([[P(record, st["note"])]], colWidths=[FRAME_W])
+        note.setStyle(TableStyle([
+            ("BOX", (0, 0), (-1, -1), 0.4, HAIR), ("BACKGROUND", (0, 0), (-1, -1), WASH),
+            ("LEFTPADDING", (0, 0), (-1, -1), 5), ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+            ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ]))
+        story += [Spacer(1, 9 * mm), note]
+
+    # ---- Build ------------------------------------------------------------
     buffer = BytesIO()
     doc = BaseDocTemplate(
         buffer, pagesize=A4, leftMargin=MARGIN_X, rightMargin=MARGIN_X, topMargin=top_later, bottomMargin=bottom,
         title=f"Professional Service Agreement {a.reference or ''} — {a.client_name}",
-        author="Metascholar Limited", subject="Professional Service Agreement",
+        author=a.provider_name, subject="Professional Service Agreement",
     )
-    first = Frame(MARGIN_X, bottom, FRAME_W, PAGE_H - top_first - bottom, id="first",
-                  leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
-    later = Frame(MARGIN_X, bottom, FRAME_W, PAGE_H - top_later - bottom, id="later",
-                  leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
+    first_frame = Frame(MARGIN_X, bottom, FRAME_W, PAGE_H - top_first - bottom, id="first",
+                        leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
+    later_frame = Frame(MARGIN_X, bottom, FRAME_W, PAGE_H - top_later - bottom, id="later",
+                        leftPadding=0, rightPadding=0, topPadding=0, bottomPadding=0)
+    watermark = WATERMARKS.get(a.status)
 
     def on_first(c, d):
+        if watermark:
+            _draw_watermark(c, watermark, serif_bold)
         if header:
             reader, x, w, h = header
             c.drawImage(reader, x, PAGE_H - h, width=w, height=h, mask="auto")
@@ -485,18 +566,21 @@ def render(a, settings=None):
             _draw_text_letterhead(c, a, fonts, first=True)
 
     def on_later(c, d):
+        if watermark:
+            _draw_watermark(c, watermark, serif_bold)
         if header:
-            on_first(c, d)
+            reader, x, w, h = header
+            c.drawImage(reader, x, PAGE_H - h, width=w, height=h, mask="auto")
         else:
             _draw_text_letterhead(c, a, fonts, first=False)
 
     doc.addPageTemplates([
-        PageTemplate(id="first", frames=[first], onPage=on_first, autoNextPageTemplate="later"),
-        PageTemplate(id="later", frames=[later], onPage=on_later),
+        PageTemplate(id="first", frames=[first_frame], onPage=on_first, autoNextPageTemplate="later"),
+        PageTemplate(id="later", frames=[later_frame], onPage=on_later),
     ])
-    footer_text = f"Professional Service Agreement  ·  {a.reference or ''}  ·  {a.client_name}"
+    footer_text = f"{a.reference or 'Professional Service Agreement'}  ·  {a.client_name}  ·  Confidential"
     doc.build(story, canvasmaker=lambda *args, **kw: _Canvas(*args, footer=footer, footer_text=footer_text,
-                                                              sans=sans, **kw))
+                                                             sans=sans, **kw))
     return buffer.getvalue()
 
 
@@ -517,7 +601,8 @@ def sample_agreement():
         deliverables=["First deliverable", "Second deliverable", "Third deliverable"],
         currency="GHS", fee=Decimal("2500.00"), payment_basis="fixed", deposit=Decimal("1000.00"),
         payment_schedule="Deposit on signing; balance on delivery.",
-        company_signatory_name="Metascholar Limited", company_signature_kind="typed",
+        company_signatory_name="Metascholar Limited", company_signatory_role="Director",
+        company_signature_kind="typed",
         company_signature="Metascholar", company_signed_at=timezone.now(),
         client_signature_kind="typed", client_signature="Sample Client", client_signed_at=timezone.now(),
     )
