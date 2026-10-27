@@ -1,5 +1,5 @@
-"""The PSA emails. Each returns True/False so the person who triggered it is
-told the truth about delivery."""
+"""The PSA emails, each with its SMS twin. Each returns True/False so the
+person who triggered it is told the truth about delivery."""
 import logging
 
 logger = logging.getLogger(__name__)
@@ -7,6 +7,9 @@ logger = logging.getLogger(__name__)
 # Always told when a client signs or asks for changes, whoever prepared the
 # agreement.
 CEO_NOTIFY_EMAIL = "ceo@academicdigital.space"
+
+# How much of a long client name survives into a text message.
+SMS_NAME_LEN = 30
 
 
 def _money(a):
@@ -29,6 +32,86 @@ def _staff_recipients(a):
     if preparer and preparer.lower() != CEO_NOTIFY_EMAIL:
         to.append(preparer)
     return to
+
+
+# ---------------------------------------------------------------------
+# SMS twins
+# ---------------------------------------------------------------------
+# Every PSA email that has a number to reach also goes out as a text, so
+# news of an agreement doesn't sit unread in an inbox. Three rules shape
+# the wording:
+#
+#   * The text is a twin, never the only copy. It is sent only after the
+#     email has gone, and a text that fails is logged, never raised --
+#     the same fail-silently contract as notifications.sms.
+#   * One segment. A segment is 160 GSM-7 characters and costs a credit,
+#     and the client's signing link alone is 97 of them, so the wording
+#     around a link has about sixty characters to live in.
+#     PsaSmsTests.test_every_message_is_one_gsm_segment holds the line.
+#   * ASCII only. The curly quotes and em dashes these emails are written
+#     with sit outside GSM-7, and one of them would drop the whole
+#     message from 160 characters a segment to 70 -- so _plain() folds
+#     them back to their ASCII shapes before they reach a handset.
+
+_GSM_FOLD = {
+    "‘": "'", "’": "'", "“": '"', "”": '"',
+    "–": "-", "—": "-", "…": "...", " ": " ",
+}
+
+
+def _plain(text, limit=None):
+    """Collapsed whitespace, GSM-7 punctuation, clipped to `limit`."""
+    out = " ".join("".join(_GSM_FOLD.get(ch, ch) for ch in str(text or "")).split())
+    if limit and len(out) > limit:
+        out = out[:limit].rstrip(" ,.;:-") + "..."
+    return out
+
+
+def _sms(numbers, message, what):
+    """Text everyone in `numbers` who can be reached. Never raises, and
+    never reports a failure to the person who triggered the email -- the
+    email is the message of record."""
+    from notifications import sms
+
+    numbers = [n for n in numbers if n]
+    if not numbers or not sms.is_configured():
+        return False
+    try:
+        result = sms.send_sms(numbers, message)
+    except Exception:
+        logger.exception("PSA %s SMS failed", what)
+        return False
+    if not result.get("ok"):
+        logger.warning("PSA %s SMS not delivered: %s", what, result.get("error"))
+    return bool(result.get("ok"))
+
+
+def _client_phone(a):
+    """The client's mobile, or "".
+
+    Empty on everything sent before signing: the client gives their own
+    number as part of signing (psa.forms.parse_client), which is the only
+    place it is ever captured. So the agreement link, the reminder and
+    the change-request receipt have no one to text until that happens."""
+    from notifications import sms
+    return sms.clean_phone(a.client_phone)
+
+
+def _staff_phones(a):
+    """Mobiles for the same people _staff_recipients emails, skipping
+    anyone who has turned SMS off in Profile & Security."""
+    from django.contrib.auth import get_user_model
+    from django.db.models import Q
+
+    from notifications import sms
+
+    addresses = _staff_recipients(a)
+    if not addresses:
+        return []
+    query = Q()
+    for address in addresses:
+        query |= Q(email__iexact=address)
+    return [u.phone for u in get_user_model().objects.filter(query) if sms.can_sms_user(u)]
 
 
 def send_to_client(a, *, reminder=False, updated=False, note=""):
@@ -63,7 +146,7 @@ def send_to_client(a, *, reminder=False, updated=False, note=""):
             "If anything in it isn't right, use “Request changes” on the same page and we'll fix it "
             "before you sign.",
         ]
-    return _send(
+    ok = _send(
         subject=subject,
         to=a.client_email,
         heading=heading,
@@ -77,6 +160,19 @@ def send_to_client(a, *, reminder=False, updated=False, note=""):
         cta_url=a.client_url(),
         preheader=f"Agreement {a.reference} for {title} is ready for your signature.",
     )
+    if ok:
+        _sms([_client_phone(a)], sms_to_client(a, reminder=reminder, updated=updated), "agreement link")
+    return ok
+
+
+def sms_to_client(a, *, reminder=False, updated=False):
+    """The text that carries the signing link. The link is 97 of the 160
+    characters, so everything else is pared to the bone."""
+    if updated:
+        return f"Metascholar agreement {a.reference} is updated. Sign: {a.client_url()}"
+    if reminder:
+        return f"Reminder: Metascholar agreement {a.reference} is unsigned. Sign: {a.client_url()}"
+    return f"Metascholar agreement {a.reference}. Review and sign: {a.client_url()}"
 
 
 def signed_pdf(a):
@@ -93,7 +189,7 @@ def signed_pdf(a):
 def send_client_copy(a, attachment=None):
     """The client's "thank you", with their signed copy attached (and the
     link to it, which keeps working)."""
-    return _send(
+    ok = _send(
         subject=f"Signed: Professional Service Agreement {a.reference}",
         to=a.client_email,
         heading="Thank you — your agreement is signed",
@@ -114,12 +210,22 @@ def send_client_copy(a, attachment=None):
         preheader=f"Your signed agreement {a.reference}" + (" is attached." if attachment else "."),
         attachments=[attachment] if attachment else None,
     )
+    if ok:
+        _sms([_client_phone(a)], sms_client_copy(a), "signed copy")
+    return ok
+
+
+def sms_client_copy(a):
+    """No link in this one: the signed PDF is attached to the email it
+    follows, which leaves room to say so in a single segment."""
+    return (f"Metascholar agreement {a.reference} is now signed by both parties. "
+            "Your signed copy has been emailed to you. Thank you.")
 
 
 def send_signed_to_staff(a, attachment=None):
     """Tells the CEO, and whoever prepared the agreement, that the client
     has signed -- with the signed PDF attached for filing."""
-    return _send(
+    ok = _send(
         subject=f"Client signed PSA {a.reference} — {a.client_name}",
         to=_staff_recipients(a),
         heading="A client has signed their service agreement",
@@ -132,11 +238,20 @@ def send_signed_to_staff(a, attachment=None):
         preheader=f"{a.client_name} signed {a.reference}.",
         attachments=[attachment] if attachment else None,
     )
+    if ok:
+        _sms(_staff_phones(a), sms_signed_to_staff(a), "client signed")
+    return ok
+
+
+def sms_signed_to_staff(a):
+    fee = f" Fee {_money(a)}." if a.fee is not None else ""
+    return (f"PSA {a.reference}: {_plain(a.client_name, SMS_NAME_LEN)} has signed."
+            f"{fee} {a.staff_url()}")
 
 
 def send_changes_requested_to_staff(a, req):
     """The client flagged something to fix instead of signing."""
-    return _send(
+    ok = _send(
         subject=f"Changes requested on PSA {a.reference} — {a.client_name}",
         to=_staff_recipients(a),
         heading="A client has asked for changes before signing",
