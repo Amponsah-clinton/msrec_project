@@ -198,6 +198,21 @@ class CreateAndSendTests(StaffTestCase):
         self.assertEqual(a.send_count, 2)
         self.assertIn("Reminder", mail.outbox[-1].subject)
 
+    def test_balance_is_filled_in_on_load(self):
+        a = self._sent(fee="300", deposit="100")
+        resp = self.client.get(reverse("psa_admin:psa_edit", args=[a.pk]))
+        self.assertEqual(resp.context["balance"], "GHS 200.00")
+        self.assertContains(resp, 'value="GHS 200.00"')
+        # Shown again after a failed save, from what was typed.
+        resp = self.client.post(reverse("psa_admin:psa_new"), _form(fee="1,250", deposit="250", service_title=""))
+        self.assertEqual(resp.context["balance"], "GHS 1,000.00")
+        resp = self.client.post(reverse("psa_admin:psa_new"), _form(fee="100", deposit="900", service_title=""))
+        self.assertEqual(resp.context["balance"], "Deposit is more than the fee")
+
+    def test_scripts_carry_a_version(self):
+        resp = self.client.get(reverse("psa_admin:psa_new"))
+        self.assertRegex(resp.content.decode(), r"dashboard/js/psa-form\.js\?v=\d+")
+
     def test_pages_render(self):
         a = self._sent()
         for url in (reverse("psa_admin:psa_list"), reverse("psa_admin:psa_new"),

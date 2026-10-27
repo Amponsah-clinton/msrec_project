@@ -1,8 +1,8 @@
 /* PSA create / edit form (templates/psa/admin_form.html).
  *
- *  - Deliverables: there is always one empty line at the end; typing in it
- *    opens the next. Enter moves down, Backspace on an empty line moves up,
- *    and x removes a line. Blank lines are not posted.
+ *  - Deliverables: a new line is added only by "+ Add deliverable"; x
+ *    removes one. Enter moves down without adding. Blank lines are not
+ *    posted.
  *  - Balance due = fee - deposit, worked out as you type.
  *  - "Other" payment basis asks what it is.
  *  - "Sign & send" checks everything the client will be asked to accept;
@@ -39,56 +39,32 @@
   function renumber() {
     var all = rows();
     all.forEach(function (row, i) {
-      var n = i + 1, last = i === all.length - 1;
+      var n = i + 1;
       row.querySelector(".psa-deliv-n").textContent = n + ".";
       input(row).setAttribute("aria-label", "Deliverable " + n);
       var rm = row.querySelector("[data-remove]");
       rm.setAttribute("aria-label", "Remove deliverable " + n);
-      // The empty line at the end is where the next item goes.
-      rm.hidden = last && blank(row);
+      // The only line can be cleared but not removed.
+      rm.hidden = all.length === 1 && blank(row);
     });
     var n = filled().length;
     countOut.textContent = n ? n + " deliverable" + (n === 1 ? "" : "s") : "";
-    addBtn.disabled = n >= MAX_DELIVERABLES;
-  }
-
-  // Exactly one empty line at the end.
-  function ensureTrailingBlank() {
-    var all = rows();
-    var last = all[all.length - 1];
-    if (!last || !blank(last)) {
-      if (filled().length < MAX_DELIVERABLES) newRow();
-    } else {
-      for (var i = all.length - 2; i >= 0 && blank(all[i]); i--) {
-        if (document.activeElement === input(all[i])) break;
-        all[i].remove();
-      }
-    }
-    renumber();
+    addBtn.disabled = all.length >= MAX_DELIVERABLES;
   }
 
   list.addEventListener("input", function (e) {
-    if (e.target.name === "deliverables") ensureTrailingBlank();
+    if (e.target.name === "deliverables") renumber();
   });
 
   list.addEventListener("keydown", function (e) {
     if (e.target.name !== "deliverables") return;
     var all = rows();
-    var row = e.target.closest(".psa-deliv-row");
-    var i = all.indexOf(row);
+    var i = all.indexOf(e.target.closest(".psa-deliv-row"));
     if (e.key === "Enter") {
-      e.preventDefault();               // never submits the form from here
-      if (!e.target.value.trim()) return;
-      var next = all[i + 1] || newRow();
-      renumber();
-      input(next).focus();
-    } else if (e.key === "Backspace" && !e.target.value && i > 0) {
+      // Never submits the form from here, and never adds a line on its own:
+      // that's what "+ Add deliverable" is for. Just move to the next line.
       e.preventDefault();
-      var prev = input(all[i - 1]);
-      if (i < all.length - 1) row.remove();
-      ensureTrailingBlank();
-      prev.focus();
-      prev.setSelectionRange(prev.value.length, prev.value.length);
+      if (all[i + 1]) input(all[i + 1]).focus();
     } else if (e.key === "ArrowDown" && all[i + 1]) {
       e.preventDefault(); input(all[i + 1]).focus();
     } else if (e.key === "ArrowUp" && all[i - 1]) {
@@ -101,31 +77,26 @@
     if (!btn) return;
     var all = rows();
     var row = btn.closest(".psa-deliv-row");
-    var i = all.indexOf(row);
-    var focusTo = all[i + 1] || all[i - 1];
-    row.remove();
-    ensureTrailingBlank();
-    if (focusTo && focusTo.isConnected) input(focusTo).focus();
-  });
-
-  // Once the person moves on, drop lines they emptied (keeping the last).
-  list.addEventListener("focusout", function () {
-    setTimeout(function () {
-      if (list.contains(document.activeElement)) return;
-      rows().slice(0, -1).forEach(function (r) { if (blank(r)) r.remove(); });
-      ensureTrailingBlank();
-    }, 0);
+    if (all.length === 1) {
+      input(row).value = "";
+      input(row).focus();
+    } else {
+      var i = all.indexOf(row);
+      var focusTo = all[i + 1] || all[i - 1];
+      row.remove();
+      input(focusTo).focus();
+    }
+    renumber();
   });
 
   addBtn.addEventListener("click", function () {
-    var all = rows();
-    var last = all[all.length - 1];
-    var target = last && blank(last) ? last : newRow();
+    var row = newRow();
     renumber();
-    input(target).focus();
+    input(row).focus();
   });
 
-  ensureTrailingBlank();
+  if (!rows().length) newRow();
+  renumber();
 
   // ---------------------------------------------------------------- money
   var fee = $("psaFeeIn"), deposit = $("psaDepositIn"), currency = $("psaCurrencyIn");
@@ -145,15 +116,18 @@
     else if (d > f) balance.value = "Deposit is more than the fee";
     else balance.value = currency.value + " " + fmt(f - d);
   }
+  // Any way the values change -- typing, pasting, autofill, the browser
+  // restoring the form on Back -- recalculates.
+  form.addEventListener("input", updateBalance);
+  form.addEventListener("change", updateBalance);
+  window.addEventListener("pageshow", updateBalance);
   [fee, deposit].forEach(function (el) {
-    el.addEventListener("input", updateBalance);
     el.addEventListener("blur", function () {
       var n = num(el.value);
       if (n !== null && !isNaN(n)) el.value = n.toFixed(2);
       updateBalance();
     });
   });
-  currency.addEventListener("change", updateBalance);
   updateBalance();
 
   // ---------------------------------------------------------------- basis

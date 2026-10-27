@@ -218,10 +218,24 @@ def _values_from(a):
     }
 
 
+def _balance_display(values):
+    """Balance due for the form's first paint, so it's right before (and
+    without) the page's script; psa-form.js keeps it current after that."""
+    from .forms import _money
+    fee, deposit = _money(values.get("fee")), _money(values.get("deposit"))
+    if not fee or deposit is False:
+        return ""
+    deposit = deposit or 0
+    if deposit > fee:
+        return "Deposit is more than the fee"
+    return f"{values.get('currency') or 'GHS'} {fee - deposit:,.2f}"
+
+
 def _form(request, a, values, errors=None, status=200):
     return render(request, "psa/admin_form.html", {
         "a": a,
         "v": values,
+        "balance": _balance_display(values),
         "errors": errors or {},
         "currencies": CURRENCIES,
         "bases": ServiceAgreement.Basis.choices,

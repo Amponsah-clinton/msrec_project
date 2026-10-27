@@ -5,8 +5,8 @@
 
 {% block extra_css %}
 <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
-<link href="{% static 'assets/css/psa-agreement.css' %}" rel="stylesheet">
-<link href="{% static 'dashboard/css/psa.css' %}" rel="stylesheet">
+<link href="{% static_v 'assets/css/psa-agreement.css' %}" rel="stylesheet">
+<link href="{% static_v 'dashboard/css/psa.css' %}" rel="stylesheet">
 {% endblock %}
 
 {% block nav_content %}
@@ -115,7 +115,6 @@
               <button type="button" class="psa-link" id="psaAddDeliverable">+ Add deliverable</button>
               <span class="field-hint" id="psaDelivCount"></span>
             </div>
-            <p class="field-hint">A new line opens as you fill the last one. Press Enter to move down.</p>
             <p class="field-error" id="psaDeliverablesErr">{{ errors|get:"deliverables" }}</p>
           </div>
         </div>
@@ -160,7 +159,7 @@
             </div>
             <div class="field-group">
               <label for="psaBalanceOut">Balance due</label>
-              <input class="field-input psa-readonly" type="text" id="psaBalanceOut" readonly tabindex="-1" value="">
+              <input class="field-input psa-readonly" type="text" id="psaBalanceOut" readonly tabindex="-1" value="{{ balance }}" aria-live="polite">
               <p class="field-hint">Agreed fee minus the deposit.</p>
             </div>
           </div>
@@ -197,6 +196,6 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'assets/js/signature-pad.js' %}"></script>
-<script src="{% static 'dashboard/js/psa-form.js' %}"></script>
+<script src="{% static_v 'assets/js/signature-pad.js' %}"></script>
+<script src="{% static_v 'dashboard/js/psa-form.js' %}"></script>
 {% endblock %}

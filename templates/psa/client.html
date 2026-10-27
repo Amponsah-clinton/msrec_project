@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static psa_tags %}
 
 {% block title %}Service Agreement {{ a.reference }} | Metascholar Limited{% endblock %}
 {% block description %}Professional Service Agreement {{ a.reference }} between Metascholar Limited and {{ a.client_name }}.{% endblock %}
@@ -11,7 +11,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link href="{% static 'assets/css/psa-agreement.css' %}" rel="stylesheet">
+<link href="{% static_v 'assets/css/psa-agreement.css' %}" rel="stylesheet">
 <style>
   .psac-wrap { max-width: 900px; margin: 0 auto; padding: 128px 16px 72px; }
   .psac-intro { max-width: 860px; margin: 0 auto 22px; display: flex; gap: 16px; align-items: flex-start; }
@@ -102,7 +102,7 @@
 
 {% block extra_js %}
 {% if a.status == 'sent' %}
-<script src="{% static 'assets/js/signature-pad.js' %}"></script>
+<script src="{% static_v 'assets/js/signature-pad.js' %}"></script>
 <script>
   (function () {
     // Checked here so nothing is lost to a round trip; the server checks
