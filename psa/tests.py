@@ -927,3 +927,142 @@ class TemplateHygieneTests(StaffTestCase):
                 body = self.client.get(url).content.decode()
                 for leak in ("{#", "#}", "{%", "%}", "{{", "}}"):
                     self.assertNotIn(leak, body, f"{leak} printed on {url}")
+
+
+class PsaSmsTests(StaffTestCase):
+    """Every PSA email that has a number to reach also goes out as a text."""
+
+    def setUp(self):
+        super().setUp()
+        self.a = self._sent()
+        self.a.client_phone = "+233 24 123 4567"
+        self.a.save(update_fields=["client_phone"])
+
+    def test_every_message_is_one_gsm_segment(self):
+        # A segment costs a credit. The signing link alone is 97 of the
+        # 160 characters, and one curly quote would cut the budget to 70,
+        # so each message is checked against a deliberately awkward
+        # agreement: a long client name and a six-figure fee.
+        from notifications import sms
+
+        from psa import emails
+
+        a = self.a
+        a.client_name = "University of Ghana, School of Public Health"
+        a.fee = Decimal("184500.00")
+        for label, message in (
+            ("link", emails.sms_to_client(a)),
+            ("reminder", emails.sms_to_client(a, reminder=True)),
+            ("updated", emails.sms_to_client(a, updated=True)),
+            ("signed copy", emails.sms_client_copy(a)),
+            ("receipt", emails.sms_change_request_receipt(a)),
+            ("staff signed", emails.sms_signed_to_staff(a)),
+            ("staff changes", emails.sms_changes_requested_to_staff(a)),
+        ):
+            with self.subTest(label):
+                count, encoding = sms.segments(message)
+                self.assertEqual(encoding, "gsm", f"{label} left GSM-7: {message!r}")
+                self.assertEqual(count, 1, f"{label} costs {count} credits: {message!r}")
+
+    def test_curly_punctuation_is_folded_before_it_reaches_a_handset(self):
+        from notifications import sms
+
+        from psa import emails
+
+        self.a.client_name = "Nkrumah\u2019s Trust \u2014 Accra"
+        message = emails.sms_signed_to_staff(self.a)
+        self.assertNotIn("\u2019", message)
+        self.assertNotIn("\u2014", message)
+        self.assertIn("Nkrumah's Trust - Accra", message)
+        self.assertEqual(sms.segments(message)[1], "gsm")
+
+    def test_a_long_name_is_clipped_not_left_to_run(self):
+        from psa import emails
+        self.a.client_name = "A" * 200
+        self.assertIn("A" * emails.SMS_NAME_LEN + "...", emails.sms_signed_to_staff(self.a))
+
+    def test_nothing_is_sent_without_a_number_or_an_api_key(self):
+        from notifications import sms as sms_module
+
+        from psa import emails
+
+        sent = []
+        original = sms_module.send_sms
+
+        def fake(recipients, message, sender=None):
+            sent.append((list(recipients), message))
+            return {"ok": True}
+
+        original_conf = sms_module.is_configured
+        sms_module.send_sms = fake
+        self.addCleanup(lambda: setattr(sms_module, "send_sms", original))
+        self.addCleanup(lambda: setattr(sms_module, "is_configured", original_conf))
+
+        # BMS_API_KEY is unset under test, so the gateway is never called.
+        self.assertFalse(sms_module.is_configured())
+        self.assertFalse(emails._sms(["0241234567"], "hello", "test"))
+        # And an empty number short-circuits even once a key is set.
+        sms_module.is_configured = lambda: True
+        self.assertFalse(emails._sms([""], "hello", "test"))
+        self.assertEqual(sent, [])
+
+    def test_an_unreachable_client_is_skipped_quietly(self):
+        from psa import emails
+        self.a.client_phone = ""
+        self.assertEqual(emails._client_phone(self.a), "")
+        # A landline or a foreign number is not a Ghana mobile.
+        self.a.client_phone = "+44 20 7946 0958"
+        self.assertEqual(emails._client_phone(self.a), "")
+        self.a.client_phone = "0241234567"
+        self.assertEqual(emails._client_phone(self.a), "0241234567")
+
+    def test_staff_phones_follow_the_email_list_and_the_opt_out(self):
+        from psa import emails
+        self.admin.phone = "0244000111"
+        self.admin.save(update_fields=["phone"])
+        self.assertIn("0244000111", emails._staff_phones(self.a))
+        self.admin.sms_notifications_enabled = False
+        self.admin.save(update_fields=["sms_notifications_enabled"])
+        self.assertNotIn("0244000111", emails._staff_phones(self.a))
+
+    def test_the_client_link_text_is_sent_when_the_email_goes(self):
+        from psa import emails
+        sent = self._patch_send([])
+        self.client.post(reverse("psa_admin:psa_resend", args=[self.a.pk]))
+        self.assertEqual(len(sent), 1)
+        numbers, message = sent[0]
+        self.assertEqual(numbers, ["0241234567"])
+        self.assertIn(self.a.reference, message)
+        self.assertIn(self.a.token, message)
+
+    def test_a_text_that_fails_never_breaks_the_email(self):
+        from psa import emails
+        from notifications import sms as sms_module
+
+        def boom(*args, **kwargs):
+            raise RuntimeError("gateway down")
+
+        original_send, original_conf = sms_module.send_sms, sms_module.is_configured
+        sms_module.send_sms, sms_module.is_configured = boom, lambda: True
+        try:
+            self.assertTrue(emails.send_to_client(self.a))
+        finally:
+            sms_module.send_sms, sms_module.is_configured = original_send, original_conf
+        self.assertEqual(mail.outbox[-1].to, [self.a.client_email])
+
+    # ---- helpers ----------------------------------------------------
+
+    def _patch_send(self, sink):
+        """Capture outgoing texts instead of calling the gateway."""
+        from notifications import sms as sms_module
+        original_send, original_conf = sms_module.send_sms, sms_module.is_configured
+
+        def fake(recipients, message, sender=None):
+            sink.append((list(recipients), message))
+            return {"ok": True, "sent_to": list(recipients)}
+
+        sms_module.send_sms = fake
+        sms_module.is_configured = lambda: True
+        self.addCleanup(lambda: setattr(sms_module, "send_sms", original_send))
+        self.addCleanup(lambda: setattr(sms_module, "is_configured", original_conf))
+        return sink

@@ -171,7 +171,7 @@ def sms_to_client(a, *, reminder=False, updated=False):
     if updated:
         return f"Metascholar agreement {a.reference} is updated. Sign: {a.client_url()}"
     if reminder:
-        return f"Reminder: Metascholar agreement {a.reference} is unsigned. Sign: {a.client_url()}"
+        return f"Reminder: Metascholar agreement {a.reference} is unsigned: {a.client_url()}"
     return f"Metascholar agreement {a.reference}. Review and sign: {a.client_url()}"
 
 
@@ -245,7 +245,7 @@ def send_signed_to_staff(a, attachment=None):
 
 def sms_signed_to_staff(a):
     fee = f" Fee {_money(a)}." if a.fee is not None else ""
-    return (f"PSA {a.reference}: {_plain(a.client_name, SMS_NAME_LEN)} has signed."
+    return (f"{a.reference}: {_plain(a.client_name, SMS_NAME_LEN)} has signed."
             f"{fee} {a.staff_url()}")
 
 
@@ -274,7 +274,7 @@ def send_changes_requested_to_staff(a, req):
 
 
 def sms_changes_requested_to_staff(a):
-    return (f"PSA {a.reference}: {_plain(a.client_name, SMS_NAME_LEN)} asked for changes "
+    return (f"{a.reference}: {_plain(a.client_name, SMS_NAME_LEN)} asked for changes "
             f"before signing. {a.staff_url()}")
 
 
