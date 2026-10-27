@@ -268,11 +268,19 @@ def send_changes_requested_to_staff(a, req):
         cta_url=a.staff_url(),
         preheader=f"{a.client_name} asked for changes to {a.reference}.",
     )
+    if ok:
+        _sms(_staff_phones(a), sms_changes_requested_to_staff(a), "changes requested")
+    return ok
+
+
+def sms_changes_requested_to_staff(a):
+    return (f"PSA {a.reference}: {_plain(a.client_name, SMS_NAME_LEN)} asked for changes "
+            f"before signing. {a.staff_url()}")
 
 
 def send_change_request_receipt(a, req):
     """The client's own record of what they asked for."""
-    return _send(
+    ok = _send(
         subject=f"We've received your request — Agreement {a.reference}",
         to=a.client_email,
         heading="We've received your request for changes",
