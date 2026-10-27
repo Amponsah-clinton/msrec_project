@@ -5,7 +5,7 @@ item that should be highlighted:
   {% include "dashboards/admin/_nav.html" with active="accounts" %}
 
 Keys: dashboard, accounts, applications, inquiries, board, resources,
-finance, messages, notifications, reports, access, audit_logs, settings, profile, help.
+finance, psa, messages, notifications, reports, access, audit_logs, settings, profile, help.
 
 This list used to carry thirteen href="#" destinations across two entire
 submenus (Institutions, Communications) plus placeholder children under
@@ -80,6 +80,11 @@ and all thirteen pages get it.
 <a href="{% url 'admin_dashboard:finance' %}" class="nav-item{% if active == 'finance' %} active{% endif %}">
   <span class="nav-icon"><svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg></span>
   <span>Finance</span>
+</a>
+
+<a href="{% url 'psa_admin:psa_list' %}" class="nav-item{% if active == 'psa' %} active{% endif %}">
+  <span class="nav-icon"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 17c1.5-2 2.5-2 3.5-.5s2 1.5 4.5-1"/></svg></span>
+  <span>PSA</span>
 </a>
 
 <a href="{% url 'admin_dashboard:messages' %}" class="nav-item{% if active == 'messages' %} active{% endif %}">
