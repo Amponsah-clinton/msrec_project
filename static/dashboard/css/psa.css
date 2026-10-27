@@ -143,15 +143,22 @@
 .psa-owing.is-over .psa-owing-amt { color: var(--teal); }
 .psa-owing.is-settled .acct-sub { color: var(--green); }
 
-/* Shown on hover or focus of the row, so a dense table stays readable --
-   always visible on touch, where there is no hover. */
-.psa-pay-btn { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; padding: 3px 8px 3px 5px;
-  border: 1px solid var(--border); border-radius: 999px; background: var(--white); cursor: pointer;
-  font-size: 11.5px; font-weight: 600; color: var(--text-sub); white-space: nowrap; opacity: 0; transition: opacity .12s; }
+/* Always on screen, in the row: recording a payment is the one thing this
+   column is for, so it isn't kept behind a hover. */
+.psa-pay-btn { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; padding: 4px 10px 4px 7px;
+  border: 1px solid var(--teal); border-radius: 999px; background: var(--white); cursor: pointer;
+  font-size: 11.5px; font-weight: 700; color: var(--teal); white-space: nowrap; }
 .psa-pay-btn svg { width: 13px; height: 13px; }
-.psa-pay-btn:hover { border-color: var(--teal); color: var(--teal); }
-tr:hover .psa-pay-btn, .psa-pay-btn:focus-visible { opacity: 1; }
-@media (hover: none) { .psa-pay-btn { opacity: 1; } }
+.psa-pay-btn:hover { background: var(--teal); color: var(--white); }
+.psa-pay-btn:disabled { border-color: var(--border); background: var(--bg); color: var(--text-faint); cursor: default; }
+/* Paid up: there is nothing to chase, so the button steps back. */
+.psa-owing.is-settled .psa-pay-btn, .psa-owing.is-over .psa-pay-btn { border-color: var(--border); color: var(--text-sub); font-weight: 600; }
+.psa-owing.is-settled .psa-pay-btn:hover, .psa-owing.is-over .psa-pay-btn:hover { border-color: var(--teal); background: var(--white); color: var(--teal); }
+
+/* The figure leads the cell. */
+.psa-owing .psa-owing-amt { font-size: 14.5px; }
+.psa-owing-set { font-size: 11.5px; font-weight: 600; color: var(--teal); text-decoration: none; }
+.psa-owing-set:hover { text-decoration: underline; }
 
 /* ---------------- Record payment dialog ---------------- */
 dialog.psa-dialog { border: 0; border-radius: 16px; padding: 0; width: min(520px, calc(100vw - 32px));

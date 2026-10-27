@@ -161,7 +161,8 @@
                   <div class="acct-cell psa-owing is-{{ a.payment_state }}">
                     {% if a.fee is None %}
                     <span class="acct-main psa-nowrap">&mdash;</span>
-                    <span class="acct-sub">No fee set</span>
+                    <span class="acct-sub">No fee agreed yet</span>
+                    {% if a.is_editable %}<a class="psa-owing-set" href="{% url 'psa_admin:psa_edit' a.pk %}">Set the fee</a>{% endif %}
                     {% elif a.payment_state == 'over' %}
                     <span class="acct-main psa-nowrap psa-owing-amt">{{ a.currency }} 0.00</span>
                     <span class="acct-sub">Overpaid by {{ a.currency }} {{ a.overpaid_by|money }}</span>
