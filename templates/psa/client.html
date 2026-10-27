@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Service Agreement {{ a.reference }} | Metascholar Limited{% endblock %}
+{% block description %}Professional Service Agreement {{ a.reference }} between Metascholar Limited and {{ a.client_name }}.{% endblock %}
+{% block body_class %}psa-client-page{% endblock %}
+
+{% block fonts %}
+<meta name="robots" content="noindex, nofollow">
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Serif:wght@500;600&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'assets/css/psa-agreement.css' %}" rel="stylesheet">
+<style>
+  .psac-wrap { max-width: 900px; margin: 0 auto; padding: 128px 16px 72px; }
+  .psac-intro { max-width: 860px; margin: 0 auto 22px; display: flex; gap: 16px; align-items: flex-start; }
+  .psac-intro .ico { width: 46px; height: 46px; border-radius: 13px; background: #0f7f7b; color: #fff; display: grid; place-items: center; font-size: 21px; flex: none; }
+  .psac-intro h2 { font-size: 21px; margin: 0 0 4px; }
+  .psac-intro p { margin: 0; color: #5d6676; font-size: 14.5px; line-height: 1.6; }
+  .psac-steps { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding: 0; list-style: none; }
+  .psac-steps li { font-size: 12.5px; font-weight: 600; color: #3c4656; background: #f1f4f8; border: 1px solid #e2e6ed; border-radius: 999px; padding: 4px 11px; }
+  .psac-steps li b { color: #0f7f7b; margin-right: 4px; }
+  .psac-actions { max-width: 860px; margin: 18px auto 0; display: flex; gap: 12px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+  .psac-actions p { margin: 0; font-size: 13px; color: #5d6676; max-width: 52ch; }
+  .psac-btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px; border: 0; border-radius: 12px; padding: 14px 26px; min-height: 52px;
+    font: inherit; font-size: 15.5px; font-weight: 700; cursor: pointer; background: #0f7f7b; color: #fff; text-decoration: none;
+    box-shadow: 0 12px 26px -14px rgba(15,127,123,.95); transition: background-color .15s, transform .08s; }
+  .psac-btn:hover { background: #0c6966; color: #fff; }
+  .psac-btn:active { transform: translateY(1px); }
+  .psac-btn:disabled { opacity: .6; cursor: default; }
+  .psac-btn.ghost { background: #fff; color: #1b2433; border: 1px solid #d9dee6; box-shadow: none; }
+  .psac-btn.ghost:hover { border-color: #0f7f7b; color: #0f7f7b; }
+  .psac-summary { max-width: 860px; margin: 0 auto 16px; padding: 12px 16px; border-radius: 12px; background: #fff4f2; border: 1px solid #f2cfc9; color: #9b2f24; font-size: 14px; }
+  .psac-summary:empty { display: none; }
+  .psac-flash { max-width: 860px; margin: 0 auto 16px; }
+  .psac-state { max-width: 640px; margin: 0 auto; text-align: center; padding: 40px 24px; background: #fff; border: 1px solid #e2e6ed; border-radius: 16px; }
+  .psac-state h2 { font-size: 22px; margin: 12px 0 8px; }
+  .psac-state p { color: #5d6676; margin: 0; }
+  @media (max-width: 640px) {
+    .psac-wrap { padding-top: 104px; }
+    .psac-actions { flex-direction: column-reverse; align-items: stretch; }
+    .psac-btn { width: 100%; }
+  }
+  @media print { .psac-intro, .psac-actions, .psac-flash, .psac-summary { display: none !important; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="main">
+  <div class="psac-wrap">
+    <div class="psac-flash">{% include "_alerts.html" %}</div>
+
+    {% if a.status == 'cancelled' %}
+      <div class="psac-state">
+        <i class="bi bi-x-octagon" style="font-size:34px;color:#c0392b"></i>
+        <h2>This agreement has been withdrawn</h2>
+        <p>Metascholar Limited cancelled agreement {{ a.reference }}, so it can no longer be signed. If you think this is a mistake, please reply to the email you received.</p>
+      </div>
+
+    {% elif a.status == 'signed' %}
+      <div class="psac-intro psa-no-print">
+        <span class="ico"><i class="bi bi-patch-check-fill"></i></span>
+        <div>
+          <h2>Your signed agreement</h2>
+          <p>Signed by both Parties{% if a.client_signed_at %} on {{ a.client_signed_at|date:"j F Y" }}{% endif %}. Keep this link to come back to your copy, or print it / save it as a PDF.</p>
+        </div>
+      </div>
+      {% include "psa/_agreement.html" %}
+      <div class="psac-actions">
+        <p>Questions about this agreement? Reply to the email it came with and the Metascholar team will help.</p>
+        <button type="button" class="psac-btn ghost" onclick="window.print()"><i class="bi bi-printer"></i> Print or save as PDF</button>
+      </div>
+
+    {% else %}
+      <div class="psac-intro">
+        <span class="ico"><i class="bi bi-pen"></i></span>
+        <div>
+          <h2>Review and sign your agreement</h2>
+          <p>Metascholar Limited has prepared and signed this agreement. Please read it through, confirm your details, and sign at the bottom.</p>
+          <ol class="psac-steps">
+            <li><b>1</b>Check your details</li>
+            <li><b>2</b>Review the service &amp; fees</li>
+            <li><b>3</b>Accept &amp; sign</li>
+          </ol>
+        </div>
+      </div>
+
+      <form method="post" id="psaClientForm" novalidate>
+        {% csrf_token %}
+        <div class="psac-summary" id="psaClientSummary" role="alert">{% if errors %}Please complete the highlighted parts of the agreement before signing.{% endif %}</div>
+        {% include "psa/_agreement.html" with form=True %}
+        <div class="psac-actions">
+          <p>By selecting “Accept &amp; sign”, you are signing this agreement electronically. It is as binding as a handwritten signature.</p>
+          <button type="submit" class="psac-btn" id="psaClientSubmit"><i class="bi bi-pen-fill"></i> Accept &amp; sign agreement</button>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+{% if a.status == 'sent' %}
+<script src="{% static 'assets/js/signature-pad.js' %}"></script>
+<script>
+  (function () {
+    // Checked here so nothing is lost to a round trip; the server checks
+    // everything again (psa/forms.py parse_client).
+    var form = document.getElementById("psaClientForm");
+    var summary = document.getElementById("psaClientSummary");
+    var pad = document.getElementById("clientSigpad");
+    var btn = document.getElementById("psaClientSubmit");
+
+    function setError(input, errEl, msg) {
+      if (input) input.setAttribute("aria-invalid", msg ? "true" : "false");
+      if (errEl) errEl.textContent = msg || "";
+      return !msg;
+    }
+    function digits(s) { return (s.match(/\d/g) || []).length; }
+
+    function check() {
+      var ok = true, first = null;
+      function field(id, test) {
+        var input = document.getElementById(id), err = document.getElementById(id + "Err");
+        input.value = input.value.trim();
+        var msg = test(input.value);
+        if (!setError(input, err, msg)) { ok = false; first = first || input; }
+      }
+      field("psaClientName", function (v) { return v ? "" : "Enter your full name."; });
+      field("psaClientEmail", function (v) {
+        if (!v) return "Enter your email address.";
+        return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v) ? "" : "Enter a valid email address.";
+      });
+      field("psaClientPhone", function (v) {
+        if (!v) return "Enter your phone number.";
+        var d = digits(v);
+        return d >= 7 && d <= 15 ? "" : "Enter a valid phone number (7–15 digits).";
+      });
+
+      var accept = document.getElementById("psaAccept");
+      var acceptLabel = document.getElementById("psaAcceptLabel");
+      var acceptErr = document.getElementById("psaAcceptErr");
+      acceptLabel.classList.toggle("has-error", !accept.checked);
+      acceptErr.textContent = accept.checked ? "" : "Confirm that you have reviewed and accept the agreement.";
+      if (!accept.checked) { ok = false; first = first || accept; }
+
+      var sigErr = document.getElementById("clientSigError");
+      var empty = pad.sigpad.isEmpty();
+      pad.classList.toggle("has-error", empty);
+      sigErr.textContent = empty
+        ? (pad.sigpad.mode() === "typed" ? "Type your full name to sign." : "Draw your signature in the box, or switch to “Type name”.")
+        : "";
+      if (empty) { ok = false; first = first || pad; }
+      return { ok: ok, first: first };
+    }
+
+    form.addEventListener("submit", function (e) {
+      var r = check();
+      if (!r.ok) {
+        e.preventDefault();
+        summary.textContent = "Please complete the highlighted parts of the agreement before signing.";
+        r.first.scrollIntoView({ block: "center", behavior: "smooth" });
+        if (r.first.focus) r.first.focus({ preventScroll: true });
+        return;
+      }
+      btn.disabled = true;
+      btn.innerHTML = "Signing…";
+    });
+    // Clear a pad's error as soon as it's signed.
+    pad.addEventListener("sigpad:change", function () {
+      if (!pad.sigpad.isEmpty()) { pad.classList.remove("has-error"); document.getElementById("clientSigError").textContent = ""; }
+    });
+  })();
+</script>
+{% endif %}
+{% endblock %}

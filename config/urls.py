@@ -22,6 +22,8 @@ urlpatterns = [
     path("hall-of-fame/", include("hall_of_fame.urls")),
     path("workshop/", include("workshop.urls")),
     path("admins/workshop/", include("workshop.admin_urls")),
+    path("admins/psa/", include("psa.admin_urls")),
+    path("psa/", include("psa.urls")),
     path("admins/", include("admin_dashboard.urls")),
     path("notifications/", include("notifications.urls")),
     path("assistant/", include("assistant.urls")),

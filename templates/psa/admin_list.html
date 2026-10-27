@@ -1,0 +1,201 @@
+{% extends "dashboards/base.html" %}
+{% load static psa_tags %}
+
+{% block title %}PSA — Professional Service Agreements | MSREC{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'dashboard/css/psa.css' %}">
+{% endblock %}
+
+{% block nav_content %}
+{% if dashboard == 'secretariat' %}{% include "dashboards/_secretariat_nav.html" %}{% else %}{% include "dashboards/admin/_nav.html" with active="psa" %}{% endif %}
+{% endblock %}
+
+{% block topbar %}
+{% include "dashboards/_staff_topbar.html" with page_title="PSA" page_subtitle="Professional Service Agreements between Metascholar Limited and its clients" %}
+{% endblock %}
+
+{% block main_content %}
+<div class="psa" id="psaListPage">
+
+  <div class="psa-hero">
+    <div>
+      <h2>Professional Service Agreements</h2>
+      <p>Prepare an agreement, sign it for Metascholar Limited and send it to the client. They get an email with a private link to confirm their details and sign.</p>
+    </div>
+    <a href="{% url 'psa_admin:psa_new' %}" class="psa-btn primary lg" id="psaCreateBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg> Create new PSA
+    </a>
+  </div>
+
+  <div class="psa-stats" role="list">
+    <a role="listitem" class="psa-stat{% if not f.status %} is-on{% endif %}" href="?{% if f.q %}q={{ f.q|urlencode }}{% endif %}" id="psaStatAll">
+      <b>{{ stats.all }}</b><span>All agreements</span>
+      <small>{% for row in signed_value %}{{ row.currency }} {{ row.total|money }}{% if not forloop.last %} · {% endif %}{% empty %}No signed value yet{% endfor %}{% if signed_value %} signed{% endif %}</small>
+    </a>
+    <a role="listitem" class="psa-stat{% if f.status == 'draft' %} is-on{% endif %}" href="?status=draft" id="psaStatDraft"><b>{{ stats.draft }}</b><span>Drafts</span><small>Not sent yet</small></a>
+    <a role="listitem" class="psa-stat{% if f.status == 'sent' %} is-on{% endif %}" href="?status=sent" id="psaStatSent"><b>{{ stats.sent }}</b><span>Awaiting client</span><small>Sent, not signed</small></a>
+    <a role="listitem" class="psa-stat{% if f.status == 'signed' %} is-on{% endif %}" href="?status=signed" id="psaStatSigned"><b>{{ stats.signed }}</b><span>Signed</span><small>Both parties signed</small></a>
+    <a role="listitem" class="psa-stat{% if f.status == 'cancelled' %} is-on{% endif %}" href="?status=cancelled" id="psaStatCancelled"><b>{{ stats.cancelled }}</b><span>Cancelled</span><small>Withdrawn</small></a>
+  </div>
+
+  <div class="psa-card">
+    <form method="get" id="psaFilterForm" role="search" aria-label="Search and filter agreements">
+      <div class="psa-filters">
+        <div class="psa-f psa-search">
+          <label for="psaQ">Search</label>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <input type="search" id="psaQ" name="q" value="{{ f.q }}" placeholder="Reference, client, email, phone or service">
+        </div>
+        <div class="psa-f">
+          <label for="psaFilterStatus">Status</label>
+          <select id="psaFilterStatus" name="status" data-autosubmit>
+            <option value="">Any status</option>
+            {% for value, label in statuses %}<option value="{{ value }}" {% if f.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="psa-f">
+          <label for="psaFilterBasis">Payment basis</label>
+          <select id="psaFilterBasis" name="basis" data-autosubmit>
+            <option value="">Any basis</option>
+            {% for value, label in bases %}<option value="{{ value }}" {% if f.basis == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="psa-f">
+          <label for="psaFilterCurrency">Currency</label>
+          <select id="psaFilterCurrency" name="currency" data-autosubmit>
+            <option value="">Any</option>
+            {% for value, label in currencies %}<option value="{{ value }}" {% if f.currency == value %}selected{% endif %}>{{ value }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="psa-f">
+          <label for="psaFilterFrom">Agreement from</label>
+          <input type="date" id="psaFilterFrom" name="date_from" value="{{ f.date_from }}" data-autosubmit>
+        </div>
+        <div class="psa-f">
+          <label for="psaFilterTo">Agreement to</label>
+          <input type="date" id="psaFilterTo" name="date_to" value="{{ f.date_to }}" data-autosubmit>
+        </div>
+        <div class="psa-f">
+          <label for="psaSort">Sort by</label>
+          <select id="psaSort" name="sort" data-autosubmit>
+            <option value="newest" {% if f.sort == 'newest' %}selected{% endif %}>Newest first</option>
+            <option value="oldest" {% if f.sort == 'oldest' %}selected{% endif %}>Oldest first</option>
+            <option value="agreement_date" {% if f.sort == 'agreement_date' %}selected{% endif %}>Agreement date</option>
+            <option value="client" {% if f.sort == 'client' %}selected{% endif %}>Client A–Z</option>
+            <option value="fee_high" {% if f.sort == 'fee_high' %}selected{% endif %}>Fee: high to low</option>
+            <option value="fee_low" {% if f.sort == 'fee_low' %}selected{% endif %}>Fee: low to high</option>
+          </select>
+        </div>
+      </div>
+      <div class="psa-filter-foot">
+        <span class="psa-count" id="psaCount" aria-live="polite">
+          <b>{{ matching_count }}</b> agreement{{ matching_count|pluralize }}{% if filtered %} match{{ matching_count|pluralize:"es," }} your filters{% endif %}
+          {% if filtered %} · <a class="psa-linkbtn" href="{% url 'psa_admin:psa_list' %}" id="psaResetFilters">Clear filters</a>{% endif %}
+        </span>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button type="submit" class="psa-btn ghost" id="psaApplyFilters">Apply</button>
+          <a class="psa-btn ghost" id="psaExportBtn" href="{% url 'psa_admin:psa_export' %}{% if query %}?{{ query }}{% endif %}" {% if not matching_count %}aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.5"{% endif %}>
+            <svg viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></svg> Export CSV{% if filtered %} ({{ matching_count }}){% endif %}
+          </a>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="psa-card">
+    {% if page.object_list %}
+    <div class="psa-table-wrap">
+      <table class="psa-table" id="psaTable">
+        <thead>
+          <tr>
+            <th scope="col">Agreement</th>
+            <th scope="col">Client</th>
+            <th scope="col">Service</th>
+            <th scope="col">Fee</th>
+            <th scope="col">Term</th>
+            <th scope="col">Status</th>
+            <th scope="col">Progress</th>
+            <th scope="col"><span class="visually-hidden">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for a in page.object_list %}
+          <tr id="psaRow{{ a.pk }}">
+            <td>
+              <a class="psa-ref" href="{% url 'psa_admin:psa_detail' a.pk %}">{{ a.reference }}</a>
+              <div class="psa-faint">{{ a.agreement_date|date:"j M Y" }}</div>
+            </td>
+            <td>
+              <div class="psa-who">{{ a.client_name }}</div>
+              <div class="psa-sub">{{ a.client_email|default:"No email yet" }}</div>
+            </td>
+            <td>
+              <div class="psa-clip" title="{{ a.service_title }}">{{ a.service_title|default:"—" }}</div>
+              <div class="psa-faint">{% with n=a.deliverable_list|length %}{{ n }} deliverable{{ n|pluralize }}{% endwith %}{% if a.payment_basis %} · {{ a.get_payment_basis_display }}{% endif %}</div>
+            </td>
+            <td>
+              {% if a.fee is not None %}<div class="psa-amt"><small>{{ a.currency }}</small>{{ a.fee|money }}</div>
+              {% if a.deposit %}<div class="psa-faint">{{ a.deposit|money }} upfront</div>{% endif %}{% else %}<span class="psa-faint">—</span>{% endif %}
+            </td>
+            <td class="psa-sub" style="white-space:nowrap">
+              {% if a.start_date %}{{ a.start_date|date:"j M" }} → {{ a.completion_date|date:"j M Y"|default:"?" }}{% else %}—{% endif %}
+            </td>
+            <td><span class="psa-chip {{ a.status }}">{{ a.get_status_display }}</span></td>
+            <td class="psa-sub">
+              {% if a.status == 'signed' %}Signed {{ a.client_signed_at|date:"j M Y" }}
+              {% elif a.status == 'sent' %}Sent {{ a.last_sent_at|timesince }} ago{% if a.viewed_at %} · <span title="Opened {{ a.viewed_at|date:'j M Y H:i' }}">opened</span>{% else %} · not opened{% endif %}
+              {% elif a.status == 'cancelled' %}Cancelled {{ a.cancelled_at|date:"j M Y" }}
+              {% else %}Created {{ a.created_at|date:"j M Y" }}{% if a.created_by %} by {{ a.created_by.first_name }}{% endif %}{% endif %}
+            </td>
+            <td class="act">
+              <a class="psa-btn ghost" href="{% url 'psa_admin:psa_detail' a.pk %}" id="psaOpen{{ a.pk }}">Open</a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if page.has_other_pages %}
+    <nav class="psa-pager" aria-label="Pages">
+      <span class="psa-count">Showing <b>{{ page.start_index }}–{{ page.end_index }}</b> of <b>{{ matching_count }}</b></span>
+      <div class="psa-pages">
+        {% if page.has_previous %}<a class="psa-page" href="?{% if query %}{{ query }}&amp;{% endif %}page={{ page.previous_page_number }}" aria-label="Previous page">‹</a>{% else %}<span class="psa-page is-off">‹</span>{% endif %}
+        {% for n in page_range %}
+          {% if n == page.paginator.ELLIPSIS %}<span class="psa-page is-off">…</span>
+          {% elif n == page.number %}<span class="psa-page is-current" aria-current="page">{{ n }}</span>
+          {% else %}<a class="psa-page" href="?{% if query %}{{ query }}&amp;{% endif %}page={{ n }}">{{ n }}</a>{% endif %}
+        {% endfor %}
+        {% if page.has_next %}<a class="psa-page" href="?{% if query %}{{ query }}&amp;{% endif %}page={{ page.next_page_number }}" aria-label="Next page">›</a>{% else %}<span class="psa-page is-off">›</span>{% endif %}
+      </div>
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <div class="psa-empty" id="psaEmpty">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg>
+      {% if filtered %}
+        <h3>No agreements match these filters</h3>
+        <p>Try a different search, or clear the filters to see everything.</p>
+        <a class="psa-btn ghost" href="{% url 'psa_admin:psa_list' %}">Clear filters</a>
+      {% else %}
+        <h3>No agreements yet</h3>
+        <p>Create the first Professional Service Agreement and send it to a client to sign.</p>
+        <a class="psa-btn primary" href="{% url 'psa_admin:psa_new' %}">Create new PSA</a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  // Dropdowns and dates apply as soon as they change; the search box
+  // applies on Enter (or the Apply button).
+  document.querySelectorAll("#psaFilterForm [data-autosubmit]").forEach(function (el) {
+    el.addEventListener("change", function () { el.form.submit(); });
+  });
+</script>
+{% endblock %}

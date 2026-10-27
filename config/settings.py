@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     "institution_dashboard",
     "hall_of_fame",
     "workshop",
+    "psa",
     "assistant",
 ]
 

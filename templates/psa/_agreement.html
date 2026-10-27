@@ -1,0 +1,188 @@
+{% load psa_tags %}
+{% comment %}
+The agreement as one sheet (styles: assets/css/psa-agreement.css).
+  a           the ServiceAgreement
+  form        True on the client's signing page: their details become
+              inputs and Section 5 takes their signature. Must sit inside
+              a <form>.
+  v, errors   the client's typed values / errors when `form`
+  show_audit  staff only: how and where the client signed
+{% endcomment %}
+<article class="psa-doc" id="psaDocument" aria-label="Professional Service Agreement {{ a.reference }}">
+  {% if a.status == 'signed' %}<span class="psa-stamp" aria-hidden="true">Signed</span>
+  {% elif a.status == 'cancelled' %}<span class="psa-stamp cancelled" aria-hidden="true">Cancelled</span>{% endif %}
+
+  <header class="psa-head">
+    <div class="psa-head-top">
+      <div class="psa-brand">
+        <span class="psa-brand-mark" aria-hidden="true">M</span>
+        <div><b>{{ a.provider_name }}</b><span>{{ a.provider_address }}</span></div>
+      </div>
+      <div class="psa-meta">
+        <div>Agreement No. <span class="ref" id="psaRef">{{ a.reference }}</span></div>
+        <span class="psa-conf">Confidential</span>
+      </div>
+    </div>
+    <h1 class="psa-title">Professional Service Agreement</h1>
+    <p class="psa-lede">A contract outlining the services, fees, timelines, and responsibilities agreed between Metascholar Limited and its client.</p>
+  </header>
+
+  {# ---------------------------------------------------------------- 1 #}
+  <section class="psa-sec" id="psaSecParties" aria-labelledby="psaSecPartiesTitle">
+    <h2 class="psa-sec-title" id="psaSecPartiesTitle"><span class="n">1</span> The Parties</h2>
+    <dl class="psa-fields">
+      <div class="psa-field"><dt>Agreement Date</dt><dd id="psaAgreementDate">{{ a.agreement_date|date:"j F Y" }}</dd></div>
+      <div class="psa-field"><dt>Service Provider</dt><dd>{{ a.provider_name }}</dd></div>
+      <div class="psa-field wide"><dt>Business Address</dt><dd>{{ a.provider_address }}</dd></div>
+    </dl>
+
+    {% if form %}
+    <div class="psa-fields" style="margin-top:14px">
+      <div class="psa-field wide">
+        <label for="psaClientName">Client / Customer Full Name <span class="req">*</span></label>
+        <input class="psa-input" type="text" id="psaClientName" name="client_name" value="{{ v.client_name }}" maxlength="200" autocomplete="name" required
+               {% if errors.client_name %}aria-invalid="true" aria-describedby="psaClientNameErr"{% endif %}>
+        <p class="psa-field-error" id="psaClientNameErr">{{ errors|get:"client_name" }}</p>
+      </div>
+      <div class="psa-field">
+        <label for="psaClientEmail">Client Email <span class="req">*</span></label>
+        <input class="psa-input" type="email" id="psaClientEmail" name="client_email" value="{{ v.client_email }}" maxlength="254" autocomplete="email" inputmode="email" required
+               {% if errors.client_email %}aria-invalid="true" aria-describedby="psaClientEmailErr"{% endif %}>
+        <p class="psa-field-error" id="psaClientEmailErr">{{ errors|get:"client_email" }}</p>
+      </div>
+      <div class="psa-field">
+        <label for="psaClientPhone">Phone <span class="req">*</span></label>
+        <input class="psa-input" type="tel" id="psaClientPhone" name="client_phone" value="{{ v.client_phone }}" maxlength="40" autocomplete="tel" inputmode="tel" required
+               placeholder="e.g. 0241234567 or +233 24 123 4567"
+               {% if errors.client_phone %}aria-invalid="true" aria-describedby="psaClientPhoneErr"{% endif %}>
+        <p class="psa-field-error" id="psaClientPhoneErr">{{ errors|get:"client_phone" }}</p>
+      </div>
+      <div class="psa-field wide">
+        <label for="psaClientAddress">Client Address <span style="text-transform:none;font-weight:500">(optional)</span></label>
+        <input class="psa-input" type="text" id="psaClientAddress" name="client_address" value="{{ v.client_address }}" maxlength="255" autocomplete="street-address">
+      </div>
+    </div>
+    {% else %}
+    <dl class="psa-fields" style="margin-top:14px">
+      <div class="psa-field wide"><dt>Client / Customer Full Name</dt><dd id="psaClientName">{{ a.client_name }}</dd></div>
+      <div class="psa-field"><dt>Client Email</dt><dd id="psaClientEmail" {% if not a.client_email %}class="muted"{% endif %}>{{ a.client_email|default:"To be completed by the client" }}</dd></div>
+      <div class="psa-field"><dt>Phone</dt><dd id="psaClientPhone" {% if not a.client_phone %}class="muted"{% endif %}>{{ a.client_phone|default:"To be completed by the client" }}</dd></div>
+      <div class="psa-field wide"><dt>Client Address (optional)</dt><dd id="psaClientAddress" {% if not a.client_address %}class="muted"{% endif %}>{{ a.client_address|default:"—" }}</dd></div>
+    </dl>
+    {% endif %}
+    <p class="psa-clause">Metascholar Limited and the Client are individually a “Party” and collectively the “Parties.”</p>
+  </section>
+
+  {# ---------------------------------------------------------------- 2 #}
+  <section class="psa-sec" id="psaSecTerm" aria-labelledby="psaSecTermTitle">
+    <h2 class="psa-sec-title" id="psaSecTermTitle"><span class="n">2</span> Term</h2>
+    <div class="psa-term">
+      <dl class="psa-field" style="margin:0"><dt>Service Start Date</dt><dd id="psaStartDate">{{ a.start_date|date:"j F Y"|default:"—" }}</dd></dl>
+      <div class="psa-term-arrow" aria-hidden="true">{% if a.term_days is not None %}<b>{{ a.term_days }} day{{ a.term_days|pluralize }}</b>{% endif %}→</div>
+      <dl class="psa-field" style="margin:0"><dt>Expected Completion Date</dt><dd id="psaCompletionDate">{{ a.completion_date|date:"j F Y"|default:"—" }}</dd></dl>
+    </div>
+  </section>
+
+  {# ---------------------------------------------------------------- 3 #}
+  <section class="psa-sec" id="psaSecService" aria-labelledby="psaSecServiceTitle">
+    <h2 class="psa-sec-title" id="psaSecServiceTitle"><span class="n">3</span> The Service</h2>
+    <p style="margin:0 0 6px;color:var(--psa-sub)">Metascholar Limited agrees to provide the following professional service(s):</p>
+    <div class="psa-field" style="margin-bottom:16px"><span class="psa-fee-label" style="color:var(--psa-faint)">Service / Project Title</span>
+      <p class="psa-project" id="psaServiceTitle">{{ a.service_title|default:"—" }}</p></div>
+    <div class="psa-field"><span class="psa-fee-label" style="color:var(--psa-faint);display:block;margin-bottom:8px">Scope of Work / Deliverables</span>
+      {% with items=a.deliverable_list %}
+      {% if items %}
+      <ol class="psa-deliv" id="psaDeliverables">
+        {% for d in items %}<li id="psaDeliverable{{ forloop.counter }}">{{ d }}</li>{% endfor %}
+      </ol>
+      {% else %}<p class="muted" style="color:var(--psa-faint);font-style:italic">No deliverables listed yet.</p>{% endif %}
+      {% endwith %}
+    </div>
+    <p class="psa-clause">The Client will provide all information, materials, approvals, and feedback reasonably needed to complete the agreed service. Any changes to the scope, price, or deadline require agreement by both Parties.</p>
+  </section>
+
+  {# ---------------------------------------------------------------- 4 #}
+  <section class="psa-sec" id="psaSecPayment" aria-labelledby="psaSecPaymentTitle">
+    <h2 class="psa-sec-title" id="psaSecPaymentTitle"><span class="n">4</span> Payment Amount</h2>
+    <div class="psa-fee">
+      <div>
+        <div class="psa-fee-label">Agreed Fee</div>
+        <div class="psa-fee-amt" id="psaFee">{% if a.fee is not None %}<small>{{ a.currency }}</small>{{ a.fee|money }}{% else %}—{% endif %}</div>
+      </div>
+      <div class="psa-split">
+        <div><span>Deposit / Due Upfront</span><b id="psaDeposit">{{ a.currency }} {{ a.deposit|money }}</b></div>
+        <div><span>Balance Due</span><b id="psaBalance">{% if a.balance is not None %}{{ a.currency }} {{ a.balance|money }}{% else %}—{% endif %}</b></div>
+      </div>
+    </div>
+    <dl class="psa-fields">
+      <div class="psa-field wide"><dt>Payment Basis</dt>
+        <dd style="border:0">
+          <ul class="psa-basis" id="psaBasis">
+            {% for value, label, on in a.basis_options %}
+            <li class="{% if on %}on{% endif %}"><span class="box" aria-hidden="true"></span>{{ label }}{% if on and value == 'other' and a.payment_basis_other %}: {{ a.payment_basis_other }}{% endif %}{% if on %}<span class="visually-hidden"> (selected)</span>{% endif %}</li>
+            {% endfor %}
+          </ul>
+        </dd>
+      </div>
+      <div class="psa-field wide"><dt>Payment Due Date / Schedule</dt><dd id="psaSchedule" style="white-space:pre-line">{{ a.payment_schedule|default:"—" }}</dd></div>
+    </dl>
+    <p class="psa-clause">The Client agrees to pay the amounts stated above according to the agreed schedule. Additional services or charges must be approved by the Client before they are incurred.</p>
+  </section>
+
+  {# ---------------------------------------------------------------- 5 #}
+  <section class="psa-sec" id="psaSecAcceptance" aria-labelledby="psaSecAcceptanceTitle">
+    <h2 class="psa-sec-title" id="psaSecAcceptanceTitle"><span class="n">5</span> Client Review and Acceptance</h2>
+    <p class="psa-clause" style="margin-top:0">By signing or electronically accepting this Agreement, the Client confirms that they have reviewed and accepted the services, timelines, and payment terms set out above.</p>
+
+    {% if form %}
+    <label class="psa-accept{% if errors.accept %} has-error{% endif %}" for="psaAccept" id="psaAcceptLabel">
+      <input type="checkbox" id="psaAccept" name="accept" value="yes" {% if v.accept == 'yes' %}checked{% endif %} required>
+      <span>I have reviewed this agreement and accept the services, timelines and payment terms set out above.</span>
+    </label>
+    <p class="psa-field-error" id="psaAcceptErr">{{ errors|get:"accept" }}</p>
+    {% endif %}
+
+    <div class="psa-signs">
+      <div class="psa-sign" id="psaClientSign">
+        <div class="psa-sign-who">Client Signature / Electronic Acceptance</div>
+        {% if form %}
+          {% include "psa/_signature.html" with prefix="client" fill_from="#psaClientName" typed=v.client_signature_typed error=errors.client_signature %}
+        {% else %}
+          <div class="psa-sign-mark">
+            {% if a.client_signature_kind == 'drawn' %}<img src="{{ a.client_signature }}" alt="Signature of {{ a.client_name }}">
+            {% elif a.client_signature_kind == 'typed' %}<span class="hand">{{ a.client_signature }}</span>
+            {% else %}<span class="pending">Awaiting the client's signature</span>{% endif %}
+          </div>
+          <div class="psa-sign-meta">
+            <div><b>{{ a.client_name }}</b><span>Client</span></div>
+            <div class="psa-sign-date"><span>Date</span><b>{{ a.client_signed_at|date:"j M Y"|default:"—" }}</b></div>
+          </div>
+        {% endif %}
+      </div>
+
+      <div class="psa-sign" id="psaCompanySign">
+        <div class="psa-sign-who">For Metascholar Limited</div>
+        <div class="psa-sign-mark">
+          {% if a.company_signature_kind == 'drawn' %}<img src="{{ a.company_signature }}" alt="Signature of {{ a.company_signatory_name }}">
+          {% elif a.company_signature_kind == 'typed' %}<span class="hand">{{ a.company_signature }}</span>
+          {% else %}<span class="pending">Not signed yet</span>{% endif %}
+        </div>
+        <div class="psa-sign-meta">
+          <div><b>{{ a.company_signatory_name|default:"—" }}</b><span>{{ a.company_signatory_role|default:"Metascholar Limited" }}</span></div>
+          <div class="psa-sign-date"><span>Date</span><b>{{ a.company_signed_at|date:"j M Y"|default:"—" }}</b></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="psa-foot">
+    <span>{{ a.reference }} · {{ a.provider_name }}</span>
+    {% if show_audit and a.client_signed_at %}
+      <span>Client signed electronically {{ a.client_signed_at|date:"j M Y, H:i" }}{% if a.client_signed_ip %} from {{ a.client_signed_ip }}{% endif %} · {{ a.get_client_signature_kind_display }}</span>
+    {% elif a.status == 'signed' %}
+      <span>Signed electronically by both Parties</span>
+    {% else %}
+      <span>Confidential</span>
+    {% endif %}
+  </footer>
+</article>

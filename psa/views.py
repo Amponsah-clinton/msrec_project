@@ -1,0 +1,482 @@
+"""PSA pages.
+
+Staff (Admin + Secretariat, under /admins/psa/): the list with search,
+filters and CSV export; the create/edit form; one agreement's page with
+its actions (send, resend, cancel, delete).
+
+Client (public, /psa/<token>/): the agreement as sent, where the client
+confirms their details and signs -- and, once signed, their copy.
+"""
+import csv
+import ipaddress
+import logging
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required, user_passes_test
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import Count, Q, Sum
+from django.http import Http404, HttpResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from messaging.access import is_staff_side
+
+from . import emails
+from .forms import parse_agreement, parse_client, parse_signature
+from .models import CURRENCIES, ServiceAgreement
+
+logger = logging.getLogger(__name__)
+
+staff_required = user_passes_test(is_staff_side, login_url="pages:login")
+
+PER_PAGE = 20
+Status = ServiceAgreement.Status
+
+# The text fields the staff form round-trips, so a failed save shows the
+# form again exactly as it was typed.
+FORM_FIELDS = (
+    "agreement_date", "client_name", "client_email", "client_phone", "client_address",
+    "start_date", "completion_date", "service_title", "currency", "fee", "payment_basis",
+    "payment_basis_other", "deposit", "payment_schedule",
+)
+
+SORTS = {
+    "newest": ("-created_at",),
+    "oldest": ("created_at",),
+    "client": ("client_name", "-created_at"),
+    "fee_high": ("-fee", "-created_at"),
+    "fee_low": ("fee", "-created_at"),
+    "agreement_date": ("-agreement_date", "-created_at"),
+}
+
+
+def _dashboard(request):
+    """Which sidebar to show: a Secretariat (non-admin) user gets the
+    Secretariat sidebar on these shared pages; everyone else the admin."""
+    from accounts.models import User
+    u = request.user
+    if not u.is_superuser and u.role == User.Role.SECRETARIAT:
+        return "secretariat"
+    return "admin"
+
+
+def _role_label(user):
+    from accounts.models import User
+    if user.is_superuser or user.role == User.Role.ADMIN:
+        return "Administrator"
+    return "Secretariat"
+
+
+# ---------------------------------------------------------------------
+# List, search, filter, export
+# ---------------------------------------------------------------------
+
+def _filters(params):
+    f = {
+        "q": (params.get("q") or "").strip(),
+        "status": params.get("status") or "",
+        "basis": params.get("basis") or "",
+        "currency": params.get("currency") or "",
+        "date_from": params.get("date_from") or "",
+        "date_to": params.get("date_to") or "",
+        "sort": params.get("sort") or "newest",
+    }
+    if f["status"] not in Status.values:
+        f["status"] = ""
+    if f["basis"] not in ServiceAgreement.Basis.values:
+        f["basis"] = ""
+    if f["currency"] not in dict(CURRENCIES):
+        f["currency"] = ""
+    if f["sort"] not in SORTS:
+        f["sort"] = "newest"
+    return f
+
+
+def _filtered(f):
+    from .forms import _date
+
+    qs = ServiceAgreement.objects.select_related("created_by", "company_signed_by")
+    if f["q"]:
+        for word in f["q"].split():
+            qs = qs.filter(
+                Q(reference__icontains=word) | Q(client_name__icontains=word)
+                | Q(client_email__icontains=word) | Q(client_phone__icontains=word)
+                | Q(service_title__icontains=word)
+            )
+    if f["status"]:
+        qs = qs.filter(status=f["status"])
+    if f["basis"]:
+        qs = qs.filter(payment_basis=f["basis"])
+    if f["currency"]:
+        qs = qs.filter(currency=f["currency"])
+    start, end = _date(f["date_from"]), _date(f["date_to"])
+    if start:
+        qs = qs.filter(agreement_date__gte=start)
+    if end:
+        qs = qs.filter(agreement_date__lte=end)
+    return qs.order_by(*SORTS[f["sort"]])
+
+
+@login_required
+@staff_required
+def psa_list(request):
+    f = _filters(request.GET)
+    matching = _filtered(f)
+    paginator = Paginator(matching, PER_PAGE)
+    page = paginator.get_page(request.GET.get("page"))
+    params = request.GET.copy()
+    params.pop("page", None)
+
+    counts = dict(ServiceAgreement.objects.values_list("status").annotate(n=Count("pk")))
+    signed_value = list(
+        ServiceAgreement.objects.filter(status=Status.SIGNED, fee__isnull=False)
+        .values("currency").annotate(total=Sum("fee")).order_by("currency")
+    )
+    return render(request, "psa/admin_list.html", {
+        "page": page,
+        "page_range": paginator.get_elided_page_range(page.number, on_each_side=1, on_ends=1),
+        "matching_count": paginator.count,
+        "f": f,
+        "query": params.urlencode(),
+        "filtered": any(f[k] for k in ("q", "status", "basis", "currency", "date_from", "date_to")),
+        "stats": {
+            "all": sum(counts.values()),
+            "draft": counts.get(Status.DRAFT, 0),
+            "sent": counts.get(Status.SENT, 0),
+            "signed": counts.get(Status.SIGNED, 0),
+            "cancelled": counts.get(Status.CANCELLED, 0),
+        },
+        "signed_value": signed_value,
+        "statuses": Status.choices,
+        "bases": ServiceAgreement.Basis.choices,
+        "currencies": CURRENCIES,
+        "dashboard": _dashboard(request),
+    })
+
+
+@login_required
+@staff_required
+def psa_export(request):
+    """CSV of every agreement matching the list's filters (not only the
+    page on screen)."""
+    rows = _filtered(_filters(request.GET))
+    today = timezone.localdate().isoformat()
+    response = HttpResponse(content_type="text/csv; charset=utf-8")
+    response["Content-Disposition"] = f'attachment; filename="metascholar-psa-{today}.csv"'
+    # A BOM so Excel reads names with accents (é, ɛ, ɔ ...) correctly.
+    response.write("﻿")
+    writer = csv.writer(response)
+
+    def when(dt):
+        return timezone.localtime(dt).strftime("%d %b %Y %H:%M") if dt else ""
+
+    def day(d):
+        return d.strftime("%d %b %Y") if d else ""
+
+    writer.writerow([
+        "Reference", "Status", "Agreement Date", "Client Name", "Client Email", "Client Phone",
+        "Client Address", "Service / Project Title", "Deliverables", "Start Date",
+        "Expected Completion", "Currency", "Agreed Fee", "Payment Basis", "Deposit / Upfront",
+        "Balance Due", "Payment Schedule", "Signed for Metascholar By", "Company Signed On",
+        "Client Signed On", "First Sent", "Times Sent", "Client First Opened", "Created By",
+        "Created On",
+    ])
+    for a in rows:
+        writer.writerow([
+            a.reference, a.get_status_display(), day(a.agreement_date), a.client_name,
+            a.client_email, a.client_phone, a.client_address, a.service_title,
+            " | ".join(f"{i}. {d}" for i, d in enumerate(a.deliverable_list(), start=1)),
+            day(a.start_date), day(a.completion_date), a.currency,
+            a.fee if a.fee is not None else "", a.payment_basis_label, a.deposit,
+            a.balance if a.balance is not None else "", a.payment_schedule,
+            a.company_signatory_name, when(a.company_signed_at), when(a.client_signed_at),
+            when(a.sent_at), a.send_count, when(a.viewed_at),
+            a.created_by.full_name if a.created_by else "", when(a.created_at),
+        ])
+    return response
+
+
+# ---------------------------------------------------------------------
+# Create / edit
+# ---------------------------------------------------------------------
+
+def _values_from(a):
+    def iso(d):
+        return d.isoformat() if d else ""
+    return {
+        "agreement_date": iso(a.agreement_date), "client_name": a.client_name,
+        "client_email": a.client_email, "client_phone": a.client_phone,
+        "client_address": a.client_address, "start_date": iso(a.start_date),
+        "completion_date": iso(a.completion_date), "service_title": a.service_title,
+        "currency": a.currency, "fee": f"{a.fee:.2f}" if a.fee is not None else "",
+        "payment_basis": a.payment_basis, "payment_basis_other": a.payment_basis_other,
+        "deposit": f"{a.deposit:.2f}" if a.deposit else "",
+        "payment_schedule": a.payment_schedule, "deliverables": a.deliverable_list(),
+    }
+
+
+def _form(request, a, values, errors=None, status=200):
+    return render(request, "psa/admin_form.html", {
+        "a": a,
+        "v": values,
+        "errors": errors or {},
+        "currencies": CURRENCIES,
+        "bases": ServiceAgreement.Basis.choices,
+        "signer_name": request.user.full_name,
+        "signer_role": _role_label(request.user),
+        "today": timezone.localdate(),
+        "dashboard": _dashboard(request),
+    }, status=status)
+
+
+@login_required
+@staff_required
+def psa_new(request):
+    if request.method == "POST":
+        return _save(request, None)
+    return _form(request, None, {
+        "agreement_date": timezone.localdate().isoformat(), "currency": "GHS", "deliverables": [],
+    })
+
+
+@login_required
+@staff_required
+def psa_edit(request, pk):
+    a = get_object_or_404(ServiceAgreement, pk=pk)
+    if not a.is_editable:
+        messages.error(request, f"{a.reference} is {a.get_status_display().lower()} and can no longer be changed.")
+        return redirect("psa_admin:psa_detail", pk=a.pk)
+    if request.method == "POST":
+        return _save(request, a)
+    return _form(request, a, _values_from(a))
+
+
+def _save(request, a):
+    sending = request.POST.get("action") == "send"
+    cleaned, errors = parse_agreement(request.POST, sending=sending)
+
+    kind, signature, sig_error = parse_signature(request.POST, "company")
+    has_signature = bool(signature) or bool(a and a.is_company_signed)
+    if sig_error:
+        errors["company_signature"] = sig_error
+    elif sending and not has_signature:
+        errors["company_signature"] = "Sign for Metascholar Limited before sending."
+
+    if errors:
+        values = {k: request.POST.get(k, "") for k in FORM_FIELDS}
+        values["deliverables"] = cleaned["deliverables"]
+        messages.error(request, "Please fix the highlighted fields." if len(errors) > 1 else next(iter(errors.values())))
+        return _form(request, a, values, errors, status=400)
+
+    creating = a is None
+    with transaction.atomic():
+        if creating:
+            a = ServiceAgreement(created_by=request.user)
+        else:
+            # Re-read under a lock: the client may have signed while this
+            # form was open, and a signed agreement must not change.
+            a = ServiceAgreement.objects.select_for_update().get(pk=a.pk)
+            if not a.is_editable:
+                messages.error(request, f"{a.reference} was {a.get_status_display().lower()} in the meantime, so your changes weren't saved.")
+                return redirect("psa_admin:psa_detail", pk=a.pk)
+        for field, value in cleaned.items():
+            if value is None and field in ("agreement_date",):
+                value = timezone.localdate()
+            setattr(a, field, value)
+        if signature:
+            # The company's side is filled in automatically: whoever signs,
+            # in their role, today.
+            a.company_signature_kind = kind
+            a.company_signature = signature
+            a.company_signatory_name = request.user.full_name
+            a.company_signatory_role = _role_label(request.user)
+            a.company_signed_by = request.user
+            a.company_signed_at = timezone.now()
+        a.save()
+
+    if not sending:
+        messages.success(request, f"{a.reference} {'saved as a draft' if creating or a.status == Status.DRAFT else 'updated'}.")
+        if a.status == Status.SENT:
+            messages.info(request, "The client's link already shows these changes. Use Resend if you'd like them to get a fresh email.")
+        return redirect("psa_admin:psa_detail", pk=a.pk)
+    return _send(request, a, reminder=False)
+
+
+def _send(request, a, *, reminder):
+    ok = emails.send_to_client(a, reminder=reminder)
+    now = timezone.now()
+    a.status = Status.SENT
+    a.sent_at = a.sent_at or now
+    a.last_sent_at = now
+    a.send_count += 1
+    a.save(update_fields=["status", "sent_at", "last_sent_at", "send_count", "updated_at"])
+    if ok:
+        messages.success(request, f"{a.reference} {'resent' if reminder else 'sent'} to {a.client_email}.")
+    else:
+        messages.warning(
+            request,
+            f"{a.reference} is ready for the client, but the email to {a.client_email} couldn't be sent. "
+            "Check the email settings, or copy the client link below and share it directly.",
+        )
+    return redirect("psa_admin:psa_detail", pk=a.pk)
+
+
+# ---------------------------------------------------------------------
+# One agreement + actions
+# ---------------------------------------------------------------------
+
+@login_required
+@staff_required
+def psa_detail(request, pk):
+    a = get_object_or_404(ServiceAgreement.objects.select_related("created_by", "company_signed_by"), pk=pk)
+    return render(request, "psa/admin_detail.html", {
+        "a": a,
+        "client_link": a.client_url() if a.status != Status.DRAFT else "",
+        "dashboard": _dashboard(request),
+    })
+
+
+@login_required
+@staff_required
+@require_POST
+def psa_resend(request, pk):
+    a = get_object_or_404(ServiceAgreement, pk=pk)
+    if a.status != Status.SENT:
+        messages.error(request, "Only an agreement awaiting the client can be resent.")
+        return redirect("psa_admin:psa_detail", pk=a.pk)
+    return _send(request, a, reminder=True)
+
+
+@login_required
+@staff_required
+@require_POST
+def psa_send(request, pk):
+    """Send a finished draft from its own page (the form's "Sign & send"
+    does the same in one step)."""
+    a = get_object_or_404(ServiceAgreement, pk=pk)
+    if a.status != Status.DRAFT:
+        return redirect("psa_admin:psa_detail", pk=a.pk)
+    missing = parse_agreement(_as_post(a), sending=True)[1]
+    if missing or not a.is_company_signed:
+        messages.error(request, "Finish the agreement and sign it for Metascholar Limited before sending.")
+        return redirect("psa_admin:psa_edit", pk=a.pk)
+    return _send(request, a, reminder=False)
+
+
+def _as_post(a):
+    from django.http import QueryDict
+    q = QueryDict(mutable=True)
+    for k, v in _values_from(a).items():
+        if k == "deliverables":
+            q.setlist(k, v)
+        else:
+            q[k] = v
+    return q
+
+
+@login_required
+@staff_required
+@require_POST
+def psa_cancel(request, pk):
+    with transaction.atomic():
+        a = get_object_or_404(ServiceAgreement.objects.select_for_update(), pk=pk)
+        if not a.is_editable:
+            messages.error(request, f"{a.reference} is {a.get_status_display().lower()} and can't be cancelled.")
+            return redirect("psa_admin:psa_detail", pk=a.pk)
+        a.status = Status.CANCELLED
+        a.cancelled_at = timezone.now()
+        a.save(update_fields=["status", "cancelled_at", "updated_at"])
+    messages.success(request, f"{a.reference} cancelled. The client's link no longer accepts a signature.")
+    return redirect("psa_admin:psa_detail", pk=a.pk)
+
+
+@login_required
+@staff_required
+@require_POST
+def psa_delete(request, pk):
+    a = get_object_or_404(ServiceAgreement, pk=pk)
+    if a.status not in (Status.DRAFT, Status.CANCELLED):
+        messages.error(request, "Only drafts and cancelled agreements can be deleted. Signed agreements are kept as records.")
+        return redirect("psa_admin:psa_detail", pk=a.pk)
+    ref = a.reference
+    a.delete()
+    messages.success(request, f"{ref} deleted.")
+    return redirect("psa_admin:psa_list")
+
+
+# ---------------------------------------------------------------------
+# Client side
+# ---------------------------------------------------------------------
+
+def _client_ip(request):
+    forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    raw = forwarded.split(",")[0].strip() if forwarded else request.META.get("REMOTE_ADDR", "")
+    try:
+        return str(ipaddress.ip_address(raw))
+    except ValueError:
+        return None
+
+
+def _client_page(request, a, *, values=None, errors=None, status=200):
+    resp = render(request, "psa/client.html", {
+        "a": a,
+        "v": values or {
+            "client_name": a.client_name, "client_email": a.client_email,
+            "client_phone": a.client_phone, "client_address": a.client_address,
+        },
+        "errors": errors or {},
+    }, status=status)
+    # The link is the key to the agreement: keep it out of caches and out
+    # of the Referer sent to any third-party asset.
+    resp["Cache-Control"] = "no-store"
+    resp["Referrer-Policy"] = "same-origin"
+    resp["X-Robots-Tag"] = "noindex, nofollow"
+    return resp
+
+
+def client(request, token):
+    a = get_object_or_404(ServiceAgreement, token=token)
+    if a.status == Status.DRAFT:
+        raise Http404("No agreement at this link.")
+
+    if request.method == "POST":
+        with transaction.atomic():
+            a = ServiceAgreement.objects.select_for_update().get(pk=a.pk)
+            if a.status != Status.SENT:
+                # Already signed (a double-click or a second tab), or
+                # withdrawn while the page was open.
+                return redirect("psa:client", token=a.token)
+            cleaned, errors = parse_client(request.POST)
+            if errors:
+                return _client_page(request, a, values=request.POST, errors=errors, status=400)
+            for field, value in cleaned.items():
+                setattr(a, field, value)
+            a.status = Status.SIGNED
+            a.client_signed_at = timezone.now()
+            a.client_signed_ip = _client_ip(request)
+            a.client_user_agent = request.META.get("HTTP_USER_AGENT", "")[:300]
+            a.save()
+
+        emails.send_client_copy(a)
+        emails.send_signed_to_staff(a)
+        try:
+            from notifications.models import Notification
+            from notifications.services import notify
+            notify(
+                Notification.Audience.SECRETARIAT,
+                f"{a.client_name} signed service agreement {a.reference}."[:255],
+                icon=Notification.Icon.SUCCESS,
+                link_url_name="psa_admin:psa_detail", link_kwargs={"pk": a.pk},
+            )
+        except Exception:
+            logger.exception("PSA signed notification failed for %s", a.reference)
+        messages.success(request, "Thank you — the agreement is signed. We've emailed you a copy.")
+        return redirect("psa:client", token=a.token)
+
+    if a.status == Status.SENT and not a.viewed_at:
+        a.viewed_at = timezone.now()
+        a.save(update_fields=["viewed_at"])
+    return _client_page(request, a)
