@@ -5,7 +5,8 @@ filters and CSV export; the create/edit form; one agreement's page with
 its actions (send, resend, cancel, delete).
 
 Client (public, /psa/<token>/): the agreement as sent, where the client
-confirms their details and signs -- and, once signed, their copy.
+confirms their details and signs -- and, once signed, their copy. Also
+/psa/pay/<token>/, where they settle what is owing against it.
 """
 import csv
 import ipaddress
@@ -19,7 +20,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, DecimalField, F, OuterRef, Q, Subquery, Sum, Value
 from django.db.models.functions import Coalesce
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -30,8 +31,8 @@ from messaging.access import is_staff_side
 
 from . import emails
 from .forms import (parse_agreement, parse_change_request, parse_client, parse_payment,
-                    parse_signature)
-from .models import CURRENCIES, ChangeRequest, Payment, ServiceAgreement
+                    parse_payment_request, parse_signature)
+from .models import CURRENCIES, ChangeRequest, Payment, PaymentRequest, ServiceAgreement
 
 logger = logging.getLogger(__name__)
 
@@ -912,3 +913,313 @@ def psa_letterhead_preview(request):
     resp["Content-Disposition"] = 'inline; filename="letterhead-preview.pdf"'
     resp["Cache-Control"] = "no-store"
     return resp
+
+
+# ---------------------------------------------------------------------
+# Payment links
+# ---------------------------------------------------------------------
+#
+# What makes a link safe to email:
+#
+#   * The URL is the secret. `token` is 32 random bytes, so the page
+#     cannot be reached by guessing or by walking primary keys, and it is
+#     served no-store with a same-origin referrer so it stays out of
+#     caches and out of any third party's logs.
+#   * The amount is read from the PaymentRequest row on every request.
+#     The browser never says what to charge, so a tampered form or a
+#     doctored popup cannot change the figure.
+#   * Only Paystack's own servers, asked with the secret key, can turn a
+#     request into money (_finalise below). The browser's "it worked"
+#     callback is a prompt to go and check, never evidence.
+#   * The ledger entry is written once, under a row lock, so a retried
+#     verify -- a double click, a second tab -- cannot bank the same
+#     charge twice.
+
+def _checkout_params(req):
+    """What the Paystack popup is opened with. Every value comes from the
+    request row on the server, none from the page."""
+    from pages.models import SiteSettings
+    a = req.agreement
+    return {
+        "key": SiteSettings.get_solo().effective_paystack_public_key,
+        "email": a.client_email,
+        "amount": req.amount_subunit,
+        "currency": req.currency,
+        "reference": req.reference,
+        "name": a.client_name,
+        "agreement": a.reference or "",
+        "verify_url": reverse("psa:pay_verify", kwargs={"token": req.token}),
+    }
+
+
+@login_required
+@staff_required
+@require_POST
+def psa_payment_link(request, pk):
+    """Create a payment link for what is still owing and email it to the
+    client, with its SMS twin.
+
+    Asking for a new link retires whatever was already out, so a client
+    is never holding two live links for one balance and cannot pay it
+    twice."""
+    a = get_object_or_404(ServiceAgreement, pk=pk)
+    with transaction.atomic():
+        a = ServiceAgreement.objects.select_for_update().get(pk=a.pk)
+        cleaned, errors = parse_payment_request(request.POST, a)
+        if errors:
+            messages.error(request, next(iter(errors.values())))
+            return _back(request, a)
+        now = timezone.now()
+        a.payment_requests.filter(status=PaymentRequest.Status.PENDING).update(
+            status=PaymentRequest.Status.CANCELLED, cancelled_at=now, cancelled_by=request.user,
+        )
+        req = PaymentRequest.objects.create(agreement=a, created_by=request.user, **cleaned)
+        req.sent_at = req.last_sent_at = now
+        req.send_count = 1
+        req.save(update_fields=["sent_at", "last_sent_at", "send_count"])
+
+    if emails.send_payment_link(a, req):
+        messages.success(
+            request,
+            f"Payment link for {a.currency} {req.amount:,.2f} sent to {a.client_email}. "
+            f"It stops working on {timezone.localtime(req.expires_at):%d %b %Y}.",
+        )
+    else:
+        messages.warning(
+            request,
+            f"The payment link was created, but the email to {a.client_email} couldn't be sent. "
+            "Use Resend on the agreement, or copy the link and send it yourself.",
+        )
+    return _back(request, a)
+
+
+@login_required
+@staff_required
+@require_POST
+def psa_payment_link_resend(request, pk, req_pk):
+    """Send the live link again as a reminder -- email and text both --
+    and push its expiry back, so chasing an old debt doesn't mint a new
+    link the client has to be told about separately."""
+    a = get_object_or_404(ServiceAgreement, pk=pk)
+    req = get_object_or_404(PaymentRequest, pk=req_pk, agreement=a)
+    if req.status != PaymentRequest.Status.PENDING:
+        messages.error(request, f"That payment link is {req.state_label.lower()}, so it can't be resent.")
+        return _back(request, a)
+    owing = a.amount_owing
+    if owing is None or owing <= 0:
+        messages.error(request, f"{a.reference} has nothing outstanding, so there's nothing to chase.")
+        return _back(request, a)
+
+    now = timezone.now()
+    req.last_sent_at = now
+    req.sent_at = req.sent_at or now
+    req.send_count += 1
+    req.expires_at = now + PaymentRequest.VALID_FOR
+    req.save(update_fields=["last_sent_at", "sent_at", "send_count", "expires_at"])
+
+    if emails.send_payment_link(a, req, reminder=True):
+        texted = " and texted to the client" if a.client_phone else ""
+        messages.success(
+            request,
+            f"Reminder emailed to {a.client_email}{texted}. "
+            f"The link now runs to {timezone.localtime(req.expires_at):%d %b %Y}.",
+        )
+    else:
+        messages.warning(request, f"The reminder to {a.client_email} couldn't be sent. Check the email settings.")
+    return _back(request, a)
+
+
+@login_required
+@staff_required
+@require_POST
+def psa_payment_link_cancel(request, pk, req_pk):
+    """Withdraw a link sent in error. The URL stops taking money at once."""
+    a = get_object_or_404(ServiceAgreement, pk=pk)
+    req = get_object_or_404(PaymentRequest, pk=req_pk, agreement=a)
+    if req.status != PaymentRequest.Status.PENDING:
+        messages.error(request, f"That payment link is already {req.state_label.lower()}.")
+        return _back(request, a)
+    req.status = PaymentRequest.Status.CANCELLED
+    req.cancelled_at = timezone.now()
+    req.cancelled_by = request.user
+    req.save(update_fields=["status", "cancelled_at", "cancelled_by"])
+    messages.success(request, "That payment link has been withdrawn - it no longer takes payment.")
+    return _back(request, a)
+
+
+@login_required
+@staff_required
+def psa_receipt(request, pk, payment_pk):
+    """A receipt for one entry in the ledger, for staff to file or resend."""
+    a = get_object_or_404(ServiceAgreement, pk=pk)
+    payment = get_object_or_404(Payment, pk=payment_pk, agreement=a)
+    if payment.amount <= 0:
+        messages.error(request, "That entry is a refund, so there's no receipt to issue for it.")
+        return _back(request, a)
+    return _receipt_response(payment, inline=request.GET.get("inline") == "1")
+
+
+def _receipt_response(payment, *, inline=False):
+    from . import receipt
+    resp = HttpResponse(receipt.render(payment), content_type="application/pdf")
+    disposition = "inline" if inline else "attachment"
+    resp["Content-Disposition"] = f'{disposition}; filename="{receipt.filename(payment)}"'
+    resp["Cache-Control"] = "no-store"
+    return resp
+
+
+# ---- the client's side ----------------------------------------------
+
+def _no_store(resp):
+    """The link is the key to the page: keep it out of caches and out of
+    the Referer sent to any third-party asset."""
+    resp["Cache-Control"] = "no-store"
+    resp["Referrer-Policy"] = "same-origin"
+    return resp
+
+
+def pay(request, token):
+    """The client's payment page, reached only by the emailed link."""
+    req = get_object_or_404(
+        PaymentRequest.objects.select_related("agreement", "payment"), token=token,
+    )
+    a = req.agreement
+    if req.viewed_at is None and req.status == PaymentRequest.Status.PENDING:
+        PaymentRequest.objects.filter(pk=req.pk, viewed_at__isnull=True).update(viewed_at=timezone.now())
+
+    return _no_store(render(request, "psa/pay.html", {
+        "req": req,
+        "a": a,
+        "payable": req.is_payable,
+        # Why it can't be paid, in the client's terms -- never a dead end
+        # without a reason.
+        "blocked": _why_not_payable(req, a),
+        "checkout": _checkout_params(req) if req.is_payable else None,
+        "receipt": req.payment if req.is_paid else None,
+    }))
+
+
+def _why_not_payable(req, a):
+    if req.is_payable:
+        return ""
+    if req.status == PaymentRequest.Status.PAID:
+        return "paid"
+    if req.status == PaymentRequest.Status.CANCELLED:
+        return "cancelled"
+    if req.is_expired:
+        return "expired"
+    if a.status == Status.CANCELLED:
+        return "agreement_cancelled"
+    owing = a.amount_owing
+    if owing is not None and owing <= 0:
+        return "settled"
+    return "unavailable"
+
+
+@require_POST
+def pay_verify(request, token):
+    """Asks Paystack's own servers whether this charge really happened,
+    and banks it if so. Called by the page once the popup closes, and
+    safe to call again: a request already paid just answers yes."""
+    req = get_object_or_404(PaymentRequest.objects.select_related("agreement"), token=token)
+    done = JsonResponse({"ok": True, "redirect": reverse("psa:pay", kwargs={"token": req.token})})
+    if req.status == PaymentRequest.Status.PAID:
+        return done
+    if not req.is_payable:
+        return JsonResponse({"ok": False, "error": "This payment link is no longer active."}, status=400)
+
+    # The reference is ours, minted before Paystack was ever contacted, so
+    # a browser quoting a different one is not talking about this charge.
+    quoted = request.POST.get("reference", "").strip()
+    if quoted and quoted != req.reference:
+        return JsonResponse({"ok": False, "error": "Payment reference mismatch."}, status=400)
+
+    from payments import paystack
+    try:
+        data = paystack.verify_transaction(req.reference)
+    except paystack.PaystackError as exc:
+        return JsonResponse({"ok": False, "error": str(exc)}, status=400)
+
+    amount_ok = int(data.get("amount") or 0) == req.amount_subunit
+    currency_ok = (data.get("currency") or "").upper() == req.currency.upper()
+    if data.get("status") != "success" or not amount_ok or not currency_ok:
+        req.paystack_response = data
+        req.save(update_fields=["paystack_response"])
+        if data.get("status") == "success":
+            logger.error(
+                "PSA payment %s verified as success but for %s %s, not the expected %s %s",
+                req.reference, data.get("currency"), data.get("amount"), req.currency, req.amount_subunit,
+            )
+            reason = ("The amount received didn't match the amount requested, so it hasn't been "
+                      "applied. Please contact Metascholar Limited - no further charge will be made.")
+        else:
+            reason = data.get("gateway_response") or "Payment was not successful. Please try again."
+        return JsonResponse({"ok": False, "error": reason}, status=400)
+
+    payment = _finalise(req, data)
+    if payment is not None:
+        _after_payment(req.agreement, payment, req)
+    return done
+
+
+def _finalise(req, data):
+    """Turn a verified charge into a ledger entry, exactly once.
+
+    The PENDING -> PAID flip is claimed under a row lock, so when the
+    page's verify and a retry arrive together only one of them writes the
+    money. Returns the new Payment, or None if someone else got there
+    first -- that caller sends the receipt."""
+    with transaction.atomic():
+        locked = PaymentRequest.objects.select_for_update().select_related("agreement").get(pk=req.pk)
+        if locked.status == PaymentRequest.Status.PAID:
+            return None
+        a = locked.agreement
+        payment = Payment.objects.create(
+            agreement=a,
+            amount=locked.amount,
+            paid_on=timezone.localdate(),
+            method=Payment.Method.CARD,
+            note=(locked.note or "Paid online")[:200],
+        )
+        locked.status = PaymentRequest.Status.PAID
+        locked.paid_at = timezone.now()
+        locked.paystack_response = data
+        locked.payment = payment
+        locked.save(update_fields=["status", "paid_at", "paystack_response", "payment"])
+        # The list's "last touched", so a payment moves the agreement up it.
+        a.save(update_fields=["updated_at"])
+    req.status = PaymentRequest.Status.PAID
+    req.paid_at = locked.paid_at
+    req.payment = payment
+    return payment
+
+
+def _after_payment(a, payment, req):
+    """Receipt to the client, word to the staff, a note on the dashboard.
+    None of it is allowed to lose a payment already banked, so each part
+    fails on its own."""
+    a.refresh_from_db()
+    try:
+        from . import receipt as receipt_pdf
+        attachment = (receipt_pdf.filename(payment), receipt_pdf.render(payment), "application/pdf")
+    except Exception:
+        logger.exception("PSA receipt for %s couldn't be built", payment.receipt_number)
+        attachment = None
+    try:
+        emails.send_receipt(a, payment, attachment)
+    except Exception:
+        logger.exception("PSA receipt email failed for %s", req.reference)
+    try:
+        emails.send_payment_to_staff(a, payment, req)
+    except Exception:
+        logger.exception("PSA payment staff email failed for %s", req.reference)
+    _notify_staff(a, f"{a.client_name} paid {a.currency} {payment.abs_amount:,.2f} on {a.reference}",
+                  icon="credit-card")
+
+
+def pay_receipt(request, token):
+    """The client's own copy of their receipt, from the payment page."""
+    req = get_object_or_404(PaymentRequest.objects.select_related("payment", "agreement"), token=token)
+    if not req.is_paid or req.payment is None:
+        raise Http404("No receipt at this link yet.")
+    return _no_store(_receipt_response(req.payment, inline=request.GET.get("inline") == "1"))

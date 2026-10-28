@@ -281,3 +281,48 @@ def parse_change_request(post):
     elif len(message) > CHANGE_MESSAGE_MAX:
         errors["message"] = f"Please keep it under {CHANGE_MESSAGE_MAX} characters."
     return {"section": section, "message": message[:CHANGE_MESSAGE_MAX]}, errors
+
+
+def parse_payment_request(post, agreement):
+    """A payment link for the client (psa/views.py psa_payment_link).
+
+    The amount is what the client will actually be charged, so it is
+    pinned here and never read from the browser again. It defaults to
+    everything still owing and may be less -- an instalment -- but never
+    more: asking for more than the agreement says is due is a change to
+    the agreement, not a payment request.
+
+    Returns (cleaned, errors) ready for PaymentRequest(**cleaned).
+    """
+    errors = {}
+    owing = agreement.amount_owing
+
+    if agreement.status == agreement.Status.CANCELLED:
+        errors["amount"] = f"{agreement.reference} was cancelled, so nothing can be collected against it."
+    elif owing is None:
+        errors["amount"] = "There's no agreed fee on this agreement yet, so there's nothing to collect."
+    elif owing <= 0:
+        errors["amount"] = f"{agreement.reference} is already paid in full — there's nothing outstanding."
+    elif not agreement.client_email:
+        errors["amount"] = "There's no client email on this agreement to send the payment link to."
+
+    raw = post.get("amount", "")
+    amount = _money(raw) if raw.strip() else owing
+    if amount is False:
+        errors["amount"] = "Enter the amount as a number, e.g. 500.00."
+        amount = None
+    elif not errors:
+        if not amount or amount <= 0:
+            errors["amount"] = "Enter the amount to collect."
+        elif amount > owing:
+            errors["amount"] = (
+                f"Only {agreement.currency} {owing:,.2f} is outstanding on {agreement.reference}. "
+                "To charge more than that, change the agreed fee on the agreement first."
+            )
+
+    cleaned = {
+        "amount": amount,
+        "currency": agreement.currency,
+        "note": " ".join(post.get("note", "").split())[:200],
+    }
+    return cleaned, errors

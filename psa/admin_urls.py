@@ -20,6 +20,12 @@ urlpatterns = [
     path("<int:pk>/send/", views.psa_send, name="psa_send"),
     path("<int:pk>/resend/", views.psa_resend, name="psa_resend"),
     path("<int:pk>/payments/add/", views.psa_payment_add, name="psa_payment_add"),
+    path("<int:pk>/payments/<int:payment_pk>/receipt/", views.psa_receipt, name="psa_receipt"),
+    path("<int:pk>/payment-link/", views.psa_payment_link, name="psa_payment_link"),
+    path("<int:pk>/payment-link/<int:req_pk>/resend/", views.psa_payment_link_resend,
+         name="psa_payment_link_resend"),
+    path("<int:pk>/payment-link/<int:req_pk>/cancel/", views.psa_payment_link_cancel,
+         name="psa_payment_link_cancel"),
     path("<int:pk>/cancel/", views.psa_cancel, name="psa_cancel"),
     path("<int:pk>/delete/", views.psa_delete, name="psa_delete"),
 ]

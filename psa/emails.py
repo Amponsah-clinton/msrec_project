@@ -304,3 +304,133 @@ def send_change_request_receipt(a, req):
 def sms_change_request_receipt(a):
     return (f"Metascholar: we have your change request for agreement {a.reference}. "
             "We will email you when it is ready to sign again.")
+
+
+# ---------------------------------------------------------------------
+# Payment links and receipts
+# ---------------------------------------------------------------------
+
+def send_payment_link(a, req, *, reminder=False):
+    """The link the client pays the outstanding balance through."""
+    amount = f"{req.currency} {req.amount:,.2f}"
+    owing = a.amount_owing
+    if reminder:
+        subject = f"Reminder: payment outstanding on agreement {a.reference}"
+        heading = "Your payment is still outstanding"
+        opening = (f"This is a reminder that {amount} is still outstanding on the Professional "
+                   f"Service Agreement for “{a.service_title or 'your project'}”.")
+    else:
+        subject = f"Payment request for agreement {a.reference} — {amount}"
+        heading = "A payment is due on your agreement"
+        opening = (f"{amount} is now due on the Professional Service Agreement for "
+                   f"“{a.service_title or 'your project'}”.")
+
+    paragraphs = [f"Dear {a.client_name},", opening]
+    if req.note:
+        paragraphs.append(f"This payment covers: {req.note}")
+    paragraphs += [
+        "Use the secure button below to pay by card or mobile money. The page shows the exact "
+        "amount and nothing else can be charged through it.",
+        "Your receipt is emailed to you the moment the payment goes through.",
+    ]
+    ok = _send(
+        subject=subject,
+        to=a.client_email,
+        heading=heading,
+        paragraphs=paragraphs,
+        callout_label="Amount due",
+        callout_value=amount,
+        callout_note=(f"Agreement {a.reference}"
+                      + (f" · {a.currency} {owing:,.2f} outstanding in total" if owing is not None
+                         and owing != req.amount else "")),
+        cta_text=f"Pay {amount} securely",
+        cta_url=req.pay_url(),
+        preheader=f"{amount} is due on agreement {a.reference}.",
+    )
+    if ok:
+        _sms([_client_phone(a)], sms_payment_link(a, req, reminder=reminder), "payment link")
+    return ok
+
+
+def sms_payment_link(a, req, *, reminder=False):
+    """Points at the inbox rather than carrying the payment link itself.
+
+    A payment URL arriving cold by text is exactly the shape of the scams
+    clients are told to ignore, and the email it follows has the same link
+    behind Metascholar's own branding. The text's job is to say the email
+    is genuine and worth opening."""
+    amount = f"{req.currency} {req.amount:,.2f}"
+    lead = "Reminder: payment" if reminder else "Payment"
+    return (f"{lead} of {amount} is due on Metascholar agreement {a.reference}. "
+            "Check your email for the secure payment link.")
+
+
+def send_receipt(a, payment, attachment=None):
+    """The client's receipt, the moment their payment goes through."""
+    owing = a.amount_owing
+    settled = owing is not None and owing <= 0
+    paragraphs = [
+        f"Dear {a.client_name},",
+        f"Thank you — we have received {a.currency} {payment.abs_amount:,.2f} against the "
+        f"Professional Service Agreement for “{a.service_title or 'your project'}”.",
+        ("Your receipt is attached to this email as a PDF." if attachment else
+         "Your receipt is available from the link below."),
+        ("This settles the agreement in full. Thank you for your business."
+         if settled else
+         f"The balance still outstanding is {a.currency} {owing:,.2f}." if owing is not None else ""),
+    ]
+    ok = _send(
+        subject=f"Receipt {payment.receipt_number} — {a.currency} {payment.abs_amount:,.2f} received",
+        to=a.client_email,
+        heading="Payment received — thank you",
+        paragraphs=[p for p in paragraphs if p],
+        callout_label="Amount received",
+        callout_value=f"{a.currency} {payment.abs_amount:,.2f}",
+        callout_note=f"Receipt {payment.receipt_number} · Agreement {a.reference}",
+        cta_text="View your agreement",
+        cta_url=a.client_url(),
+        preheader=f"Receipt {payment.receipt_number} for {a.currency} {payment.abs_amount:,.2f}.",
+        attachments=[attachment] if attachment else None,
+    )
+    if ok:
+        _sms([_client_phone(a)], sms_receipt(a, payment), "receipt")
+    return ok
+
+
+def sms_receipt(a, payment):
+    owing = a.amount_owing
+    tail = ("Agreement settled in full. Thank you." if owing is not None and owing <= 0
+            else f"Balance now {a.currency} {owing:,.2f}." if owing is not None else "")
+    return (f"Metascholar: {a.currency} {payment.abs_amount:,.2f} received for agreement "
+            f"{a.reference}. Receipt {payment.receipt_number} emailed to you. {tail}").strip()
+
+
+def send_payment_to_staff(a, payment, req):
+    """Tells the CEO and the preparer that money has landed."""
+    owing = a.amount_owing
+    ok = _send(
+        subject=f"Payment received on PSA {a.reference} — {a.currency} {payment.abs_amount:,.2f}",
+        to=_staff_recipients(a),
+        heading="A client has paid online",
+        paragraphs=[
+            f"{a.client_name} has paid {a.currency} {payment.abs_amount:,.2f} against {a.reference} "
+            f"({a.service_title}).",
+            f"Receipt {payment.receipt_number} · Paystack reference {req.reference}",
+            (f"Still outstanding: {a.currency} {owing:,.2f}" if owing is not None and owing > 0
+             else "The agreement is now settled in full."),
+        ],
+        cta_text="Open the agreement",
+        cta_url=a.staff_url(),
+        preheader=f"{a.client_name} paid {a.currency} {payment.abs_amount:,.2f} on {a.reference}.",
+    )
+    if ok:
+        _sms(_staff_phones(a), sms_payment_to_staff(a, payment), "payment received")
+    return ok
+
+
+def sms_payment_to_staff(a, payment):
+    owing = a.amount_owing
+    tail = (f"{a.currency} {owing:,.2f} still owing." if owing is not None and owing > 0
+            else "Settled in full.")
+    return (f"{a.reference}: {_plain(a.client_name, SMS_NAME_LEN)} paid "
+            f"{a.currency} {payment.abs_amount:,.2f} online. {tail} {a.staff_url()}")

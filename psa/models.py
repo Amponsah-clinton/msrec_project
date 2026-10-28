@@ -25,6 +25,7 @@ recorded, so it follows from the ledger rather than being a figure anyone
 types over. Each row is written once and never changed afterwards.
 """
 import secrets
+from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -330,6 +331,23 @@ class ServiceAgreement(models.Model):
     def deliverable_list(self):
         return [d for d in (self.deliverables or []) if str(d).strip()]
 
+    @property
+    def open_payment_request(self):
+        """The live payment link, if one is out with the client: pending,
+        unexpired and still collecting. There is at most one, because
+        asking for a new one cancels whatever was already out."""
+        return next((r for r in self.payment_requests.all()
+                     if r.status == PaymentRequest.Status.PENDING and not r.is_expired), None)
+
+    @property
+    def can_request_payment(self):
+        """Whether it makes sense to ask the client for money online: there
+        is a fee, something is still owing, and the agreement is live."""
+        owing = self.amount_owing
+        return (self.status != self.Status.CANCELLED
+                and owing is not None and owing > 0
+                and bool(self.client_email))
+
 
 class ChangeRequest(models.Model):
     """The client flagging something on the agreement that needs fixing,
@@ -397,6 +415,11 @@ class Payment(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
     )
     recorded_at = models.DateTimeField(auto_now_add=True)
+    # Numbered on the way in, for money coming in only: a refund is given
+    # a credit note by recording it, not a receipt. Numbered from the
+    # primary key for the same reason the agreement reference is -- unique
+    # without a counter table, and never reused.
+    receipt_number = models.CharField(max_length=30, unique=True, null=True, blank=True, editable=False)
 
     class Meta:
         db_table = "service_agreement_payments"
@@ -420,6 +443,11 @@ class Payment(models.Model):
                 "A recorded payment can't be changed. Record a correcting entry instead."
             )
         super().save(*args, **kwargs)
+        if self.amount > 0 and not self.receipt_number:
+            year = timezone.localtime(self.recorded_at).year
+            self.receipt_number = f"MSR-{year}-{self.pk:05d}"
+            # Straight to the row: save() refuses a second write.
+            type(self).objects.filter(pk=self.pk).update(receipt_number=self.receipt_number)
 
     def delete(self, *args, **kwargs):
         raise ValueError(
@@ -433,6 +461,145 @@ class Payment(models.Model):
     @property
     def abs_amount(self):
         return abs(self.amount)
+
+    @property
+    def is_online(self):
+        """Paid by the client through a payment link, rather than recorded
+        by hand. Those rows carry their own PaymentRequest."""
+        return hasattr(self, "request")
+
+
+class PaymentRequest(models.Model):
+    """A link sent to a client so they can settle what is still owing on
+    an agreement, and the record of what came back.
+
+    The link is the secret: `token` is 32 random bytes, the same strength
+    as the agreement's own link, so the URL cannot be guessed or walked
+    (unlike a primary key in the path). It carries no personal data of its
+    own -- everything the payment page shows is read from this row on the
+    server, and the amount Paystack is asked to charge is read from here
+    too, never from the browser.
+
+    One request, one charge. A request is PENDING until Paystack's own
+    servers confirm a payment of exactly this amount and currency against
+    exactly this reference, at which point it becomes PAID, a write-once
+    Payment row joins the ledger (which is what makes the amount owing on
+    the list go down), and the receipt is numbered. Staff can CANCEL a
+    request that was sent in error, and a request stops working once it
+    expires -- a live payment URL shouldn't outlive the reason it was
+    sent.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Awaiting payment"
+        PAID = "paid", "Paid"
+        CANCELLED = "cancelled", "Cancelled"
+
+    # How long a freshly sent link stays usable. Resending it starts the
+    # clock again, so chasing an old debt never means minting a new link.
+    VALID_FOR = timedelta(days=30)
+
+    agreement = models.ForeignKey(
+        ServiceAgreement, on_delete=models.CASCADE, related_name="payment_requests",
+    )
+    token = models.CharField(max_length=64, unique=True, default=_new_token, editable=False)
+    # Our own Paystack reference, generated before Paystack is ever
+    # contacted, so there is always a row to reconcile a payment against
+    # even if the client abandons checkout. Same contract as
+    # payments.Payment.reference and WorkshopRegistration.payment_reference.
+    reference = models.CharField(max_length=100, unique=True, editable=False)
+
+    amount = models.DecimalField(max_digits=14, decimal_places=2)
+    currency = models.CharField(max_length=3, default="GHS")
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True)
+    # What this instalment is for, in the client's words on the page and
+    # on the receipt ("Balance on delivery", "Second milestone").
+    note = models.CharField(max_length=200, blank=True)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    sent_at = models.DateTimeField(null=True, blank=True)
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+    send_count = models.PositiveIntegerField(default=0)
+    viewed_at = models.DateTimeField(null=True, blank=True)
+
+    paid_at = models.DateTimeField(null=True, blank=True)
+    # The full verify payload, kept for audit and disputes -- channel,
+    # card bin, gateway response, Paystack's own fees.
+    paystack_response = models.JSONField(blank=True, default=dict)
+    # The ledger entry this charge created. One per request; the ledger is
+    # write-once, so this is the only link back.
+    payment = models.OneToOneField(
+        Payment, on_delete=models.SET_NULL, null=True, blank=True, related_name="request",
+    )
+    cancelled_at = models.DateTimeField(null=True, blank=True)
+    cancelled_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+
+    class Meta:
+        db_table = "service_agreement_payment_requests"
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["agreement", "-created_at"], name="service_agr_payreq_idx"),
+        ]
+
+    def __str__(self):
+        return f"{self.agreement.reference}: {self.currency} {self.amount} ({self.status})"
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + self.VALID_FOR
+        creating = self._state.adding
+        super().save(*args, **kwargs)
+        if creating and not self.reference:
+            # From the primary key, so it is unique without a counter
+            # table and never reused -- and recognisable in Paystack's
+            # dashboard as a PSA charge.
+            self.reference = f"MSREC-PSA-{self.pk}-{secrets.token_hex(6)}"
+            type(self).objects.filter(pk=self.pk).update(reference=self.reference)
+
+    # ---- derived ----------------------------------------------------
+
+    @property
+    def amount_subunit(self):
+        """What Paystack's API speaks in: the lowest subunit (pesewas)."""
+        return int(self.amount * 100)
+
+    @property
+    def is_paid(self):
+        return self.status == self.Status.PAID
+
+    @property
+    def is_expired(self):
+        return self.status == self.Status.PENDING and timezone.now() >= self.expires_at
+
+    @property
+    def is_payable(self):
+        """Whether the link should still take money. A cancelled agreement
+        stops collecting, and so does one that is already settled -- the
+        client should never be charged twice for the same balance."""
+        if self.status != self.Status.PENDING or self.is_expired:
+            return False
+        if self.agreement.status == ServiceAgreement.Status.CANCELLED:
+            return False
+        owing = self.agreement.amount_owing
+        return owing is not None and owing > 0
+
+    @property
+    def state_label(self):
+        if self.is_expired:
+            return "Expired"
+        return self.get_status_display()
+
+    def pay_url(self):
+        return settings.SITE_URL.rstrip("/") + reverse("psa:pay", kwargs={"token": self.token})
+
+    def receipt_url(self):
+        return settings.SITE_URL.rstrip("/") + reverse("psa:receipt", kwargs={"token": self.token})
 
 
 class PsaSettings(models.Model):
