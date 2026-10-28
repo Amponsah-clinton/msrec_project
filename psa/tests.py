@@ -32,6 +32,7 @@ def _form(**overrides):
         "agreement_date": today.isoformat(),
         "client_name": "Kwame Mensah",
         "client_email": "kwame@example.com",
+        "client_phone": "0241234567",
         "client_address": "",
         "start_date": today.isoformat(),
         "completion_date": (today + timezone.timedelta(days=30)).isoformat(),
@@ -135,22 +136,34 @@ class CreateAndSendTests(StaffTestCase):
         self.assertIn(a.reference, mail.outbox[0].subject)
         self.assertIn(reverse("psa:client", args=[a.token]), mail.outbox[0].body)
 
-    def test_staff_never_set_the_phone_number(self):
-        # It isn't on the staff form at all -- the client gives it when
-        # they sign -- and a posted one is ignored rather than trusted.
+    def test_the_phone_is_optional_for_staff_but_enables_the_text(self):
+        # Without it there is nobody to text when the agreement is sent or
+        # chased, which is the whole of the SMS side of this app.
         page = self.client.get(reverse("psa_admin:psa_new"))
-        self.assertNotContains(page, 'name="client_phone"')
-        a = self._sent(client_phone="0241234567")
-        self.assertEqual(a.client_phone, "")
+        self.assertContains(page, 'name="client_phone"')
+        self.assertEqual(self._sent(client_phone="0241234567").client_phone, "0241234567")
+        # Still optional: a draft saves without one.
+        self.client.post(reverse("psa_admin:psa_new"),
+                         {"client_name": "No Phone", "action": "draft"})
+        self.assertEqual(ServiceAgreement.objects.get(client_name="No Phone").client_phone, "")
 
-    def test_a_staff_edit_leaves_the_clients_own_number_alone(self):
-        a = self._sent()
-        a.client_phone = "+233 24 123 4567"
-        a.save()
-        self.client.post(reverse("psa_admin:psa_edit", args=[a.pk]),
-                         _form(client_phone="0000000000", action="draft"))
+    def test_a_malformed_staff_phone_is_refused(self):
+        resp = self.client.post(reverse("psa_admin:psa_new"), _form(client_phone="024"))
+        self.assertEqual(resp.status_code, 400)
+        self.assertFalse(ServiceAgreement.objects.filter(client_name="Kwame Mensah").exists())
+
+    def test_the_client_has_the_last_word_on_their_own_number(self):
+        # Staff put one on the agreement; the client corrects it at
+        # signing, where it is compulsory, and theirs is what stands.
+        a = self._sent(client_phone="0241234567")
+        self.client.logout()
+        self.client.post(reverse("psa:client", kwargs={"token": a.token}), {
+            "client_name": "Kwame Mensah", "client_phone": "+233 20 999 8887",
+            "client_signature_kind": "typed", "client_signature_typed": "Kwame Mensah",
+        })
         a.refresh_from_db()
-        self.assertEqual(a.client_phone, "+233 24 123 4567")
+        self.assertEqual(a.status, Status.SIGNED)
+        self.assertEqual(a.client_phone, "+233 20 999 8887")
 
     def test_drawn_signature_is_stored_as_png(self):
         a = self._sent(company_signature_kind="drawn", company_signature_typed="",
@@ -1417,6 +1430,13 @@ class ReminderTests(StaffTestCase):
         self.a = self._sent()
         self.url = reverse("psa_admin:psa_resend", args=[self.a.pk])
 
+    def _forget_the_number(self):
+        """The phone is optional on the staff form, so an agreement can
+        reach the reminder stage without one. That is the case these
+        tests are about."""
+        self.a.client_phone = ""
+        self.a.save(update_fields=["client_phone"])
+
     def _allow_sms(self, sink=None):
         """Pretend a gateway is configured, and capture what it is given."""
         from notifications import sms as sms_module
@@ -1513,7 +1533,7 @@ class ReminderTests(StaffTestCase):
 
     def test_a_number_given_in_the_dialog_is_used_and_kept(self):
         sent = self._allow_sms()
-        self.assertEqual(self.a.client_phone, "")     # not asked for on the form
+        self._forget_the_number()                     # staff left it blank
         self.client.post(self.url, {"channels_set": "1", "channel_sms": "1",
                                     "client_phone": "+233 24 123 4567"})
         self.a.refresh_from_db()
@@ -1525,6 +1545,7 @@ class ReminderTests(StaffTestCase):
 
     def test_asking_to_text_with_no_number_anywhere_is_refused(self):
         sent = self._allow_sms()
+        self._forget_the_number()
         resp = self.client.post(self.url, {"channels_set": "1", "channel_sms": "1"}, follow=True)
         self.assertIn("no mobile number", resp.content.decode())
         self.assertEqual(sent, [])
@@ -1533,6 +1554,7 @@ class ReminderTests(StaffTestCase):
 
     def test_a_malformed_number_is_refused_and_nothing_is_saved(self):
         self._allow_sms()
+        self._forget_the_number()
         self.client.post(self.url, {"channels_set": "1", "channel_sms": "1", "client_phone": "024"})
         self.a.refresh_from_db()
         self.assertEqual(self.a.client_phone, "")

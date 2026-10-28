@@ -56,7 +56,6 @@
             <input class="field-input" type="text" id="psaClientNameIn" name="client_name" value="{{ v.client_name }}" maxlength="200" autocomplete="off"{% if errors.client_name %} aria-invalid="true"{% endif %}>
             <p class="field-error" id="psaClientNameInErr">{{ errors|get:"client_name" }}</p>
           </div>
-          {# No phone field: the client gives their own number when they sign, where it is compulsory. #}
           <div class="field-row">
             <div class="field-group">
               <label for="psaClientEmailIn">Client email</label>
@@ -65,10 +64,15 @@
               <p class="field-error" id="psaClientEmailInErr">{{ errors|get:"client_email" }}</p>
             </div>
             <div class="field-group">
-              <label for="psaClientAddressIn">Client address <span class="psa-optional">(optional)</span></label>
-              <input class="field-input" type="text" id="psaClientAddressIn" name="client_address" value="{{ v.client_address }}" maxlength="255" autocomplete="off">
-              <p class="field-hint">The client's phone number is asked for when they sign.</p>
+              <label for="psaClientPhoneIn">Phone <span class="psa-optional">(optional)</span></label>
+              <input class="field-input" type="tel" id="psaClientPhoneIn" name="client_phone" value="{{ v.client_phone }}" maxlength="40" inputmode="tel" autocomplete="off"{% if errors.client_phone %} aria-invalid="true"{% endif %}>
+              <p class="field-hint">Add one and the client is texted as well as emailed. They confirm it when they sign.</p>
+              <p class="field-error" id="psaClientPhoneInErr">{{ errors|get:"client_phone" }}</p>
             </div>
+          </div>
+          <div class="field-group">
+            <label for="psaClientAddressIn">Client address <span class="psa-optional">(optional)</span></label>
+            <input class="field-input" type="text" id="psaClientAddressIn" name="client_address" value="{{ v.client_address }}" maxlength="255" autocomplete="off">
           </div>
         </div>
 

@@ -171,6 +171,7 @@
 
   function val(id) { return $(id).value.trim(); }
   function basis() { var r = form.querySelector('input[name="payment_basis"]:checked'); return r ? r.value : ""; }
+  function digits(s) { return (s.match(/\d/g) || []).length; }
   function emailOk(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s); }
 
   function validate(sending) {
@@ -185,12 +186,13 @@
       if (i.name !== "deliverables" && !i.readOnly) i.value = i.value.trim();
     });
 
-    var email = val("psaClientEmailIn");
+    var email = val("psaClientEmailIn"), phone = val("psaClientPhoneIn");
     var f = num(fee.value), d = num(deposit.value);
 
     check("psaClientNameIn", val("psaClientNameIn") ? "" : "Enter the client's full name.");
     check("psaClientEmailIn", email ? (emailOk(email) ? "" : "Enter a valid email address.")
       : (sending ? "The client's email is needed to send the agreement." : ""));
+    check("psaClientPhoneIn", phone && (digits(phone) < 7 || digits(phone) > 15) ? "Enter a valid phone number." : "");
     check("psaFeeIn", isNaN(f) ? "Enter the fee as a number, e.g. 2500.00." : (sending && !f ? "Enter the agreed fee." : ""));
     check("psaDepositIn", isNaN(d) ? "Enter the deposit as a number, or leave it blank."
       : (f && d && d > f ? "The deposit can't be more than the agreed fee." : ""));

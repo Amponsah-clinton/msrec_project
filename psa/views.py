@@ -45,7 +45,7 @@ Status = ServiceAgreement.Status
 # The text fields the staff form round-trips, so a failed save shows the
 # form again exactly as it was typed.
 FORM_FIELDS = (
-    "agreement_date", "client_name", "client_email", "client_address",
+    "agreement_date", "client_name", "client_email", "client_phone", "client_address",
     "start_date", "completion_date", "service_title", "currency", "fee", "payment_basis",
     "payment_basis_other", "deposit", "payment_schedule",
 )
@@ -304,7 +304,7 @@ def _values_from(a):
         return d.isoformat() if d else ""
     return {
         "agreement_date": iso(a.agreement_date), "client_name": a.client_name,
-        "client_email": a.client_email,
+        "client_email": a.client_email, "client_phone": a.client_phone,
         "client_address": a.client_address, "start_date": iso(a.start_date),
         "completion_date": iso(a.completion_date), "service_title": a.service_title,
         "currency": a.currency, "fee": f"{a.fee:.2f}" if a.fee is not None else "",

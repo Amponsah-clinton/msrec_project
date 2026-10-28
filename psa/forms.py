@@ -69,14 +69,18 @@ def parse_agreement(post, *, sending):
     accept. Returns (cleaned, errors) -- cleaned always holds what was
     typed, so the form can be shown again with it.
 
-    ``client_phone`` is deliberately absent: the client gives their own
-    number when they sign (parse_client, where it is compulsory), so staff
-    never guess it and a number the client typed is never overwritten by a
-    later staff edit."""
+    ``client_phone`` is optional here and compulsory on the client's own
+    side (parse_client). Staff needn't know it -- the client gives and
+    confirms their own number as part of signing -- but without one on the
+    agreement there is nobody to text when it is sent or chased, which is
+    the whole of the SMS side of this app. So it is asked for, gently.
+    Editing is only possible before signing, so a staff edit can never
+    overwrite a number the client themselves gave."""
     errors = {}
     c = {
         "client_name": " ".join(post.get("client_name", "").split())[:200],
         "client_email": post.get("client_email", "").strip().lower()[:254],
+        "client_phone": post.get("client_phone", "").strip()[:40],
         "client_address": post.get("client_address", "").strip()[:255],
         "service_title": " ".join(post.get("service_title", "").split())[:255],
         "deliverables": deliverables_from(post),
@@ -93,6 +97,9 @@ def parse_agreement(post, *, sending):
         errors["client_email"] = "Enter a valid email address."
     elif sending and not c["client_email"]:
         errors["client_email"] = "The client's email is needed to send the agreement."
+
+    if c["client_phone"] and not phone_ok(c["client_phone"]):
+        errors["client_phone"] = "Enter a valid phone number (7–15 digits)."
 
     # The agreement date is fixed when the agreement is created, so it isn't
     # read back from the form.
