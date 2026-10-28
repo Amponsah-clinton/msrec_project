@@ -430,7 +430,7 @@ def send_payment_to_staff(a, payment, req):
 
 def sms_payment_to_staff(a, payment):
     owing = a.amount_owing
-    tail = (f"{a.currency} {owing:,.2f} still owing." if owing is not None and owing > 0
+    tail = (f"{a.currency} {owing:,.2f} owing." if owing is not None and owing > 0
             else "Settled in full.")
     return (f"{a.reference}: {_plain(a.client_name, SMS_NAME_LEN)} paid "
-            f"{a.currency} {payment.abs_amount:,.2f} online. {tail} {a.staff_url()}")
+            f"{a.currency} {payment.abs_amount:,.2f}. {tail} {a.staff_url()}")

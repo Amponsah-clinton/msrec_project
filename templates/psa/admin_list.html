@@ -196,6 +196,30 @@
                       Record payment
                     </button>
                     {% endif %}
+                    {% with live=a.open_payment_request %}
+                    {% if live %}
+                    {# A link is already out: this chases it rather than minting a second one. #}
+                    <form method="post" action="{% url 'psa_admin:psa_payment_link_resend' a.pk live.pk %}" class="psa-paylink-inline"
+                          data-confirm="Email and text {{ a.client_name }} a reminder to pay {{ a.currency }} {{ live.amount|money }}?"
+                          data-confirm-title="Send a reminder?" data-confirm-variant="primary" data-confirm-label="Send reminder">
+                      {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button type="submit" class="psa-pay-btn is-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z"/></svg>
+                        Remind to pay
+                      </button>
+                    </form>
+                    {% elif a.can_request_payment %}
+                    <form method="post" action="{% url 'psa_admin:psa_payment_link' a.pk %}" class="psa-paylink-inline"
+                          data-confirm="Email {{ a.client_name }} a secure link to pay {{ a.currency }} {{ a.amount_owing|money }}, and text them to check it?"
+                          data-confirm-title="Send the payment link?" data-confirm-variant="primary" data-confirm-label="Send link">
+                      {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                      <button type="submit" class="psa-pay-btn is-link">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+                        Send payment link
+                      </button>
+                    </form>
+                    {% endif %}
+                    {% endwith %}
                   </div>
                 </td>
                 <td data-label="Status">

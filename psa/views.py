@@ -187,7 +187,10 @@ def _filtered(f):
 def psa_list(request):
     f = _filters(request.GET)
     matching = _filtered(f)
-    paginator = Paginator(matching, PER_PAGE)
+    # Each row offers "Send payment link" or "Remind to pay" depending on
+    # whether one is already out, so the links come with the page rather
+    # than costing a query per agreement.
+    paginator = Paginator(matching.prefetch_related("payment_requests"), PER_PAGE)
     page = paginator.get_page(request.GET.get("page"))
     params = request.GET.copy()
     params.pop("page", None)
@@ -460,13 +463,18 @@ def _send(request, a, *, reminder, note=""):
 @login_required
 @staff_required
 def psa_detail(request, pk):
-    a = get_object_or_404(ServiceAgreement.objects.select_related("created_by", "company_signed_by"), pk=pk)
+    a = get_object_or_404(
+        ServiceAgreement.objects.select_related("created_by", "company_signed_by")
+        .prefetch_related("payment_requests"),
+        pk=pk,
+    )
     change_requests = list(a.change_requests.select_related("resolved_by"))
     return render(request, "psa/admin_detail.html", {
         "a": a,
         "open_request": next((r for r in change_requests if not r.resolved_at), None),
+        "open_payment_request": a.open_payment_request,
         "change_requests": change_requests,
-        "payments": list(a.payments.select_related("recorded_by")),
+        "payments": list(a.payments.select_related("recorded_by", "request")),
         "methods": Payment.Method.choices,
         "today": timezone.localdate(),
         "client_link": a.client_url() if a.status != Status.DRAFT else "",

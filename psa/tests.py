@@ -13,7 +13,7 @@ from PIL import Image, ImageDraw
 from accounts.models import User
 from notifications.models import Notification
 
-from .models import Payment, ServiceAgreement
+from .models import Payment, PaymentRequest, ServiceAgreement
 
 Status = ServiceAgreement.Status
 
@@ -950,6 +950,8 @@ class PsaSmsTests(StaffTestCase):
         a = self.a
         a.client_name = "University of Ghana, School of Public Health"
         a.fee = Decimal("184500.00")
+        req = PaymentRequest(agreement=a, amount=Decimal("138375.00"), currency=a.currency)
+        payment = Payment(agreement=a, amount=Decimal("138375.00"), receipt_number="MSR-2026-00007")
         for label, message in (
             ("link", emails.sms_to_client(a)),
             ("reminder", emails.sms_to_client(a, reminder=True)),
@@ -958,6 +960,10 @@ class PsaSmsTests(StaffTestCase):
             ("receipt", emails.sms_change_request_receipt(a)),
             ("staff signed", emails.sms_signed_to_staff(a)),
             ("staff changes", emails.sms_changes_requested_to_staff(a)),
+            ("pay link", emails.sms_payment_link(a, req)),
+            ("pay reminder", emails.sms_payment_link(a, req, reminder=True)),
+            ("receipt", emails.sms_receipt(a, payment)),
+            ("staff paid", emails.sms_payment_to_staff(a, payment)),
         ):
             with self.subTest(label):
                 count, encoding = sms.segments(message)
@@ -1066,3 +1072,262 @@ class PsaSmsTests(StaffTestCase):
         self.addCleanup(lambda: setattr(sms_module, "send_sms", original_send))
         self.addCleanup(lambda: setattr(sms_module, "is_configured", original_conf))
         return sink
+
+
+class PaymentLinkTests(StaffTestCase):
+    """Sending a client a link to settle what they owe, and what comes back."""
+
+    def setUp(self):
+        super().setUp()
+        self.a = self._sent()                      # fee 2500, deposit 1000
+        self.a.client_phone = "0241234567"
+        self.a.save(update_fields=["client_phone"])
+        self.url = reverse("psa_admin:psa_payment_link", args=[self.a.pk])
+
+    # ---- helpers ------------------------------------------------------
+
+    def _paystack(self, req, *, status="success", amount=None, currency=None):
+        """Stand in for Paystack's verify endpoint."""
+        from payments import paystack
+        data = {
+            "status": status,
+            "amount": req.amount_subunit if amount is None else amount,
+            "currency": req.currency if currency is None else currency,
+            "gateway_response": "Approved" if status == "success" else "Declined",
+        }
+        original = paystack.verify_transaction
+        paystack.verify_transaction = lambda reference: data
+        self.addCleanup(lambda: setattr(paystack, "verify_transaction", original))
+        return data
+
+    def _request_link(self, **post):
+        self.client.post(self.url, {"next": "", **post})
+        return PaymentRequest.objects.filter(agreement=self.a).order_by("-pk").first()
+
+    # ---- creating and sending -----------------------------------------
+
+    def test_link_defaults_to_everything_outstanding(self):
+        req = self._request_link()
+        self.assertEqual(req.amount, Decimal("1500.00"))      # 2500 fee - 1000 deposit
+        self.assertEqual(req.status, PaymentRequest.Status.PENDING)
+        self.assertEqual(req.send_count, 1)
+        self.assertTrue(req.reference.startswith("MSREC-PSA-"))
+        self.assertGreaterEqual(len(req.token), 40)
+        # Emailed to the client with the link in it.
+        self.assertEqual(mail.outbox[-1].to, [self.a.client_email])
+        self.assertIn(req.token, mail.outbox[-1].body)
+
+    def test_an_instalment_may_be_less_but_never_more(self):
+        self.assertEqual(self._request_link(amount="500").amount, Decimal("500.00"))
+        before = PaymentRequest.objects.count()
+        self.client.post(self.url, {"amount": "9000"})
+        self.assertEqual(PaymentRequest.objects.count(), before)
+
+    def test_nothing_to_collect_is_refused(self):
+        Payment.objects.create(agreement=self.a, amount=Decimal("1500.00"))
+        self.client.post(self.url, {})
+        self.assertFalse(PaymentRequest.objects.filter(agreement=self.a).exists())
+
+    def test_a_new_link_retires_the_old_one(self):
+        first = self._request_link()
+        second = self._request_link()
+        first.refresh_from_db()
+        self.assertEqual(first.status, PaymentRequest.Status.CANCELLED)
+        self.assertEqual(second.status, PaymentRequest.Status.PENDING)
+        self.assertEqual(self.a.open_payment_request.pk, second.pk)
+
+    def test_resending_chases_the_same_link_and_extends_it(self):
+        req = self._request_link()
+        was = req.expires_at
+        resp = self.client.post(
+            reverse("psa_admin:psa_payment_link_resend", args=[self.a.pk, req.pk]), {})
+        self.assertEqual(resp.status_code, 302)
+        req.refresh_from_db()
+        self.assertEqual(req.send_count, 2)
+        self.assertGreater(req.expires_at, was)
+        self.assertEqual(PaymentRequest.objects.filter(agreement=self.a).count(), 1)
+        self.assertIn("Reminder", mail.outbox[-1].subject)
+
+    def test_staff_can_withdraw_a_link(self):
+        req = self._request_link()
+        self.client.post(reverse("psa_admin:psa_payment_link_cancel", args=[self.a.pk, req.pk]), {})
+        req.refresh_from_db()
+        self.assertEqual(req.status, PaymentRequest.Status.CANCELLED)
+        self.assertFalse(req.is_payable)
+
+    # ---- the link itself ----------------------------------------------
+
+    def test_the_page_needs_the_token_and_is_never_cached(self):
+        req = self._request_link()
+        self.client.logout()
+        resp = self.client.get(reverse("psa:pay", kwargs={"token": req.token}))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp["Cache-Control"], "no-store")
+        self.assertEqual(resp["Referrer-Policy"], "same-origin")
+        self.assertContains(resp, "1,500.00")
+        # The primary key is not a way in.
+        self.assertEqual(self.client.get(f"/psa/pay/{req.pk}/").status_code, 404)
+        self.assertEqual(self.client.get("/psa/pay/not-a-real-token/").status_code, 404)
+
+    def test_opening_the_page_is_recorded(self):
+        req = self._request_link()
+        self.client.logout()
+        self.client.get(reverse("psa:pay", kwargs={"token": req.token}))
+        req.refresh_from_db()
+        self.assertIsNotNone(req.viewed_at)
+
+    def test_an_expired_link_stops_collecting(self):
+        req = self._request_link()
+        req.expires_at = timezone.now() - timezone.timedelta(minutes=1)
+        req.save(update_fields=["expires_at"])
+        self.assertTrue(req.is_expired)
+        self.assertFalse(req.is_payable)
+        self.client.logout()
+        page = self.client.get(reverse("psa:pay", kwargs={"token": req.token}))
+        self.assertContains(page, "expired")
+        resp = self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}), {})
+        self.assertEqual(resp.status_code, 400)
+
+    def test_a_cancelled_agreement_stops_collecting(self):
+        req = self._request_link()
+        self.a.status = Status.CANCELLED
+        self.a.save(update_fields=["status"])
+        req.refresh_from_db()
+        self.assertFalse(req.is_payable)
+
+    # ---- taking the money ---------------------------------------------
+
+    def test_a_verified_payment_lands_in_the_ledger_and_cuts_the_owing(self):
+        req = self._request_link()
+        self._paystack(req)
+        self.client.logout()
+        resp = self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}),
+                                {"reference": req.reference})
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()["ok"])
+
+        req.refresh_from_db()
+        self.a.refresh_from_db()
+        self.assertEqual(req.status, PaymentRequest.Status.PAID)
+        self.assertIsNotNone(req.paid_at)
+        # The ledger entry is what makes the list's Amount Owing column move.
+        self.assertEqual(req.payment.amount, Decimal("1500.00"))
+        self.assertEqual(req.payment.method, Payment.Method.CARD)
+        self.assertEqual(self.a.amount_paid, Decimal("2500.00"))
+        self.assertEqual(self.a.amount_owing, Decimal("0.00"))
+        self.assertEqual(self.a.payment_state, "settled")
+
+    def test_the_receipt_is_numbered_emailed_and_downloadable(self):
+        req = self._request_link()
+        self._paystack(req)
+        self.client.logout()
+        self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}), {})
+        req.refresh_from_db()
+
+        self.assertTrue(req.payment.receipt_number.startswith("MSR-"))
+        client_copy = [m for m in mail.outbox if m.to == [self.a.client_email]][-1]
+        self.assertIn(req.payment.receipt_number, client_copy.subject)
+        self.assertTrue(client_copy.attachments, "the receipt PDF should be attached")
+        self.assertTrue(client_copy.attachments[0][0].endswith(".pdf"))
+
+        # The client's own copy, from the payment page.
+        resp = self.client.get(reverse("psa:receipt", kwargs={"token": req.token}))
+        self.assertEqual(resp["Content-Type"], "application/pdf")
+        self.assertEqual(resp["Cache-Control"], "no-store")
+        self.assertTrue(resp.content.startswith(b"%PDF"))
+
+        # And the staff copy, filed against the agreement.
+        self.client.force_login(self.admin)
+        staff_copy = self.client.get(
+            reverse("psa_admin:psa_receipt", args=[self.a.pk, req.payment.pk]))
+        self.assertTrue(staff_copy.content.startswith(b"%PDF"))
+
+    def test_the_same_charge_is_never_banked_twice(self):
+        req = self._request_link()
+        self._paystack(req)
+        self.client.logout()
+        url = reverse("psa:pay_verify", kwargs={"token": req.token})
+        for _ in range(3):
+            self.assertTrue(self.client.post(url, {}).json()["ok"])
+        self.assertEqual(self.a.payments.count(), 1)
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.amount_owing, Decimal("0.00"))
+
+    def test_a_wrong_amount_is_refused_and_banks_nothing(self):
+        req = self._request_link()
+        self._paystack(req, amount=100)          # GHS 1.00 against a GHS 1,500 request
+        self.client.logout()
+        resp = self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}), {})
+        self.assertEqual(resp.status_code, 400)
+        req.refresh_from_db()
+        self.assertEqual(req.status, PaymentRequest.Status.PENDING)
+        self.assertEqual(self.a.payments.count(), 0)
+
+    def test_a_wrong_currency_is_refused(self):
+        req = self._request_link()
+        self._paystack(req, currency="NGN")
+        self.client.logout()
+        self.assertEqual(
+            self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}), {}).status_code, 400)
+        self.assertEqual(self.a.payments.count(), 0)
+
+    def test_a_failed_charge_banks_nothing(self):
+        req = self._request_link()
+        self._paystack(req, status="failed")
+        self.client.logout()
+        resp = self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}), {})
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(self.a.payments.count(), 0)
+        req.refresh_from_db()
+        self.assertEqual(req.status, PaymentRequest.Status.PENDING)
+
+    def test_a_browser_quoting_someone_elses_reference_is_refused(self):
+        req = self._request_link()
+        self._paystack(req)
+        self.client.logout()
+        resp = self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}),
+                                {"reference": "MSREC-PSA-999-deadbeef"})
+        self.assertEqual(resp.status_code, 400)
+        self.assertEqual(self.a.payments.count(), 0)
+
+    def test_the_amount_charged_is_never_read_from_the_browser(self):
+        req = self._request_link()
+        self._paystack(req)
+        self.client.logout()
+        self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}),
+                         {"amount": "1", "amount_subunit": "100", "reference": req.reference})
+        req.refresh_from_db()
+        self.assertEqual(req.payment.amount, Decimal("1500.00"))
+
+    # ---- what the staff see -------------------------------------------
+
+    def test_the_owing_column_and_the_panel_follow_the_ledger(self):
+        req = self._request_link(amount="500")
+        self._paystack(req)
+        self.client.logout()
+        self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}), {})
+        req.refresh_from_db()
+
+        self.client.force_login(self.admin)
+        listing = self.client.get(reverse("psa_admin:psa_list"))
+        self.assertContains(listing, "1,000.00")       # 1500 owed, 500 just paid
+        detail = self.client.get(reverse("psa_admin:psa_detail", args=[self.a.pk]))
+        self.assertContains(detail, "1,000.00")
+        self.assertContains(detail, req.payment.receipt_number)
+        self.assertContains(detail, "Send payment link")   # more still owing
+
+    def test_a_refund_gets_no_receipt(self):
+        refund = Payment.objects.create(agreement=self.a, amount=Decimal("-100.00"))
+        self.assertIsNone(refund.receipt_number)
+        resp = self.client.get(reverse("psa_admin:psa_receipt", args=[self.a.pk, refund.pk]))
+        self.assertEqual(resp.status_code, 302)
+
+    def test_only_staff_can_mint_or_chase_a_link(self):
+        req = self._request_link()
+        self.client.logout()
+        for url in (self.url,
+                    reverse("psa_admin:psa_payment_link_resend", args=[self.a.pk, req.pk]),
+                    reverse("psa_admin:psa_payment_link_cancel", args=[self.a.pk, req.pk]),
+                    reverse("psa_admin:psa_receipt", args=[self.a.pk, req.pk])):
+            with self.subTest(url):
+                self.assertEqual(self.client.post(url, {}).status_code, 302)

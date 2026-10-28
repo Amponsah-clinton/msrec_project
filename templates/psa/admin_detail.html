@@ -118,12 +118,70 @@
                 <span class="psa-ledger-amt">{% if p.is_refund %}&minus;{% endif %}{{ a.currency }} {{ p.abs_amount|money }}</span>
                 <span class="psa-ledger-meta">{{ p.paid_on|date:"d M Y" }} &middot; {{ p.get_method_display }}{% if p.is_refund %} &middot; refund{% endif %}</span>
                 {% if p.note %}<span class="psa-ledger-note">{{ p.note }}</span>{% endif %}
-                <span class="psa-ledger-meta">Recorded{% if p.recorded_by %} by {{ p.recorded_by.full_name }}{% endif %} on {{ p.recorded_at|date:"d M Y, H:i" }}</span>
+                <span class="psa-ledger-meta">{% if p.is_online %}Paid online by the client{% else %}Recorded{% if p.recorded_by %} by {{ p.recorded_by.full_name }}{% endif %}{% endif %} on {{ p.recorded_at|date:"d M Y, H:i" }}</span>
+                {% if p.receipt_number %}
+                <span class="psa-ledger-meta"><a href="{% url 'psa_admin:psa_receipt' a.pk p.pk %}">Receipt {{ p.receipt_number }}</a></span>
+                {% endif %}
               </li>
               {% endfor %}
             </ol>
             {% else %}
             <p class="psa-side-text">Nothing received yet.</p>
+            {% endif %}
+
+            {% if open_payment_request %}
+            {# A link is out with the client: chase it, or withdraw it. #}
+            <div class="psa-paylink is-live" id="psaPayLink">
+              <div class="psa-paylink-head">
+                <span class="psa-paylink-tag">Payment link sent</span>
+                <strong>{{ a.currency }} {{ open_payment_request.amount|money }}</strong>
+              </div>
+              <p class="psa-side-text">
+                Emailed to {{ a.client_email }} on {{ open_payment_request.last_sent_at|date:"d M Y" }}{% if open_payment_request.send_count > 1 %} ({{ open_payment_request.send_count }} times){% endif %}.
+                {% if open_payment_request.viewed_at %}Opened {{ open_payment_request.viewed_at|date:"d M Y, H:i" }}.{% else %}Not opened yet.{% endif %}
+                Expires {{ open_payment_request.expires_at|date:"d M Y" }}.
+              </p>
+              <div class="psa-paylink-actions">
+                <form method="post" action="{% url 'psa_admin:psa_payment_link_resend' a.pk open_payment_request.pk %}"
+                      data-confirm="Email and text this payment link to {{ a.client_name }} again?"
+                      data-confirm-title="Send a reminder?" data-confirm-variant="primary" data-confirm-label="Send reminder">
+                  {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button type="submit" class="btn-secondary"><i class="bi bi-send" aria-hidden="true"></i> Resend reminder</button>
+                </form>
+                <form method="post" action="{% url 'psa_admin:psa_payment_link_cancel' a.pk open_payment_request.pk %}"
+                      data-confirm="This link will stop taking payment immediately. Withdraw it?"
+                      data-confirm-title="Withdraw the link?" data-confirm-variant="danger" data-confirm-label="Withdraw">
+                  {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+                  <button type="submit" class="btn-secondary psa-danger"><i class="bi bi-x-circle" aria-hidden="true"></i> Withdraw</button>
+                </form>
+              </div>
+              <p class="psa-side-text psa-paylink-url"><span>Link:</span> <code>{{ open_payment_request.pay_url }}</code></p>
+            </div>
+            {% elif a.can_request_payment %}
+            <details class="psa-pay-add" id="psaPayRequest">
+              <summary>Send a payment link</summary>
+              <form method="post" action="{% url 'psa_admin:psa_payment_link' a.pk %}"
+                    data-confirm-title="Send the payment link?" data-confirm-variant="primary" data-confirm-label="Send link"
+                    data-confirm="Email {{ a.client_name }} a secure link to pay, and text them to check it?">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                <p class="psa-side-text">The client pays by card or mobile money. The amount is fixed in the
+                  link, the receipt is issued automatically, and the ledger above updates itself.</p>
+                <div class="field-group">
+                  <label for="psaLinkAmount">Amount to collect ({{ a.currency }})</label>
+                  <input type="text" inputmode="decimal" class="field-input" id="psaLinkAmount" name="amount"
+                         autocomplete="off" value="{{ a.amount_owing }}">
+                  <p class="field-hint">Everything outstanding by default. Lower it for an instalment.</p>
+                </div>
+                <div class="field-group">
+                  <label for="psaLinkNote">What it covers <span class="psa-optional">(optional)</span></label>
+                  <input type="text" class="field-input" id="psaLinkNote" name="note" maxlength="200"
+                         autocomplete="off" placeholder="e.g. Balance on delivery">
+                  <p class="field-hint">Shown on the payment page and on the receipt.</p>
+                </div>
+                <button type="submit" class="btn-primary"><i class="bi bi-link-45deg" aria-hidden="true"></i> Send payment link</button>
+              </form>
+            </details>
             {% endif %}
 
             {% if a.can_record_payment %}
