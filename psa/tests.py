@@ -1389,3 +1389,171 @@ class PaymentLinkTests(StaffTestCase):
                     reverse("psa_admin:psa_receipt", args=[self.a.pk, req.pk])):
             with self.subTest(url):
                 self.assertEqual(self.client.post(url, {}).status_code, 302)
+
+
+class ReminderTests(StaffTestCase):
+    """Chasing a client who hasn't signed yet: by email, by text or both,
+    with the agreement itself attached."""
+
+    def setUp(self):
+        super().setUp()
+        self.a = self._sent()
+        self.url = reverse("psa_admin:psa_resend", args=[self.a.pk])
+
+    def _allow_sms(self, sink=None):
+        """Pretend a gateway is configured, and capture what it is given."""
+        from notifications import sms as sms_module
+        sent = sink if sink is not None else []
+        original_send, original_conf = sms_module.send_sms, sms_module.is_configured
+        sms_module.send_sms = lambda recipients, message, sender=None: (
+            sent.append((list(recipients), message)) or {"ok": True, "sent_to": list(recipients)}
+        )
+        sms_module.is_configured = lambda: True
+        self.addCleanup(lambda: setattr(sms_module, "send_sms", original_send))
+        self.addCleanup(lambda: setattr(sms_module, "is_configured", original_conf))
+        return sent
+
+    # ---- the attachment ------------------------------------------------
+
+    def test_the_agreement_is_attached_when_asked_for(self):
+        self.client.post(self.url, {"channel_email": "1", "attach": "1"})
+        last = mail.outbox[-1]
+        self.assertEqual(last.to, [self.a.client_email])
+        self.assertIn("Reminder", last.subject)
+        self.assertEqual(len(last.attachments), 1)
+        name, content, mimetype = last.attachments[0]
+        self.assertTrue(name.endswith(".pdf"))
+        self.assertEqual(mimetype, "application/pdf")
+        self.assertTrue(content.startswith(b"%PDF"))
+        self.assertIn("attached", last.body)
+
+    def test_no_attachment_unless_asked_for(self):
+        self.client.post(self.url, {"channel_email": "1"})
+        self.assertEqual(mail.outbox[-1].attachments, [])
+
+    def test_the_attached_copy_is_watermarked_unsigned(self):
+        # It must never read as an executed agreement: the client hasn't
+        # signed it yet -- that is the whole point of the reminder.
+        from psa import pdf
+        self.assertEqual(self.a.status, Status.SENT)
+        self.assertEqual(pdf.WATERMARKS[self.a.status], "UNSIGNED")
+
+    # ---- the channels ---------------------------------------------------
+
+    def test_email_only_sends_no_text(self):
+        sent = self._allow_sms()
+        self.a.client_phone = "0241234567"
+        self.a.save(update_fields=["client_phone"])
+        self.client.post(self.url, {"channels_set": "1", "channel_email": "1"})
+        self.assertEqual(len(mail.outbox), 2)        # the original send, plus this
+        self.assertEqual(sent, [])
+
+    def test_text_only_sends_no_email(self):
+        sent = self._allow_sms()
+        self.a.client_phone = "0241234567"
+        self.a.save(update_fields=["client_phone"])
+        before = len(mail.outbox)
+        self.client.post(self.url, {"channels_set": "1", "channel_sms": "1"})
+        self.assertEqual(len(mail.outbox), before)
+        self.assertEqual(len(sent), 1)
+        numbers, message = sent[0]
+        self.assertEqual(numbers, ["0241234567"])
+        self.assertIn(self.a.token, message)
+
+    def test_both_channels_together(self):
+        sent = self._allow_sms()
+        self.a.client_phone = "0241234567"
+        self.a.save(update_fields=["client_phone"])
+        self.client.post(self.url, {"channel_email": "1", "channel_sms": "1", "attach": "1"})
+        self.assertEqual(len(mail.outbox[-1].attachments), 1)
+        self.assertEqual(len(sent), 1)
+
+    def test_ticking_nothing_still_emails(self):
+        # The email is what carries the link, so it is the safe default.
+        self.client.post(self.url, {"channels_set": "1"})
+        self.assertIn("Reminder", mail.outbox[-1].subject)
+
+    def test_a_bare_post_still_does_both_as_resending_always_did(self):
+        # No dialog marker: this is the old "Resend" contract, which
+        # emailed and texted together. Adding the choice must not quietly
+        # drop the text for anyone still posting the old way.
+        sent = self._allow_sms()
+        self.a.client_phone = "0241234567"
+        self.a.save(update_fields=["client_phone"])
+        self.client.post(self.url, {})
+        self.assertIn("Reminder", mail.outbox[-1].subject)
+        self.assertEqual(len(sent), 1)
+
+    def test_a_bare_post_without_a_number_is_not_an_error(self):
+        # SMS came from the default, not from a staff choice, so a missing
+        # number just means no text -- the email still goes.
+        self._allow_sms()
+        before = len(mail.outbox)
+        self.client.post(self.url, {})
+        self.assertEqual(len(mail.outbox), before + 1)
+
+    # ---- capturing a number at the moment it is needed -------------------
+
+    def test_a_number_given_in_the_dialog_is_used_and_kept(self):
+        sent = self._allow_sms()
+        self.assertEqual(self.a.client_phone, "")     # not asked for on the form
+        self.client.post(self.url, {"channels_set": "1", "channel_sms": "1",
+                                    "client_phone": "+233 24 123 4567"})
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.client_phone, "+233 24 123 4567")
+        self.assertEqual(sent[0][0], ["0241234567"])  # normalised for the gateway
+        # The next reminder doesn't have to ask again.
+        self.client.post(self.url, {"channels_set": "1", "channel_sms": "1"})
+        self.assertEqual(len(sent), 2)
+
+    def test_asking_to_text_with_no_number_anywhere_is_refused(self):
+        sent = self._allow_sms()
+        resp = self.client.post(self.url, {"channels_set": "1", "channel_sms": "1"}, follow=True)
+        self.assertIn("no mobile number", resp.content.decode())
+        self.assertEqual(sent, [])
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.send_count, 1)        # nothing was sent
+
+    def test_a_malformed_number_is_refused_and_nothing_is_saved(self):
+        self._allow_sms()
+        self.client.post(self.url, {"channels_set": "1", "channel_sms": "1", "client_phone": "024"})
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.client_phone, "")
+
+    def test_a_reminder_never_blanks_a_number_the_client_gave(self):
+        self.a.client_phone = "0209998887"
+        self.a.save(update_fields=["client_phone"])
+        self.client.post(self.url, {"channel_email": "1", "client_phone": ""})
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.client_phone, "0209998887")
+
+    # ---- what staff are told --------------------------------------------
+
+    def test_a_text_that_cannot_go_is_never_reported_as_sent(self):
+        # No gateway configured: the email goes, the text doesn't, and the
+        # message says so rather than implying both went.
+        self.a.client_phone = "0241234567"
+        self.a.save(update_fields=["client_phone"])
+        resp = self.client.post(
+            self.url, {"channels_set": "1", "channel_email": "1", "channel_sms": "1"}, follow=True)
+        body = resp.content.decode()
+        self.assertNotIn("and texted to", body)
+        self.assertIn("No text was sent", body)
+
+    def test_only_an_agreement_awaiting_the_client_can_be_reminded(self):
+        self.a.status = Status.SIGNED
+        self.a.save(update_fields=["status"])
+        before = len(mail.outbox)
+        self.client.post(self.url, {"channel_email": "1"})
+        self.assertEqual(len(mail.outbox), before)
+
+    def test_the_list_offers_a_one_click_reminder(self):
+        page = self.client.get(reverse("psa_admin:psa_list"))
+        self.assertContains(page, reverse("psa_admin:psa_resend", args=[self.a.pk]))
+        self.assertContains(page, "Remind")
+
+    def test_only_staff_can_send_a_reminder(self):
+        self.client.logout()
+        before = len(mail.outbox)
+        self.assertEqual(self.client.post(self.url, {"channel_email": "1"}).status_code, 302)
+        self.assertEqual(len(mail.outbox), before)

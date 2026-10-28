@@ -326,3 +326,56 @@ def parse_payment_request(post, agreement):
         "note": " ".join(post.get("note", "").split())[:200],
     }
     return cleaned, errors
+
+
+def parse_reminder(post, agreement):
+    """How a reminder to sign should go out (psa/views.py psa_resend).
+
+    The client's number is not asked for on the agreement form -- they
+    give it themselves as part of signing -- so an agreement that hasn't
+    been signed has nobody to text. Rather than put the field back on the
+    form for every agreement, the reminder dialog asks for a number at
+    the one moment it is actually needed, and keeps it so the next
+    reminder doesn't ask again. The client still confirms or corrects it
+    when they sign, where it stays compulsory.
+
+    Returns (cleaned, errors); cleaned["client_phone"] is "" when there
+    is nothing new to save.
+    """
+    errors = {}
+    # An unticked checkbox posts nothing, so "email only" and "this isn't
+    # the dialog at all" look identical. The dialog says which it is with
+    # a hidden marker; without it -- a bare POST -- a reminder goes by
+    # both, which is how resending behaved before the choice existed.
+    chose = bool(post.get("channels_set"))
+    if chose:
+        channels = tuple(c for c in ("email", "sms") if post.get(f"channel_{c}"))
+        if not channels:
+            # Nothing ticked: the email is the one that carries the link.
+            channels = ("email",)
+    else:
+        channels = ("email", "sms")
+
+    phone = post.get("client_phone", "").strip()[:40]
+    if phone and not phone_ok(phone):
+        errors["client_phone"] = "Enter a valid phone number (7–15 digits)."
+        phone = ""
+
+    # Only an explicit "text them" with nothing to text is an error worth
+    # stopping for. Where SMS came from the default, a missing number just
+    # means no text -- the email still carries the link.
+    if chose and "sms" in channels and not (phone or agreement.client_phone):
+        errors["client_phone"] = (
+            f"There's no mobile number for {agreement.client_name} yet, so there's nothing to text. "
+            "Add one here, or send the reminder by email only."
+        )
+    if "email" in channels and not agreement.client_email:
+        errors["channel_email"] = "There's no client email on this agreement to send a reminder to."
+
+    return {
+        "channels": channels,
+        "attach": bool(post.get("attach")),
+        # Only ever filled in, never blanked: a reminder must not wipe a
+        # number the client already gave.
+        "client_phone": phone,
+    }, errors

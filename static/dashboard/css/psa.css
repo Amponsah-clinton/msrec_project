@@ -280,6 +280,31 @@ dialog.psa-dialog::backdrop { background: var(--overlay-bg); backdrop-filter: bl
 
 /* The same two actions as one pill in the list's Amount Owing cell. */
 .psa-paylink-inline { margin: 0; display: inline; }
+
+/* ---------------- Reminder to sign ----------------
+   A disclosure rather than a dialog: the common case is one click on
+   the summary, and the choices (email, text, attach the PDF) only
+   unfold for the staff member who wants them. */
+.psa-remind { display: inline-block; }
+.psa-remind > summary { list-style: none; cursor: pointer; }
+.psa-remind > summary::-webkit-details-marker { display: none; }
+.psa-remind[open] > summary { margin-bottom: 12px; }
+.psa-remind form { display: grid; gap: 0; padding: 14px; margin-top: 4px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--bg);
+  text-align: left; min-width: 280px; }
+.psa-remind .psa-side-text { margin: 0 0 12px; }
+.psa-remind .field-group { margin-bottom: 12px; }
+.psa-remind .btn-primary { width: 100%; justify-content: center; margin-top: 4px; }
+.psa-check { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 8px;
+  font-size: 13.5px; font-weight: 500; color: var(--text-main); cursor: pointer; }
+.psa-check input { margin-top: 2px; flex: none; }
+.psa-fieldset .psa-check:last-child { margin-bottom: 0; }
+/* The number is only wanted when a text is actually being sent -- but it
+   starts visible, so it is still reachable if the script never runs. */
+.psa-remind-phone.off { display: none; }
+
+/* A row action that posts rather than links -- same pill as its siblings. */
+.psa-row-form { display: contents; }
 .psa-pay-btn.is-link { margin-left: 4px; }
 
 /* ---------------- Letterhead settings ---------------- */

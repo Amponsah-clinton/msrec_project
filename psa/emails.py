@@ -124,11 +124,20 @@ def _staff_phones(a):
     return [u.phone for u in get_user_model().objects.filter(query) if sms.can_sms_user(u)]
 
 
-def send_to_client(a, *, reminder=False, updated=False, note=""):
+def send_to_client(a, *, reminder=False, updated=False, note="", attach=False,
+                   channels=("email", "sms")):
     """The link the client completes and signs the agreement through.
 
     updated -- it's going back after the client asked for changes; `note`
-    is what staff wrote back to them, if anything."""
+    is what staff wrote back to them, if anything.
+    attach   -- put the agreement PDF on the email as well as the link.
+    channels -- which of "email" and "sms" to use. A reminder can go by
+                one, the other or both; the first send always emails,
+                because the link is what the client needs.
+
+    Returns (emailed, sms_problem). `sms_problem` is empty when a text
+    went out, "not requested" when none was asked for, and otherwise says
+    why one didn't -- so the caller never reports a text it didn't send."""
     title = a.service_title or "your project"
     if updated:
         subject = f"Updated: Professional Service Agreement {a.reference} from Metascholar Limited"
@@ -156,23 +165,35 @@ def send_to_client(a, *, reminder=False, updated=False, note=""):
             "If anything in it isn't right, use “Request changes” on the same page and we'll fix it "
             "before you sign.",
         ]
-    ok = _send(
-        subject=subject,
-        to=a.client_email,
-        heading=heading,
-        paragraphs=paragraphs,
-        quote_label="Our reply to your request" if updated and note else None,
-        quote_text=note if updated and note else None,
-        callout_label="Agreement",
-        callout_value=a.reference,
-        callout_note=f"Agreed fee: {_money(a)}" if a.fee is not None else None,
-        cta_text="Review & sign the agreement",
-        cta_url=a.client_url(),
-        preheader=f"Agreement {a.reference} for {title} is ready for your signature.",
-    )
-    if ok:
-        _sms([_client_phone(a)], sms_to_client(a, reminder=reminder, updated=updated), "agreement link")
-    return ok
+    attachment = None
+    if attach:
+        attachment = agreement_pdf(a)
+        if attachment:
+            paragraphs.append("A copy of the agreement is attached to this email for your records. "
+                              "It still needs to be signed online using the button below.")
+
+    ok = True
+    if "email" in channels:
+        ok = _send(
+            subject=subject,
+            to=a.client_email,
+            heading=heading,
+            paragraphs=paragraphs,
+            quote_label="Our reply to your request" if updated and note else None,
+            quote_text=note if updated and note else None,
+            callout_label="Agreement",
+            callout_value=a.reference,
+            callout_note=f"Agreed fee: {_money(a)}" if a.fee is not None else None,
+            cta_text="Review & sign the agreement",
+            cta_url=a.client_url(),
+            preheader=f"Agreement {a.reference} for {title} is ready for your signature.",
+            attachments=[attachment] if attachment else None,
+        )
+    sms_problem = "not requested"
+    if "sms" in channels:
+        _, sms_problem = _sms([_client_phone(a)],
+                              sms_to_client(a, reminder=reminder, updated=updated), "agreement link")
+    return ok, sms_problem
 
 
 def sms_to_client(a, *, reminder=False, updated=False):
@@ -185,9 +206,14 @@ def sms_to_client(a, *, reminder=False, updated=False):
     return f"Metascholar agreement {a.reference}. Review and sign: {a.client_url()}"
 
 
-def signed_pdf(a):
-    """(filename, bytes, mimetype) of the signed agreement for attaching, or
-    None if it couldn't be built -- the email still goes without it."""
+def agreement_pdf(a):
+    """(filename, bytes, mimetype) of the agreement as it stands, for
+    attaching, or None if it couldn't be built -- the email still goes
+    without it.
+
+    Used for the signed copy and for a reminder alike. An agreement that
+    isn't signed yet carries its UNSIGNED watermark (psa.pdf), so a
+    reminder's attachment can never be mistaken for an executed copy."""
     from . import pdf
     try:
         return (pdf.filename(a), pdf.render(a), "application/pdf")
@@ -345,7 +371,6 @@ def send_payment_link(a, req, *, reminder=False):
     paragraphs += [
         "Use the secure button below to pay by card or mobile money. The page shows the exact "
         "amount and nothing else can be charged through it.",
-        "Your receipt is emailed to you the moment the payment goes through.",
     ]
     ok = _send(
         subject=subject,

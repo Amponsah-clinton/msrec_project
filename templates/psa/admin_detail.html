@@ -68,12 +68,37 @@
                 {% csrf_token %}<button type="submit" class="btn-primary" id="psaSendNow">Send to client</button>
               </form>
               {% elif a.status == 'sent' %}
-              <form method="post" action="{% url 'psa_admin:psa_resend' a.pk %}"
-                    data-confirm-title="Send a reminder?" data-confirm-variant="primary" data-confirm-label="Send reminder"
-                    data-confirm="{{ a.client_name }} will get another email with the link to review and sign {{ a.reference }}."
-                    data-confirm-detail="To: {{ a.client_email }}">
-                {% csrf_token %}<button type="submit" class="btn-primary" id="psaResend">Resend email</button>
-              </form>
+              <details class="psa-remind" id="psaRemind">
+                <summary class="btn-primary" id="psaResend">Send a reminder</summary>
+                <form method="post" action="{% url 'psa_admin:psa_resend' a.pk %}">
+                  {% csrf_token %}
+                  <input type="hidden" name="channels_set" value="1">
+                  <p class="psa-side-text">{{ a.client_name }} gets the link to review and sign
+                    {{ a.reference }} again.</p>
+                  <fieldset class="psa-fieldset">
+                    <legend>How should it go?</legend>
+                    <label class="psa-check"><input type="checkbox" name="channel_email" value="1" checked
+                           {% if not a.client_email %}disabled{% endif %}>
+                      Email{% if a.client_email %} &mdash; {{ a.client_email }}{% else %} &mdash; no address on file{% endif %}</label>
+                    <label class="psa-check"><input type="checkbox" name="channel_sms" value="1" id="psaRemindSms"
+                           {% if a.client_phone %}checked{% endif %}>
+                      Text{% if a.client_phone %} &mdash; {{ a.client_phone }}{% endif %}</label>
+                  </fieldset>
+                  {% if not a.client_phone %}
+                  {# Asked for only where it is needed: the client gives their own number when they sign. #}
+                  <div class="field-group psa-remind-phone" id="psaRemindPhoneWrap">
+                    <label for="psaRemindPhone">Mobile number to text</label>
+                    <input type="tel" class="field-input" id="psaRemindPhone" name="client_phone"
+                           inputmode="tel" autocomplete="off" maxlength="40"
+                           placeholder="e.g. 0241234567">
+                    <p class="field-hint">Kept for next time. The client confirms it when they sign.</p>
+                  </div>
+                  {% endif %}
+                  <label class="psa-check"><input type="checkbox" name="attach" value="1" checked>
+                    Attach the agreement as a PDF</label>
+                  <button type="submit" class="btn-primary">Send reminder</button>
+                </form>
+              </details>
               {% endif %}
               {% if a.is_editable and a.status != 'changes' %}<a class="btn-secondary" href="{% url 'psa_admin:psa_edit' a.pk %}" id="psaEdit">Edit</a>{% endif %}
               <button type="button" class="btn-secondary" onclick="window.print()" id="psaPrint">Print / PDF</button>
@@ -309,6 +334,18 @@
         navigator.clipboard.writeText(input.value).then(done, function () { input.select(); document.execCommand("copy"); done(); });
       } else { input.select(); document.execCommand("copy"); done(); }
     });
+  })();
+
+  /* The reminder's mobile field is only wanted when a text is actually
+     being sent, so it follows the Text checkbox. Shown outright if the
+     script never runs -- better an extra field than an unreachable one. */
+  (function () {
+    var sms = document.getElementById("psaRemindSms");
+    var wrap = document.getElementById("psaRemindPhoneWrap");
+    if (!sms || !wrap) return;
+    function sync() { wrap.classList.toggle("off", !sms.checked); }
+    sms.addEventListener("change", sync);
+    sync();
   })();
 </script>
 {% endblock %}

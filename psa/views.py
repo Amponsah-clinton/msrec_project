@@ -31,7 +31,7 @@ from messaging.access import is_staff_side
 
 from . import emails
 from .forms import (parse_agreement, parse_change_request, parse_client, parse_payment,
-                    parse_payment_request, parse_signature)
+                    parse_payment_request, parse_reminder, parse_signature)
 from .models import CURRENCIES, ChangeRequest, Payment, PaymentRequest, ServiceAgreement
 
 logger = logging.getLogger(__name__)
@@ -425,10 +425,14 @@ def _save(request, a):
     return _send(request, a, reminder=False, note=note)
 
 
-def _send(request, a, *, reminder, note=""):
-    """Email the client their link and mark the agreement as with them.
+def _send(request, a, *, reminder, note="", attach=False, channels=("email", "sms")):
+    """Send the client their link and mark the agreement as with them.
     Going back after a change request closes that request, recording what
-    staff replied."""
+    staff replied.
+
+    `attach` puts the agreement PDF on the email; `channels` says whether
+    to email, text, or both. Only a reminder varies these -- a first send
+    always emails, because the link is the thing the client needs."""
     now = timezone.now()
     with transaction.atomic():
         a = ServiceAgreement.objects.select_for_update().get(pk=a.pk)
@@ -442,11 +446,25 @@ def _send(request, a, *, reminder, note=""):
         a.last_sent_at = now
         a.send_count += 1
         a.save(update_fields=["status", "sent_at", "last_sent_at", "send_count", "updated_at"])
-    # Emailed once the link is live again, so the client can sign straight away.
-    ok = emails.send_to_client(a, reminder=reminder, updated=updated, note=note)
-    if ok:
-        verb = "sent back" if updated else ("resent" if reminder else "sent")
-        messages.success(request, f"{a.reference} {verb} to {a.client_email}.")
+    # Sent once the link is live again, so the client can sign straight away.
+    emailed, sms_problem = emails.send_to_client(
+        a, reminder=reminder, updated=updated, note=note, attach=attach, channels=channels,
+    )
+    texted = "sms" in channels and not sms_problem
+    verb = "sent back" if updated else ("resent" if reminder else "sent")
+
+    if "email" not in channels:
+        # A text on its own: there is no email outcome to report.
+        if texted:
+            messages.success(request, f"{a.reference} {verb} by text to {a.client_phone}.")
+        else:
+            messages.warning(request, f"No text was sent for {a.reference} — {sms_problem}.")
+    elif emailed:
+        where = f"to {a.client_email}" + (f" and texted to {a.client_phone}" if texted else "")
+        messages.success(request, f"{a.reference} {verb} {where}"
+                                  + (" with the agreement attached." if attach else "."))
+        if "sms" in channels and sms_problem:
+            messages.info(request, f"No text was sent to go with it — {sms_problem}.")
     else:
         messages.warning(
             request,
@@ -560,11 +578,24 @@ def psa_payment_add(request, pk):
 @staff_required
 @require_POST
 def psa_resend(request, pk):
+    """Remind the client to complete and sign, by email, by text or both,
+    with the agreement itself attached if asked for."""
     a = get_object_or_404(ServiceAgreement, pk=pk)
     if a.status != Status.SENT:
         messages.error(request, "Only an agreement awaiting the client can be resent.")
         return redirect("psa_admin:psa_detail", pk=a.pk)
-    return _send(request, a, reminder=True)
+
+    cleaned, errors = parse_reminder(request.POST, a)
+    if errors:
+        messages.error(request, next(iter(errors.values())))
+        return redirect("psa_admin:psa_detail", pk=a.pk)
+    if cleaned["client_phone"] and cleaned["client_phone"] != a.client_phone:
+        # Captured for the text being sent now, and kept so the next
+        # reminder doesn't ask again. The client still confirms it when
+        # they sign, where it is compulsory.
+        a.client_phone = cleaned["client_phone"]
+        a.save(update_fields=["client_phone", "updated_at"])
+    return _send(request, a, reminder=True, attach=cleaned["attach"], channels=cleaned["channels"])
 
 
 @login_required
@@ -693,7 +724,7 @@ def client(request, token):
             a.save()
 
         # Built once, attached to both emails.
-        attachment = emails.signed_pdf(a)
+        attachment = emails.agreement_pdf(a)
         emails.send_client_copy(a, attachment)
         emails.send_signed_to_staff(a, attachment)
         _notify_staff(a, f"{a.client_name} signed service agreement {a.reference}.", icon="success")
