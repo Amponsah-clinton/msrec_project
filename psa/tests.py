@@ -339,11 +339,12 @@ class ClientSigningTests(StaffTestCase):
         self.client.post(self.url, _client_form(client_name="Someone Else"))
         self.a.refresh_from_db()
         self.assertEqual(self.a.client_name, before.client_name)
-        # Staff can no longer edit or cancel it.
+        # Staff can no longer edit or cancel it. Deleting it outright is a
+        # separate matter and is deliberately still allowed -- see
+        # DeleteTests.test_every_status_is_deletable_including_signed.
         resp = self.client.post(reverse("psa_admin:psa_edit", args=[self.a.pk]), _form(fee="1"))
         self.assertRedirects(resp, reverse("psa_admin:psa_detail", args=[self.a.pk]))
         self.client.post(reverse("psa_admin:psa_cancel", args=[self.a.pk]))
-        self.client.post(reverse("psa_admin:psa_delete", args=[self.a.pk]))
         self.a.refresh_from_db()
         self.assertEqual(self.a.status, Status.SIGNED)
         self.assertEqual(self.a.fee, Decimal("2500.00"))
@@ -1599,7 +1600,11 @@ class ReminderTests(StaffTestCase):
 
 
 class DeleteTests(StaffTestCase):
-    """Removing an agreement from the database for good."""
+    """Removing an agreement from the database for good.
+
+    Any agreement can go, whatever its status and whatever has been paid
+    against it. The confirmation says what will be destroyed; after that
+    nothing is held back."""
 
     def _draft(self, **over):
         self.client.post(reverse("psa_admin:psa_new"), {"client_name": "Kwame Mensah", "action": "draft", **over})
@@ -1615,58 +1620,46 @@ class DeleteTests(StaffTestCase):
         self.assertRedirects(resp, listing + "?status=draft")
         self.assertFalse(ServiceAgreement.objects.filter(pk=a.pk).exists())
 
-    def test_a_cancelled_agreement_can_be_deleted(self):
+    def test_every_status_is_deletable_including_signed(self):
+        for status in (Status.DRAFT, Status.SENT, Status.CHANGES, Status.SIGNED, Status.CANCELLED):
+            with self.subTest(status):
+                a = self._sent()
+                a.status = status
+                a.save(update_fields=["status"])
+                self.assertContains(self.client.get(reverse("psa_admin:psa_list")),
+                                    reverse("psa_admin:psa_delete", args=[a.pk]))
+                self.client.post(reverse("psa_admin:psa_delete", args=[a.pk]), {})
+                self.assertFalse(ServiceAgreement.objects.filter(pk=a.pk).exists())
+
+    def test_an_agreement_with_money_recorded_is_deleted_ledger_and_all(self):
         a = self._sent()
-        self.client.post(reverse("psa_admin:psa_cancel", args=[a.pk]))
+        Payment.objects.create(agreement=a, amount=Decimal("250.00"), method="bank")
         self.client.post(reverse("psa_admin:psa_delete", args=[a.pk]), {})
         self.assertFalse(ServiceAgreement.objects.filter(pk=a.pk).exists())
+        self.assertEqual(Payment.objects.filter(agreement_id=a.pk).count(), 0)
 
-    def test_a_signed_agreement_is_kept(self):
+    def test_the_confirmation_names_what_goes_with_it(self):
         a = self._sent()
         a.status = Status.SIGNED
         a.save(update_fields=["status"])
-        self.assertFalse(a.can_delete)
-        self.client.post(reverse("psa_admin:psa_delete", args=[a.pk]), {})
-        self.assertTrue(ServiceAgreement.objects.filter(pk=a.pk).exists())
-        self.assertNotContains(self.client.get(reverse("psa_admin:psa_list")),
-                               reverse("psa_admin:psa_delete", args=[a.pk]))
-
-    def test_money_recorded_blocks_deletion(self):
-        # The ledger is write-once, but the database cascade doesn't go
-        # through Payment.delete() -- so this is the one way a financial
-        # record could be erased by accident. It isn't offered.
-        a = self._sent()
         Payment.objects.create(agreement=a, amount=Decimal("250.00"), method="bank")
-        self.client.post(reverse("psa_admin:psa_cancel", args=[a.pk]))
-        a.refresh_from_db()
-        self.assertEqual(a.status, Status.CANCELLED)
-        self.assertTrue(a.money_recorded)
-        self.assertFalse(a.can_delete)
-        self.assertIn("money has been recorded", a.delete_blocked_reason)
+        row = {r.pk: r for r in self.client.get(reverse("psa_admin:psa_list")).context["page"]}[a.pk]
+        impact = row.delete_impact
+        self.assertIn("both signatures", impact)
+        self.assertIn("1 payment entry", impact)
+        self.assertIn("GHS 250.00", impact)
+        self.assertContains(self.client.get(reverse("psa_admin:psa_detail", args=[a.pk])),
+                            "both signatures")
 
-        resp = self.client.post(reverse("psa_admin:psa_delete", args=[a.pk]), {}, follow=True)
-        self.assertIn("money has been recorded", resp.content.decode())
-        self.assertTrue(ServiceAgreement.objects.filter(pk=a.pk).exists())
-        self.assertEqual(Payment.objects.filter(agreement=a).count(), 1)
-
-    def test_a_refunded_payment_still_blocks_it(self):
-        # A payment and its refund sum to zero; the entries are still the
-        # record of money having moved, so counting beats totalling.
+    def test_a_payment_and_its_refund_are_both_counted(self):
+        # They sum to zero but are two records about to be destroyed.
         a = self._sent()
-        Payment.objects.create(agreement=a, amount=Decimal("250.00"), method="bank")
-        Payment.objects.create(agreement=a, amount=Decimal("-250.00"), method="bank")
-        self.client.post(reverse("psa_admin:psa_cancel", args=[a.pk]))
-        a.refresh_from_db()
-        self.assertEqual(a.amount_paid, a.deposit)
-        self.assertFalse(a.can_delete)
+        Payment.objects.create(agreement=a, amount=Decimal("250.00"))
+        Payment.objects.create(agreement=a, amount=Decimal("-250.00"))
+        self.assertIn("2 payment entries", a.delete_impact)
 
-    def test_a_typed_deposit_alone_does_not_block_a_draft(self):
-        # A figure on a form, possibly speculative, is not a ledger entry.
-        a = self._draft(deposit="500")
-        a.deposit = Decimal("500.00")
-        a.save(update_fields=["deposit"])
-        self.assertFalse(a.payments.exists())
-        self.assertTrue(a.can_delete)
+    def test_a_plain_draft_has_nothing_extra_to_warn_about(self):
+        self.assertEqual(self._draft().delete_impact, "")
 
     def test_deleting_takes_the_links_and_requests_with_it(self):
         a = self._sent()
@@ -1674,21 +1667,18 @@ class DeleteTests(StaffTestCase):
         a.save(update_fields=["fee"])
         self.client.post(reverse("psa_admin:psa_payment_link", args=[a.pk]), {})
         self.assertTrue(PaymentRequest.objects.filter(agreement=a).exists())
-        self.client.post(reverse("psa_admin:psa_cancel", args=[a.pk]))
         self.client.post(reverse("psa_admin:psa_delete", args=[a.pk]), {})
         self.assertFalse(ServiceAgreement.objects.filter(pk=a.pk).exists())
-        self.assertFalse(PaymentRequest.objects.filter(agreement=a).exists())
+        self.assertFalse(PaymentRequest.objects.filter(agreement_id=a.pk).exists())
 
-    def test_the_list_annotation_agrees_with_the_model(self):
-        # The list reads entry_count; the detail page asks the row. They
-        # must not disagree about whether a Delete button is offered.
-        plain = self._draft()
-        paid = self._sent()
-        Payment.objects.create(agreement=paid, amount=Decimal("10.00"))
-        self.client.post(reverse("psa_admin:psa_cancel", args=[paid.pk]))
-        rows = {r.pk: r for r in self.client.get(reverse("psa_admin:psa_list")).context["page"]}
-        self.assertTrue(rows[plain.pk].can_delete)
-        self.assertFalse(rows[paid.pk].can_delete)
+    def test_a_delete_is_written_to_the_log(self):
+        # The only trace that survives it.
+        a = self._sent()
+        with self.assertLogs("psa.views", level="WARNING") as caught:
+            self.client.post(reverse("psa_admin:psa_delete", args=[a.pk]), {})
+        logged = str(caught.output)
+        self.assertIn(a.reference, logged)
+        self.assertIn("admin@example.com", logged)
 
     def test_delete_needs_a_post_and_a_staff_login(self):
         a = self._draft()

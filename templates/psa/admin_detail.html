@@ -303,7 +303,7 @@
           </section>
           {% endif %}
 
-          {% if a.is_editable or a.status == 'cancelled' %}
+          {# Delete is offered whatever the status; cancelling only applies while it is still live. #}
           <div class="psa-danger">
             {% if a.is_editable %}
             <form method="post" action="{% url 'psa_admin:psa_cancel' a.pk %}" data-confirm-title="Cancel {{ a.reference }}?" data-confirm-label="Cancel agreement"
@@ -311,16 +311,11 @@
               {% csrf_token %}<button type="submit" class="psa-link psa-link-danger" id="psaCancel">Cancel agreement</button>
             </form>
             {% endif %}
-            {% if a.can_delete %}
             <form method="post" action="{% url 'psa_admin:psa_delete' a.pk %}" data-confirm-title="Delete {{ a.reference }}?" data-confirm-variant="danger" data-confirm-label="Delete for good"
-                    data-confirm="This removes {{ a.reference }} from the database for good, with its change requests and payment links. It can't be undone.">
+                    data-confirm="This removes {{ a.reference }} from the database for good{% if a.delete_impact %}, along with {{ a.delete_impact }}{% endif %}. It can't be undone.">
               {% csrf_token %}<button type="submit" class="psa-link psa-link-danger" id="psaDelete">Delete</button>
             </form>
-            {% elif a.status == 'draft' or a.status == 'cancelled' %}
-            <p class="psa-side-text">Can't be deleted — {{ a.delete_blocked_reason }}.</p>
-            {% endif %}
           </div>
-          {% endif %}
         </aside>
       </div>
 {% endblock %}

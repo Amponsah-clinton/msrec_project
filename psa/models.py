@@ -339,40 +339,37 @@ class ServiceAgreement(models.Model):
                      if r.status == PaymentRequest.Status.PENDING), None)
 
     @property
-    def money_recorded(self):
-        """Whether any money has actually been entered against this
-        agreement. The list annotates `entry_count` so a page of rows
-        doesn't cost a query each.
-
-        The typed Section 4 deposit deliberately doesn't count: it is a
-        figure on a form, which somebody may have put there speculatively
-        on a draft. Only entries in the ledger -- money someone recorded
-        as received, or a payment link that went through -- are the
-        record this protects."""
+    def entry_count_value(self):
+        """How many ledger entries this agreement has. The list annotates
+        `entry_count`, so a page of rows doesn't cost a query each."""
         count = getattr(self, "entry_count", None)
-        return bool(count) if count is not None else self.payments.exists()
+        return count if count is not None else self.payments.count()
 
     @property
-    def can_delete(self):
-        """Only a draft or a cancelled agreement can be removed, and only
-        while no money has been recorded against it.
-
-        The ledger is write-once on purpose -- an entry is the record of
-        money that actually moved on a day -- but deleting the agreement
-        takes its entries with it through the database cascade, which
-        never passes through Payment.delete(). So the one route that
-        could erase a financial record silently is closed here."""
-        return self.status in (self.Status.DRAFT, self.Status.CANCELLED) and not self.money_recorded
+    def change_request_count_value(self):
+        count = getattr(self, "change_request_count", None)
+        return count if count is not None else self.change_requests.count()
 
     @property
-    def delete_blocked_reason(self):
-        """Why the delete button isn't offered, in words staff can act on."""
-        if self.can_delete:
-            return ""
-        if self.money_recorded:
-            return ("money has been recorded against it — the payment record is kept, "
-                    "so it can be cancelled but not deleted")
-        return f"only drafts and cancelled agreements can be deleted, and this one is {self.get_status_display().lower()}"
+    def delete_impact(self):
+        """What a delete would take with it, said plainly, for the
+        confirmation staff see before pressing it.
+
+        Any agreement can be deleted -- that is a deliberate choice -- so
+        the one safeguard left is knowing what is about to go. A signed
+        agreement takes its signatures; one with entries takes the ledger,
+        which is otherwise write-once precisely because it records money
+        that actually moved."""
+        parts = []
+        if self.status == self.Status.SIGNED:
+            parts.append("both signatures")
+        count = self.entry_count_value
+        if count:
+            parts.append(f"{count} payment entr{'y' if count == 1 else 'ies'} "
+                         f"({self.currency} {self.ledger_total:,.2f})")
+        if self.change_request_count_value:
+            parts.append("the change requests")
+        return ", ".join(parts)
 
     @property
     def can_request_payment(self):

@@ -129,11 +129,16 @@ def _with_money(qs):
         _ledger_total=entries,
         paid_total=paid,
         owing=Coalesce(F("fee"), ZERO) - paid,
-        # Whether the row may be deleted turns on having no ledger entries
-        # at all -- which a sum of zero (a payment and its refund) doesn't
-        # tell you, so count them rather than total them.
+        # What a delete would take with it, for the confirmation the row
+        # shows. Counted, not totalled: a payment and its refund sum to
+        # zero but are still two records about to be destroyed.
         entry_count=Coalesce(Subquery(
             Payment.objects.filter(agreement=OuterRef("pk"))
+            .values("agreement").annotate(n=Count("pk")).values("n"),
+            output_field=IntegerField(),
+        ), Value(0)),
+        change_request_count=Coalesce(Subquery(
+            ChangeRequest.objects.filter(agreement=OuterRef("pk"))
             .values("agreement").annotate(n=Count("pk")).values("n"),
             output_field=IntegerField(),
         ), Value(0)),
@@ -660,20 +665,22 @@ def psa_cancel(request, pk):
 @require_POST
 def psa_delete(request, pk):
     """Remove an agreement for good -- the row and everything hanging off
-    it (change requests, payment links, the ledger) go from the database.
+    it (change requests, payment links, signatures, the ledger) go from
+    the database.
 
-    Refused once money has been recorded against it. The ledger is
-    write-once by design, but the database cascade doesn't pass through
-    Payment.delete(), so this is the one route that could erase a
-    financial record without anyone meaning to."""
+    Any agreement may be deleted, whatever its status and whatever has
+    been paid against it: that is a deliberate choice, made because the
+    people running this are the ones who own the records. Nothing is
+    recoverable afterwards, so what the delete will take is spelled out
+    in the confirmation (ServiceAgreement.delete_impact) and written to
+    the log here, which is the only trace that survives it."""
     a = get_object_or_404(ServiceAgreement, pk=pk)
-    if not a.can_delete:
-        messages.error(
-            request,
-            f"{a.reference} can't be deleted — {a.delete_blocked_reason}.",
-        )
-        return redirect("psa_admin:psa_detail", pk=a.pk)
     ref = a.reference
+    logger.warning(
+        "PSA %s (%s, %s) deleted by %s — %s",
+        ref, a.client_name, a.get_status_display(), request.user,
+        a.delete_impact or "nothing else attached",
+    )
     with transaction.atomic():
         a.delete()
     messages.success(request, f"{ref} deleted. It is gone from the database for good.")

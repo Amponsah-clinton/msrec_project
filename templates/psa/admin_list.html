@@ -270,19 +270,17 @@
                       Edit
                     </a>
                     {% endif %}
-                    {% if a.can_delete %}
-                    {# Drafts and cancelled agreements only, and only while nothing has been received. #}
+                    {# Offered on every agreement. The confirmation names what goes with it. #}
                     <form method="post" action="{% url 'psa_admin:psa_delete' a.pk %}" class="psa-row-form"
                           data-confirm-title="Delete {{ a.reference }}?" data-confirm-variant="danger" data-confirm-label="Delete for good"
-                          data-confirm="This removes {{ a.reference }} from the database for good, with its change requests and payment links. It can't be undone."
-                          data-confirm-detail="{{ a.client_name }}{% if a.service_title %} &middot; {{ a.service_title }}{% endif %}">
+                          data-confirm="This removes {{ a.reference }} from the database for good{% if a.delete_impact %}, along with {{ a.delete_impact }}{% endif %}. It can't be undone."
+                          data-confirm-detail="{{ a.client_name }}{% if a.service_title %} &middot; {{ a.service_title }}{% endif %} &middot; {{ a.get_status_display }}">
                       {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
                       <button type="submit" class="psa-row-btn is-danger" aria-label="Delete {{ a.reference }}">
                         <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V6"/><path d="M10 11v6M14 11v6"/></svg>
                         Delete
                       </button>
                     </form>
-                    {% endif %}
                   </div>
                 </td>
               </tr>
