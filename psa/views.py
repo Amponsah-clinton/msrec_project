@@ -1121,6 +1121,8 @@ def _why_not_payable(req, a):
     owing = a.amount_owing
     if owing is not None and owing <= 0:
         return "settled"
+    if owing is not None and owing < req.amount:
+        return "changed"
     return "unavailable"
 
 

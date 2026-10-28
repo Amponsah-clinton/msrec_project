@@ -579,15 +579,21 @@ class PaymentRequest(models.Model):
 
     @property
     def is_payable(self):
-        """Whether the link should still take money. A cancelled agreement
-        stops collecting, and so does one that is already settled -- the
-        client should never be charged twice for the same balance."""
+        """Whether the link should still take money.
+
+        A cancelled agreement stops collecting, and so does one already
+        settled -- the client is never charged twice for one balance. The
+        link also stands down if the balance has fallen below what it was
+        minted for: money recorded by hand after it went out would
+        otherwise let it overcharge by the difference. Staff send a fresh
+        link for the new figure rather than this one quietly charging the
+        old one."""
         if self.status != self.Status.PENDING or self.is_expired:
             return False
         if self.agreement.status == ServiceAgreement.Status.CANCELLED:
             return False
         owing = self.agreement.amount_owing
-        return owing is not None and owing > 0
+        return owing is not None and owing >= self.amount > 0
 
     @property
     def state_label(self):

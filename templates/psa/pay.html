@@ -129,6 +129,11 @@ is served no-store so the link doesn't linger in a shared browser.
           <h2>This payment link was withdrawn</h2>
           <p>It is no longer able to take a payment. Please contact
              {{ a.provider_name|title }} if you were expecting to pay.</p>
+        {% elif blocked == 'changed' %}
+          <h2>The amount due has changed</h2>
+          <p>Only {{ a.currency }} {{ a.amount_owing|money }} is now outstanding on agreement
+             {{ a.reference }}, which is less than this link was set up to collect, so it has stood
+             down rather than overcharge you. {{ a.provider_name|title }} will send you a new link.</p>
         {% elif blocked == 'settled' %}
           <h2>Nothing is outstanding</h2>
           <p>Agreement {{ a.reference }} is paid in full, so there is nothing left to collect

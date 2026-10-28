@@ -1188,6 +1188,22 @@ class PaymentLinkTests(StaffTestCase):
         resp = self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}), {})
         self.assertEqual(resp.status_code, 400)
 
+    def test_a_link_stands_down_rather_than_overcharge(self):
+        # Staff take GHS 1,000 by bank transfer while the GHS 1,500 link
+        # is still out. Charging it now would collect 500 too much.
+        req = self._request_link()
+        Payment.objects.create(agreement=self.a, amount=Decimal("1000.00"), method="bank")
+        req.refresh_from_db()
+        self.assertFalse(req.is_payable)
+        self.client.logout()
+        page = self.client.get(reverse("psa:pay", kwargs={"token": req.token}))
+        self.assertContains(page, "amount due has changed")
+        self._paystack(req)
+        resp = self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}), {})
+        self.assertEqual(resp.status_code, 400)
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.amount_owing, Decimal("500.00"))
+
     def test_a_cancelled_agreement_stops_collecting(self):
         req = self._request_link()
         self.a.status = Status.CANCELLED
