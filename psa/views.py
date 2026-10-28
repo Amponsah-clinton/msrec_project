@@ -986,12 +986,15 @@ def psa_payment_link(request, pk):
         req.send_count = 1
         req.save(update_fields=["sent_at", "last_sent_at", "send_count"])
 
-    if emails.send_payment_link(a, req):
+    emailed, sms_problem = emails.send_payment_link(a, req)
+    if emailed:
         messages.success(
             request,
             f"Payment link for {a.currency} {req.amount:,.2f} sent to {a.client_email}. "
             f"It stops working on {timezone.localtime(req.expires_at):%d %b %Y}.",
         )
+        if sms_problem:
+            messages.info(request, f"No text was sent to go with it — {sms_problem}.")
     else:
         messages.warning(
             request,
@@ -1025,13 +1028,18 @@ def psa_payment_link_resend(request, pk, req_pk):
     req.expires_at = now + PaymentRequest.VALID_FOR
     req.save(update_fields=["last_sent_at", "sent_at", "send_count", "expires_at"])
 
-    if emails.send_payment_link(a, req, reminder=True):
-        texted = " and texted to the client" if a.client_phone else ""
+    emailed, sms_problem = emails.send_payment_link(a, req, reminder=True)
+    if emailed:
+        # Says what actually happened, not what the client's phone field
+        # suggests might have: a number on file is not a text delivered.
+        texted = "" if sms_problem else " and texted to the client"
         messages.success(
             request,
             f"Reminder emailed to {a.client_email}{texted}. "
             f"The link now runs to {timezone.localtime(req.expires_at):%d %b %Y}.",
         )
+        if sms_problem:
+            messages.info(request, f"No text was sent — {sms_problem}.")
     else:
         messages.warning(request, f"The reminder to {a.client_email} couldn't be sent. Check the email settings.")
     return _back(request, a)

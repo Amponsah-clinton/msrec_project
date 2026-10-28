@@ -68,22 +68,32 @@ def _plain(text, limit=None):
 
 
 def _sms(numbers, message, what):
-    """Text everyone in `numbers` who can be reached. Never raises, and
-    never reports a failure to the person who triggered the email -- the
-    email is the message of record."""
+    """Text everyone in `numbers` who can be reached.
+
+    Returns (sent, reason): `reason` is empty when the text went, and
+    otherwise says why it didn't in words staff can act on. Nothing here
+    raises, and nothing here fails the email it follows -- but a text
+    that silently never happens is worse than one that fails loudly, so
+    every path says something, to the log and to whoever pressed Send."""
     from notifications import sms
 
     numbers = [n for n in numbers if n]
-    if not numbers or not sms.is_configured():
-        return False
+    if not numbers:
+        logger.info("PSA %s SMS skipped: no mobile number on file", what)
+        return False, "the client has no mobile number on file"
+    if not sms.is_configured():
+        logger.warning("PSA %s SMS skipped: BMS_API_KEY is not set on this server", what)
+        return False, "SMS is not configured on this server (BMS_API_KEY is unset)"
     try:
         result = sms.send_sms(numbers, message)
     except Exception:
         logger.exception("PSA %s SMS failed", what)
-        return False
+        return False, "the SMS gateway could not be reached"
     if not result.get("ok"):
-        logger.warning("PSA %s SMS not delivered: %s", what, result.get("error"))
-    return bool(result.get("ok"))
+        reason = result.get("error") or "the SMS gateway rejected it"
+        logger.warning("PSA %s SMS not delivered: %s", what, reason)
+        return False, reason
+    return True, ""
 
 
 def _client_phone(a):
@@ -311,7 +321,11 @@ def sms_change_request_receipt(a):
 # ---------------------------------------------------------------------
 
 def send_payment_link(a, req, *, reminder=False):
-    """The link the client pays the outstanding balance through."""
+    """The link the client pays the outstanding balance through.
+
+    Returns (emailed, sms_problem). `sms_problem` is empty when the text
+    went out too; the caller tells the operator either way rather than
+    letting a missing text pass for a sent one."""
     amount = f"{req.currency} {req.amount:,.2f}"
     owing = a.amount_owing
     if reminder:
@@ -347,9 +361,10 @@ def send_payment_link(a, req, *, reminder=False):
         cta_url=req.pay_url(),
         preheader=f"{amount} is due on agreement {a.reference}.",
     )
-    if ok:
-        _sms([_client_phone(a)], sms_payment_link(a, req, reminder=reminder), "payment link")
-    return ok
+    if not ok:
+        return False, "the email didn't send, so no text was sent either"
+    _, reason = _sms([_client_phone(a)], sms_payment_link(a, req, reminder=reminder), "payment link")
+    return True, reason
 
 
 def sms_payment_link(a, req, *, reminder=False):

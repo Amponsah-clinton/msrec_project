@@ -1004,13 +1004,55 @@ class PsaSmsTests(StaffTestCase):
         self.addCleanup(lambda: setattr(sms_module, "send_sms", original))
         self.addCleanup(lambda: setattr(sms_module, "is_configured", original_conf))
 
-        # BMS_API_KEY is unset under test, so the gateway is never called.
+        # BMS_API_KEY is unset under test, so the gateway is never called
+        # -- and the caller is told why rather than left guessing.
         self.assertFalse(sms_module.is_configured())
-        self.assertFalse(emails._sms(["0241234567"], "hello", "test"))
+        went, reason = emails._sms(["0241234567"], "hello", "test")
+        self.assertFalse(went)
+        self.assertIn("BMS_API_KEY", reason)
         # And an empty number short-circuits even once a key is set.
         sms_module.is_configured = lambda: True
-        self.assertFalse(emails._sms([""], "hello", "test"))
+        went, reason = emails._sms([""], "hello", "test")
+        self.assertFalse(went)
+        self.assertIn("no mobile number", reason)
         self.assertEqual(sent, [])
+
+    def test_a_skipped_text_is_never_reported_as_sent(self):
+        """The bug this replaced: the resend message said "and texted to
+        the client" whenever a phone number was on file, whether or not
+        anything was actually sent."""
+        from psa import emails
+
+        req = self._request_payment_link()
+        # A number on file, but no gateway configured.
+        self.assertTrue(self.a.client_phone)
+        emailed, problem = emails.send_payment_link(self.a, req)
+        self.assertTrue(emailed)
+        self.assertIn("not configured", problem)
+
+        resp = self.client.post(
+            reverse("psa_admin:psa_payment_link_resend", args=[self.a.pk, req.pk]), {}, follow=True)
+        body = resp.content.decode()
+        self.assertNotIn("and texted to the client", body)
+        self.assertIn("No text was sent", body)
+
+    def test_an_unreachable_number_is_named_as_the_reason(self):
+        from psa import emails
+        from notifications import sms as sms_module
+        original = sms_module.is_configured
+        sms_module.is_configured = lambda: True
+        self.addCleanup(lambda: setattr(sms_module, "is_configured", original))
+
+        self.a.client_phone = ""
+        self.a.save(update_fields=["client_phone"])
+        req = self._request_payment_link()
+        _, problem = emails.send_payment_link(self.a, req)
+        self.assertIn("no mobile number", problem)
+
+    def _request_payment_link(self):
+        from psa.models import PaymentRequest
+        self.client.post(reverse("psa_admin:psa_payment_link", args=[self.a.pk]), {})
+        return PaymentRequest.objects.filter(agreement=self.a).order_by("-pk").first()
 
     def test_an_unreachable_client_is_skipped_quietly(self):
         from psa import emails
