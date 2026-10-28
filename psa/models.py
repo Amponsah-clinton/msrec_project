@@ -25,7 +25,6 @@ recorded, so it follows from the ledger rather than being a figure anyone
 types over. Each row is written once and never changed afterwards.
 """
 import secrets
-from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -334,10 +333,10 @@ class ServiceAgreement(models.Model):
     @property
     def open_payment_request(self):
         """The live payment link, if one is out with the client: pending,
-        unexpired and still collecting. There is at most one, because
+        pending and still collecting. There is at most one, because
         asking for a new one cancels whatever was already out."""
         return next((r for r in self.payment_requests.all()
-                     if r.status == PaymentRequest.Status.PENDING and not r.is_expired), None)
+                     if r.status == PaymentRequest.Status.PENDING), None)
 
     @property
     def can_request_payment(self):
@@ -495,12 +494,6 @@ class PaymentRequest(models.Model):
         PAID = "paid", "Paid"
         CANCELLED = "cancelled", "Cancelled"
 
-    # How long a freshly sent link stays usable. Short on purpose: a URL
-    # that moves money shouldn't sit live in an inbox. Resending it starts
-    # the clock again, so chasing an old debt never means minting a new
-    # link the client has to be told about separately.
-    VALID_FOR = timedelta(days=2)
-
     agreement = models.ForeignKey(
         ServiceAgreement, on_delete=models.CASCADE, related_name="payment_requests",
     )
@@ -522,7 +515,6 @@ class PaymentRequest(models.Model):
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
     )
     created_at = models.DateTimeField(auto_now_add=True)
-    expires_at = models.DateTimeField()
     sent_at = models.DateTimeField(null=True, blank=True)
     last_sent_at = models.DateTimeField(null=True, blank=True)
     send_count = models.PositiveIntegerField(default=0)
@@ -553,8 +545,6 @@ class PaymentRequest(models.Model):
         return f"{self.agreement.reference}: {self.currency} {self.amount} ({self.status})"
 
     def save(self, *args, **kwargs):
-        if not self.expires_at:
-            self.expires_at = timezone.now() + self.VALID_FOR
         creating = self._state.adding
         super().save(*args, **kwargs)
         if creating and not self.reference:
@@ -576,21 +566,18 @@ class PaymentRequest(models.Model):
         return self.status == self.Status.PAID
 
     @property
-    def is_expired(self):
-        return self.status == self.Status.PENDING and timezone.now() >= self.expires_at
-
-    @property
     def is_payable(self):
         """Whether the link should still take money.
 
-        A cancelled agreement stops collecting, and so does one already
-        settled -- the client is never charged twice for one balance. The
-        link also stands down if the balance has fallen below what it was
-        minted for: money recorded by hand after it went out would
-        otherwise let it overcharge by the difference. Staff send a fresh
-        link for the new figure rather than this one quietly charging the
-        old one."""
-        if self.status != self.Status.PENDING or self.is_expired:
+        The link does not expire on a clock -- it stays good until the
+        debt behind it is gone or staff withdraw it. What it does follow
+        is the balance: a cancelled agreement stops collecting, so does
+        one already settled, and so does one whose balance has fallen
+        below what the link was minted for, since money recorded by hand
+        after it went out would otherwise let it overcharge by the
+        difference. Staff send a fresh link for the new figure rather
+        than this one quietly charging the old one."""
+        if self.status != self.Status.PENDING:
             return False
         if self.agreement.status == ServiceAgreement.Status.CANCELLED:
             return False
@@ -599,8 +586,6 @@ class PaymentRequest(models.Model):
 
     @property
     def state_label(self):
-        if self.is_expired:
-            return "Expired"
         return self.get_status_display()
 
     def pay_url(self):

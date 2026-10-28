@@ -164,7 +164,7 @@
               <p class="psa-side-text">
                 Emailed to {{ a.client_email }} on {{ open_payment_request.last_sent_at|date:"d M Y" }}{% if open_payment_request.send_count > 1 %} ({{ open_payment_request.send_count }} times){% endif %}.
                 {% if open_payment_request.viewed_at %}Opened {{ open_payment_request.viewed_at|date:"d M Y, H:i" }}.{% else %}Not opened yet.{% endif %}
-                Expires {{ open_payment_request.expires_at|date:"d M Y" }}.
+                It stays good until the balance is settled or you withdraw it.
               </p>
               <div class="psa-paylink-actions">
                 <form method="post" action="{% url 'psa_admin:psa_payment_link_resend' a.pk open_payment_request.pk %}"

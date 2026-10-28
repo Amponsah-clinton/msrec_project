@@ -1180,13 +1180,11 @@ class PaymentLinkTests(StaffTestCase):
 
     def test_resending_chases_the_same_link_and_extends_it(self):
         req = self._request_link()
-        was = req.expires_at
         resp = self.client.post(
             reverse("psa_admin:psa_payment_link_resend", args=[self.a.pk, req.pk]), {})
         self.assertEqual(resp.status_code, 302)
         req.refresh_from_db()
         self.assertEqual(req.send_count, 2)
-        self.assertGreater(req.expires_at, was)
         self.assertEqual(PaymentRequest.objects.filter(agreement=self.a).count(), 1)
         self.assertIn("Reminder", mail.outbox[-1].subject)
 
@@ -1218,17 +1216,36 @@ class PaymentLinkTests(StaffTestCase):
         req.refresh_from_db()
         self.assertIsNotNone(req.viewed_at)
 
-    def test_an_expired_link_stops_collecting(self):
+    def test_a_link_does_not_time_out(self):
+        # It stays good until the debt behind it is gone or staff withdraw
+        # it -- no clock, however long the client takes to get round to it.
         req = self._request_link()
-        req.expires_at = timezone.now() - timezone.timedelta(minutes=1)
-        req.save(update_fields=["expires_at"])
-        self.assertTrue(req.is_expired)
-        self.assertFalse(req.is_payable)
+        req.created_at = timezone.now() - timezone.timedelta(days=400)
+        req.save(update_fields=["created_at"])
+        req.refresh_from_db()
+        self.assertTrue(req.is_payable)
+        self._paystack(req)
         self.client.logout()
-        page = self.client.get(reverse("psa:pay", kwargs={"token": req.token}))
-        self.assertContains(page, "expired")
         resp = self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}), {})
-        self.assertEqual(resp.status_code, 400)
+        self.assertTrue(resp.json()["ok"])
+        self.a.refresh_from_db()
+        self.assertEqual(self.a.amount_owing, Decimal("0.00"))
+
+    def test_paying_again_on_the_same_link_says_it_is_already_paid(self):
+        req = self._request_link()
+        self._paystack(req)
+        self.client.logout()
+        self.client.post(reverse("psa:pay_verify", kwargs={"token": req.token}), {})
+        req.refresh_from_db()
+
+        page = self.client.get(reverse("psa:pay", kwargs={"token": req.token}))
+        body = page.content.decode()
+        self.assertContains(page, "This payment has been made")
+        self.assertIn(req.payment.receipt_number, body)
+        self.assertIn("Download your receipt", body)
+        # And no way to pay a second time.
+        self.assertNotIn("psaPayBtn", body)
+        self.assertEqual(self.a.payments.count(), 1)
 
     def test_a_link_stands_down_rather_than_overcharge(self):
         # Staff take GHS 1,000 by bank transfer while the GHS 1,500 link

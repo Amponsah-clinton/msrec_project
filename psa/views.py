@@ -1022,7 +1022,7 @@ def psa_payment_link(request, pk):
         messages.success(
             request,
             f"Payment link for {a.currency} {req.amount:,.2f} sent to {a.client_email}. "
-            f"It stops working on {timezone.localtime(req.expires_at):%d %b %Y}.",
+            "It stays good until the balance is settled or you withdraw it.",
         )
         if sms_problem:
             messages.info(request, f"No text was sent to go with it — {sms_problem}.")
@@ -1039,9 +1039,9 @@ def psa_payment_link(request, pk):
 @staff_required
 @require_POST
 def psa_payment_link_resend(request, pk, req_pk):
-    """Send the live link again as a reminder -- email and text both --
-    and push its expiry back, so chasing an old debt doesn't mint a new
-    link the client has to be told about separately."""
+    """Send the live link again as a reminder, email and text both. The
+    same link is resent rather than a new one minted, so the client never
+    has two live links for one balance."""
     a = get_object_or_404(ServiceAgreement, pk=pk)
     req = get_object_or_404(PaymentRequest, pk=req_pk, agreement=a)
     if req.status != PaymentRequest.Status.PENDING:
@@ -1056,8 +1056,7 @@ def psa_payment_link_resend(request, pk, req_pk):
     req.last_sent_at = now
     req.sent_at = req.sent_at or now
     req.send_count += 1
-    req.expires_at = now + PaymentRequest.VALID_FOR
-    req.save(update_fields=["last_sent_at", "sent_at", "send_count", "expires_at"])
+    req.save(update_fields=["last_sent_at", "sent_at", "send_count"])
 
     emailed, sms_problem = emails.send_payment_link(a, req, reminder=True)
     if emailed:
@@ -1066,8 +1065,7 @@ def psa_payment_link_resend(request, pk, req_pk):
         texted = "" if sms_problem else " and texted to the client"
         messages.success(
             request,
-            f"Reminder emailed to {a.client_email}{texted}. "
-            f"The link now runs to {timezone.localtime(req.expires_at):%d %b %Y}.",
+            f"Reminder emailed to {a.client_email}{texted}.",
         )
         if sms_problem:
             messages.info(request, f"No text was sent — {sms_problem}.")
@@ -1153,8 +1151,6 @@ def _why_not_payable(req, a):
         return "paid"
     if req.status == PaymentRequest.Status.CANCELLED:
         return "cancelled"
-    if req.is_expired:
-        return "expired"
     if a.status == Status.CANCELLED:
         return "agreement_cancelled"
     owing = a.amount_owing

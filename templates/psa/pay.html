@@ -103,7 +103,7 @@ is served no-store so the link doesn't linger in a shared browser.
       </button>
       <p class="psap-err" id="psaPayErr" role="alert"></p>
       <p class="psap-note">Card and mobile money accepted. Your receipt is emailed to you the moment
-        the payment goes through. This link expires on {{ req.expires_at|date:"j F Y" }}.</p>
+        the payment goes through.</p>
 
     {% elif blocked == 'paid' %}
       <div class="psap-state ok">
@@ -121,11 +121,7 @@ is served no-store so the link doesn't linger in a shared browser.
     {% else %}
       <div class="psap-state off">
         <div class="ico" aria-hidden="true"><i class="bi bi-slash-circle"></i></div>
-        {% if blocked == 'expired' %}
-          <h2>This payment link has expired</h2>
-          <p>Links stay live for a limited time for your security. Contact
-             {{ a.provider_name|title }} and they will send you a fresh one.</p>
-        {% elif blocked == 'cancelled' %}
+        {% if blocked == 'cancelled' %}
           <h2>This payment link was withdrawn</h2>
           <p>It is no longer able to take a payment. Please contact
              {{ a.provider_name|title }} if you were expecting to pay.</p>
