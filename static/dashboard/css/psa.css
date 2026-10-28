@@ -194,6 +194,12 @@
   transition: background .15s, color .15s, border-color .15s; }
 .psa-row-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
 .psa-row-btn:hover { border-color: var(--teal); background: var(--hover-bg); color: var(--teal); }
+/* Deleting is final, so it reads as the odd one out and only colours
+   up on hover -- never competing with View or Edit for a stray click. */
+.psa-row-btn.is-danger { font-family: inherit; cursor: pointer; }
+.psa-row-btn.is-danger:hover { border-color: var(--red); background: var(--red); color: var(--white); }
+/* A posting row action has to look like its linked siblings. */
+.psa-row-btn:is(button) { font-family: inherit; font-size: 12px; cursor: pointer; }
 
 @media (max-width: 640px) {
   /* Stacked cards: the buttons share the row's full width. */

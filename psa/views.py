@@ -18,7 +18,8 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.paginator import Paginator
 from django.db import transaction
-from django.db.models import Count, DecimalField, F, OuterRef, Q, Subquery, Sum, Value
+from django.db.models import (Count, DecimalField, F, IntegerField, OuterRef, Q, Subquery,
+                              Sum, Value)
 from django.db.models.functions import Coalesce
 from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -128,6 +129,14 @@ def _with_money(qs):
         _ledger_total=entries,
         paid_total=paid,
         owing=Coalesce(F("fee"), ZERO) - paid,
+        # Whether the row may be deleted turns on having no ledger entries
+        # at all -- which a sum of zero (a payment and its refund) doesn't
+        # tell you, so count them rather than total them.
+        entry_count=Coalesce(Subquery(
+            Payment.objects.filter(agreement=OuterRef("pk"))
+            .values("agreement").annotate(n=Count("pk")).values("n"),
+            output_field=IntegerField(),
+        ), Value(0)),
     )
 
 
@@ -650,13 +659,30 @@ def psa_cancel(request, pk):
 @staff_required
 @require_POST
 def psa_delete(request, pk):
+    """Remove an agreement for good -- the row and everything hanging off
+    it (change requests, payment links, the ledger) go from the database.
+
+    Refused once money has been recorded against it. The ledger is
+    write-once by design, but the database cascade doesn't pass through
+    Payment.delete(), so this is the one route that could erase a
+    financial record without anyone meaning to."""
     a = get_object_or_404(ServiceAgreement, pk=pk)
-    if a.status not in (Status.DRAFT, Status.CANCELLED):
-        messages.error(request, "Only drafts and cancelled agreements can be deleted. Signed agreements are kept as records.")
+    if not a.can_delete:
+        messages.error(
+            request,
+            f"{a.reference} can't be deleted — {a.delete_blocked_reason}.",
+        )
         return redirect("psa_admin:psa_detail", pk=a.pk)
     ref = a.reference
-    a.delete()
-    messages.success(request, f"{ref} deleted.")
+    with transaction.atomic():
+        a.delete()
+    messages.success(request, f"{ref} deleted. It is gone from the database for good.")
+
+    # Back to the list the button was pressed on, filters and page intact.
+    target = request.POST.get("next") or ""
+    if target and url_has_allowed_host_and_scheme(
+            target, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return redirect(target)
     return redirect("psa_admin:psa_list")
 
 

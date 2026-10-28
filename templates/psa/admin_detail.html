@@ -311,11 +311,13 @@
               {% csrf_token %}<button type="submit" class="psa-link psa-link-danger" id="psaCancel">Cancel agreement</button>
             </form>
             {% endif %}
-            {% if a.status == 'draft' or a.status == 'cancelled' %}
-            <form method="post" action="{% url 'psa_admin:psa_delete' a.pk %}" data-confirm-title="Delete {{ a.reference }}?" data-confirm-variant="danger" data-confirm-label="Delete"
-                    data-confirm="This permanently removes the agreement. It can't be undone.">
+            {% if a.can_delete %}
+            <form method="post" action="{% url 'psa_admin:psa_delete' a.pk %}" data-confirm-title="Delete {{ a.reference }}?" data-confirm-variant="danger" data-confirm-label="Delete for good"
+                    data-confirm="This removes {{ a.reference }} from the database for good, with its change requests and payment links. It can't be undone.">
               {% csrf_token %}<button type="submit" class="psa-link psa-link-danger" id="psaDelete">Delete</button>
             </form>
+            {% elif a.status == 'draft' or a.status == 'cancelled' %}
+            <p class="psa-side-text">Can't be deleted — {{ a.delete_blocked_reason }}.</p>
             {% endif %}
           </div>
           {% endif %}

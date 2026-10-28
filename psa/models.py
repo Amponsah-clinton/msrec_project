@@ -339,6 +339,42 @@ class ServiceAgreement(models.Model):
                      if r.status == PaymentRequest.Status.PENDING), None)
 
     @property
+    def money_recorded(self):
+        """Whether any money has actually been entered against this
+        agreement. The list annotates `entry_count` so a page of rows
+        doesn't cost a query each.
+
+        The typed Section 4 deposit deliberately doesn't count: it is a
+        figure on a form, which somebody may have put there speculatively
+        on a draft. Only entries in the ledger -- money someone recorded
+        as received, or a payment link that went through -- are the
+        record this protects."""
+        count = getattr(self, "entry_count", None)
+        return bool(count) if count is not None else self.payments.exists()
+
+    @property
+    def can_delete(self):
+        """Only a draft or a cancelled agreement can be removed, and only
+        while no money has been recorded against it.
+
+        The ledger is write-once on purpose -- an entry is the record of
+        money that actually moved on a day -- but deleting the agreement
+        takes its entries with it through the database cascade, which
+        never passes through Payment.delete(). So the one route that
+        could erase a financial record silently is closed here."""
+        return self.status in (self.Status.DRAFT, self.Status.CANCELLED) and not self.money_recorded
+
+    @property
+    def delete_blocked_reason(self):
+        """Why the delete button isn't offered, in words staff can act on."""
+        if self.can_delete:
+            return ""
+        if self.money_recorded:
+            return ("money has been recorded against it — the payment record is kept, "
+                    "so it can be cancelled but not deleted")
+        return f"only drafts and cancelled agreements can be deleted, and this one is {self.get_status_display().lower()}"
+
+    @property
     def can_request_payment(self):
         """Whether it makes sense to ask the client for money online: there
         is a fee, something is still owing, and the agreement is live."""
