@@ -303,19 +303,23 @@
           </section>
           {% endif %}
 
-          {# Delete is offered whatever the status; cancelling only applies while it is still live. #}
+          {# Cancelling is all that's left in here while Delete is commented out below. #}
+          {% if a.is_editable %}
           <div class="psa-danger">
-            {% if a.is_editable %}
             <form method="post" action="{% url 'psa_admin:psa_cancel' a.pk %}" data-confirm-title="Cancel {{ a.reference }}?" data-confirm-label="Cancel agreement"
-                    data-confirm="{% if a.status == 'draft' %}It won't be sent. You can still delete it afterwards.{% else %}{{ a.client_name }}'s link will stop working, so they won't be able to sign it.{% endif %}">
+                    data-confirm="{% if a.status == 'draft' %}It won't be sent.{% else %}{{ a.client_name }}'s link will stop working, so they won't be able to sign it.{% endif %}">
               {% csrf_token %}<button type="submit" class="psa-link psa-link-danger" id="psaCancel">Cancel agreement</button>
             </form>
-            {% endif %}
+            {% comment %}
+            Delete is switched off for now. Uncomment to put it back; the view
+            (psa_admin:psa_delete) is untouched and still works.
             <form method="post" action="{% url 'psa_admin:psa_delete' a.pk %}" data-confirm-title="Delete {{ a.reference }}?" data-confirm-variant="danger" data-confirm-label="Delete for good"
                     data-confirm="This removes {{ a.reference }} from the database for good{% if a.delete_impact %}, along with {{ a.delete_impact }}{% endif %}. It can't be undone.">
               {% csrf_token %}<button type="submit" class="psa-link psa-link-danger" id="psaDelete">Delete</button>
             </form>
+            {% endcomment %}
           </div>
+          {% endif %}
         </aside>
       </div>
 {% endblock %}

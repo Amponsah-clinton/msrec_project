@@ -1610,11 +1610,20 @@ class DeleteTests(StaffTestCase):
         self.client.post(reverse("psa_admin:psa_new"), {"client_name": "Kwame Mensah", "action": "draft", **over})
         return ServiceAgreement.objects.order_by("-pk").first()
 
-    def test_a_draft_can_be_deleted_from_the_list(self):
+    def test_the_button_is_commented_out_everywhere(self):
+        # Switched off in the templates on request. The view stays live,
+        # so uncommenting the markup is all it takes to bring it back.
+        a = self._draft()
+        for url in (reverse("psa_admin:psa_list"),
+                    reverse("psa_admin:psa_detail", args=[a.pk])):
+            with self.subTest(url):
+                page = self.client.get(url)
+                self.assertNotContains(page, reverse("psa_admin:psa_delete", args=[a.pk]))
+                self.assertNotContains(page, 'id="psaDelete"')
+
+    def test_a_draft_can_still_be_deleted_through_the_view(self):
         a = self._draft()
         listing = reverse("psa_admin:psa_list")
-        page = self.client.get(listing)
-        self.assertContains(page, reverse("psa_admin:psa_delete", args=[a.pk]))
         resp = self.client.post(reverse("psa_admin:psa_delete", args=[a.pk]),
                                 {"next": listing + "?status=draft"})
         self.assertRedirects(resp, listing + "?status=draft")
@@ -1626,8 +1635,6 @@ class DeleteTests(StaffTestCase):
                 a = self._sent()
                 a.status = status
                 a.save(update_fields=["status"])
-                self.assertContains(self.client.get(reverse("psa_admin:psa_list")),
-                                    reverse("psa_admin:psa_delete", args=[a.pk]))
                 self.client.post(reverse("psa_admin:psa_delete", args=[a.pk]), {})
                 self.assertFalse(ServiceAgreement.objects.filter(pk=a.pk).exists())
 
@@ -1648,8 +1655,6 @@ class DeleteTests(StaffTestCase):
         self.assertIn("both signatures", impact)
         self.assertIn("1 payment entry", impact)
         self.assertIn("GHS 250.00", impact)
-        self.assertContains(self.client.get(reverse("psa_admin:psa_detail", args=[a.pk])),
-                            "both signatures")
 
     def test_a_payment_and_its_refund_are_both_counted(self):
         # They sum to zero but are two records about to be destroyed.

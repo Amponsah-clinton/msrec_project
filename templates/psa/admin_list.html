@@ -270,6 +270,9 @@
                       Edit
                     </a>
                     {% endif %}
+                    {% comment %}
+                    Delete is switched off for now. Uncomment to put it back; the view
+                    (psa_admin:psa_delete) is untouched and still works.
                     {# Offered on every agreement. The confirmation names what goes with it. #}
                     <form method="post" action="{% url 'psa_admin:psa_delete' a.pk %}" class="psa-row-form"
                           data-confirm-title="Delete {{ a.reference }}?" data-confirm-variant="danger" data-confirm-label="Delete for good"
@@ -281,6 +284,7 @@
                         Delete
                       </button>
                     </form>
+                    {% endcomment %}
                   </div>
                 </td>
               </tr>
