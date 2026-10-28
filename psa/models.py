@@ -495,9 +495,11 @@ class PaymentRequest(models.Model):
         PAID = "paid", "Paid"
         CANCELLED = "cancelled", "Cancelled"
 
-    # How long a freshly sent link stays usable. Resending it starts the
-    # clock again, so chasing an old debt never means minting a new link.
-    VALID_FOR = timedelta(days=30)
+    # How long a freshly sent link stays usable. Short on purpose: a URL
+    # that moves money shouldn't sit live in an inbox. Resending it starts
+    # the clock again, so chasing an old debt never means minting a new
+    # link the client has to be told about separately.
+    VALID_FOR = timedelta(days=2)
 
     agreement = models.ForeignKey(
         ServiceAgreement, on_delete=models.CASCADE, related_name="payment_requests",
