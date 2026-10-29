@@ -6,6 +6,10 @@ from decimal import Decimal
 from unittest import mock
 
 from django.core.cache import cache
+from reportlab.lib.units import mm
+
+from reviewer_dashboard.certificate import BRASS
+
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -165,3 +169,88 @@ class RenderSmokeTests(PinnedRateMixin, TestCase):
                     self.assertContains(resp, "Certificates are compulsory for this workshop")
                 else:
                     self.assertContains(resp, "Certificates are optional")
+
+
+class CertificateProgrammeTests(TestCase):
+    """The programme is the subject of the certificate, so it gets its own
+    line rather than sitting buried in the body prose."""
+
+    def _workshop(self, **over):
+        from django.utils import timezone
+        from workshop.models import Workshop
+        fields = dict(title="Advanced Workshop on Research Ethics", slug="prog-test",
+                      starts_at=timezone.now())
+        fields.update(over)
+        return Workshop.objects.create(**fields)
+
+    def test_the_body_is_split_around_the_placeholder(self):
+        from workshop.certificate import _split_statement
+        lead, programme, tail = _split_statement(
+            "participated in the {workshop} organised by the Committee, and is recognised.",
+            "Research Ethics Essentials", "Kwame Mensah")
+        self.assertEqual(lead, "participated in the")
+        self.assertEqual(programme, "Research Ethics Essentials")
+        self.assertTrue(tail.startswith("organised by the Committee"))
+
+    def test_a_body_without_the_placeholder_still_gets_a_programme_line(self):
+        from workshop.certificate import _split_statement
+        lead, programme, tail = _split_statement(
+            "has attended and completed the programme shown above.", "Ethics 101", "Ama")
+        self.assertEqual(lead, "")
+        self.assertEqual(programme, "Ethics 101")
+        self.assertIn("has attended", tail)
+
+    def test_the_name_placeholder_still_works_on_both_sides(self):
+        from workshop.certificate import _split_statement
+        lead, _, tail = _split_statement("{name} joined the {workshop}, and {name} passed.",
+                                         "Ethics 101", "Ama Serwaa")
+        self.assertEqual(lead, "Ama Serwaa joined the")
+        self.assertIn("Ama Serwaa passed", tail)
+
+    def test_the_programme_is_set_larger_than_the_prose_around_it(self):
+        # What "distinct" means in practice: it must not come out at the
+        # same size as the sentence it used to be buried in.
+        from workshop.certificate import _statement_layout
+        rows, _ = _statement_layout(
+            "participated in the", "Research Ethics Essentials",
+            "organised by the Metascholar Research Ethics Committee, and is recognised for "
+            "their active engagement and commitment to advancing ethical research practice.",
+            show_prose=True, budget=34 * mm)
+        sizes = {kind: f.style.fontSize for kind, f, _ in rows if f is not None}
+        self.assertGreater(sizes["programme"], sizes["prose"] + 2)
+        self.assertEqual([f.style.textColor for k, f, _ in rows if k == "programme"], [BRASS])
+
+    def test_a_very_long_programme_still_clears_the_seal(self):
+        from workshop.certificate import _statement_layout
+        budget = 34 * mm
+        _, total = _statement_layout(
+            "participated in the",
+            "Regional Capacity-Building Workshop on Research Ethics Committee Governance, "
+            "Standard Operating Procedures and Post-Approval Oversight for West Africa",
+            "organised by the Metascholar Research Ethics Committee, and is recognised for "
+            "their active engagement and commitment to advancing ethical research practice.",
+            show_prose=True, budget=budget)
+        self.assertLessEqual(total, budget)
+
+    def test_turning_the_programme_off_puts_it_back_in_the_sentence(self):
+        # Splitting the body and then dropping the programme would leave
+        # "participated in the organised by the Committee".
+        from workshop.certificate import render_sample_certificate_pdf
+        ws = self._workshop(cert_show_programme=False)
+        data = render_sample_certificate_pdf(ws, "Kwame Mensah")
+        self.assertTrue(data.startswith(b"%PDF"))
+        self.assertIn("{workshop}", ws.cert_body)      # the wording is untouched
+
+    def test_every_combination_of_toggles_renders(self):
+        from workshop.certificate import render_sample_certificate_pdf
+        from itertools import product
+        for i, (prog, body, seal) in enumerate(product([True, False], repeat=3)):
+            with self.subTest(programme=prog, body=body, seal=seal):
+                ws = self._workshop(slug=f"combo-{i}", cert_show_programme=prog,
+                                    cert_show_body=body, cert_show_seal=seal)
+                self.assertTrue(render_sample_certificate_pdf(ws, "Kwame Mensah").startswith(b"%PDF"))
+
+    def test_markup_in_a_title_cannot_reach_the_pdf_parser(self):
+        from workshop.certificate import render_sample_certificate_pdf
+        ws = self._workshop(slug="markup", title="Risk <b>&</b> Benefit Workshop")
+        self.assertTrue(render_sample_certificate_pdf(ws, "Kwame Mensah").startswith(b"%PDF"))
