@@ -9,6 +9,7 @@ Signature 1 falls back to the Chair (Site Settings -> Certificates) when left
 blank, keeping it consistent with every other MSREC certificate.
 """
 from io import BytesIO
+from xml.sax.saxutils import escape
 
 from reportlab.lib.enums import TA_CENTER
 from reportlab.lib.styles import ParagraphStyle
@@ -68,6 +69,98 @@ def _signatories(workshop):
     return sig1, sig2
 
 
+# ---------------------------------------------------------------------
+# The certifying statement
+# ---------------------------------------------------------------------
+# The programme is the thing the certificate is about, so it is set as
+# its own line rather than left buried mid-sentence in the body prose.
+# The admin's wording decides where it sits: whatever comes before
+# {workshop} becomes the lead-in above it, whatever follows becomes the
+# trailing prose below. "participated in the {workshop} organised by the
+# Committee..." therefore reads
+#
+#                        participated in the
+#          Advanced Workshop on Research Ethics and Integrity
+#       organised by the Committee, and is recognised for their...
+#
+# which is how a certificate is normally set, and needs no change to any
+# wording anyone has already written.
+
+STATEMENT_W = 196 * mm          # the programme may run wider than the prose
+PROSE_W = 178 * mm
+GAP_ABOVE_PROGRAMME = 3.2 * mm
+GAP_BELOW_PROGRAMME = 3.6 * mm
+
+# Tried largest first; the first combination that fits the space between
+# the name and the seal wins. The programme gives up size last -- making
+# it distinct is the point, so the prose around it yields first.
+PROGRAMME_SIZES = (21, 19.5, 18, 16.5, 15, 14, 13, 12, 11)
+PROSE_SIZES = (13.5, 13, 12.5, 12, 11.5, 11, 10.5, 10)
+
+
+def _split_statement(body_template, title, name):
+    """(lead, programme, tail) from the workshop's own wording.
+
+    Without a {workshop} placeholder there is nothing to split around, so
+    the programme is given its own line above whatever the body says."""
+    raw = body_template or ""
+    programme = " ".join((title or "").split())
+    if "{workshop}" in raw:
+        before, _, after = raw.partition("{workshop}")
+        lead = " ".join(before.replace("{name}", name).split())
+        tail = " ".join(after.replace("{name}", name).split())
+    else:
+        lead = ""
+        tail = " ".join(raw.replace("{name}", name).split())
+    return lead, programme, tail
+
+
+def _para(text, font, size, leading, color, width, *, escape_text=False):
+    """(flowable, height) centred at `width`, or (None, 0) for empty text."""
+    if not text:
+        return None, 0.0
+    if escape_text:
+        text = escape(text)
+    p = Paragraph(text, ParagraphStyle(
+        "s", fontName=font, fontSize=size, leading=leading, textColor=color, alignment=TA_CENTER))
+    return p, p.wrap(width, 400 * mm)[1]
+
+
+def _statement_layout(lead, programme, tail, *, show_prose, budget):
+    """The biggest set of sizes whose stack fits `budget`, as a list of
+    (flowable, height) in drawing order plus the total height.
+
+    Always returns something: if even the smallest sizes overrun -- a very
+    long programme on a certificate that also wants a seal -- the smallest
+    is used and the caller tightens the gap instead of dropping words."""
+    attempt = None
+    # Programme size is the outer loop and is tried largest first, so the
+    # prose around it gives up its size before the programme gives up any
+    # of its own. Making the programme stand out is the whole point.
+    for prog_size in PROGRAMME_SIZES:
+        for prose_size in PROSE_SIZES:
+            rows, total = [], 0.0
+            if show_prose and lead:
+                flowable, height = _para(lead, "Times-Italic", prose_size,
+                                         prose_size * 1.42, INK_SOFT, PROSE_W)
+                rows.append(("prose", flowable, height))
+                total += height + GAP_ABOVE_PROGRAMME
+            if programme:
+                flowable, height = _para(programme, "Times-Bold", prog_size, prog_size * 1.26,
+                                         BRASS, STATEMENT_W, escape_text=True)
+                rows.append(("programme", flowable, height))
+                total += height
+            if show_prose and tail:
+                flowable, height = _para(tail, "Times-Roman", prose_size,
+                                         prose_size * 1.46, INK_SOFT, PROSE_W)
+                total += GAP_BELOW_PROGRAMME + height
+                rows.append(("prose", flowable, height))
+            if total <= budget:
+                return rows, total
+            attempt = (rows, total)              # the floor, if nothing fits
+    return attempt
+
+
 def render_workshop_certificate_pdf(registration, *, workshop=None):
     """Certificate PDF bytes for one registration, using its workshop's design.
 
@@ -116,17 +209,35 @@ def render_workshop_certificate_pdf(registration, *, workshop=None):
         c.line(left + span * i / 40, name_y - 4 * mm, left + span * (i + 1) / 40, name_y - 4 * mm)
     c.setStrokeAlpha(1.0)
 
-    if workshop.cert_show_body and message.strip():
-        body = Paragraph(
-            message,
-            ParagraphStyle("body", fontName="Times-Roman", fontSize=14, leading=21,
-                           textColor=INK_SOFT, alignment=TA_CENTER),
-        )
-        body_w = 185 * mm
-        _, body_h = body.wrap(body_w, 45 * mm)
-        body.drawOn(c, mid - body_w / 2, name_y - 12 * mm - body_h)
-
     sign_y = 46 * mm
+
+    # The statement sits between the rule under the name and whatever
+    # comes next below it -- the seal when there is one, otherwise the
+    # signature line. Measured, not assumed, so a long programme shrinks
+    # to fit instead of running into the seal.
+    if workshop.cert_show_programme:
+        lead, programme, tail = _split_statement(workshop.cert_body, workshop.title,
+                                                 registration.name)
+    else:
+        # Turned off, the programme goes back where the wording expects
+        # it -- inline in the sentence. Splitting the body around a
+        # placeholder and then dropping it would leave "participated in
+        # the organised by the Committee".
+        lead, programme, tail = "", "", message.strip()
+    floor = (sign_y + 24 * mm) if workshop.cert_show_seal else (sign_y + 11 * mm)
+    top = name_y - 10 * mm
+    rows, total = _statement_layout(
+        lead, programme, tail, show_prose=workshop.cert_show_body, budget=top - floor,
+    )
+    y = top
+    for kind, flowable, height in rows:
+        if flowable is None:
+            continue
+        width = STATEMENT_W if kind == "programme" else PROSE_W
+        y -= height
+        flowable.drawOn(c, mid - width / 2, y)
+        y -= GAP_BELOW_PROGRAMME if kind == "programme" else GAP_ABOVE_PROGRAMME
+
     (s1_name, s1_title, s1_png), (s2_name, s2_title, s2_png) = _signatories(workshop)
     if workshop.cert_show_second_signature:
         _sig_block(c, mid - 82 * mm, sign_y, s1_name, s1_title, s1_png)

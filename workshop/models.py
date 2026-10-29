@@ -193,6 +193,10 @@ class Workshop(models.Model):
 
     # Feature toggles -- add/remove elements of the certificate per workshop.
     cert_show_body = models.BooleanField(default=True)
+    # The programme line. It is the subject of the certificate, so it is on
+    # by default, but a workshop whose body wording already names itself in
+    # full can turn it off rather than say it twice.
+    cert_show_programme = models.BooleanField(default=True)
     cert_show_seal = models.BooleanField(default=True)
     cert_show_second_signature = models.BooleanField(default=True)
     cert_show_verification = models.BooleanField(default=True)

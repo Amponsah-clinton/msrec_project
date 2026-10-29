@@ -488,6 +488,7 @@ def _save_cert(request, ws):
     ws.cert_sig2_name = request.POST.get("sig2_name", "").strip()[:150]
     ws.cert_sig2_title = request.POST.get("sig2_title", "").strip()[:150]
     ws.cert_show_body = request.POST.get("cert_show_body") == "on"
+    ws.cert_show_programme = request.POST.get("cert_show_programme") == "on"
     ws.cert_show_seal = request.POST.get("cert_show_seal") == "on"
     ws.cert_show_second_signature = request.POST.get("cert_show_second_signature") == "on"
     ws.cert_show_verification = request.POST.get("cert_show_verification") == "on"
@@ -634,6 +635,7 @@ def cert_preview(request, pk):
             cert_sig1_signature_path=ws.cert_sig1_signature_path,
             cert_sig2_signature_path=ws.cert_sig2_signature_path,
             cert_show_body=request.POST.get("cert_show_body") == "on",
+            cert_show_programme=request.POST.get("cert_show_programme") == "on",
             cert_show_seal=request.POST.get("cert_show_seal") == "on",
             cert_show_second_signature=request.POST.get("cert_show_second_signature") == "on",
             cert_show_verification=request.POST.get("cert_show_verification") == "on",
