@@ -3,7 +3,7 @@ from django.urls import path
 from messaging import views as messaging_views
 from secretariat_dashboard import views as secretariat_views
 
-from . import views
+from . import uploads_views, views
 
 app_name = "admin_dashboard"
 
@@ -45,6 +45,7 @@ urlpatterns = [
     path("board-committee/", views.board_committee, name="board_committee"),
     path("institutional-secretaries/", views.institution_secretaries, name="institution_secretaries"),
     path("resources/", views.resources_library, name="resources_library"),
+    path("upload/", uploads_views.uploads, name="uploads"),
     path("committee/", views.committee_overview, name="committee_overview"),
     path("committee/appointments/", views.membership_appointments, name="membership_appointments"),
     path("committee/terms-expiry/", views.terms_expiry, name="terms_expiry"),

@@ -1,0 +1,211 @@
+{% extends "dashboards/base.html" %}
+{% load static %}
+
+{% block title %}Upload | MSREC Admin{% endblock %}
+
+{% block extra_css %}
+<link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
+<style>
+  .upl-wrap { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 1000px) { .upl-wrap { grid-template-columns: minmax(0, 1fr); } }
+
+  .upl-drop { border: 2px dashed var(--border); border-radius: 12px; padding: 24px 16px; text-align: center;
+    cursor: pointer; transition: border-color .15s, background .15s; background: var(--bg); }
+  .upl-drop:hover, .upl-drop.is-over { border-color: var(--teal); background: var(--hover-bg); }
+  .upl-drop svg { width: 30px; height: 30px; stroke: var(--teal); fill: none; stroke-width: 1.7;
+    stroke-linecap: round; stroke-linejoin: round; }
+  .upl-drop p { margin: 8px 0 0; font-size: 13px; color: var(--text-sub); }
+  .upl-drop b { display: block; font-size: 13.5px; color: var(--text-main); }
+  .upl-chosen { margin-top: 10px; font-size: 12.5px; color: var(--teal); font-weight: 600; word-break: break-all; }
+  .upl-form .field-group { margin-top: 14px; }
+  .upl-form .btn-primary { width: 100%; justify-content: center; margin-top: 16px; }
+  .upl-note { margin: 12px 0 0; font-size: 12px; color: var(--text-faint); line-height: 1.6; }
+
+  .upl-item { display: grid; gap: 8px; padding: 14px 0; border-bottom: 1px solid var(--border); }
+  .upl-item:last-child { border-bottom: 0; }
+  .upl-item.is-off { opacity: .62; }
+  .upl-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .upl-title { font-size: 14.5px; font-weight: 700; color: var(--text-main); overflow-wrap: anywhere; }
+  .upl-meta { font-size: 11.5px; color: var(--text-faint); }
+  .upl-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10.5px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .04em; border: 1px solid var(--border); }
+  .upl-badge.off { color: var(--red); border-color: var(--red); }
+  .upl-link { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .upl-link input { flex: 1 1 260px; min-width: 0; font-size: 11.5px; font-family: ui-monospace, monospace;
+    padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; background: var(--white);
+    color: var(--text-sub); }
+  .upl-acts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .upl-acts form { margin: 0; }
+  .upl-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 7px;
+    border: 1px solid var(--border); background: var(--white); cursor: pointer; font: inherit;
+    font-size: 12px; font-weight: 600; color: var(--text-sub); text-decoration: none; }
+  .upl-btn:hover { border-color: var(--teal); color: var(--teal); }
+  .upl-btn.danger:hover { border-color: var(--red); background: var(--red); color: var(--white); }
+  .upl-new { border: 1px solid var(--teal); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
+    background: var(--bg); font-size: 13px; }
+</style>
+{% endblock %}
+
+{% block nav_content %}{% include "dashboards/admin/_nav.html" with active="uploads" %}{% endblock %}
+
+{% block topbar %}
+{% include "dashboards/_staff_topbar.html" with page_title="Upload" page_subtitle="Share a file with anyone, by link" %}
+{% endblock %}
+
+{% block main_content %}
+      {% if not configured %}
+      <div class="upl-new" style="border-color:var(--red)">
+        File storage isn&rsquo;t configured on this server (SUPABASE_URL / SUPABASE_SERVICE_KEY),
+        so uploads will fail until it is.
+      </div>
+      {% endif %}
+
+      <div class="upl-wrap">
+        <section class="panel">
+          <div class="panel-header"><h2>Upload a file</h2></div>
+          <form method="post" enctype="multipart/form-data" class="upl-form" id="uplForm">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="upload">
+            <label class="upl-drop" id="uplDrop" for="uplFile">
+              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>
+              <b>Choose a file</b>
+              <p>or drag one here &middot; up to {{ max_mb }} MB</p>
+              <span class="upl-chosen" id="uplChosen"></span>
+              <input type="file" name="file" id="uplFile" required hidden>
+            </label>
+
+            <div class="field-group">
+              <label for="uplTitle">Name it</label>
+              <input type="text" class="field-input" id="uplTitle" name="title" maxlength="200"
+                     autocomplete="off" placeholder="e.g. Ethics Review Guidelines 2026">
+              <p class="field-hint">What people see on the link, and what the file downloads as.
+                Left blank, the file keeps its own name.</p>
+            </div>
+
+            <div class="field-group">
+              <label for="uplNote">Short note <span style="font-weight:400;color:var(--text-faint)">(optional)</span></label>
+              <input type="text" class="field-input" id="uplNote" name="note" maxlength="300"
+                     autocomplete="off" placeholder="Shown under the title on the share page">
+            </div>
+
+            <button type="submit" class="btn-primary" id="uplSubmit">Upload &amp; get link</button>
+            <p class="upl-note">Each upload gets its own link. Anyone with the link can open it &mdash;
+              there is no sign-in &mdash; so share it the way you would share the file.</p>
+          </form>
+        </section>
+
+        <section class="panel">
+          <div class="panel-header">
+            <h2>Shared files</h2>
+            <span class="upl-meta">{{ live }} live of {{ total }}</span>
+          </div>
+
+          {% for item in uploads %}
+          <div class="upl-item{% if not item.is_active %} is-off{% endif %}" id="upl{{ item.pk }}">
+            <div class="upl-head">
+              <span class="upl-title">{{ item.title }}</span>
+              <span class="upl-badge{% if not item.is_active %} off{% endif %}">{% if item.is_active %}{{ item.kind }}{% else %}Off{% endif %}</span>
+            </div>
+            <div class="upl-meta">
+              {{ item.original_name }} &middot; {{ item.size_display }}
+              {% if item.extension %}&middot; {{ item.extension }}{% endif %}
+              &middot; {{ item.created_at|date:"d M Y, H:i" }}{% if item.uploaded_by %} by {{ item.uploaded_by.full_name }}{% endif %}
+              &middot; {{ item.view_count }} view{{ item.view_count|pluralize }}, {{ item.download_count }} download{{ item.download_count|pluralize }}
+            </div>
+            {% if item.note %}<div class="upl-meta" style="color:var(--text-sub)">{{ item.note }}</div>{% endif %}
+
+            <div class="upl-link">
+              <input type="text" readonly value="{{ item.share_url }}" id="uplUrl{{ item.pk }}"
+                     aria-label="Share link for {{ item.title }}" onfocus="this.select()">
+              <button type="button" class="upl-btn" data-copy="#uplUrl{{ item.pk }}">Copy link</button>
+              <a class="upl-btn" href="{{ item.share_url }}" target="_blank" rel="noopener">Open</a>
+            </div>
+
+            <div class="upl-acts">
+              <form method="post">
+                {% csrf_token %}<input type="hidden" name="id" value="{{ item.pk }}">
+                <button type="submit" name="action" value="toggle" class="upl-btn">
+                  {% if item.is_active %}Turn link off{% else %}Turn link on{% endif %}</button>
+              </form>
+              <form method="post" data-confirm-title="Give it a new link?" data-confirm-variant="primary" data-confirm-label="New link"
+                    data-confirm="The current link stops working at once. Anyone who already has it will need the new one.">
+                {% csrf_token %}<input type="hidden" name="id" value="{{ item.pk }}">
+                <button type="submit" name="action" value="relink" class="upl-btn">New link</button>
+              </form>
+              <form method="post" data-confirm-title="Delete {{ item.title }}?" data-confirm-variant="danger" data-confirm-label="Delete"
+                    data-confirm="The file is removed from storage for good and the link stops working. This can't be undone.">
+                {% csrf_token %}<input type="hidden" name="id" value="{{ item.pk }}">
+                <button type="submit" name="action" value="delete" class="upl-btn danger">Delete</button>
+              </form>
+            </div>
+          </div>
+          {% empty %}
+          <div class="empty-state">
+            <h3>Nothing shared yet</h3>
+            <p>Upload a file and it gets its own link to share.</p>
+          </div>
+          {% endfor %}
+        </section>
+      </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function () {
+    var input = document.getElementById("uplFile");
+    var drop = document.getElementById("uplDrop");
+    var chosen = document.getElementById("uplChosen");
+    var title = document.getElementById("uplTitle");
+    var form = document.getElementById("uplForm");
+    var submit = document.getElementById("uplSubmit");
+    if (!input || !drop) return;
+
+    function show() {
+      var f = input.files && input.files[0];
+      chosen.textContent = f ? f.name : "";
+      /* A name is offered, not imposed: the file's own name minus its
+         extension is nearly always what you would have typed anyway. */
+      if (f && title && !title.value.trim()) {
+        title.value = f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
+      }
+    }
+    input.addEventListener("change", show);
+
+    ["dragenter", "dragover"].forEach(function (e) {
+      drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.add("is-over"); });
+    });
+    ["dragleave", "drop"].forEach(function (e) {
+      drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.remove("is-over"); });
+    });
+    drop.addEventListener("drop", function (ev) {
+      if (ev.dataTransfer && ev.dataTransfer.files.length) {
+        input.files = ev.dataTransfer.files;
+        show();
+      }
+    });
+
+    /* A big file over a slow line takes a while; say so rather than let
+       someone press the button five times. */
+    form.addEventListener("submit", function () {
+      submit.disabled = true;
+      submit.textContent = "Uploading…";
+    });
+
+    document.querySelectorAll("[data-copy]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var field = document.querySelector(btn.dataset.copy);
+        function done() {
+          var was = btn.textContent;
+          btn.textContent = "Copied";
+          setTimeout(function () { btn.textContent = was; }, 1600);
+        }
+        if (navigator.clipboard && window.isSecureContext) {
+          navigator.clipboard.writeText(field.value).then(done, function () {
+            field.select(); document.execCommand("copy"); done();
+          });
+        } else { field.select(); document.execCommand("copy"); done(); }
+      });
+    });
+  })();
+</script>
+{% endblock %}

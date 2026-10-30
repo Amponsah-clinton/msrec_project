@@ -24,6 +24,8 @@ urlpatterns = [
     path("admins/workshop/", include("workshop.admin_urls")),
     path("admins/psa/", include("psa.admin_urls")),
     path("psa/", include("psa.urls")),
+    # Shared uploads. Kept short: these links get pasted into emails.
+    path("u/", include("admin_dashboard.uploads_urls")),
     path("admins/", include("admin_dashboard.urls")),
     path("notifications/", include("notifications.urls")),
     path("assistant/", include("assistant.urls")),
