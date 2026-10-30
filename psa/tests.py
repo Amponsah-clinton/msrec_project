@@ -1910,3 +1910,168 @@ class ArchiveTests(StaffTestCase):
         self.assertIn('id="psaBulkForm"', body)
         self.assertIn('id="psaPickAll"', body)
         self.assertIn('form="psaBulkForm"', body)
+
+
+class DeadlineAlertTests(StaffTestCase):
+    """The CEO hears about work due in 5, 3 and 1 days."""
+
+    def setUp(self):
+        super().setUp()
+        self.today = timezone.localdate()
+
+    def _due_in(self, days, **over):
+        fields = dict(client_name="Kwame Mensah", client_email="k@example.com",
+                      status=Status.SIGNED, currency="GHS",
+                      service_title="Systematic review support",
+                      deliverables=["Search strategy", "Screening of records"],
+                      agreement_date=self.today,
+                      completion_date=self.today + timezone.timedelta(days=days))
+        fields.update(over)
+        return ServiceAgreement.objects.create(**fields)
+
+    def _run(self, days_from_now=0):
+        from psa.deadlines import send_due_soon_alerts
+        return send_due_soon_alerts(self.today + timezone.timedelta(days=days_from_now))
+
+    # ---- the three milestones -------------------------------------------
+
+    def test_each_milestone_alerts_the_ceo_once(self):
+        a = self._due_in(5)
+        self.assertEqual(self._run(), 1)
+        self.assertEqual(mail.outbox[-1].to, ["ceo@academicdigital.space"])
+        self.assertIn("in 5 days", mail.outbox[-1].subject)
+        self.assertIn(a.reference, mail.outbox[-1].subject)
+
+        # Nothing again today, or tomorrow -- 4 days is still the 5 window.
+        before = len(mail.outbox)
+        self.assertEqual(self._run(), 0)
+        self.assertEqual(self._run(1), 0)
+        self.assertEqual(len(mail.outbox), before)
+
+        # Three days out is the next milestone.
+        self.assertEqual(self._run(2), 1)
+        self.assertIn("in 3 days", mail.outbox[-1].subject)
+        self.assertEqual(self._run(3), 0)
+
+        # And the last one.
+        self.assertEqual(self._run(4), 1)
+        self.assertIn("tomorrow", mail.outbox[-1].subject)
+        self.assertEqual(self._run(5), 0)          # the day itself adds nothing new
+
+    def test_nothing_fires_before_the_first_milestone(self):
+        self._due_in(6)
+        self.assertEqual(self._run(), 0)
+        self.assertEqual(mail.outbox, [])
+
+    def test_a_missed_milestone_is_caught_up_with_the_real_days_left(self):
+        # Nobody opened the list on day 5; the next run still tells them,
+        # and says four days rather than repeating "5".
+        self._due_in(5)
+        self.assertEqual(self._run(1), 1)
+        self.assertIn("in 4 days", mail.outbox[-1].subject)
+
+    def test_several_missed_milestones_send_one_email_not_three(self):
+        self._due_in(5)
+        self.assertEqual(self._run(4), 1)          # 5, 3 and 1 all passed unseen
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertIn("tomorrow", mail.outbox[-1].subject)
+        self.assertEqual(self._run(4), 0)
+
+    # ---- which agreements count ------------------------------------------
+
+    def test_only_live_agreements_are_alerted_on(self):
+        for status in (Status.DRAFT, Status.CANCELLED):
+            with self.subTest(status):
+                self._due_in(3, status=status, client_email=f"{status}@example.com")
+        self.assertEqual(self._run(), 0)
+
+        self._due_in(3, status=Status.SENT)
+        self._due_in(3, status=Status.CHANGES)
+        self.assertEqual(self._run(), 2)
+
+    def test_an_archived_agreement_is_left_alone(self):
+        a = self._due_in(3)
+        a.archived_at = timezone.now()
+        a.save(update_fields=["archived_at"])
+        self.assertEqual(self._run(), 0)
+
+    def test_an_agreement_with_no_deadline_is_skipped(self):
+        self._due_in(3, completion_date=None)
+        self.assertEqual(self._run(), 0)
+
+    def test_a_deadline_already_past_is_not_chased_here(self):
+        self._due_in(-2)
+        self.assertEqual(self._run(), 0)
+
+    # ---- moving the date --------------------------------------------------
+
+    def test_pushing_the_deadline_back_re_arms_the_alerts(self):
+        a = self._due_in(1)
+        self.assertEqual(self._run(), 1)
+        self.assertEqual(self._run(), 0)
+
+        a.completion_date = self.today + timezone.timedelta(days=5)
+        a.save(update_fields=["completion_date"])
+        self.assertEqual(self._run(), 1, "a new deadline deserves its own alerts")
+        self.assertIn("in 5 days", mail.outbox[-1].subject)
+
+    # ---- what the note says ------------------------------------------------
+
+    def test_the_note_is_about_the_work(self):
+        a = self._due_in(3, fee=Decimal("2500.00"), deposit=Decimal("1000.00"))
+        self._run()
+        body = mail.outbox[-1].body
+        self.assertIn("Systematic review support", body)
+        self.assertIn("Kwame Mensah", body)
+        self.assertIn("2 deliverables", body)
+        self.assertIn("Search strategy", body)
+        # Money is context, not the point, and only when there is some.
+        self.assertIn("1,500.00", body)
+
+    def test_an_unsigned_agreement_says_so(self):
+        self._due_in(3, status=Status.SENT)
+        self._run()
+        self.assertIn("hasn't signed it yet", mail.outbox[-1].body)
+
+    def test_a_settled_agreement_says_nothing_about_money(self):
+        self._due_in(3, fee=Decimal("500.00"), deposit=Decimal("500.00"))
+        self._run()
+        self.assertNotIn("still outstanding", mail.outbox[-1].body)
+
+    # ---- how it is fired ----------------------------------------------------
+
+    def test_opening_the_list_sends_them(self):
+        self._due_in(3)
+        self.client.get(reverse("psa_admin:psa_list"))
+        self.assertEqual(len(mail.outbox), 1)
+        # And again on the next page load, nothing.
+        self.client.get(reverse("psa_admin:psa_list"))
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_a_broken_mail_server_never_takes_the_list_down(self):
+        from psa import deadlines
+        self._due_in(3)
+        original = deadlines.send_due_soon_alerts
+        deadlines.send_due_soon_alerts = lambda today=None: 1 / 0
+        self.addCleanup(lambda: setattr(deadlines, "send_due_soon_alerts", original))
+        self.assertEqual(self.client.get(reverse("psa_admin:psa_list")).status_code, 200)
+
+    def test_an_alert_that_fails_is_tried_again_next_time(self):
+        from psa import emails
+        self._due_in(3)
+        original = emails.send_deadline_alert
+        emails.send_deadline_alert = lambda a, days_left: False
+        self.addCleanup(lambda: setattr(emails, "send_deadline_alert", original))
+        self.assertEqual(self._run(), 0)
+        emails.send_deadline_alert = original
+        self.assertEqual(self._run(), 1)
+
+    def test_the_management_command_runs(self):
+        from io import StringIO
+
+        from django.core.management import call_command
+        self._due_in(5)
+        out = StringIO()
+        call_command("send_psa_deadline_alerts", stdout=out)
+        self.assertIn("Sent 1", out.getvalue())
+        self.assertEqual(len(mail.outbox), 1)

@@ -350,6 +350,12 @@ dialog.psa-dialog::backdrop { background: var(--overlay-bg); backdrop-filter: bl
 .psa-undo button { border: 0; background: none; padding: 0; font: inherit; font-weight: 700;
   color: var(--teal); cursor: pointer; text-decoration: underline; }
 
+/* The archive sits apart from the status tabs: it is a place you go, not
+   a slice of the list you are already looking at. */
+.psa-tab-split { width: 1px; align-self: stretch; margin: 4px 6px; background: var(--border); }
+.filter-tab.psa-tab-archive { display: inline-flex; align-items: center; gap: 6px; }
+.filter-tab.psa-tab-archive svg { width: 15px; height: 15px; }
+
 @media (max-width: 640px) {
   /* Stacked cards: the tick sits with the row rather than in a column. */
   .psa-th-pick { display: none; }

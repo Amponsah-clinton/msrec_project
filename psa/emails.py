@@ -474,3 +474,50 @@ def sms_payment_to_staff(a, payment):
             else "Settled in full.")
     return (f"{a.reference}: {_plain(a.client_name, SMS_NAME_LEN)} paid "
             f"{a.currency} {payment.abs_amount:,.2f}. {tail} {a.staff_url()}")
+
+
+def send_deadline_alert(a, days_left):
+    """"This piece of work is due in N days" -- to the CEO.
+
+    About the work rather than the money: what was promised, to whom, by
+    when. What is owing is mentioned last and only when there is some,
+    because an unpaid deadline is a different conversation from a late
+    one."""
+    when = ("today" if days_left == 0 else
+            "tomorrow" if days_left == 1 else f"in {days_left} days")
+    title = a.service_title or "this agreement"
+    deliverables = a.deliverable_list()
+    owing = a.amount_owing
+
+    paragraphs = [
+        f"The work on {a.reference} for {a.client_name} is due {when} "
+        f"({a.completion_date:%d %B %Y}).",
+        f"Service: {title}",
+    ]
+    if deliverables:
+        paragraphs.append(
+            f"{len(deliverables)} deliverable{'' if len(deliverables) == 1 else 's'} were agreed: "
+            + "; ".join(deliverables[:4])
+            + (f"; and {len(deliverables) - 4} more." if len(deliverables) > 4 else ".")
+        )
+    if a.start_date:
+        paragraphs.append(f"Agreed to run from {a.start_date:%d %B %Y}.")
+    if a.status != a.Status.SIGNED:
+        paragraphs.append(
+            f"Note that the client hasn't signed it yet — it is still {a.get_status_display().lower()}."
+        )
+    if owing is not None and owing > 0:
+        paragraphs.append(f"Separately, {a.currency} {owing:,.2f} of the fee is still outstanding.")
+
+    return _send(
+        subject=f"Deadline {when}: {a.reference} — {title}",
+        to=CEO_NOTIFY_EMAIL,
+        heading=f"Work due {when}",
+        paragraphs=paragraphs,
+        callout_label="Expected completion",
+        callout_value=f"{a.completion_date:%d %B %Y}",
+        callout_note=f"{a.client_name} · {a.reference}",
+        cta_text="Open the agreement",
+        cta_url=a.staff_url(),
+        preheader=f"{a.reference} for {a.client_name} is due {when}.",
+    )

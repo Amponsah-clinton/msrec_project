@@ -125,6 +125,12 @@ class ServiceAgreement(models.Model):
     viewed_at = models.DateTimeField(null=True, blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
 
+    # Which deadline alerts have gone to the CEO, and for which deadline:
+    # {"for": "2026-11-05", "sent": [5, 3]}. Keyed on the date so moving
+    # the completion date re-arms the alerts for the new one rather than
+    # staying quiet because the old one was already announced.
+    deadline_alerts = models.JSONField(default=dict, blank=True, editable=False)
+
     # Archiving. Putting an agreement away is about the list, not about the
     # agreement: nothing it can do changes, its link keeps working and its
     # ledger is untouched. It simply stops crowding the page once it is

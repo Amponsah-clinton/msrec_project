@@ -53,12 +53,19 @@
       <section class="panel acct-panel">
         <div class="acct-toolbar">
           <div class="filter-tabs acct-tabs" id="psaStatusTabs">
-            <a href="?{% if f.q %}q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if not f.status %} active{% endif %}">All <span class="count badge rounded-pill text-bg-secondary">{{ stats.all }}</span></a>
-            <a href="?status=draft{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if f.status == 'draft' %} active{% endif %}">Drafts <span class="count badge rounded-pill text-bg-secondary">{{ stats.draft }}</span></a>
-            <a href="?status=sent{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if f.status == 'sent' %} active{% endif %}">Awaiting Client <span class="count badge rounded-pill text-bg-secondary">{{ stats.sent }}</span></a>
-            <a href="?status=changes{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if f.status == 'changes' %} active{% endif %}" data-filter="revisions">Changes Requested <span class="count badge rounded-pill text-bg-secondary">{{ stats.changes }}</span></a>
-            <a href="?status=signed{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if f.status == 'signed' %} active{% endif %}">Signed <span class="count badge rounded-pill text-bg-secondary">{{ stats.signed }}</span></a>
-            <a href="?status=cancelled{% if f.q %}&amp;q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if f.status == 'cancelled' %} active{% endif %}">Cancelled <span class="count badge rounded-pill text-bg-secondary">{{ stats.cancelled }}</span></a>
+            {# Status tabs carry tab_qs, which holds the archive they are being used inside. #}
+            <a href="?{% if f.q %}q={{ f.q|urlencode }}{% endif %}" class="filter-tab{% if not f.status and not f.arch %} active{% endif %}">All <span class="count badge rounded-pill text-bg-secondary">{{ stats.all }}</span></a>
+            <a href="?{% if tab_qs %}{{ tab_qs }}&amp;{% endif %}status=draft" class="filter-tab{% if f.status == 'draft' %} active{% endif %}">Drafts <span class="count badge rounded-pill text-bg-secondary">{{ stats.draft }}</span></a>
+            <a href="?{% if tab_qs %}{{ tab_qs }}&amp;{% endif %}status=sent" class="filter-tab{% if f.status == 'sent' %} active{% endif %}">Awaiting Client <span class="count badge rounded-pill text-bg-secondary">{{ stats.sent }}</span></a>
+            <a href="?{% if tab_qs %}{{ tab_qs }}&amp;{% endif %}status=changes" class="filter-tab{% if f.status == 'changes' %} active{% endif %}" data-filter="revisions">Changes Requested <span class="count badge rounded-pill text-bg-secondary">{{ stats.changes }}</span></a>
+            <a href="?{% if tab_qs %}{{ tab_qs }}&amp;{% endif %}status=signed" class="filter-tab{% if f.status == 'signed' %} active{% endif %}">Signed <span class="count badge rounded-pill text-bg-secondary">{{ stats.signed }}</span></a>
+            <a href="?{% if tab_qs %}{{ tab_qs }}&amp;{% endif %}status=cancelled" class="filter-tab{% if f.status == 'cancelled' %} active{% endif %}">Cancelled <span class="count badge rounded-pill text-bg-secondary">{{ stats.cancelled }}</span></a>
+            {# The archive is a place, not a status, so it sits apart from the tabs that filter within it. #}
+            <span class="psa-tab-split" aria-hidden="true"></span>
+            <a href="?{% if arch_qs %}{{ arch_qs }}&amp;{% endif %}arch=only" class="filter-tab psa-tab-archive{% if f.arch == 'only' %} active{% endif %}" id="psaArchiveTab">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8"/><path d="M1 3h22v5H1zM10 12h4"/></svg>
+              Archived <span class="count badge rounded-pill text-bg-secondary">{{ stats.archived }}</span>
+            </a>
           </div>
           <div class="psa-toolbar-btns">
             <a class="btn-secondary" id="psaLetterheadBtn" href="{% url 'psa_admin:psa_letterhead' %}" title="Header and footer artwork for agreement PDFs">
@@ -360,9 +367,13 @@
                 <td colspan="9">
                   <div class="empty-state">
                     <span class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></span>
-                    {% if filtered %}
+                    {% if f.arch == 'only' and not f.q and not f.status %}
+                    <h3>Nothing archived yet</h3>
+                    <p>Agreements you archive are kept here, off the main list but unchanged.</p>
+                    <a href="{% url 'psa_admin:psa_list' %}" class="btn-secondary">Back to agreements</a>
+                    {% elif filtered %}
                     <h3>No agreements match</h3>
-                    <p>Nothing matches the current search or filters.</p>
+                    <p>Nothing matches the current search or filters{% if f.arch == 'only' %} in the archive{% endif %}.</p>
                     <a href="{% url 'psa_admin:psa_list' %}" class="btn-secondary">Clear filters</a>
                     {% else %}
                     <h3>No agreements yet</h3>

@@ -13,6 +13,7 @@ import ipaddress
 import logging
 from datetime import timedelta
 from decimal import Decimal
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -30,7 +31,7 @@ from django.views.decorators.http import require_POST
 
 from messaging.access import is_staff_side
 
-from . import emails
+from . import deadlines, emails
 from .forms import (parse_agreement, parse_change_request, parse_client, parse_payment,
                     parse_payment_request, parse_reminder, parse_signature)
 from .models import CURRENCIES, ChangeRequest, Payment, PaymentRequest, ServiceAgreement
@@ -208,6 +209,12 @@ def _filtered(f):
 @login_required
 @staff_required
 def psa_list(request):
+    # The people who run these agreements open this page; there is no
+    # scheduler here, so the CEO's deadline alerts ride along with it.
+    # Each milestone sends once, so doing this per page load costs one
+    # filtered query and nothing else (psa.deadlines).
+    deadlines.send_quietly()
+
     f = _filters(request.GET)
     matching = _filtered(f)
     # Each row offers "Send payment link" or "Remind to pay" depending on
@@ -218,20 +225,27 @@ def psa_list(request):
     params = request.GET.copy()
     params.pop("page", None)
 
-    # The tiles count what is on the list, so archived agreements are left
-    # out of them -- otherwise putting something away would tidy the table
-    # and leave the number above it unchanged.
-    live = ServiceAgreement.objects.filter(archived_at__isnull=True)
-    counts = dict(live.values_list("status").annotate(n=Count("pk")))
+    # The tiles and the tab counts describe what is being looked at, which
+    # is the live list by default and the archive once you are in it.
+    # Counting the live list from inside the archive would put "Cancelled
+    # 0" above four archived cancelled rows.
+    scope = ServiceAgreement.objects.all()
+    if f["arch"] == "only":
+        scope = scope.filter(archived_at__isnull=False)
+    elif f["arch"] != "all":
+        scope = scope.filter(archived_at__isnull=True)
+    counts = dict(scope.values_list("status").annotate(n=Count("pk")))
+    # Always the whole archive, whichever list is on screen: it is the
+    # count on the Archived tab, which is how you get there.
     archived_count = ServiceAgreement.objects.filter(archived_at__isnull=False).count()
     signed_value = list(
-        live.filter(status=Status.SIGNED, fee__isnull=False)
+        scope.filter(status=Status.SIGNED, fee__isnull=False)
         .values("currency").annotate(total=Sum("fee")).order_by("currency")
     )
     # What clients still owe, per currency. Live agreements only: a draft
     # isn't an obligation yet and a cancelled one no longer is.
     outstanding = list(
-        _with_money(live.filter(
+        _with_money(scope.filter(
             status__in=(Status.SENT, Status.CHANGES, Status.SIGNED), fee__isnull=False))
         .filter(owing__gt=0).values("currency").annotate(total=Sum("owing")).order_by("currency")
     )
@@ -241,6 +255,13 @@ def psa_list(request):
         "matching_count": paginator.count,
         "f": f,
         "query": params.urlencode(),
+        # What the tab row must carry across. A status tab keeps the search
+        # and the archive it is being used inside, so narrowing to "Signed"
+        # while looking at the archive narrows the archive instead of
+        # quietly dropping you back on the live list. "All" carries only
+        # the search, which makes it the way back out.
+        "tab_qs": urlencode({k: v for k, v in (("q", f["q"]), ("arch", f["arch"])) if v}),
+        "arch_qs": urlencode({k: v for k, v in (("q", f["q"]), ("status", f["status"])) if v}),
         "filtered": any(f[k] for k in ("q", "status", "basis", "currency", "date_from", "date_to",
                                        "pay", "arch")),
         "undo": _take_undo(request),
