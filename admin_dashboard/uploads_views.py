@@ -22,6 +22,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_POST
 
 from messaging.access import is_staff_side
@@ -104,11 +105,39 @@ def _handle(request):
         row.save(update_fields=["token"])
         messages.success(request, f"“{row.title}” has a new link. The old one no longer works.")
     elif action == "delete":
-        title = row.title
-        if not storage.delete(row.object_path):
-            logger.warning("Upload %s left in the bucket after delete", row.object_path)
-        row.delete()
-        messages.success(request, f"“{title}” deleted — the file is gone from storage too.")
+        return _remove(request, row)
+    return redirect("admin_dashboard:uploads")
+
+
+def _remove(request, row):
+    """Delete the file from the bucket, then forget it.
+
+    In that order, and only in that order. The record holds
+    `object_path`, which is the only trace of where the file lives --
+    drop the row while the object is still there and the file sits in the
+    bucket for good, with nothing left that knows how to reach it.
+
+    So a storage failure keeps the record and switches the link off
+    instead: the file stops being reachable either way, and Delete can be
+    pressed again once storage is back."""
+    title = row.title
+    if not storage.delete(row.object_path):
+        logger.error("Supabase still holds %s; keeping its record so it can be retried",
+                     row.object_path)
+        if row.is_active:
+            row.is_active = False
+            row.save(update_fields=["is_active"])
+        messages.error(
+            request,
+            f"“{title}” could not be removed from storage, so it hasn't been deleted here either — "
+            "the record is the only thing that knows where the file is. Its link has been turned "
+            "off in the meantime. Try Delete again once storage is reachable.",
+        )
+        return redirect("admin_dashboard:uploads")
+
+    row.delete()
+    messages.success(request, f"“{title}” deleted — the file is gone from storage and the link "
+                              "no longer works.")
     return redirect("admin_dashboard:uploads")
 
 
@@ -177,6 +206,7 @@ def share(request, token):
     return resp
 
 
+@xframe_options_sameorigin
 def file(request, token):
     """The bytes.
 
@@ -213,6 +243,20 @@ def file(request, token):
     resp["Content-Length"] = len(data)
     resp["Cache-Control"] = "no-store"
     resp["X-Content-Type-Options"] = "nosniff"
-    resp["Content-Security-Policy"] = "sandbox; default-src 'none'; img-src 'self'; media-src 'self'"
+    # The site sends X-Frame-Options: DENY on everything, which also stops
+    # the share page framing its own file -- that is the "refused to
+    # connect" a PDF preview showed. @xframe_options_sameorigin above
+    # relaxes it to our own pages only, and frame-ancestors says the same
+    # thing to browsers that prefer CSP.
+    #
+    # Inline responses are a closed allow-list with nothing scriptable in
+    # it (HTML and SVG are forced to download), so they get a tight policy
+    # that still lets a viewer work. Anything downloaded never renders, so
+    # it keeps the full sandbox.
+    resp["Content-Security-Policy"] = (
+        "frame-ancestors 'self'; object-src 'none'; script-src 'none'"
+        if inline else
+        "sandbox; default-src 'none'; frame-ancestors 'none'"
+    )
     resp["X-Robots-Tag"] = "noindex, nofollow"
     return resp

@@ -195,13 +195,29 @@ class ServingSafetyTests(UploadTestCase):
         self.client.logout()
         self.assertIn("attachment", self.client.get(row.file_url())["Content-Disposition"])
 
-    def test_every_file_response_is_sandboxed_and_never_sniffed(self):
-        row = self._upload()
+    def test_every_file_response_carries_a_policy_and_is_never_sniffed(self):
+        # The two policies differ on purpose. A download renders nowhere,
+        # so it takes the full sandbox. A preview has to render inside the
+        # share page, and a sandbox puts it in an opaque origin that can
+        # stop a PDF viewer working -- so it gets script and object
+        # blocked instead, which is safe because nothing scriptable is
+        # ever served inline (see test_html_is_never_served_inline).
+        preview = self._upload()                                  # a PDF
+        self.client.post(ADMIN, {"action": "upload", "title": "Bundle",
+                                 "file": _file("x.zip", b"PK", "application/zip")})
+        download = SharedUpload.objects.order_by("-pk").first()
         self.client.logout()
-        got = self.client.get(row.file_url())
-        self.assertIn("sandbox", got["Content-Security-Policy"])
-        self.assertEqual(got["X-Content-Type-Options"], "nosniff")
-        self.assertIn("noindex", got["X-Robots-Tag"])
+
+        shown = self.client.get(preview.file_url())
+        self.assertIn("script-src 'none'", shown["Content-Security-Policy"])
+        self.assertIn("object-src 'none'", shown["Content-Security-Policy"])
+
+        saved = self.client.get(download.file_url())
+        self.assertIn("sandbox", saved["Content-Security-Policy"])
+
+        for resp in (shown, saved):
+            self.assertEqual(resp["X-Content-Type-Options"], "nosniff")
+            self.assertIn("noindex", resp["X-Robots-Tag"])
 
     def test_the_served_type_comes_from_the_record_not_the_fetch(self):
         # Storage reporting text/html for a file we recorded as a PDF must
@@ -314,3 +330,200 @@ class ActionRoutingTests(UploadTestCase):
         block = block[:block.index("form.submit();")]
         self.assertIn("event.submitter", block)
         self.assertIn("carried.name = submitter.name", block)
+
+
+class StorageDeleteTests(TestCase):
+    """The storage layer itself: does Delete really reach Supabase?
+
+    These patch urllib, not our own helper, so they check the request
+    that would actually go out -- method, URL and credentials.
+    """
+
+    def setUp(self):
+        from django.test import override_settings
+        ctx = override_settings(SUPABASE_URL="https://proj.supabase.co",
+                                SUPABASE_SERVICE_KEY="service-key-123")
+        ctx.enable()
+        self.addCleanup(ctx.disable)
+
+    def _capture(self, status=200):
+        from admin_dashboard import uploads_storage as storage
+        seen = {}
+
+        class Resp:
+            def __init__(self): self.status = status
+            def read(self): return b""
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+
+        def fake(req, timeout=None):
+            seen["method"] = req.method
+            seen["url"] = req.full_url
+            seen["headers"] = {k.lower(): v for k, v in req.headers.items()}
+            return Resp()
+
+        p = mock.patch.object(storage.urllib.request, "urlopen", side_effect=fake)
+        p.start()
+        self.addCleanup(p.stop)
+        return seen
+
+    def test_delete_issues_a_delete_to_the_upload_bucket(self):
+        from admin_dashboard import uploads_storage as storage
+        seen = self._capture()
+        self.assertTrue(storage.delete("2026/10/abc123.pdf"))
+        self.assertEqual(seen["method"], "DELETE")
+        self.assertEqual(seen["url"],
+                         "https://proj.supabase.co/storage/v1/object/upload/2026/10/abc123.pdf")
+        self.assertEqual(seen["headers"]["authorization"], "Bearer service-key-123")
+        self.assertEqual(seen["headers"]["apikey"], "service-key-123")
+
+    def test_a_file_already_gone_counts_as_deleted(self):
+        from admin_dashboard import uploads_storage as storage
+        import urllib.error
+
+        def gone(req, timeout=None):
+            raise urllib.error.HTTPError(req.full_url, 404, "Not Found", {}, None)
+
+        with mock.patch.object(storage.urllib.request, "urlopen", side_effect=gone):
+            self.assertTrue(storage.delete("2026/10/missing.pdf"))
+
+    def test_a_storage_error_is_reported_as_a_failure(self):
+        from admin_dashboard import uploads_storage as storage
+
+        def boom(req, timeout=None):
+            raise OSError("network down")
+
+        with mock.patch.object(storage.urllib.request, "urlopen", side_effect=boom):
+            self.assertFalse(storage.delete("2026/10/abc123.pdf"))
+
+    def test_nothing_is_attempted_without_credentials(self):
+        from django.test import override_settings
+
+        from admin_dashboard import uploads_storage as storage
+        seen = self._capture()
+        with override_settings(SUPABASE_URL="", SUPABASE_SERVICE_KEY=""):
+            self.assertFalse(storage.delete("2026/10/abc123.pdf"))
+        self.assertEqual(seen, {})
+
+
+class DeleteSafetyTests(UploadTestCase):
+    """A failed storage delete must not lose the record."""
+
+    def test_a_failed_storage_delete_keeps_the_record_and_kills_the_link(self):
+        row = self._upload()
+        with mock.patch("admin_dashboard.uploads_storage.delete", return_value=False):
+            resp = self.client.post(ADMIN, {"action": "delete", "id": row.pk}, follow=True)
+        body = resp.content.decode()
+        self.assertIn("could not be removed from storage", body)
+        self.assertNotIn("is gone from storage", body)
+
+        row.refresh_from_db()
+        self.assertFalse(row.is_active, "the link should stop working meanwhile")
+        self.assertIn(row.object_path, self.bucket)
+        # The path survives, so Delete can be pressed again.
+        self.assertTrue(SharedUpload.objects.filter(pk=row.pk).exists())
+
+    def test_retrying_after_storage_recovers_finishes_the_job(self):
+        row = self._upload()
+        path = row.object_path
+        with mock.patch("admin_dashboard.uploads_storage.delete", return_value=False):
+            self.client.post(ADMIN, {"action": "delete", "id": row.pk})
+        self.client.post(ADMIN, {"action": "delete", "id": row.pk})
+        self.assertFalse(SharedUpload.objects.filter(pk=row.pk).exists())
+        self.assertNotIn(path, self.bucket)
+
+    def test_a_successful_delete_removes_the_object_then_the_record(self):
+        row = self._upload()
+        path = row.object_path
+        resp = self.client.post(ADMIN, {"action": "delete", "id": row.pk}, follow=True)
+        self.assertIn("gone from storage", resp.content.decode())
+        self.assertNotIn(path, self.bucket)
+        self.assertFalse(SharedUpload.objects.filter(pk=row.pk).exists())
+
+
+class PreviewFramingTests(UploadTestCase):
+    """The share page frames the file it is about.
+
+    The site sends X-Frame-Options: DENY on everything (settings.py), which
+    also forbade the share page framing its own file -- the PDF preview
+    showed "refused to connect" instead of the document.
+    """
+
+    def _share(self, name, data, ctype, title="Doc"):
+        self.client.post(ADMIN, {"action": "upload", "title": title,
+                                 "file": _file(name, data, ctype)})
+        return SharedUpload.objects.order_by("-pk").first()
+
+    def test_a_pdf_may_be_framed_by_our_own_page(self):
+        row = self._share("slides.pdf", b"%PDF-1.4 x", "application/pdf", "Slides")
+        self.client.logout()
+        got = self.client.get(row.file_url())
+        self.assertEqual(got["X-Frame-Options"], "SAMEORIGIN")
+        self.assertIn("frame-ancestors 'self'", got["Content-Security-Policy"])
+        self.assertIn("inline", got["Content-Disposition"])
+        self.assertEqual(got["Content-Type"], "application/pdf")
+
+    def test_the_site_wide_deny_does_not_reach_the_file(self):
+        from django.conf import settings
+        self.assertEqual(settings.X_FRAME_OPTIONS, "DENY")   # still true elsewhere
+        row = self._share("slides.pdf", b"%PDF-1.4 x", "application/pdf")
+        self.client.logout()
+        self.assertNotEqual(self.client.get(row.file_url())["X-Frame-Options"], "DENY")
+
+    def test_a_download_is_still_framed_by_nobody(self):
+        row = self._share("x.zip", b"PK\x03\x04", "application/zip", "Bundle")
+        self.client.logout()
+        got = self.client.get(row.file_url())
+        self.assertIn("sandbox", got["Content-Security-Policy"])
+        self.assertIn("frame-ancestors 'none'", got["Content-Security-Policy"])
+
+    def test_scripts_are_refused_in_a_framed_file(self):
+        row = self._share("slides.pdf", b"%PDF-1.4 x", "application/pdf")
+        self.client.logout()
+        policy = self.client.get(row.file_url())["Content-Security-Policy"]
+        self.assertIn("script-src 'none'", policy)
+        self.assertIn("object-src 'none'", policy)
+
+
+class WordDocumentTests(UploadTestCase):
+    """Word documents are never previewed -- browsers cannot render them,
+    so the page offers the download and says why."""
+
+    WORD = {
+        "application/msword": "minutes.doc",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "minutes.docx",
+        "application/vnd.oasis.opendocument.text": "minutes.odt",
+        "application/rtf": "minutes.rtf",
+    }
+
+    def test_no_word_format_is_ever_previewable(self):
+        for ctype, name in self.WORD.items():
+            with self.subTest(ctype):
+                row = SharedUpload(content_type=ctype, original_name=name)
+                self.assertEqual(row.kind, "file")
+                self.assertFalse(row.can_preview)
+
+    def test_a_word_file_downloads_rather_than_renders(self):
+        ctype = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        self.client.post(ADMIN, {"action": "upload", "title": "Committee Minutes",
+                                 "file": _file("minutes.docx", b"PK\x03\x04", ctype)})
+        row = SharedUpload.objects.order_by("-pk").first()
+        self.client.logout()
+
+        page = self.client.get(row.share_url())
+        self.assertNotContains(page, "<iframe")
+        self.assertContains(page, "can&rsquo;t be shown in a browser")
+
+        got = self.client.get(row.file_url())
+        self.assertIn("attachment", got["Content-Disposition"])
+        self.assertIn("Committee_Minutes.docx", got["Content-Disposition"])
+        self.assertEqual(got["Content-Type"], "application/octet-stream")
+
+    def test_the_tile_still_names_the_format(self):
+        ctype = "application/msword"
+        self.client.post(ADMIN, {"action": "upload", "title": "Old Minutes",
+                                 "file": _file("old.doc", b"\xd0\xcf", ctype)})
+        row = SharedUpload.objects.order_by("-pk").first()
+        self.assertEqual(row.extension, "DOC")
+        self.client.logout()
+        self.assertContains(self.client.get(row.share_url()), "DOC")
