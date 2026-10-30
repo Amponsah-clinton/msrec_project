@@ -234,22 +234,39 @@
   (function () {
     var input = document.getElementById("uplFile");
     var drop = document.getElementById("uplDrop");
-    var chosen = document.getElementById("uplChosen");
+    var chip = document.getElementById("uplChip");
     var title = document.getElementById("uplTitle");
     var form = document.getElementById("uplForm");
     var submit = document.getElementById("uplSubmit");
     if (!input || !drop) return;
 
+    function size(bytes) {
+      var units = ["B", "KB", "MB", "GB"], i = 0, n = bytes;
+      while (n >= 1024 && i < units.length - 1) { n /= 1024; i++; }
+      return (i === 0 ? n.toFixed(0) : n.toFixed(1)) + " " + units[i];
+    }
+
     function show() {
       var f = input.files && input.files[0];
-      chosen.textContent = f ? f.name : "";
-      /* A name is offered, not imposed: the file's own name minus its
-         extension is nearly always what you would have typed anyway. */
-      if (f && title && !title.value.trim()) {
+      chip.classList.toggle("on", !!f);
+      if (!f) return;
+      document.getElementById("uplChipName").textContent = f.name;
+      document.getElementById("uplChipSize").textContent = size(f.size);
+      var dot = f.name.lastIndexOf(".");
+      document.getElementById("uplChipExt").textContent =
+        dot > -1 ? f.name.slice(dot + 1).toUpperCase().slice(0, 4) : "FILE";
+      /* A name is offered, not imposed: the file's own name without its
+         extension is nearly always what you would have typed. */
+      if (title && !title.value.trim()) {
         title.value = f.name.replace(/\.[^.]+$/, "").replace(/[_-]+/g, " ").trim();
       }
     }
     input.addEventListener("change", show);
+
+    document.getElementById("uplChipClear").addEventListener("click", function () {
+      input.value = "";
+      show();
+    });
 
     ["dragenter", "dragover"].forEach(function (e) {
       drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.add("is-over"); });
@@ -258,10 +275,7 @@
       drop.addEventListener(e, function (ev) { ev.preventDefault(); drop.classList.remove("is-over"); });
     });
     drop.addEventListener("drop", function (ev) {
-      if (ev.dataTransfer && ev.dataTransfer.files.length) {
-        input.files = ev.dataTransfer.files;
-        show();
-      }
+      if (ev.dataTransfer && ev.dataTransfer.files.length) { input.files = ev.dataTransfer.files; show(); }
     });
 
     /* A big file over a slow line takes a while; say so rather than let
@@ -285,6 +299,17 @@
           });
         } else { field.select(); document.execCommand("copy"); done(); }
       });
+    });
+
+    /* One menu open at a time, and a click anywhere else closes it. */
+    var menus = Array.prototype.slice.call(document.querySelectorAll(".upl-menu"));
+    menus.forEach(function (m) {
+      m.addEventListener("toggle", function () {
+        if (m.open) menus.forEach(function (o) { if (o !== m) o.open = false; });
+      });
+    });
+    document.addEventListener("click", function (ev) {
+      menus.forEach(function (m) { if (!m.contains(ev.target)) m.open = false; });
     });
   })();
 </script>
