@@ -497,6 +497,12 @@ document.addEventListener("DOMContentLoaded", () => {
   document.querySelectorAll("form[data-confirm]").forEach((form) => {
     form.addEventListener("submit", (event) => {
       event.preventDefault();
+      // Which button was pressed, captured now: form.submit() below is a
+      // programmatic submit and does NOT include the clicked button, so a
+      // form that carries its action as <button name="action" value="...">
+      // would post without one. That silently turned "Delete" into
+      // whatever the view does with a missing action.
+      const submitter = event.submitter;
       window.MSRECConfirm({
         title: form.dataset.confirmTitle,
         message: form.dataset.confirm,
@@ -505,6 +511,15 @@ document.addEventListener("DOMContentLoaded", () => {
         variant: form.dataset.confirmVariant,
       }).then((ok) => {
         if (!ok) return;
+        if (submitter && submitter.name && !form.querySelector(
+              `input[type="hidden"][name="${CSS.escape(submitter.name)}"][data-from-submitter]`)) {
+          const carried = document.createElement("input");
+          carried.type = "hidden";
+          carried.name = submitter.name;
+          carried.value = submitter.value;
+          carried.setAttribute("data-from-submitter", "");
+          form.appendChild(carried);
+        }
         // Once confirmed, it goes once: no double submit from a second click.
         form.querySelectorAll('button[type="submit"]').forEach((b) => { b.disabled = true; });
         form.submit();

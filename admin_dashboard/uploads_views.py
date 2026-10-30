@@ -69,12 +69,21 @@ def uploads(request):
 
 
 def _handle(request):
-    action = request.POST.get("action", "upload")
+    # No default. The shared confirm dialog re-posts with form.submit(),
+    # which drops the clicked button -- so every form carries its action
+    # in a hidden field, and a post that arrives without one is a bug to
+    # surface rather than something to guess at. Guessing "upload" is
+    # what turned a failed delete into "Choose a file to upload."
+    action = request.POST.get("action", "")
     if action == "upload":
         return _add(request)
+    if action not in ("toggle", "rename", "relink", "delete"):
+        messages.error(request, "That action wasn't understood, so nothing was changed.")
+        return redirect("admin_dashboard:uploads")
 
     pk = request.POST.get("id", "")
     if not pk.isdigit():
+        messages.error(request, "That file couldn't be identified, so nothing was changed.")
         return redirect("admin_dashboard:uploads")
     row = get_object_or_404(SharedUpload, pk=int(pk))
 

@@ -199,21 +199,27 @@
                 <summary aria-label="More actions for {{ item.title }}">&hellip;</summary>
                 <div class="upl-menu-panel">
                   <form method="post">
-                    {% csrf_token %}<input type="hidden" name="id" value="{{ item.pk }}">
-                    <button type="submit" name="action" value="toggle">
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ item.pk }}">
+                    <input type="hidden" name="action" value="toggle">
+                    <button type="submit">
                       {% if item.is_active %}Turn link off{% else %}Turn link back on{% endif %}</button>
                   </form>
                   <form method="post" data-confirm-title="Give it a new link?" data-confirm-variant="primary"
                         data-confirm-label="New link"
                         data-confirm="The current link stops working at once. Anyone who already has it will need the new one.">
-                    {% csrf_token %}<input type="hidden" name="id" value="{{ item.pk }}">
-                    <button type="submit" name="action" value="relink">Replace the link</button>
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ item.pk }}">
+                    <input type="hidden" name="action" value="relink">
+                    <button type="submit">Replace the link</button>
                   </form>
                   <form method="post" data-confirm-title="Delete {{ item.title }}?" data-confirm-variant="danger"
                         data-confirm-label="Delete"
                         data-confirm="The file is removed from storage for good and the link stops working. This can't be undone.">
-                    {% csrf_token %}<input type="hidden" name="id" value="{{ item.pk }}">
-                    <button type="submit" name="action" value="delete" class="danger">Delete the file</button>
+                    {% csrf_token %}
+                    <input type="hidden" name="id" value="{{ item.pk }}">
+                    <input type="hidden" name="action" value="delete">
+                    <button type="submit" class="danger">Delete the file</button>
                   </form>
                 </div>
               </details>

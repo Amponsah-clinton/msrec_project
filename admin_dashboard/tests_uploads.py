@@ -263,3 +263,54 @@ class ShareLinkHostTests(UploadTestCase):
         self.client.logout()
         resp = self.client.get(row.share_path(), HTTP_HOST="127.0.0.1:8000")
         self.assertEqual(resp.status_code, 200)
+
+
+class ActionRoutingTests(UploadTestCase):
+    """Every action posts its own name.
+
+    The shared confirm dialog re-submits with form.submit(), which drops
+    the clicked button -- so an action carried only on a <button name=...>
+    never arrives. Delete and Replace-the-link both did that, and the view
+    read the missing field as "upload", which is why deleting a file
+    answered "Choose a file to upload."
+    """
+
+    def test_every_form_carries_its_action_in_a_hidden_field(self):
+        self._upload()
+        body = self.client.get(ADMIN).content.decode()
+        for action in ("upload", "toggle", "relink", "delete"):
+            with self.subTest(action):
+                self.assertIn(f'name="action" value="{action}"', body)
+        # And never on a button, where a programmatic submit loses it.
+        self.assertNotRegex(body, r'<button[^>]*name="action"')
+
+    def test_delete_without_its_action_is_not_read_as_an_upload(self):
+        row = self._upload()
+        resp = self.client.post(ADMIN, {"id": row.pk}, follow=True)
+        page = resp.content.decode()
+        self.assertNotIn("Choose a file to upload", page)
+        self.assertIn("wasn&#x27;t understood", page)
+        self.assertTrue(SharedUpload.objects.filter(pk=row.pk).exists())
+
+    def test_an_unknown_action_changes_nothing(self):
+        row = self._upload()
+        self.client.post(ADMIN, {"action": "destroy", "id": row.pk})
+        self.assertTrue(SharedUpload.objects.filter(pk=row.pk).exists())
+        self.assertIn(row.object_path, self.bucket)
+
+    def test_delete_with_its_action_really_deletes(self):
+        row = self._upload()
+        path = row.object_path
+        self.client.post(ADMIN, {"action": "delete", "id": row.pk}, follow=True)
+        self.assertFalse(SharedUpload.objects.filter(pk=row.pk).exists())
+        self.assertNotIn(path, self.bucket)
+
+    def test_the_confirm_dialog_carries_the_clicked_button(self):
+        # The root fix, so the three other admin forms that put their
+        # action on the button (reactivate an account, approve and send
+        # workshop documents) work too.
+        js = open("static/dashboard/js/script.js", encoding="utf-8").read()
+        block = js[js.index('form[data-confirm]'):]
+        block = block[:block.index("form.submit();")]
+        self.assertIn("event.submitter", block)
+        self.assertIn("carried.name = submitter.name", block)
