@@ -249,7 +249,7 @@ class ServingSafetyTests(UploadTestCase):
         row = self._upload(file=_file("data.zip", b"PK\x03\x04", "application/zip"), title="Bundle")
         self.client.logout()
         page = self.client.get(row.share_url())
-        self.assertContains(page, "can&rsquo;t be shown in a browser")
+        self.assertContains(page, "can&rsquo;t be opened in a browser")
         self.assertContains(page, row.download_url())
 
 
@@ -512,7 +512,7 @@ class WordDocumentTests(UploadTestCase):
 
         page = self.client.get(row.share_url())
         self.assertNotContains(page, "<iframe")
-        self.assertContains(page, "can&rsquo;t be shown in a browser")
+        self.assertContains(page, "can&rsquo;t be opened in a browser")
 
         got = self.client.get(row.file_url())
         self.assertIn("attachment", got["Content-Disposition"])
@@ -527,3 +527,78 @@ class WordDocumentTests(UploadTestCase):
         self.assertEqual(row.extension, "DOC")
         self.client.logout()
         self.assertContains(self.client.get(row.share_url()), "DOC")
+
+
+class UnavailableLinkTests(UploadTestCase):
+    """A link that leads nowhere gets a page of ours, not Django's 404."""
+
+    def _dead_page(self, url):
+        self.client.logout()
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 404)
+        return resp
+
+    def test_an_unknown_token_gets_the_designed_page(self):
+        resp = self._dead_page("/u/zYiAmch3fdJs1JgyVCHsmZKo-2hv0poa/")
+        self.assertTemplateUsed(resp, "uploads/unavailable.html")
+        self.assertContains(resp, "This link isn&rsquo;t available", status_code=404)
+        self.assertContains(resp, "Go to the MSREC home page", status_code=404)
+
+    def test_a_switched_off_link_gets_the_same_page(self):
+        row = self._upload()
+        self.client.post(ADMIN, {"action": "toggle", "id": row.pk})
+        self.assertTemplateUsed(self._dead_page(row.share_path()), "uploads/unavailable.html")
+
+    def test_a_replaced_link_gets_the_same_page(self):
+        row = self._upload()
+        old = row.share_path()
+        self.client.post(ADMIN, {"action": "relink", "id": row.pk})
+        self.assertTemplateUsed(self._dead_page(old), "uploads/unavailable.html")
+
+    def test_it_never_says_which_reason_applies(self):
+        # Telling a stranger whether an address was ever real is telling
+        # them something they have no business knowing.
+        row = self._upload()
+        self.client.post(ADMIN, {"action": "toggle", "id": row.pk})
+        off = self._dead_page(row.share_path()).content.decode()
+        self.client.force_login(self.admin)
+        never = self._dead_page("/u/0000000000000000000000000000/").content.decode()
+        self.assertEqual(off, never)
+
+    def test_it_leaks_no_internals(self):
+        body = self._dead_page("/u/nope/").content.decode()
+        for leak in ("URLconf", "uploads_views", "Request Method", "Traceback", "admin_dashboard"):
+            self.assertNotIn(leak, body)
+
+    def test_the_bytes_endpoint_stays_a_plain_404(self):
+        # Nothing frames a page there; it serves bytes or nothing.
+        self.client.logout()
+        resp = self.client.get("/u/nope/file/")
+        self.assertEqual(resp.status_code, 404)
+        self.assertNotIn(b"This link isn", resp.content)
+
+
+class WhitePageTests(UploadTestCase):
+    """Both public pages are light, whatever the viewer's device prefers."""
+
+    def test_the_share_page_declares_itself_light(self):
+        row = self._upload()
+        self.client.logout()
+        body = self.client.get(row.share_url()).content.decode()
+        self.assertIn('name="color-scheme" content="light"', body)
+        self.assertNotIn("prefers-color-scheme: dark", body)
+
+    def test_the_unavailable_page_declares_itself_light(self):
+        self.client.logout()
+        body = self.client.get("/u/nope/").content.decode()
+        self.assertIn('name="color-scheme" content="light"', body)
+        self.assertNotIn("prefers-color-scheme: dark", body)
+
+    def test_neither_page_pulls_in_the_site_chrome(self):
+        row = self._upload()
+        self.client.logout()
+        for url in (row.share_url(), "/u/nope/"):
+            with self.subTest(url):
+                body = self.client.get(url).content.decode()
+                for chrome in ("Upcoming Workshop", "Useful Links", "chat-widget", "Verify Approval"):
+                    self.assertNotIn(chrome, body)
