@@ -1,0 +1,92 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+{% comment %}
+The shell both public upload pages sit in: the shared file, and a link
+that leads nowhere.
+
+Deliberately not the site layout. Whoever follows one of these links
+wants the file, not the Committee's navigation, its four-column footer,
+its chat widget or its loading splash. And deliberately light: a shared
+document reads as paper, and a recipient on a dark-mode phone should see
+the same page the sender saw.
+{% endcomment %}
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Shared file{% endblock %}</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="same-origin">
+<meta name="color-scheme" content="light">
+<link rel="icon" href="{% static 'assets/img/favicon.png' %}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #16213c; --sub: #5b6474; --faint: #949db0;
+    --line: #e6eaf1; --soft: #f0f3f8; --paper: #ffffff; --page: #f6f8fb;
+    --teal: #0f7f7b; --teal-dark: #0b625f;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--page); }
+  body { margin: 0; min-height: 100vh; background: var(--page); color: var(--ink);
+    font-family: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px; -webkit-font-smoothing: antialiased; }
+
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 26px 18px 60px; }
+
+  .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+    color: var(--sub); text-decoration: none; }
+  .brand img { width: 30px; height: 30px; border-radius: 8px; }
+  .brand b { font-size: 13.5px; font-weight: 700; color: var(--ink); letter-spacing: -.01em; }
+  .brand span { display: block; font-size: 11.5px; color: var(--faint); }
+
+  .card { background: var(--paper); border: 1px solid var(--line); border-radius: 18px;
+    overflow: hidden; box-shadow: 0 1px 2px rgba(22,33,60,.04), 0 18px 44px -30px rgba(22,33,60,.28); }
+
+  /* The file-type tile, shared by both pages. */
+  .tile { flex: none; display: grid; place-items: center; width: 52px; height: 52px;
+    border-radius: 14px; background: var(--soft); color: var(--sub);
+    font-size: 10px; font-weight: 800; letter-spacing: .05em; }
+  .tile svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 1.7;
+    stroke-linecap: round; stroke-linejoin: round; }
+  .tile.k-pdf { background: #fdeceb; color: #cf4040; }
+  .tile.k-image { background: #e4f3f2; color: var(--teal); }
+  .tile.k-video { background: #eeebfb; color: #6354cc; }
+  .tile.k-audio { background: #fcf0e1; color: #c47c22; }
+  .tile.k-text { background: #e8eefb; color: #3763bd; }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+    border: 0; border-radius: 12px; padding: 13px 24px; font: inherit; font-size: 14.5px;
+    font-weight: 700; text-decoration: none; cursor: pointer;
+    background: var(--teal); color: #fff; box-shadow: 0 10px 22px -14px rgba(15,127,123,.9); }
+  .btn:hover { background: var(--teal-dark); }
+  .btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round; }
+  .btn.ghost { background: var(--paper); color: var(--sub); border: 1px solid var(--line); box-shadow: none; }
+  .btn.ghost:hover { border-color: var(--teal); color: var(--teal); background: var(--paper); }
+
+  .foot { text-align: center; margin: 18px 0 0; font-size: 12px; color: var(--faint); }
+  .foot a { color: var(--sub); }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 18px 14px 44px; }
+    .btn { width: 100%; }
+  }
+  {% block page_css %}{% endblock %}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="brand" href="/">
+    <img src="{% static 'assets/img/favicon.png' %}" alt="">
+    <span><b>Metascholar Research Ethics Committee</b>
+      <span>Secure file sharing</span></span>
+  </a>
+
+  {% block body %}{% endblock %}
+
+  <p class="foot">{% block foot %}Shared with you by the Metascholar Research Ethics Committee.{% endblock %}</p>
+</div>
+</body>
+</html>

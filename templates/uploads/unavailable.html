@@ -1,0 +1,62 @@
+{% extends "uploads/_base.html" %}
+
+{% comment %}
+A link that leads nowhere. One page for every reason -- turned off,
+replaced, deleted, or never ours -- because telling a stranger which
+would tell them whether a given address was ever real.
+
+It exists so that case never falls through to Django's own 404, which on
+a deployment left in debug prints the URLconf and the view's name to
+whoever followed the link.
+{% endcomment %}
+
+{% block title %}Link not available{% endblock %}
+
+{% block page_css %}
+  .state { padding: 56px 28px 50px; text-align: center; }
+  .state .ico { display: grid; place-items: center; width: 68px; height: 68px; margin: 0 auto 20px;
+    border-radius: 20px; background: var(--soft); color: var(--faint); }
+  .state .ico svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.6;
+    stroke-linecap: round; stroke-linejoin: round; }
+  .state h1 { font-size: 22px; margin: 0 0 10px; letter-spacing: -.01em; }
+  .state p { margin: 0 auto; max-width: 44ch; color: var(--sub); font-size: 14.5px; line-height: 1.7; }
+  .why { margin: 26px auto 0; max-width: 430px; text-align: left; border: 1px solid var(--line);
+    border-radius: 12px; background: var(--soft); padding: 14px 16px; }
+  .why b { display: block; font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--faint); margin-bottom: 8px; }
+  .why ul { margin: 0; padding-left: 18px; color: var(--sub); font-size: 13.5px; line-height: 1.85; }
+  .acts { margin-top: 26px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+  @media (max-width: 640px) { .state { padding: 40px 18px; } }
+{% endblock %}
+
+{% block body %}
+  <div class="card">
+    <div class="state">
+      <span class="ico" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M10.6 13.4a4 4 0 0 0 5.7 0l3-3a4 4 0 1 0-5.7-5.7l-.8.8"/><path d="M13.4 10.6a4 4 0 0 0-5.7 0l-3 3a4 4 0 1 0 5.7 5.7l.8-.8"/><path d="m2 2 20 20"/></svg>
+      </span>
+      <h1>This link isn&rsquo;t available</h1>
+      <p>The file it pointed to isn&rsquo;t being shared at this address any more.
+         Nothing is wrong with your connection.</p>
+
+      <div class="why">
+        <b>This usually means</b>
+        <ul>
+          <li>the link was turned off or replaced with a new one</li>
+          <li>the file has since been removed</li>
+          <li>the address was mistyped, or cut short by an email or chat app</li>
+        </ul>
+      </div>
+
+      <p style="margin-top:22px">If you were expecting a file, ask whoever sent it for a current
+         link &mdash; they can issue one in a moment.</p>
+
+      <div class="acts">
+        <a class="btn ghost" href="/">Go to the MSREC home page</a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block foot %}Metascholar Research Ethics Committee{% endblock %}

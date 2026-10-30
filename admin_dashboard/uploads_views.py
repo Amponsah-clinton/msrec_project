@@ -186,16 +186,33 @@ def _add(request):
 # ---------------------------------------------------------------------
 
 def _live(token):
-    row = get_object_or_404(SharedUpload, token=token)
-    if not row.is_active:
-        raise Http404("This link is no longer active.")
+    """The upload this link reaches, or None.
+
+    A token that was never ours and a link that has been switched off are
+    the same answer on purpose. Saying which would tell a stranger
+    whether a given address was ever real, and nobody outside needs to
+    know the difference."""
+    row = SharedUpload.objects.filter(token=token, is_active=True).first()
     return row
+
+
+def _unavailable(request):
+    """A page of our own for a link that leads nowhere -- not Django's
+    404, which on a misconfigured deployment prints the URLconf and the
+    name of the view to whoever followed the link."""
+    resp = render(request, "uploads/unavailable.html", status=404)
+    resp["Cache-Control"] = "no-store"
+    resp["Referrer-Policy"] = "same-origin"
+    resp["X-Robots-Tag"] = "noindex, nofollow"
+    return resp
 
 
 def share(request, token):
     """The page the link opens: the file shown where it can be, and a
     download either way."""
     row = _live(token)
+    if row is None:
+        return _unavailable(request)
     row.record_view()
     resp = render(request, "uploads/share.html", {"item": row})
     # A shared link is not for caches to keep, and no third-party asset on
@@ -224,6 +241,9 @@ def file(request, token):
     we misjudged lands in an opaque origin with no script and no access
     to anything of ours."""
     row = _live(token)
+    if row is None:
+        # A bytes endpoint: nothing here renders a page.
+        raise Http404("No file at this link.")
     data, _reported = storage.download(row.object_path)
     if data is None:
         raise Http404("That file is no longer in storage.")
