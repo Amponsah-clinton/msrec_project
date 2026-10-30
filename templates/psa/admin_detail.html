@@ -102,6 +102,14 @@
               {% endif %}
               {% if a.is_editable and a.status != 'changes' %}<a class="btn-secondary" href="{% url 'psa_admin:psa_edit' a.pk %}" id="psaEdit">Edit</a>{% endif %}
               <button type="button" class="btn-secondary" onclick="window.print()" id="psaPrint">Print / PDF</button>
+              <form method="post" action="{% url 'psa_admin:psa_archive_one' a.pk %}"
+                    data-confirm-title="{% if a.is_archived %}Put {{ a.reference }} back?{% else %}Archive {{ a.reference }}?{% endif %}"
+                    data-confirm-label="{% if a.is_archived %}Restore{% else %}Archive{% endif %}" data-confirm-variant="primary"
+                    data-confirm="{% if a.is_archived %}It goes back on the agreements list.{% else %}It comes off the agreements list. Nothing else changes - the client's link keeps working and the payment record is untouched.{% endif %}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="{% if a.is_archived %}unarchive{% else %}archive{% endif %}">
+                <button type="submit" class="btn-secondary" id="psaArchive">{% if a.is_archived %}Restore to list{% else %}Archive{% endif %}</button>
+              </form>
             </div>
           </section>
 

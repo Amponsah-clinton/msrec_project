@@ -10,6 +10,7 @@ urlpatterns = [
     path("", views.psa_list, name="psa_list"),
     path("new/", views.psa_new, name="psa_new"),
     path("export/", views.psa_export, name="psa_export"),
+    path("bulk/", views.psa_bulk, name="psa_bulk"),
     path("export/signed-pdfs/", views.psa_pdf_zip, name="psa_pdf_zip"),
     path("letterhead/", views.psa_letterhead, name="psa_letterhead"),
     path("letterhead/preview/", views.psa_letterhead_preview, name="psa_letterhead_preview"),
@@ -26,6 +27,7 @@ urlpatterns = [
          name="psa_payment_link_resend"),
     path("<int:pk>/payment-link/<int:req_pk>/cancel/", views.psa_payment_link_cancel,
          name="psa_payment_link_cancel"),
+    path("<int:pk>/archive/", views.psa_archive_one, name="psa_archive_one"),
     path("<int:pk>/cancel/", views.psa_cancel, name="psa_cancel"),
     path("<int:pk>/delete/", views.psa_delete, name="psa_delete"),
 ]

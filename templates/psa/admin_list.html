@@ -92,6 +92,11 @@
             <option value="">Paid or owing</option>
             {% for value, label in pay_filters %}<option value="{{ value }}" {% if f.pay == value %}selected{% endif %}>{{ label }}</option>{% endfor %}
           </select>
+          <select name="arch" id="psaFilterArch" class="field-input psa-filter" data-autosubmit aria-label="Archived agreements">
+            <option value="">Not archived</option>
+            <option value="only" {% if f.arch == 'only' %}selected{% endif %}>Archived only{% if stats.archived %} ({{ stats.archived }}){% endif %}</option>
+            <option value="all" {% if f.arch == 'all' %}selected{% endif %}>Archived and not</option>
+          </select>
           <select name="sort" id="psaSort" class="field-input psa-filter" data-autosubmit aria-label="Sort by">
             <option value="newest" {% if f.sort == 'newest' %}selected{% endif %}>Newest first</option>
             <option value="oldest" {% if f.sort == 'oldest' %}selected{% endif %}>Oldest first</option>
@@ -116,10 +121,67 @@
           </div>
         </form>
 
+        {% if undo %}
+        {# Offered once, straight after the action, and gone on the next load. #}
+        <form method="post" action="{% url 'psa_admin:psa_bulk' %}" class="psa-undo" id="psaUndo">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="{{ undo.action }}">
+          <input type="hidden" name="ids" value="{{ undo.ids }}">
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <span>{{ undo.count }} agreement{{ undo.count|pluralize }}
+            {% if undo.was == 'archive' %}archived{% else %}restored{% endif %}.</span>
+          <button type="submit">Undo</button>
+        </form>
+        {% endif %}
+
+        {# The selection posts here; row checkboxes reach it with form=. #}
+        <form method="post" action="{% url 'psa_admin:psa_bulk' %}" id="psaBulkForm" class="psa-bulk" hidden>
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          {# Carried so "select everything matching" means the same here as on screen. #}
+          <input type="hidden" name="q" value="{{ f.q }}">
+          <input type="hidden" name="status" value="{{ f.status }}">
+          <input type="hidden" name="basis" value="{{ f.basis }}">
+          <input type="hidden" name="currency" value="{{ f.currency }}">
+          <input type="hidden" name="date_from" value="{{ f.date_from }}">
+          <input type="hidden" name="date_to" value="{{ f.date_to }}">
+          <input type="hidden" name="pay" value="{{ f.pay }}">
+          <input type="hidden" name="arch" value="{{ f.arch }}">
+          <input type="hidden" name="all" value="" id="psaPickAllMatching">
+          <div class="psa-bulk-left">
+            <strong id="psaPickCount">0 selected</strong>
+            <button type="button" class="psa-bulk-link" id="psaPickClear">Clear</button>
+            {% if matching_count > page.object_list|length %}
+            <button type="button" class="psa-bulk-link" id="psaPickEvery" hidden>
+              Select all {{ matching_count }} matching
+            </button>
+            <span class="psa-bulk-note" id="psaPickEveryNote" hidden>
+              All {{ matching_count }} matching are selected.</span>
+            {% endif %}
+          </div>
+          <div class="psa-bulk-actions">
+            {% if f.arch != 'only' %}
+            <button type="submit" name="action" value="archive" class="psa-bulk-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8"/><path d="M1 3h22v5H1zM10 12h4"/></svg>
+              Archive
+            </button>
+            {% endif %}
+            {% if f.arch %}
+            <button type="submit" name="action" value="unarchive" class="psa-bulk-btn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v12a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8"/><path d="M1 3h22v5H1zM12 18v-6M9 15l3-3 3 3"/></svg>
+              Restore
+            </button>
+            {% endif %}
+          </div>
+        </form>
+
         <div class="table-wrap acct-table-wrap" id="psaList">
           <table class="reviews-table acct-table psa-table" id="psaTable">
             <thead>
               <tr>
+                <th class="psa-th-pick">
+                  <input type="checkbox" id="psaPickAll" aria-label="Select every agreement on this page">
+                </th>
                 <th>Client</th>
                 <th>Agreement</th>
                 <th>Service</th>
@@ -132,7 +194,12 @@
             </thead>
             <tbody>
               {% for a in page.object_list %}
-              <tr id="psaRow{{ a.pk }}">
+              <tr id="psaRow{{ a.pk }}"{% if a.is_archived %} class="is-archived"{% endif %}>
+                <td class="psa-td-pick">
+                  <input type="checkbox" class="psa-pick" name="ids" value="{{ a.pk }}"
+                         form="psaBulkForm" data-ref="{{ a.reference }}"
+                         aria-label="Select {{ a.reference }}">
+                </td>
                 <td data-label="Client">
                   <div class="acct-person">
                     <span class="acct-avatar psa-avatar">{{ a.client_initials }}</span>
@@ -224,7 +291,7 @@
                 </td>
                 <td data-label="Status">
                   <div class="acct-cell">
-                    <span>{% include "psa/_status_badge.html" %}</span>
+                    <span>{% include "psa/_status_badge.html" %}{% if a.is_archived %} <span class="psa-archived-tag">Archived</span>{% endif %}</span>
                     <span class="acct-sub psa-nowrap">
                       {% if a.status == 'signed' %}{{ a.client_signed_at|date:"d M Y" }}
                       {% elif a.status == 'sent' %}{% if a.viewed_at %}Opened {{ a.viewed_at|date:"d M" }}{% else %}Not opened yet{% endif %}
@@ -290,7 +357,7 @@
               </tr>
               {% empty %}
               <tr class="acct-empty-row">
-                <td colspan="8">
+                <td colspan="9">
                   <div class="empty-state">
                     <span class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 13h6M9 17h4"/></svg></span>
                     {% if filtered %}
@@ -351,4 +418,5 @@
   });
 </script>
 <script src="{% static_v 'dashboard/js/psa-payments.js' %}"></script>
+<script src="{% static_v 'dashboard/js/psa-select.js' %}"></script>
 {% endblock %}

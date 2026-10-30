@@ -1697,3 +1697,216 @@ class DeleteTests(StaffTestCase):
         resp = self.client.post(reverse("psa_admin:psa_delete", args=[a.pk]),
                                 {"next": "https://evil.example.com/"})
         self.assertRedirects(resp, reverse("psa_admin:psa_list"))
+
+
+class ArchiveTests(StaffTestCase):
+    """Putting agreements away, in bulk, and getting them back."""
+
+    def setUp(self):
+        super().setUp()
+        self.url = reverse("psa_admin:psa_bulk")
+        self.listing = reverse("psa_admin:psa_list")
+
+    def _agreements(self, n, **over):
+        made = []
+        for i in range(n):
+            fields = dict(client_name=f"Client {i}", client_email=f"c{i}@example.com",
+                          status=Status.CANCELLED, currency="GHS",
+                          agreement_date=timezone.localdate())
+            fields.update(over)
+            made.append(ServiceAgreement.objects.create(**fields))
+        return made
+
+    # ---- the basics ----------------------------------------------------
+
+    def test_archiving_a_selection_takes_it_off_the_list(self):
+        rows = self._agreements(3)
+        keep = self._agreements(1)[0]
+        resp = self.client.post(self.url, {
+            "action": "archive", "ids": [r.pk for r in rows], "next": self.listing,
+        })
+        self.assertRedirects(resp, self.listing)
+        for r in rows:
+            r.refresh_from_db()
+            self.assertTrue(r.is_archived)
+            self.assertEqual(r.archived_by, self.admin)
+        page = self.client.get(self.listing)
+        self.assertNotContains(page, rows[0].reference)
+        self.assertContains(page, keep.reference)
+
+    def test_restoring_puts_them_back(self):
+        rows = self._agreements(2)
+        self.client.post(self.url, {"action": "archive", "ids": [r.pk for r in rows]})
+        self.client.post(self.url, {"action": "unarchive", "ids": [r.pk for r in rows]})
+        for r in rows:
+            r.refresh_from_db()
+            self.assertFalse(r.is_archived)
+            self.assertIsNone(r.archived_by)
+        self.assertContains(self.client.get(self.listing), rows[0].reference)
+
+    def test_the_archive_can_be_viewed_on_its_own_or_alongside(self):
+        archived = self._agreements(2)
+        live = self._agreements(1)[0]
+        self.client.post(self.url, {"action": "archive", "ids": [r.pk for r in archived]})
+
+        only = self.client.get(self.listing, {"arch": "only"})
+        self.assertContains(only, archived[0].reference)
+        self.assertNotContains(only, live.reference)
+
+        both = self.client.get(self.listing, {"arch": "all"})
+        self.assertContains(both, archived[0].reference)
+        self.assertContains(both, live.reference)
+
+    def test_archiving_nothing_changes_nothing(self):
+        resp = self.client.post(self.url, {"action": "archive", "ids": []}, follow=True)
+        self.assertIn("Nothing was selected", resp.content.decode())
+
+    def test_an_unknown_action_is_refused(self):
+        row = self._agreements(1)[0]
+        self.client.post(self.url, {"action": "delete", "ids": [row.pk]})
+        row.refresh_from_db()
+        self.assertFalse(row.is_archived)
+
+    # ---- the counts are honest -----------------------------------------
+
+    def test_only_rows_that_actually_change_are_counted(self):
+        rows = self._agreements(3)
+        self.client.post(self.url, {"action": "archive", "ids": [rows[0].pk]})
+        resp = self.client.post(self.url, {"action": "archive",
+                                           "ids": [r.pk for r in rows]}, follow=True)
+        # Two of the three were still live, so two moved -- not three.
+        self.assertIn("Archived 2 agreements", resp.content.decode())
+
+    def test_archiving_what_is_already_archived_says_so(self):
+        row = self._agreements(1)[0]
+        self.client.post(self.url, {"action": "archive", "ids": [row.pk]})
+        resp = self.client.post(self.url, {"action": "archive", "ids": [row.pk]}, follow=True)
+        self.assertIn("already archived", resp.content.decode())
+
+    # ---- select everything matching -------------------------------------
+
+    def test_select_all_matching_follows_the_filters_not_the_page(self):
+        cancelled = self._agreements(25)                      # two pages worth
+        draft = self._agreements(2, status=Status.DRAFT)
+        self.client.post(self.url, {"action": "archive", "all": "1", "status": Status.CANCELLED})
+        self.assertEqual(
+            ServiceAgreement.objects.filter(archived_at__isnull=False).count(), len(cancelled))
+        for d in draft:
+            d.refresh_from_db()
+            self.assertFalse(d.is_archived)
+
+    def test_select_all_matching_respects_the_search(self):
+        wanted = self._agreements(2, client_name="Findable Ltd")
+        other = self._agreements(2)[0]
+        self.client.post(self.url, {"action": "archive", "all": "1", "q": "Findable"})
+        for w in wanted:
+            w.refresh_from_db()
+            self.assertTrue(w.is_archived)
+        other.refresh_from_db()
+        self.assertFalse(other.is_archived)
+
+    # ---- undo -------------------------------------------------------------
+
+    def test_undo_is_offered_once_and_puts_back_exactly_what_moved(self):
+        rows = self._agreements(2)
+        already = self._agreements(1)[0]
+        self.client.post(self.url, {"action": "archive", "ids": [already.pk]})
+        self.client.get(self.listing)                       # clears that offer
+
+        self.client.post(self.url, {"action": "archive",
+                                    "ids": [r.pk for r in rows] + [already.pk]})
+        page = self.client.get(self.listing)
+        self.assertContains(page, "Undo")
+        self.assertContains(page, "2 agreements")
+        # Offered once only.
+        self.assertNotContains(self.client.get(self.listing), 'id="psaUndo"')
+
+        self.client.post(self.url, {"action": "unarchive",
+                                    "ids": ",".join(str(r.pk) for r in rows)})
+        for r in rows:
+            r.refresh_from_db()
+            self.assertFalse(r.is_archived)
+        already.refresh_from_db()
+        self.assertTrue(already.is_archived, "undo must not restore what it did not move")
+
+    # ---- archiving is about the list, nothing else ------------------------
+
+    def test_an_archived_agreement_still_works_for_the_client(self):
+        a = self._sent()
+        self.client.post(self.url, {"action": "archive", "ids": [a.pk]})
+        self.client.logout()
+        self.assertEqual(self.client.get(reverse("psa:client",
+                                                 kwargs={"token": a.token})).status_code, 200)
+
+    def test_money_still_owing_is_said_out_loud(self):
+        a = self._sent()                                     # 2500 fee, 1000 deposit
+        resp = self.client.post(self.url, {"action": "archive", "ids": [a.pk]}, follow=True)
+        body = resp.content.decode()
+        self.assertIn("1,500.00", body)
+        self.assertIn("still owing", body)
+
+    def test_a_cancelled_agreement_owes_nothing_to_warn_about(self):
+        rows = self._agreements(1, status=Status.CANCELLED, fee=Decimal("900.00"))
+        resp = self.client.post(self.url, {"action": "archive", "ids": [rows[0].pk]}, follow=True)
+        self.assertNotIn("still owing", resp.content.decode())
+
+    def test_the_tiles_and_totals_leave_archived_out(self):
+        a = self._sent()
+        before = self.client.get(self.listing).context["stats"]
+        self.client.post(self.url, {"action": "archive", "ids": [a.pk]})
+        after = self.client.get(self.listing).context["stats"]
+        self.assertEqual(after["all"], before["all"] - 1)
+        self.assertEqual(after["archived"], 1)
+        self.assertEqual(self.client.get(self.listing).context["outstanding"], [])
+
+    def test_exports_follow_the_same_rule(self):
+        a = self._sent()
+        self.client.post(self.url, {"action": "archive", "ids": [a.pk]})
+        csv_body = self.client.get(reverse("psa_admin:psa_export")).content.decode()
+        self.assertNotIn(a.reference, csv_body)
+        self.assertIn(a.reference,
+                      self.client.get(reverse("psa_admin:psa_export"), {"arch": "only"})
+                      .content.decode())
+
+    # ---- one at a time, from the agreement's own page ---------------------
+
+    def test_one_can_be_archived_and_restored_from_its_page(self):
+        a = self._sent()
+        page = reverse("psa_admin:psa_detail", args=[a.pk])
+        self.client.post(reverse("psa_admin:psa_archive_one", args=[a.pk]),
+                         {"action": "archive", "next": page})
+        a.refresh_from_db()
+        self.assertTrue(a.is_archived)
+        self.assertContains(self.client.get(page), "Restore to list")
+        self.client.post(reverse("psa_admin:psa_archive_one", args=[a.pk]), {"action": "unarchive"})
+        a.refresh_from_db()
+        self.assertFalse(a.is_archived)
+
+    # ---- the usual guards --------------------------------------------------
+
+    def test_bulk_needs_a_post_and_a_staff_login(self):
+        row = self._agreements(1)[0]
+        self.assertEqual(self.client.get(self.url).status_code, 405)
+        self.client.logout()
+        self.assertEqual(self.client.post(self.url, {"action": "archive",
+                                                     "ids": [row.pk]}).status_code, 302)
+        row.refresh_from_db()
+        self.assertFalse(row.is_archived)
+
+    def test_an_open_redirect_is_not_followed(self):
+        row = self._agreements(1)[0]
+        resp = self.client.post(self.url, {"action": "archive", "ids": [row.pk],
+                                           "next": "https://evil.example.com/"})
+        self.assertRedirects(resp, self.listing)
+
+    def test_rubbish_ids_are_ignored(self):
+        resp = self.client.post(self.url, {"action": "archive",
+                                           "ids": ["x", "", "9999999"]}, follow=True)
+        self.assertIn("Nothing to do", resp.content.decode())
+
+    def test_the_list_offers_the_checkboxes_and_the_bar(self):
+        self._agreements(1)
+        body = self.client.get(self.listing).content.decode()
+        self.assertIn('id="psaBulkForm"', body)
+        self.assertIn('id="psaPickAll"', body)
+        self.assertIn('form="psaBulkForm"', body)

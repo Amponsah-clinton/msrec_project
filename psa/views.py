@@ -154,8 +154,13 @@ def _filters(params):
         "date_from": params.get("date_from") or "",
         "date_to": params.get("date_to") or "",
         "pay": params.get("pay") or "",
+        # "" hides archived agreements, which is what the list is for;
+        # "only" shows the archive; "all" shows both together.
+        "arch": params.get("arch") or "",
         "sort": params.get("sort") or "newest",
     }
+    if f["arch"] not in ("only", "all"):
+        f["arch"] = ""
     if f["pay"] not in PAY_FILTERS:
         f["pay"] = ""
     if f["status"] not in Status.values:
@@ -193,6 +198,10 @@ def _filtered(f):
         qs = qs.filter(agreement_date__lte=end)
     if f["pay"]:
         qs = qs.filter(PAY_FILTERS[f["pay"]])
+    if f["arch"] == "only":
+        qs = qs.filter(archived_at__isnull=False)
+    elif f["arch"] != "all":
+        qs = qs.filter(archived_at__isnull=True)
     return qs.order_by(*SORTS[f["sort"]])
 
 
@@ -209,15 +218,20 @@ def psa_list(request):
     params = request.GET.copy()
     params.pop("page", None)
 
-    counts = dict(ServiceAgreement.objects.values_list("status").annotate(n=Count("pk")))
+    # The tiles count what is on the list, so archived agreements are left
+    # out of them -- otherwise putting something away would tidy the table
+    # and leave the number above it unchanged.
+    live = ServiceAgreement.objects.filter(archived_at__isnull=True)
+    counts = dict(live.values_list("status").annotate(n=Count("pk")))
+    archived_count = ServiceAgreement.objects.filter(archived_at__isnull=False).count()
     signed_value = list(
-        ServiceAgreement.objects.filter(status=Status.SIGNED, fee__isnull=False)
+        live.filter(status=Status.SIGNED, fee__isnull=False)
         .values("currency").annotate(total=Sum("fee")).order_by("currency")
     )
     # What clients still owe, per currency. Live agreements only: a draft
     # isn't an obligation yet and a cancelled one no longer is.
     outstanding = list(
-        _with_money(ServiceAgreement.objects.filter(
+        _with_money(live.filter(
             status__in=(Status.SENT, Status.CHANGES, Status.SIGNED), fee__isnull=False))
         .filter(owing__gt=0).values("currency").annotate(total=Sum("owing")).order_by("currency")
     )
@@ -227,7 +241,9 @@ def psa_list(request):
         "matching_count": paginator.count,
         "f": f,
         "query": params.urlencode(),
-        "filtered": any(f[k] for k in ("q", "status", "basis", "currency", "date_from", "date_to", "pay")),
+        "filtered": any(f[k] for k in ("q", "status", "basis", "currency", "date_from", "date_to",
+                                       "pay", "arch")),
+        "undo": _take_undo(request),
         "stats": {
             "all": sum(counts.values()),
             "draft": counts.get(Status.DRAFT, 0),
@@ -235,6 +251,7 @@ def psa_list(request):
             "changes": counts.get(Status.CHANGES, 0),
             "signed": counts.get(Status.SIGNED, 0),
             "cancelled": counts.get(Status.CANCELLED, 0),
+            "archived": archived_count,
         },
         "signed_value": signed_value,
         "outstanding": outstanding,
@@ -1301,3 +1318,184 @@ def pay_receipt(request, token):
     if not req.is_paid or req.payment is None:
         raise Http404("No receipt at this link yet.")
     return _no_store(_receipt_response(req.payment, inline=request.GET.get("inline") == "1"))
+
+
+# ---------------------------------------------------------------------
+# Archiving
+# ---------------------------------------------------------------------
+#
+# Archiving is about the list, not the agreement. Nothing an agreement can
+# do changes when it is put away: its client link still works, its ledger
+# is untouched, a payment link already out still collects. It only stops
+# crowding the page once it is finished with, and comes back the moment
+# anyone asks for it.
+#
+# Two things make it feel like one gesture rather than a chore:
+#
+#   * Selecting every row on the page offers to select every row the
+#     filters match, so "archive the 300 cancelled ones from last year" is
+#     two clicks and not fifteen pages of ticking.
+#   * Whatever was just done is offered back as a single Undo. It is kept
+#     in the session rather than the URL, so it survives the redirect
+#     without putting three hundred primary keys in the address bar, and
+#     it is read once and cleared.
+
+UNDO_KEY = "psa_undo"
+# An undo offer is for the moment after the action, not for tomorrow.
+UNDO_SECONDS = 600
+# What one request may archive at a time. Far above any real selection,
+# and low enough that a crafted post can't lock the table all afternoon.
+BULK_LIMIT = 2000
+
+BULK_ACTIONS = {
+    "archive": ("archived", "Archived"),
+    "unarchive": ("restored", "Restored"),
+}
+
+
+def _stash_undo(request, action, ids):
+    """Remember what to offer back, for one read."""
+    request.session[UNDO_KEY] = {
+        "action": action,
+        "ids": list(ids)[:BULK_LIMIT],
+        "at": timezone.now().isoformat(),
+    }
+
+
+def _take_undo(request):
+    """The pending undo offer, read once and cleared. None when there is
+    nothing to offer, or when it has gone stale."""
+    stash = request.session.pop(UNDO_KEY, None)
+    if not stash or not stash.get("ids"):
+        return None
+    try:
+        when = timezone.datetime.fromisoformat(stash["at"])
+    except (KeyError, ValueError):
+        return None
+    if (timezone.now() - when).total_seconds() > UNDO_SECONDS:
+        return None
+    request.session.modified = True
+    undone = "unarchive" if stash["action"] == "archive" else "archive"
+    return {
+        "count": len(stash["ids"]),
+        "was": stash["action"],
+        "action": undone,
+        "ids": ",".join(str(i) for i in stash["ids"]),
+    }
+
+
+def _selected(request, f):
+    """The agreements this post is about: the ticked rows, or -- when the
+    page asked to take everything -- every agreement the current filters
+    match.
+
+    Selecting all is resolved here against the filters rather than from a
+    list of keys the browser sent, so it means the same thing it meant on
+    screen even on page nine of a filtered list."""
+    if request.POST.get("all") == "1":
+        return _filtered(f).values_list("pk", flat=True)[:BULK_LIMIT]
+    # Two shapes arrive here: one "ids" per ticked checkbox, and a single
+    # comma-joined "ids" from the undo offer, which carries its whole list
+    # in one hidden field. Flattening both means neither has to know about
+    # the other.
+    chosen, seen = [], set()
+    for value in request.POST.getlist("ids"):
+        for part in str(value).split(","):
+            part = part.strip()
+            if part.isdigit() and part not in seen:
+                seen.add(part)
+                chosen.append(int(part))
+    return chosen[:BULK_LIMIT]
+
+
+@login_required
+@staff_required
+@require_POST
+def psa_bulk(request):
+    """Archive or restore the selected agreements."""
+    action = request.POST.get("action", "")
+    if action not in BULK_ACTIONS:
+        messages.error(request, "That isn't something that can be done to a selection.")
+        return _back_to_list(request)
+
+    f = _filters(request.POST)
+    ids = list(_selected(request, f))
+    if not ids:
+        messages.info(request, "Nothing was selected, so nothing changed.")
+        return _back_to_list(request)
+
+    archiving = action == "archive"
+    # Only the rows this actually changes, so the count reported is true
+    # and the undo puts back exactly what was moved -- not a row that was
+    # already archived before anyone touched it.
+    changed = list(
+        # isnull=archiving: archiving wants the rows that are still live
+        # (archived_at is NULL), restoring wants the ones that are not.
+        ServiceAgreement.objects.filter(pk__in=ids, archived_at__isnull=archiving)
+        .values_list("pk", flat=True)
+    )
+    if not changed:
+        where = "already archived" if archiving else "not archived"
+        messages.info(request, f"Nothing to do — everything selected was {where}.")
+        return _back_to_list(request)
+
+    owing = _money_still_owed(changed) if archiving else None
+    ServiceAgreement.objects.filter(pk__in=changed).update(
+        archived_at=timezone.now() if archiving else None,
+        archived_by=request.user if archiving else None,
+        updated_at=timezone.now(),
+    )
+    _stash_undo(request, action, changed)
+
+    verb = BULK_ACTIONS[action][1]
+    n = len(changed)
+    messages.success(request, f"{verb} {n} agreement{'' if n == 1 else 's'}.")
+    if owing:
+        # Archiving doesn't settle anything, and the list's outstanding
+        # total drops when it happens -- so say it plainly rather than let
+        # a debt quietly leave the page.
+        messages.warning(request, f"{owing} of that is still owing. Archiving doesn't collect it.")
+    return _back_to_list(request)
+
+
+def _money_still_owed(ids):
+    """"GHS 4,500.00 across 3 agreements", or "" when nothing is owed."""
+    rows = [
+        r for r in _with_money(ServiceAgreement.objects.filter(pk__in=ids, fee__isnull=False))
+        .exclude(status=Status.CANCELLED).values("currency", "owing") if r["owing"] > 0
+    ]
+    if not rows:
+        return ""
+    totals = {}
+    for r in rows:
+        totals[r["currency"]] = totals.get(r["currency"], Decimal("0.00")) + r["owing"]
+    amounts = ", ".join(f"{cur} {amount:,.2f}" for cur, amount in sorted(totals.items()))
+    return f"{amounts} across {len(rows)} agreement{'' if len(rows) == 1 else 's'}"
+
+
+def _back_to_list(request):
+    """Back to the list exactly as it was -- same filters, same page."""
+    target = request.POST.get("next") or ""
+    if target and url_has_allowed_host_and_scheme(
+            target, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
+        return redirect(target)
+    return redirect("psa_admin:psa_list")
+
+
+@login_required
+@staff_required
+@require_POST
+def psa_archive_one(request, pk):
+    """Archive or restore a single agreement from its own page."""
+    a = get_object_or_404(ServiceAgreement, pk=pk)
+    archiving = request.POST.get("action", "archive") == "archive"
+    a.archived_at = timezone.now() if archiving else None
+    a.archived_by = request.user if archiving else None
+    a.save(update_fields=["archived_at", "archived_by", "updated_at"])
+    _stash_undo(request, "archive" if archiving else "unarchive", [a.pk])
+    messages.success(
+        request,
+        f"{a.reference} archived — it's out of the list but nothing else has changed."
+        if archiving else f"{a.reference} is back on the list.",
+    )
+    return _back(request, a)

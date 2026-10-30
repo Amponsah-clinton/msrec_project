@@ -125,6 +125,17 @@ class ServiceAgreement(models.Model):
     viewed_at = models.DateTimeField(null=True, blank=True)
     cancelled_at = models.DateTimeField(null=True, blank=True)
 
+    # Archiving. Putting an agreement away is about the list, not about the
+    # agreement: nothing it can do changes, its link keeps working and its
+    # ledger is untouched. It simply stops crowding the page once it is
+    # finished with. Reversible at any time, which is why this is a date
+    # and not a status -- a status would have to be unpicked to restore,
+    # and would be one more thing every filter had to know about.
+    archived_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    archived_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+
     class Meta:
         db_table = "service_agreements"
         ordering = ["-created_at"]
@@ -337,6 +348,10 @@ class ServiceAgreement(models.Model):
         asking for a new one cancels whatever was already out."""
         return next((r for r in self.payment_requests.all()
                      if r.status == PaymentRequest.Status.PENDING), None)
+
+    @property
+    def is_archived(self):
+        return self.archived_at is not None
 
     @property
     def entry_count_value(self):
