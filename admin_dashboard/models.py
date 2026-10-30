@@ -61,8 +61,22 @@ class SharedUpload(models.Model):
 
     # ---- the link ------------------------------------------------------
 
-    def share_url(self):
-        return settings.SITE_URL.rstrip("/") + reverse("uploads:share", kwargs={"token": self.token})
+    def share_path(self):
+        return reverse("uploads:share", kwargs={"token": self.token})
+
+    def share_url(self, request=None):
+        """The link to hand out.
+
+        Built from the request's own host when there is one, so a link
+        copied on localhost points at localhost and a link copied in
+        production points at production. SITE_URL is only the fallback,
+        for the places with no request to hand -- it is the deployed
+        domain whether or not that is where the code is running, which is
+        how a link copied in development ends up pointing at a live site
+        that has never heard of the file."""
+        if request is not None:
+            return request.build_absolute_uri(self.share_path())
+        return settings.SITE_URL.rstrip("/") + self.share_path()
 
     def file_url(self):
         return reverse("uploads:file", kwargs={"token": self.token})

@@ -191,10 +191,10 @@
             </div>
 
             <div class="upl-share">
-              <input type="text" readonly value="{{ item.share_url }}" id="uplUrl{{ item.pk }}"
+              <input type="text" readonly value="{{ item.link }}" id="uplUrl{{ item.pk }}"
                      aria-label="Share link for {{ item.title }}" onfocus="this.select()">
               <button type="button" class="upl-copy" data-copy="#uplUrl{{ item.pk }}">Copy link</button>
-              <a class="upl-open" href="{{ item.share_url }}" target="_blank" rel="noopener">Open</a>
+              <a class="upl-open" href="{{ item.link }}" target="_blank" rel="noopener">Open</a>
               <details class="upl-menu">
                 <summary aria-label="More actions for {{ item.title }}">&hellip;</summary>
                 <div class="upl-menu-panel">

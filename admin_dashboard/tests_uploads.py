@@ -235,3 +235,31 @@ class ServingSafetyTests(UploadTestCase):
         page = self.client.get(row.share_url())
         self.assertContains(page, "can&rsquo;t be shown in a browser")
         self.assertContains(page, row.download_url())
+
+
+class ShareLinkHostTests(UploadTestCase):
+    """The link you copy has to work from where you copied it."""
+
+    def test_the_link_follows_the_host_the_page_was_served_on(self):
+        self._upload()
+        page = self.client.get(ADMIN, HTTP_HOST="127.0.0.1:8000")
+        link = page.context["uploads"][0].link
+        self.assertTrue(link.startswith("http://127.0.0.1:8000/u/"), link)
+        self.assertNotIn("ghethicalclearance", link)
+
+    def test_a_link_built_in_production_carries_that_host(self):
+        self._upload()
+        page = self.client.get(ADMIN, HTTP_HOST="ghethicalclearance.academicdigital.space", secure=True)
+        link = page.context["uploads"][0].link
+        self.assertTrue(link.startswith("https://ghethicalclearance.academicdigital.space/u/"), link)
+
+    def test_without_a_request_it_falls_back_to_site_url(self):
+        from django.conf import settings
+        row = self._upload()
+        self.assertTrue(row.share_url().startswith(settings.SITE_URL.rstrip("/") + "/u/"))
+
+    def test_the_link_reaches_the_file_on_whatever_host(self):
+        row = self._upload()
+        self.client.logout()
+        resp = self.client.get(row.share_path(), HTTP_HOST="127.0.0.1:8000")
+        self.assertEqual(resp.status_code, 200)

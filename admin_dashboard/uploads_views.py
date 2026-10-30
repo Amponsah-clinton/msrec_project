@@ -53,11 +53,15 @@ def uploads(request):
     if request.method == "POST":
         return _handle(request)
 
-    rows = SharedUpload.objects.select_related("uploaded_by")
+    rows = list(SharedUpload.objects.select_related("uploaded_by"))
+    for row in rows:
+        # Resolved against this request, so the link you copy is a link
+        # that works from where you are.
+        row.link = row.share_url(request)
     return render(request, "dashboards/admin/uploads.html", {
         "uploads": rows,
-        "total": rows.count(),
-        "live": rows.filter(is_active=True).count(),
+        "total": len(rows),
+        "live": sum(1 for r in rows if r.is_active),
         "max_mb": MAX_BYTES // (1024 * 1024),
         "configured": storage._configured(),
         "active": "uploads",
