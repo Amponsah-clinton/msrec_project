@@ -6,43 +6,106 @@
 {% block extra_css %}
 <link href="{% static 'dashboard/css/accounts.css' %}" rel="stylesheet">
 <style>
-  .upl-wrap { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 20px; align-items: start; }
-  @media (max-width: 1000px) { .upl-wrap { grid-template-columns: minmax(0, 1fr); } }
+  /* ------------------------------------------------------------------
+     Upload. Two jobs on one page: put a file in, and manage the links
+     already out. The form is a fixed column so the list -- which is what
+     you come back for -- gets the room.
+     ------------------------------------------------------------------ */
+  .upl-wrap { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 1080px) { .upl-wrap { grid-template-columns: minmax(0, 1fr); } }
 
-  .upl-drop { border: 2px dashed var(--border); border-radius: 12px; padding: 24px 16px; text-align: center;
-    cursor: pointer; transition: border-color .15s, background .15s; background: var(--bg); }
+  /* ---- the drop zone --------------------------------------------- */
+  /* display:block matters: a <label> is inline, and an inline box takes
+     no height from its padding -- the border collapses to a sliver. */
+  .upl-drop { display: block; border: 1.5px dashed var(--border); border-radius: 14px;
+    padding: 28px 18px; text-align: center; cursor: pointer; background: var(--bg);
+    transition: border-color .15s, background .15s; }
   .upl-drop:hover, .upl-drop.is-over { border-color: var(--teal); background: var(--hover-bg); }
-  .upl-drop svg { width: 30px; height: 30px; stroke: var(--teal); fill: none; stroke-width: 1.7;
+  .upl-drop .ico { display: grid; place-items: center; width: 46px; height: 46px; margin: 0 auto 12px;
+    border-radius: 13px; background: var(--hover-bg); color: var(--teal); }
+  .upl-drop .ico svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8;
     stroke-linecap: round; stroke-linejoin: round; }
-  .upl-drop p { margin: 8px 0 0; font-size: 13px; color: var(--text-sub); }
-  .upl-drop b { display: block; font-size: 13.5px; color: var(--text-main); }
-  .upl-chosen { margin-top: 10px; font-size: 12.5px; color: var(--teal); font-weight: 600; word-break: break-all; }
-  .upl-form .field-group { margin-top: 14px; }
-  .upl-form .btn-primary { width: 100%; justify-content: center; margin-top: 16px; }
-  .upl-note { margin: 12px 0 0; font-size: 12px; color: var(--text-faint); line-height: 1.6; }
+  .upl-drop b { display: block; font-size: 14px; color: var(--text-main); }
+  .upl-drop span.sub { display: block; margin-top: 4px; font-size: 12.5px; color: var(--text-faint); }
 
-  .upl-item { display: grid; gap: 8px; padding: 14px 0; border-bottom: 1px solid var(--border); }
-  .upl-item:last-child { border-bottom: 0; }
-  .upl-item.is-off { opacity: .62; }
-  .upl-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  /* The chosen file, as a chip rather than a loose string. */
+  .upl-chip { display: none; align-items: center; gap: 10px; margin-top: 14px; padding: 10px 12px;
+    border: 1px solid var(--teal); border-radius: 11px; background: var(--white); text-align: left; }
+  .upl-chip.on { display: flex; }
+  .upl-chip .tag { flex: none; display: grid; place-items: center; width: 34px; height: 34px;
+    border-radius: 9px; background: var(--hover-bg); color: var(--teal); font-size: 10px; font-weight: 800; }
+  .upl-chip .who { min-width: 0; flex: 1; }
+  .upl-chip .who b { display: block; font-size: 12.5px; color: var(--text-main);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .upl-chip .who span { font-size: 11.5px; color: var(--text-faint); }
+  .upl-chip .drop-it { flex: none; border: 0; background: none; cursor: pointer; font: inherit;
+    font-size: 11.5px; font-weight: 600; color: var(--text-faint); text-decoration: underline; }
+  .upl-chip .drop-it:hover { color: var(--red); }
+
+  .upl-form .field-group { margin-top: 16px; }
+  .upl-form .btn-primary { width: 100%; justify-content: center; margin-top: 18px; }
+  .upl-note { margin: 12px 0 0; font-size: 11.5px; color: var(--text-faint); line-height: 1.6; }
+
+  /* ---- one shared file ------------------------------------------- */
+  .upl-row { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 14px;
+    padding: 16px 0; border-bottom: 1px solid var(--border); }
+  .upl-row:first-of-type { padding-top: 4px; }
+  .upl-row:last-child { border-bottom: 0; padding-bottom: 4px; }
+  .upl-row.is-off { opacity: .55; }
+
+  /* The type reads off the tile, so no badge has to float anywhere. */
+  .upl-tile { grid-row: span 2; display: grid; place-items: center; width: 46px; height: 46px;
+    border-radius: 12px; background: var(--hover-bg); color: var(--text-sub);
+    font-size: 9.5px; font-weight: 800; letter-spacing: .04em; }
+  .upl-tile svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 1.7;
+    stroke-linecap: round; stroke-linejoin: round; }
+  .upl-tile.k-pdf { background: rgba(214,69,69,.12); color: #d64545; }
+  .upl-tile.k-image { background: rgba(15,138,134,.13); color: var(--teal); }
+  .upl-tile.k-video { background: rgba(109,92,214,.14); color: #6d5cd6; }
+  .upl-tile.k-audio { background: rgba(214,138,46,.14); color: #d68a2e; }
+  .upl-tile.k-text { background: rgba(60,110,200,.13); color: #3c6ec8; }
+
+  .upl-main { min-width: 0; display: grid; gap: 3px; }
   .upl-title { font-size: 14.5px; font-weight: 700; color: var(--text-main); overflow-wrap: anywhere; }
-  .upl-meta { font-size: 11.5px; color: var(--text-faint); }
-  .upl-badge { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10.5px;
-    font-weight: 700; text-transform: uppercase; letter-spacing: .04em; border: 1px solid var(--border); }
-  .upl-badge.off { color: var(--red); border-color: var(--red); }
-  .upl-link { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .upl-link input { flex: 1 1 260px; min-width: 0; font-size: 11.5px; font-family: ui-monospace, monospace;
-    padding: 7px 9px; border: 1px solid var(--border); border-radius: 7px; background: var(--white);
-    color: var(--text-sub); }
-  .upl-acts { display: flex; gap: 6px; flex-wrap: wrap; }
-  .upl-acts form { margin: 0; }
-  .upl-btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 11px; border-radius: 7px;
-    border: 1px solid var(--border); background: var(--white); cursor: pointer; font: inherit;
+  .upl-facts { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--text-faint); }
+  .upl-facts i { font-style: normal; }
+  .upl-facts .off { color: var(--red); font-weight: 700; }
+
+  /* The link is long and the least interesting thing on the row, so it
+     sits quiet and the button next to it does the work. */
+  .upl-share { grid-column: 2; display: flex; align-items: center; gap: 8px; margin-top: 9px; flex-wrap: wrap; }
+  .upl-share input { flex: 1 1 220px; min-width: 0; padding: 7px 10px; border: 1px solid var(--border);
+    border-radius: 8px; background: var(--bg); color: var(--text-faint);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+  .upl-copy { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px;
+    border: 1px solid var(--teal); border-radius: 8px; background: var(--teal); color: var(--white);
+    font: inherit; font-size: 12px; font-weight: 700; cursor: pointer; }
+  .upl-copy:hover { filter: brightness(1.08); }
+  .upl-open { flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px;
+    border: 1px solid var(--border); border-radius: 8px; background: var(--white);
     font-size: 12px; font-weight: 600; color: var(--text-sub); text-decoration: none; }
-  .upl-btn:hover { border-color: var(--teal); color: var(--teal); }
-  .upl-btn.danger:hover { border-color: var(--red); background: var(--red); color: var(--white); }
-  .upl-new { border: 1px solid var(--teal); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;
-    background: var(--bg); font-size: 13px; }
+  .upl-open:hover { border-color: var(--teal); color: var(--teal); }
+
+  /* The rest live behind a menu: needed rarely, and two of them undo a
+     link someone is already using. */
+  .upl-menu { position: relative; flex: none; }
+  .upl-menu > summary { list-style: none; cursor: pointer; display: inline-flex; align-items: center;
+    justify-content: center; width: 34px; height: 34px; border: 1px solid var(--border);
+    border-radius: 8px; background: var(--white); color: var(--text-sub); font-weight: 800; }
+  .upl-menu > summary::-webkit-details-marker { display: none; }
+  .upl-menu > summary:hover { border-color: var(--teal); color: var(--teal); }
+  .upl-menu-panel { position: absolute; right: 0; top: calc(100% + 6px); z-index: 20; min-width: 190px;
+    padding: 6px; border: 1px solid var(--border); border-radius: 10px; background: var(--white);
+    box-shadow: 0 16px 36px -18px rgba(10,20,40,.55); display: grid; gap: 2px; }
+  .upl-menu-panel form { margin: 0; }
+  .upl-menu-panel button { width: 100%; text-align: left; padding: 8px 10px; border: 0; border-radius: 7px;
+    background: none; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-sub); cursor: pointer; }
+  .upl-menu-panel button:hover { background: var(--hover-bg); color: var(--text-main); }
+  .upl-menu-panel button.danger { color: var(--red); }
+  .upl-menu-panel button.danger:hover { background: var(--red); color: var(--white); }
+
+  .upl-warn { border: 1px solid var(--red); border-radius: 10px; padding: 12px 14px; margin-bottom: 16px;
+    background: var(--bg); font-size: 13px; color: var(--text-sub); }
 </style>
 {% endblock %}
 
@@ -54,10 +117,8 @@
 
 {% block main_content %}
       {% if not configured %}
-      <div class="upl-new" style="border-color:var(--red)">
-        File storage isn&rsquo;t configured on this server (SUPABASE_URL / SUPABASE_SERVICE_KEY),
-        so uploads will fail until it is.
-      </div>
+      <div class="upl-warn">File storage isn&rsquo;t configured on this server
+        (SUPABASE_URL / SUPABASE_SERVICE_KEY), so uploads will fail until it is.</div>
       {% endif %}
 
       <div class="upl-wrap">
@@ -66,77 +127,96 @@
           <form method="post" enctype="multipart/form-data" class="upl-form" id="uplForm">
             {% csrf_token %}
             <input type="hidden" name="action" value="upload">
+
             <label class="upl-drop" id="uplDrop" for="uplFile">
-              <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg>
+              <span class="ico"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5M12 3v12"/></svg></span>
               <b>Choose a file</b>
-              <p>or drag one here &middot; up to {{ max_mb }} MB</p>
-              <span class="upl-chosen" id="uplChosen"></span>
+              <span class="sub">or drag one here &middot; up to {{ max_mb }} MB</span>
               <input type="file" name="file" id="uplFile" required hidden>
             </label>
+
+            <div class="upl-chip" id="uplChip">
+              <span class="tag" id="uplChipExt">FILE</span>
+              <span class="who"><b id="uplChipName"></b><span id="uplChipSize"></span></span>
+              <button type="button" class="drop-it" id="uplChipClear">Remove</button>
+            </div>
 
             <div class="field-group">
               <label for="uplTitle">Name it</label>
               <input type="text" class="field-input" id="uplTitle" name="title" maxlength="200"
                      autocomplete="off" placeholder="e.g. Ethics Review Guidelines 2026">
-              <p class="field-hint">What people see on the link, and what the file downloads as.
-                Left blank, the file keeps its own name.</p>
+              <p class="field-hint">What people see on the link, and what it downloads as.</p>
             </div>
 
             <div class="field-group">
-              <label for="uplNote">Short note <span style="font-weight:400;color:var(--text-faint)">(optional)</span></label>
+              <label for="uplNote">Note <span style="font-weight:400;color:var(--text-faint)">(optional)</span></label>
               <input type="text" class="field-input" id="uplNote" name="note" maxlength="300"
                      autocomplete="off" placeholder="Shown under the title on the share page">
             </div>
 
             <button type="submit" class="btn-primary" id="uplSubmit">Upload &amp; get link</button>
-            <p class="upl-note">Each upload gets its own link. Anyone with the link can open it &mdash;
-              there is no sign-in &mdash; so share it the way you would share the file.</p>
+            <p class="upl-note">Anyone with the link can open it &mdash; there is no sign-in &mdash;
+              so share it the way you would share the file itself.</p>
           </form>
         </section>
 
         <section class="panel">
           <div class="panel-header">
             <h2>Shared files</h2>
-            <span class="upl-meta">{{ live }} live of {{ total }}</span>
+            <span class="upl-facts">{{ live }} live of {{ total }}</span>
           </div>
 
           {% for item in uploads %}
-          <div class="upl-item{% if not item.is_active %} is-off{% endif %}" id="upl{{ item.pk }}">
-            <div class="upl-head">
-              <span class="upl-title">{{ item.title }}</span>
-              <span class="upl-badge{% if not item.is_active %} off{% endif %}">{% if item.is_active %}{{ item.kind }}{% else %}Off{% endif %}</span>
-            </div>
-            <div class="upl-meta">
-              {{ item.original_name }} &middot; {{ item.size_display }}
-              {% if item.extension %}&middot; {{ item.extension }}{% endif %}
-              &middot; {{ item.created_at|date:"d M Y, H:i" }}{% if item.uploaded_by %} by {{ item.uploaded_by.full_name }}{% endif %}
-              &middot; {{ item.view_count }} view{{ item.view_count|pluralize }}, {{ item.download_count }} download{{ item.download_count|pluralize }}
-            </div>
-            {% if item.note %}<div class="upl-meta" style="color:var(--text-sub)">{{ item.note }}</div>{% endif %}
+          <div class="upl-row{% if not item.is_active %} is-off{% endif %}" id="upl{{ item.pk }}">
+            <span class="upl-tile k-{{ item.kind }}">
+              {% if item.kind == 'image' %}<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+              {% elif item.kind == 'video' %}<svg viewBox="0 0 24 24"><rect x="2" y="4" width="14" height="16" rx="2"/><path d="m16 10 6-3v10l-6-3Z"/></svg>
+              {% elif item.kind == 'audio' %}<svg viewBox="0 0 24 24"><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>
+              {% elif item.extension %}{{ item.extension }}
+              {% else %}<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>{% endif %}
+            </span>
 
-            <div class="upl-link">
+            <div class="upl-main">
+              <span class="upl-title">{{ item.title }}</span>
+              <span class="upl-facts">
+                {% if not item.is_active %}<i class="off">Link off</i>{% endif %}
+                <i>{{ item.original_name }}</i>
+                <i>{{ item.size_display }}</i>
+                <i>{{ item.created_at|date:"j M Y" }}</i>
+                {% if item.uploaded_by %}<i>{{ item.uploaded_by.full_name }}</i>{% endif %}
+                <i>{{ item.view_count }} view{{ item.view_count|pluralize }}</i>
+                <i>{{ item.download_count }} download{{ item.download_count|pluralize }}</i>
+              </span>
+              {% if item.note %}<span class="upl-facts" style="color:var(--text-sub)">{{ item.note }}</span>{% endif %}
+            </div>
+
+            <div class="upl-share">
               <input type="text" readonly value="{{ item.share_url }}" id="uplUrl{{ item.pk }}"
                      aria-label="Share link for {{ item.title }}" onfocus="this.select()">
-              <button type="button" class="upl-btn" data-copy="#uplUrl{{ item.pk }}">Copy link</button>
-              <a class="upl-btn" href="{{ item.share_url }}" target="_blank" rel="noopener">Open</a>
-            </div>
-
-            <div class="upl-acts">
-              <form method="post">
-                {% csrf_token %}<input type="hidden" name="id" value="{{ item.pk }}">
-                <button type="submit" name="action" value="toggle" class="upl-btn">
-                  {% if item.is_active %}Turn link off{% else %}Turn link on{% endif %}</button>
-              </form>
-              <form method="post" data-confirm-title="Give it a new link?" data-confirm-variant="primary" data-confirm-label="New link"
-                    data-confirm="The current link stops working at once. Anyone who already has it will need the new one.">
-                {% csrf_token %}<input type="hidden" name="id" value="{{ item.pk }}">
-                <button type="submit" name="action" value="relink" class="upl-btn">New link</button>
-              </form>
-              <form method="post" data-confirm-title="Delete {{ item.title }}?" data-confirm-variant="danger" data-confirm-label="Delete"
-                    data-confirm="The file is removed from storage for good and the link stops working. This can't be undone.">
-                {% csrf_token %}<input type="hidden" name="id" value="{{ item.pk }}">
-                <button type="submit" name="action" value="delete" class="upl-btn danger">Delete</button>
-              </form>
+              <button type="button" class="upl-copy" data-copy="#uplUrl{{ item.pk }}">Copy link</button>
+              <a class="upl-open" href="{{ item.share_url }}" target="_blank" rel="noopener">Open</a>
+              <details class="upl-menu">
+                <summary aria-label="More actions for {{ item.title }}">&hellip;</summary>
+                <div class="upl-menu-panel">
+                  <form method="post">
+                    {% csrf_token %}<input type="hidden" name="id" value="{{ item.pk }}">
+                    <button type="submit" name="action" value="toggle">
+                      {% if item.is_active %}Turn link off{% else %}Turn link back on{% endif %}</button>
+                  </form>
+                  <form method="post" data-confirm-title="Give it a new link?" data-confirm-variant="primary"
+                        data-confirm-label="New link"
+                        data-confirm="The current link stops working at once. Anyone who already has it will need the new one.">
+                    {% csrf_token %}<input type="hidden" name="id" value="{{ item.pk }}">
+                    <button type="submit" name="action" value="relink">Replace the link</button>
+                  </form>
+                  <form method="post" data-confirm-title="Delete {{ item.title }}?" data-confirm-variant="danger"
+                        data-confirm-label="Delete"
+                        data-confirm="The file is removed from storage for good and the link stops working. This can't be undone.">
+                    {% csrf_token %}<input type="hidden" name="id" value="{{ item.pk }}">
+                    <button type="submit" name="action" value="delete" class="danger">Delete the file</button>
+                  </form>
+                </div>
+              </details>
             </div>
           </div>
           {% empty %}
